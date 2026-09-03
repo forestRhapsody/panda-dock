@@ -1,6 +1,20 @@
+import Icon from '@/ui/Icon'
+import type { IconName } from '@/ui/Icon'
 import { extVersion, isExtension, openOptionsPage } from '@/utils/env'
 
 import './index.css'
+
+interface Feature {
+  icon: IconName
+  title: string
+  desc: string
+}
+
+const FEATURES: Feature[] = [
+  { icon: 'window', title: 'Popup 弹窗', desc: '点击工具栏图标打开，适合放快捷操作' },
+  { icon: 'settings', title: 'Options 设置页', desc: '扩展配置项，数据存 chrome.storage' },
+  { icon: 'code', title: '页面注入', desc: 'Content Script 向网页注入悬浮面板' },
+]
 
 /**
  * 示例「首页 / 仪表盘」，纯展示组件，不依赖 chrome.* API。
@@ -10,44 +24,36 @@ export default function Home() {
   const inExt = isExtension()
 
   return (
-    <div className='home'>
-      <section className='home__hero'>
-        <div className='home__logo'>🧰</div>
-        <h1 className='home__title'>Toolkit Extension</h1>
-        <p className='home__desc'>基于 React + Vite + TypeScript 的 Chrome 扩展骨架</p>
+    <div className='hm'>
+      <section className='hm__hero'>
+        <div className='hm__logo'>
+          <Icon name='toolbox' size={40} />
+        </div>
+        <h1 className='hm__title'>Toolkit Extension</h1>
+        <p className='hm__desc'>基于 React + Vite + TypeScript 的 Chrome 扩展骨架</p>
       </section>
 
-      <section className='home__features'>
-        <div className='home__feature'>
-          <span className='home__feature-icon'>🪟</span>
-          <div>
-            <strong>Popup 弹窗</strong>
-            <p>点击工具栏图标打开，适合放快捷操作</p>
+      <section className='hm__features'>
+        {FEATURES.map((f) => (
+          <div key={f.title} className='hm__feature'>
+            <span className='hm__feature-icon'>
+              <Icon name={f.icon} size={18} />
+            </span>
+            <div>
+              <strong>{f.title}</strong>
+              <p>{f.desc}</p>
+            </div>
           </div>
-        </div>
-        <div className='home__feature'>
-          <span className='home__feature-icon'>⚙️</span>
-          <div>
-            <strong>Options 设置页</strong>
-            <p>扩展配置项，数据存 chrome.storage</p>
-          </div>
-        </div>
-        <div className='home__feature'>
-          <span className='home__feature-icon'>📄</span>
-          <div>
-            <strong>页面注入</strong>
-            <p>Content Script 向网页注入悬浮面板</p>
-          </div>
-        </div>
+        ))}
       </section>
 
-      <footer className='home__footer'>
+      <footer className='hm__footer'>
         <span>v{extVersion()}</span>
-        <span className={`home__env home__env--${inExt ? 'ext' : 'preview'}`}>
+        <span className={`hm__env hm__env--${inExt ? 'ext' : 'preview'}`}>
           {inExt ? '扩展环境' : '浏览器预览'}
         </span>
         {inExt && (
-          <button className='home__link' onClick={openOptionsPage}>
+          <button className='hm__link' onClick={openOptionsPage}>
             打开设置 →
           </button>
         )}

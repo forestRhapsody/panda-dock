@@ -12,6 +12,7 @@ import { CSS } from '@dnd-kit/utilities'
 
 import type { ToolId } from '@/tools/registry'
 import { DEFAULT_TOOLS, defaultToolLayout, normalizeToolLayout } from '@/tools/registry'
+import Icon from '@/ui/Icon'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
 
@@ -78,7 +79,7 @@ interface SortableToolRowProps {
   onToggle: (id: ToolId) => void
 }
 
-/** 单个可排序工具行：拖动「⠿」把手调整顺序（dnd-kit 自动处理滑动/回弹动画） */
+/** 单个可排序工具行：拖动把手调整顺序（dnd-kit 自动处理滑动/回弹动画） */
 function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -94,7 +95,7 @@ function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
       style={style}
     >
       <span className='opt-tools__grip' {...attributes} {...listeners} title='按住拖拽调整顺序'>
-        ⠿
+        <Icon name='grip' size={14} />
       </span>
       <span className='opt-tools__name'>{label}</span>
       <span className='opt-tools__hint'>{on ? '显示中' : '已隐藏'}</span>
@@ -176,7 +177,10 @@ export default function OptionsPage() {
   return (
     <div className='opt'>
       <header className='opt__header'>
-        <h1>🧰 Toolkit Extension 设置</h1>
+        <h1>
+          <Icon name='toolbox' size={20} />
+          Toolkit Extension 设置
+        </h1>
         <p className='opt__env'>
           {inExt ? '已连接 chrome.storage.sync' : '浏览器预览模式（配置不会被持久化）'}
         </p>
@@ -223,7 +227,8 @@ export default function OptionsPage() {
             </li>
           </ul>
           <p className={`opt__saved${saved ? ' opt__saved--show' : ''}`}>
-            ✓ 已保存到 chrome.storage.sync（settings）
+            <Icon name='check' size={12} />
+            已保存到 chrome.storage.sync（settings）
           </p>
         </div>
 
@@ -257,7 +262,7 @@ export default function OptionsPage() {
           </DndContext>
 
           <p className='opt__env opt__env--hint'>
-            拖动「⠿」把手调整顺序（带滑动动画）；关闭开关即在工具箱隐藏该能力。修改即时保存。
+            拖动把手调整顺序（带滑动动画）；关闭开关即在工具箱隐藏该能力。修改即时保存。
           </p>
         </div>
 

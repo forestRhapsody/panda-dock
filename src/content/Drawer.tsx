@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 
 import ToolsApp from '@/tools/ToolsApp'
+import Icon from '@/ui/Icon'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 
 const WIDTH_KEY = 'toolkit.drawerWidth'
@@ -117,11 +118,12 @@ export default function Drawer({ onClose }: DrawerProps) {
         headerActions={
           <button
             type='button'
-            className='tek__drawer-close'
+            className='tk-icon-btn'
             aria-label='关闭抽屉'
+            title='关闭抽屉'
             onClick={onClose}
           >
-            ✕
+            <Icon name='close' size={14} />
           </button>
         }
       />

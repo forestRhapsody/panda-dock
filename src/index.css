@@ -18,14 +18,17 @@ body {
 }
 
 .pv__hero h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
-  font-size: 24px;
+  font-size: var(--tk-text-xl);
 }
 
 .pv__hero p {
   max-width: 640px;
   line-height: 1.8;
-  font-size: 13px;
+  font-size: var(--tk-text-base);
   color: var(--tk-muted-foreground);
 }
 
@@ -34,7 +37,7 @@ body {
   border-radius: var(--tk-radius-sm);
   background: var(--tk-card);
   border: 1px solid var(--tk-border);
-  font-size: 12px;
+  font-size: var(--tk-text-sm);
   font-family: var(--tk-font-mono);
 }
 
@@ -47,7 +50,7 @@ body {
   align-items: center;
   gap: 10px;
   margin: 0 0 14px;
-  font-size: 15px;
+  font-size: var(--tk-text-lg);
   color: var(--tk-secondary-foreground);
 }
 
@@ -56,7 +59,7 @@ body {
   border-radius: 999px;
   background: var(--tk-primary);
   color: var(--tk-primary-foreground);
-  font-size: 11px;
+  font-size: var(--tk-text-xs);
   font-weight: 700;
 }
 
@@ -79,7 +82,7 @@ body {
 }
 
 .pv__note {
-  font-size: 13px;
+  font-size: var(--tk-text-base);
   color: var(--tk-muted-foreground);
   line-height: 1.8;
 }

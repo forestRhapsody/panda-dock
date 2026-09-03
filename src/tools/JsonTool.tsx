@@ -58,10 +58,10 @@ function JsonPanel({ mode }: { mode: Mode }) {
       </label>
 
       <div className='tw-actions'>
-        <button type='button' className='tw-btn tw-btn--primary' onClick={run}>
+        <button type='button' className='tk-btn tk-btn--primary' onClick={run}>
           {mode === 'format' ? '格式化 →' : '压缩 →'}
         </button>
-        <button type='button' className='tw-btn' onClick={clear}>
+        <button type='button' className='tk-btn' onClick={clear}>
           清空
         </button>
       </div>

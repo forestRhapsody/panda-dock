@@ -18,7 +18,7 @@ export default function SidePanelPage() {
           inExt && (
             <button
               type='button'
-              className='sp__btn'
+              className='tk-btn tk-btn--sm'
               title='收起侧边栏'
               onClick={() => void closeNativeSidePanel()}
             >

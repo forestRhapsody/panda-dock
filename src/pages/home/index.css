@@ -1,40 +1,47 @@
-/* Popup 首页（仪表盘）样式：纯展示组件，配色走 src/theme.css 令牌。 */
-.home {
+/* Popup 首页（仪表盘）样式：纯展示组件，配色走 src/theme.css 令牌（类名 hm- 前缀）。 */
+.hm {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.home__hero {
+.hm__hero {
   text-align: center;
   padding: 8px 0 4px;
 }
 
-.home__logo {
-  font-size: 40px;
-  line-height: 1;
+.hm__logo {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-lg);
+  background: var(--tk-card);
+  color: var(--tk-primary);
+  box-shadow: var(--tk-shadow-sm);
 }
 
-.home__title {
+.hm__title {
   margin: 10px 0 4px;
-  font-size: 18px;
+  font-size: var(--tk-text-lg);
   font-weight: 700;
   color: var(--tk-foreground);
 }
 
-.home__desc {
+.hm__desc {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--tk-text-sm);
   color: var(--tk-muted-foreground);
 }
 
-.home__features {
+.hm__features {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.home__feature {
+.hm__feature {
   display: flex;
   gap: 12px;
   align-items: flex-start;
@@ -44,57 +51,64 @@
   background: var(--tk-muted);
 }
 
-.home__feature-icon {
-  font-size: 20px;
-  line-height: 1.3;
+.hm__feature-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: var(--tk-card);
+  color: var(--tk-secondary-foreground);
 }
 
-.home__feature strong {
+.hm__feature strong {
   display: block;
-  font-size: 13px;
+  font-size: var(--tk-text-base);
   color: var(--tk-foreground);
 }
 
-.home__feature p {
+.hm__feature p {
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: var(--tk-text-sm);
   color: var(--tk-muted-foreground);
 }
 
-.home__footer {
+.hm__footer {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--tk-text-sm);
   color: var(--tk-muted-foreground);
 }
 
-.home__env {
+.hm__env {
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: var(--tk-text-xs);
 }
 
-.home__env--ext {
+.hm__env--ext {
   background: color-mix(in srgb, var(--tk-success) 14%, var(--tk-card));
   color: var(--tk-success);
 }
 
-.home__env--preview {
+.hm__env--preview {
   background: color-mix(in srgb, var(--tk-warning) 14%, var(--tk-card));
   color: var(--tk-warning);
 }
 
-.home__link {
+.hm__link {
   margin-left: auto;
   padding: 0;
   border: none;
   background: none;
   color: var(--tk-primary);
-  font-size: 12px;
+  font-size: var(--tk-text-sm);
   cursor: pointer;
 }
 
-.home__link:hover {
+.hm__link:hover {
   text-decoration: underline;
 }

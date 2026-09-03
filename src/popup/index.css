@@ -30,27 +30,11 @@ body {
 }
 
 .pop__title {
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--tk-text-md);
   font-weight: 600;
-}
-
-.pop__settings {
-  border: none;
-  background: none;
-  font-size: 15px;
-  padding: 4px;
-  cursor: pointer;
-  border-radius: var(--tk-radius-sm);
-  line-height: 1;
-  color: var(--tk-muted-foreground);
-  transition:
-    background 0.15s,
-    color 0.15s;
-}
-
-.pop__settings:hover {
-  background: var(--tk-accent);
-  color: var(--tk-foreground);
 }
 
 .pop__native {
@@ -58,25 +42,9 @@ body {
   border-bottom: 1px solid var(--tk-border);
 }
 
-.pop__native-btn {
-  width: 100%;
-  padding: 8px 0;
-  border: 1px solid var(--tk-primary);
-  border-radius: var(--tk-radius);
-  background: var(--tk-primary);
-  color: var(--tk-primary-foreground);
-  font-size: 12px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.pop__native-btn:hover {
-  background: var(--tk-primary-hover);
-}
-
 .pop__native-hint {
   margin: 6px 0 0;
-  font-size: 11px;
+  font-size: var(--tk-text-xs);
   color: var(--tk-destructive);
 }
 

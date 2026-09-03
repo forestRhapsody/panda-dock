@@ -43,10 +43,10 @@ export default function TimestampTool() {
       </label>
 
       <div className='tw-actions'>
-        <button type='button' className='tw-btn' onClick={fillNow}>
+        <button type='button' className='tk-btn' onClick={fillNow}>
           当前时间
         </button>
-        <button type='button' className='tw-btn' onClick={() => setInput('')}>
+        <button type='button' className='tk-btn' onClick={() => setInput('')}>
           清空
         </button>
       </div>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
+import Icon from '@/ui/Icon'
 import { extVersion, isExtension, openOptionsPage, storageGet } from '@/utils/env'
 
 import Base64Tool from './Base64Tool'
@@ -109,7 +110,10 @@ export default function ToolsApp({ headerActions }: ToolsAppProps) {
     <div className='tw'>
       <header className='tw__header'>
         <div className='tw__header-text'>
-          <h1 className='tw__title'>🧰 工具箱</h1>
+          <h1 className='tw__title'>
+            <Icon name='toolbox' size={17} />
+            工具箱
+          </h1>
           <p className='tw__subtitle'>开发者常用小工具</p>
         </div>
         {headerActions && <div className='tw__header-actions'>{headerActions}</div>}

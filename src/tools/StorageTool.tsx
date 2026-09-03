@@ -85,13 +85,13 @@ function ConfirmDialog({
         <h3 className='tw-modal__title'>{title}</h3>
         <p className='tw-modal__msg'>{message}</p>
         <div className='tw-modal__actions'>
-          <button type='button' className='tw-btn' onClick={onCancel}>
+          <button type='button' className='tk-btn' onClick={onCancel}>
             取消
           </button>
           <button
             type='button'
             ref={confirmRef}
-            className='tw-btn tw-btn--primary'
+            className='tk-btn tk-btn--primary'
             onClick={onConfirm}
           >
             确定
@@ -287,10 +287,10 @@ export default function StorageTool() {
       </div>
 
       <div className='tw-actions'>
-        <button type='button' className='tw-btn tw-btn--primary' onClick={() => void load()}>
+        <button type='button' className='tk-btn tk-btn--primary' onClick={() => void load()}>
           刷新
         </button>
-        <button type='button' className='tw-btn' onClick={askClearAll} disabled={empty}>
+        <button type='button' className='tk-btn' onClick={askClearAll} disabled={empty}>
           清空全部
         </button>
       </div>

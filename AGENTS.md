@@ -40,6 +40,7 @@ src/
   content/   Content Script：悬浮球(FloatingBall) + 抽屉(Drawer) + 工具箱浮层
   background/ Service Worker（sidePanel 唤起中转等）
   tools/     共享「工具箱」：registry(工具注册) + ToolsApp + 各工具组件
+  ui/        共享 UI 基础：Icon.tsx(内联 SVG 图标集) + ui.css(按钮体系 tk-btn/tk-icon-btn)
   pages/home Popup 首页展示组件
   utils/     env(扩展环境守卫) / messages(协议) / clipboard / sidePanel / storage 桥接
 vite.config.ts            → 页面多入口构建（base:'./'）
@@ -50,7 +51,7 @@ vite.background.config.ts → service worker 打成单个 IIFE
 ## 核心硬约定（违反会导致扩展坏掉/被拒）
 
 1. **两处"非模块"产物必须 IIFE 单文件**：MV3 的 `content_scripts` 与默认 service worker 不能是 ES Module。新增这类入口时仿照 `vite.content.config.ts` / `vite.background.config.ts`（注意 build 顺序：content 先清空 dist，其余 `emptyOutDir:false` 追加）。
-2. **Content Script 的样式只准进 Shadow DOM**：样式以 `?inline` 字符串拼进 Shadow Root 的 `<style>`（见 `src/content/main.tsx`）；**禁止**向网页 `<head>`/文档注入 `<link>` 或全局样式（会污染宿主页面 = 最严重事故）。类名前缀：content=`tek-`，工具箱=`tw-`，options=`opt-`，popup=`pop-`，home=`hm-`，preview=`pv-`。
+2. **Content Script 的样式只准进 Shadow DOM**：样式以 `?inline` 字符串拼进 Shadow Root 的 `<style>`（见 `src/content/main.tsx`）；**禁止**向网页 `<head>`/文档注入 `<link>` 或全局样式（会污染宿主页面 = 最严重事故）。类名前缀：content=`tek-`，工具箱=`tw-`，options=`opt-`，popup=`pop-`，home=`hm-`，preview=`pv-`，共享 UI（`src/ui/`）=`tk-`。图标一律用 `src/ui/Icon.tsx` 的内联 SVG，不用 emoji。
 3. **所有 `chrome.*` 调用必须可降级**：`pnpm dev` 浏览器里没有 chrome；凡访问前先 `isExtension()`/`typeof chrome !== 'undefined'` 守卫（参考 `src/utils/env.ts`）。扩展内部（popup/options/sidepanel）与 content script 可用 API 集合不同，跨上下文交互一律走 `src/utils/messages.ts` 里定义的消息（加新消息要同步两端）。
 4. **用户手势限制**：`chrome.sidePanel.open()` 必须带 `windowId/tabId` 且在扩展页面里以用户点击触发；从 content script 经消息中转基本会被 Chrome 拒绝——不要承诺"悬浮球唤起原生侧边栏 100% 可行"，失败要优雅回退（回退到抽屉并提示）。
 5. **不加新权限**：除非用户明确同意，不往 manifest `permissions` 加项（contextMenus、notifications 等都会再次弹提示）。悬浮球/抽屉用的是已声明的 `content_scripts http(s)` + `storage` + `sidePanel`。

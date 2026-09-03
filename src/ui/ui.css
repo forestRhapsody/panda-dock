@@ -1,0 +1,99 @@
+/* 共享 UI 基础组件（类名 tk- 前缀）：按钮 / 图标按钮。
+   全入口（Popup / Options / 侧边栏 / 网页内抽屉 / 预览页）统一引用，
+   配色与尺寸走 src/theme.css 令牌（Shadow DOM 内经 :host 作用域同样可用）。 */
+
+/* —— 按钮：默认次要（描边），--primary 主要，--sm 紧凑，--block 通栏 —— */
+
+.tk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--tk-control-h);
+  padding: 0 14px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: var(--tk-radius);
+  background: var(--tk-card);
+  font-family: var(--tk-font);
+  font-size: var(--tk-text-base);
+  line-height: 1;
+  color: var(--tk-secondary-foreground);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+}
+
+.tk-btn:hover {
+  background: var(--tk-accent);
+  color: var(--tk-accent-foreground);
+}
+
+.tk-btn:active {
+  background: var(--tk-secondary);
+}
+
+.tk-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tk-btn:disabled:hover {
+  background: var(--tk-card);
+  color: var(--tk-secondary-foreground);
+}
+
+.tk-btn--primary,
+.tk-btn--primary:disabled:hover {
+  border-color: var(--tk-primary);
+  background: var(--tk-primary);
+  color: var(--tk-primary-foreground);
+}
+
+.tk-btn--primary:hover {
+  border-color: var(--tk-primary-hover);
+  background: var(--tk-primary-hover);
+  color: var(--tk-primary-foreground);
+}
+
+.tk-btn--primary:active {
+  border-color: var(--tk-primary-active);
+  background: var(--tk-primary-active);
+}
+
+.tk-btn--sm {
+  height: var(--tk-control-h-sm);
+  padding: 0 10px;
+  border-radius: var(--tk-radius-sm);
+  font-size: var(--tk-text-sm);
+}
+
+.tk-btn--block {
+  width: 100%;
+}
+
+/* —— 图标按钮：方形幽灵按钮（头部动作区、关闭等） —— */
+
+.tk-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--tk-radius-sm);
+  background: none;
+  color: var(--tk-muted-foreground);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.tk-icon-btn:hover {
+  background: var(--tk-accent);
+  color: var(--tk-foreground);
+}

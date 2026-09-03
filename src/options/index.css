@@ -18,13 +18,16 @@ body {
 }
 
 .opt__header h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
-  font-size: 22px;
+  font-size: var(--tk-text-xl);
 }
 
 .opt__env {
   margin: 6px 0 0;
-  font-size: 12px;
+  font-size: var(--tk-text-sm);
   color: var(--tk-muted-foreground);
 }
 
@@ -45,7 +48,7 @@ body {
 
 .opt__card h2 {
   margin: 0 0 12px;
-  font-size: 15px;
+  font-size: var(--tk-text-lg);
 }
 
 .opt__list {
@@ -70,12 +73,12 @@ body {
 }
 
 .opt__item-text strong {
-  font-size: 14px;
+  font-size: var(--tk-text-md);
 }
 
 .opt__item-text p {
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: var(--tk-text-sm);
   color: var(--tk-muted-foreground);
 }
 
@@ -86,7 +89,7 @@ body {
   border: 1px solid var(--tk-input);
   border-radius: var(--tk-radius-sm);
   background: var(--tk-card);
-  font-size: 13px;
+  font-size: var(--tk-text-base);
   color: var(--tk-foreground);
   cursor: pointer;
   outline: none;
@@ -134,9 +137,12 @@ body {
 }
 
 .opt__saved {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin: 4px 0 0;
   height: 16px;
-  font-size: 12px;
+  font-size: var(--tk-text-sm);
   color: var(--tk-success);
   opacity: 0;
   transition: opacity 0.2s;
@@ -154,7 +160,7 @@ body {
 .opt__notes {
   margin: 0;
   padding-left: 18px;
-  font-size: 13px;
+  font-size: var(--tk-text-base);
   line-height: 2;
   color: var(--tk-secondary-foreground);
 }
@@ -163,7 +169,7 @@ body {
   padding: 1px 6px;
   border-radius: var(--tk-radius-sm);
   background: var(--tk-muted);
-  font-size: 12px;
+  font-size: var(--tk-text-sm);
   font-family: var(--tk-font-mono);
 }
 
@@ -185,7 +191,7 @@ body {
   border: none;
   background: none;
   color: var(--tk-primary);
-  font-size: 12px;
+  font-size: var(--tk-text-sm);
   cursor: pointer;
 }
 
@@ -231,10 +237,10 @@ body {
 }
 
 .opt-tools__grip {
+  display: inline-flex;
+  align-items: center;
   flex: none;
   color: var(--tk-muted-foreground);
-  font-size: 14px;
-  letter-spacing: 2px;
   user-select: none;
   cursor: grab;
 }
@@ -242,13 +248,13 @@ body {
 .opt-tools__name {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--tk-text-base);
   font-weight: 600;
 }
 
 .opt-tools__hint {
   flex: none;
-  font-size: 11px;
+  font-size: var(--tk-text-xs);
   color: var(--tk-muted-foreground);
 }
 

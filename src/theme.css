@@ -5,11 +5,13 @@
  *
  * 作用域说明：
  *   - :root —— 扩展页面（Popup / Options / 侧边栏 / 预览页）
- *   - .tw   —— 网页内抽屉 / 侧边栏共用的工具箱容器。
- *              Shadow DOM 里的 CSS 变量不会穿透 `:root`，
- *              因此需在 .tw 上重设一遍，让注入到网页的工具箱也能取到令牌。
+ *   - :host —— Content Script 的 Shadow DOM 宿主（普通页面中不匹配，无副作用）。
+ *              Shadow DOM 里的 CSS 变量不会穿透 `:root`，悬浮球 / 抽屉等非 .tw
+ *              容器靠这条取到令牌。
+ *   - .tw   —— 网页内抽屉 / 侧边栏共用的工具箱容器（兜底，旧注入方式只认 .tw）。
  */
 :root,
+:host,
 .tw {
   color-scheme: light;
 
@@ -57,4 +59,16 @@
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --tk-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* —— 字号层级（全入口统一） —— */
+  --tk-text-xs: 11px; /* 角标、副标题、注脚 */
+  --tk-text-sm: 12px; /* 辅助说明、标签、列表行 */
+  --tk-text-base: 13px; /* 正文、按钮、输入框 */
+  --tk-text-md: 14px; /* 小标题、Popup 标题 */
+  --tk-text-lg: 16px; /* 区块标题、工具箱标题 */
+  --tk-text-xl: 20px; /* 页面级大标题（Options / 预览页） */
+
+  /* —— 控件尺寸（按钮 / 输入框统一规格） —— */
+  --tk-control-h: 32px; /* 标准控件高 */
+  --tk-control-h-sm: 26px; /* 紧凑控件高（头部动作区） */
 }

@@ -6,10 +6,12 @@ import ToolkitOverlay from '@/content/ToolkitOverlay'
 import OptionsPage from '@/options/OptionsPage'
 import Popup from '@/popup/Popup'
 import ToolsApp from '@/tools/ToolsApp'
+import Icon from '@/ui/Icon'
 
 import '@/content/content.css'
 import '@/tools/tools.css'
 import '@/theme.css'
+import '@/ui/ui.css'
 import './index.css'
 
 /**
@@ -21,7 +23,10 @@ function DevPreview() {
   return (
     <div className='pv'>
       <header className='pv__hero'>
-        <h1>🧰 Toolkit Extension · 开发预览</h1>
+        <h1>
+          <Icon name='toolbox' size={22} />
+          Toolkit Extension · 开发预览
+        </h1>
         <p>
           以下为各入口 UI。安装到 Chrome 后请以 <code>dist/</code> 目录加载扩展
           （chrome://extensions → 开发者模式 → 加载已解压的扩展程序）。

@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 
+import Icon from '@/ui/Icon'
+
 export const DOCK_H = 52 // 圆形悬浮球直径
 const DOCK_R = DOCK_H / 2
 const EDGE_MARGIN = 8
@@ -130,7 +132,7 @@ export default function FloatingBall({ pos, onDrop, onToggle }: FloatingBallProp
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
-      🧰
+      <Icon name='toolbox' size={22} />
     </div>
   )
 }
