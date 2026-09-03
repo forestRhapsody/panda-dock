@@ -10,6 +10,7 @@ import {
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_TOGGLE_DRAWER,
 } from '@/utils/messages'
+import { useTheme } from '@/utils/theme'
 
 import Drawer from './Drawer'
 import FloatingBall, { clampBallPos, DOCK_H, snapToEdge } from './FloatingBall'
@@ -92,6 +93,7 @@ async function requestNativeSidePanel(): Promise<boolean> {
 export default function ToolkitOverlay() {
   const inExt = isExtension()
   useFontScale()
+  useTheme()
   // 非扩展环境（浏览器预览）无需等待读取，直接渲染
   const [ready, setReady] = useState(!inExt)
   const [quickOpen, setQuickOpen] = useState(true)

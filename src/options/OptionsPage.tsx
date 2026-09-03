@@ -16,8 +16,14 @@ import Icon from '@/ui/Icon'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
 import type { BallAction } from '@/utils/messages'
-import { defaultSettings, FONT_SCALE_OPTIONS, normalizeSettings } from '@/utils/settings'
-import type { Settings } from '@/utils/settings'
+import {
+  defaultSettings,
+  FONT_SCALE_OPTIONS,
+  normalizeSettings,
+  THEME_OPTIONS,
+} from '@/utils/settings'
+import type { Settings, ThemeMode } from '@/utils/settings'
+import { useTheme } from '@/utils/theme'
 
 import './index.css'
 
@@ -89,6 +95,7 @@ export default function OptionsPage() {
 
   // 使整体字体大小随设置即时缩放（含本设置页）
   useFontScale()
+  useTheme()
 
   const sensors = useSensors(
     // 指针移动超过 6px 才视为拖拽，避免误触（保证开关点击可用）
@@ -125,6 +132,10 @@ export default function OptionsPage() {
 
   function setFontScale(fontScale: number) {
     persist({ ...settings, fontScale })
+  }
+
+  function setTheme(theme: ThemeMode) {
+    persist({ ...settings, theme })
   }
 
   function toggleTool(id: ToolId) {
@@ -200,6 +211,30 @@ export default function OptionsPage() {
               >
                 <option value='drawer'>网页内抽屉</option>
                 <option value='native'>浏览器原生侧边栏</option>
+              </select>
+            </li>
+          </ul>
+        </div>
+
+        <div className='opt__card'>
+          <h2>外观</h2>
+          <ul className='opt__list'>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>主题</strong>
+                <p>选择界面配色：跟随系统 / 浅色 / 深色。切换即时生效。</p>
+              </div>
+              <select
+                className='opt__select'
+                value={settings.theme}
+                onChange={(e) => setTheme(e.target.value as ThemeMode)}
+                aria-label='主题'
+              >
+                {THEME_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
             </li>
           </ul>

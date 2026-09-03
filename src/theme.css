@@ -6,13 +6,16 @@
  * 作用域说明：
  *   - :root —— 扩展页面（Popup / Options / 侧边栏 / 预览页）
  *   - :host —— Content Script 的 Shadow DOM 宿主（普通页面中不匹配，无副作用）。
- *              Shadow DOM 里的 CSS 变量不会穿透 `:root`，悬浮球 / 抽屉等非 .tw
- *              容器靠这条取到令牌。
- *   - .tw   —— 网页内抽屉 / 侧边栏共用的工具箱容器（兜底，旧注入方式只认 .tw）。
+ *              Shadow DOM 里的 CSS 变量不会穿透 `:root`，悬浮球 / 抽屉等容器靠这条取到令牌。
+ *
+ * 主题切换：
+ *   - 基础块为浅色；`[data-theme='dark']` 覆盖为深色（JS 经 applyTheme 把 data-theme 设到
+ *     documentElement 或 :host 宿主上）。
+ *   - 工具箱容器 `.tw` 不再自行声明颜色，改为从 `:root`/`:host` 继承 —— 这样深色能沿
+ *     CSS 变量级联一路生效，且不会被 `.tw` 自身的浅色值覆盖。
  */
 :root,
-:host,
-.tw {
+:host {
   color-scheme: light;
 
   /* —— 中性色（冷调，偏向 zinc / slate） —— */
@@ -71,6 +74,41 @@
   /* —— 控件尺寸（按钮 / 输入框统一规格，随 --tk-font-scale 缩放） —— */
   --tk-control-h: calc(32px * var(--tk-font-scale)); /* 标准控件高 */
   --tk-control-h-sm: calc(26px * var(--tk-font-scale)); /* 紧凑控件高（头部动作区） */
+}
+
+/* —— 深色（冷调中性色反转，主色提亮为近白、文字转深） —— */
+:root[data-theme='dark'],
+:host[data-theme='dark'] {
+  color-scheme: dark;
+
+  --tk-background: hsl(240 10% 4%);
+  --tk-foreground: hsl(0 0% 98%);
+  --tk-card: hsl(240 6% 7%);
+  --tk-muted: hsl(240 5% 12%);
+  --tk-muted-foreground: hsl(240 5% 64%);
+  --tk-secondary: hsl(240 4% 12%);
+  --tk-secondary-foreground: hsl(0 0% 98%);
+  --tk-accent: hsl(240 5% 15%);
+  --tk-accent-foreground: hsl(0 0% 98%);
+
+  --tk-primary: hsl(0 0% 96%);
+  --tk-primary-hover: hsl(0 0% 88%);
+  --tk-primary-active: hsl(0 0% 80%);
+  --tk-primary-foreground: hsl(240 10% 4%);
+  --tk-ring: hsl(0 0% 83%);
+
+  --tk-destructive: hsl(0 62% 55%);
+  --tk-success: hsl(149 50% 45%);
+  --tk-warning: hsl(36 80% 50%);
+  --tk-info: hsl(207 75% 55%);
+
+  --tk-border: hsl(240 4% 18%);
+  --tk-border-strong: hsl(240 4% 28%);
+  --tk-input: hsl(240 4% 18%);
+
+  --tk-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --tk-shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
+  --tk-shadow-lg: 0 12px 26px -6px rgb(0 0 0 / 0.6);
 }
 
 /* 字体缩放默认值只设在 :root 与 :host（两者是各场景的令牌宿主，页面取 :root、Shadow DOM 取

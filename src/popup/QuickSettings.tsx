@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
-import { FONT_SCALE_OPTIONS, normalizeSettings } from '@/utils/settings'
-import type { Settings } from '@/utils/settings'
+import { FONT_SCALE_OPTIONS, normalizeSettings, THEME_OPTIONS } from '@/utils/settings'
+import type { Settings, ThemeMode } from '@/utils/settings'
 
 const SETTINGS_KEY = 'settings'
 
@@ -95,6 +95,24 @@ export default function QuickSettings() {
           >
             <option value='drawer'>网页内抽屉</option>
             <option value='native'>浏览器原生侧边栏</option>
+          </select>
+        </li>
+        <li className='pop__setting'>
+          <div className='pop__setting-text'>
+            <strong>主题</strong>
+            <p>跟随系统 / 浅色 / 深色</p>
+          </div>
+          <select
+            className='pop__select'
+            value={settings.theme}
+            onChange={(e) => update({ theme: e.target.value as ThemeMode })}
+            aria-label='主题'
+          >
+            {THEME_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
           </select>
         </li>
         <li className='pop__setting'>

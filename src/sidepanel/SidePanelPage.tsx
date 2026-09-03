@@ -2,6 +2,7 @@ import ToolsApp from '@/tools/ToolsApp'
 import { isExtension } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
 import { closeNativeSidePanel } from '@/utils/sidePanel'
+import { useTheme } from '@/utils/theme'
 
 import './index.css'
 
@@ -12,6 +13,7 @@ import './index.css'
 export default function SidePanelPage() {
   const inExt = isExtension()
   useFontScale()
+  useTheme()
 
   return (
     <div className='sp'>

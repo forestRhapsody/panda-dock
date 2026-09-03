@@ -5,6 +5,16 @@ import type { ToolId } from '@/tools/registry'
 import { defaultToolLayout, normalizeToolLayout } from '@/tools/registry'
 import type { BallAction } from '@/utils/messages'
 
+/** 主题模式：浅色 / 深色 / 跟随系统 */
+export type ThemeMode = 'light' | 'dark' | 'system'
+
+/** 允许的主题档位 */
+export const THEME_OPTIONS: { label: string; value: ThemeMode }[] = [
+  { label: '跟随系统', value: 'system' },
+  { label: '浅色', value: 'light' },
+  { label: '深色', value: 'dark' },
+]
+
 /** 允许的字体缩放档位 */
 export const FONT_SCALE_OPTIONS: { label: string; value: number }[] = [
   { label: '标准', value: 1 },
@@ -19,6 +29,8 @@ export interface Settings {
   ballSnap: boolean
   /** 点击悬浮球的动作：网页内抽屉 / 浏览器原生侧边栏 */
   ballAction: BallAction
+  /** 主题模式：浅色 / 深色 / 跟随系统 */
+  theme: ThemeMode
   /** 整体字体缩放（1 / 1.1 / 1.25） */
   fontScale: number
   /** 工具顺序（含隐藏项），对应 registry 全量 */
@@ -31,12 +43,17 @@ function normalizeFontScale(value: unknown): number {
   return FONT_SCALE_OPTIONS.some((o) => o.value === value) ? (value as number) : 1
 }
 
+function normalizeTheme(value: unknown): ThemeMode {
+  return value === 'light' || value === 'dark' || value === 'system' ? value : 'system'
+}
+
 export function defaultSettings(): Settings {
   const layout = defaultToolLayout()
   return {
     quickOpen: true,
     ballSnap: true,
     ballAction: 'drawer',
+    theme: 'system',
     fontScale: 1,
     toolOrder: layout.order,
     toolEnabled: layout.enabled,
@@ -51,6 +68,7 @@ export function normalizeSettings(raw: Partial<Settings> | null | undefined): Se
     quickOpen: raw?.quickOpen ?? base.quickOpen,
     ballSnap: raw?.ballSnap !== false,
     ballAction: raw?.ballAction === 'native' ? 'native' : base.ballAction,
+    theme: normalizeTheme(raw?.theme),
     fontScale: normalizeFontScale(raw?.fontScale),
     toolOrder: layout.order,
     toolEnabled: layout.enabled,

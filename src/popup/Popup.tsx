@@ -5,6 +5,7 @@ import { closeDrawerInActiveTab, openDrawerInActiveTab } from '@/utils/drawer'
 import { isExtension, openOptionsPage } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
 import { closeNativeSidePanel, openNativeSidePanel } from '@/utils/sidePanel'
+import { useTheme } from '@/utils/theme'
 
 import QuickSettings from './QuickSettings'
 
@@ -14,6 +15,7 @@ import './index.css'
 export default function Popup() {
   const inExt = isExtension()
   useFontScale()
+  useTheme()
   const [nativeFailed, setNativeFailed] = useState(false)
   const [drawerFailed, setDrawerFailed] = useState(false)
 

@@ -14,6 +14,8 @@ body {
   flex-direction: column;
   width: 380px;
   max-height: 560px;
+  border-radius: var(--tk-radius-lg);
+  overflow: hidden;
   font-family: var(--tk-font);
   color: var(--tk-foreground);
   background: var(--tk-card);
