@@ -125,8 +125,7 @@
         "path": "Path",
         "search": "Query string",
         "hash": "Hash"
-      },
-      "note": "Only http/https and a few network protocols are accepted; invalid schemes like httpas:// are rejected. Domains without a protocol get https automatically, and relative paths resolve against the current page origin."
+      }
     },
     "timestamp": {
       "sourceSeconds": "Parsed as Unix seconds",

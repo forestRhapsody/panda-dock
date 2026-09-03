@@ -123,10 +123,9 @@
         "username": "用户名",
         "password": "密码",
         "path": "路径",
-        "search": "查询串",
+        "search": "查询字符串",
         "hash": "哈希"
-      },
-      "note": "仅认可 http/https 等网络协议，非法协议（如 httpas://）判为无效；无协议的完整域名自动补 https，相对路径按当前页 origin 解析。"
+      }
     },
     "timestamp": {
       "sourceSeconds": "按 Unix 秒解析",

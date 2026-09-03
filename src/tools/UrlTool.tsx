@@ -157,7 +157,7 @@ export default function UrlTool() {
   const debounceRef = useRef<number | undefined>(undefined)
   useEffect(() => {
     window.clearTimeout(debounceRef.current)
-    debounceRef.current = window.setTimeout(() => liveParse(input), 200)
+    debounceRef.current = window.setTimeout(() => liveParse(input), 80)
     return () => window.clearTimeout(debounceRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [input])
@@ -243,8 +243,6 @@ export default function UrlTool() {
           )}
         </>
       )}
-
-      <p className='tw-note'>{t('tool.url.note')}</p>
     </div>
   )
 }
