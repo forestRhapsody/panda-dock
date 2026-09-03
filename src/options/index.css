@@ -152,27 +152,6 @@ body {
   opacity: 1;
 }
 
-.opt__card--muted {
-  background: var(--tk-muted);
-  box-shadow: none;
-}
-
-.opt__notes {
-  margin: 0;
-  padding-left: 18px;
-  font-size: var(--tk-text-base);
-  line-height: 2;
-  color: var(--tk-secondary-foreground);
-}
-
-.opt__notes code {
-  padding: 1px 6px;
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-muted);
-  font-size: var(--tk-text-sm);
-  font-family: var(--tk-font-mono);
-}
-
 /* —— 工具箱能力配置：显隐开关 + 拖拽排序 —— */
 
 .opt__card-head {

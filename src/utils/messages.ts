@@ -3,6 +3,15 @@
 /** 侧边栏页 → content：切换当前网页里的抽屉开合 */
 export const MSG_TOGGLE_DRAWER = 'TOGGLE_TOOLKIT_DRAWER'
 
+/** 扩展页面(popup等) → content：强制打开当前网页里的抽屉（不改变悬浮球点击行为） */
+export const MSG_OPEN_DRAWER = 'OPEN_TOOLKIT_DRAWER'
+
+/** 扩展页面(popup等) → content：关闭当前网页里的抽屉（用于与原生侧边栏互斥） */
+export const MSG_CLOSE_DRAWER = 'CLOSE_TOOLKIT_DRAWER'
+
+/** content → background：关闭当前窗口的原生侧边栏（用于与网页内抽屉互斥） */
+export const MSG_CLOSE_NATIVE_SIDE_PANEL = 'CLOSE_NATIVE_SIDE_PANEL'
+
 /** content → background：请求尽力唤起浏览器原生侧边栏 */
 export const MSG_OPEN_NATIVE_SIDE_PANEL = 'OPEN_NATIVE_SIDE_PANEL'
 

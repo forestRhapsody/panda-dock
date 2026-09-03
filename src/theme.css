@@ -60,15 +60,23 @@
     'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --tk-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* —— 字号层级（全入口统一） —— */
-  --tk-text-xs: 11px; /* 角标、副标题、注脚 */
-  --tk-text-sm: 12px; /* 辅助说明、标签、列表行 */
-  --tk-text-base: 13px; /* 正文、按钮、输入框 */
-  --tk-text-md: 14px; /* 小标题、Popup 标题 */
-  --tk-text-lg: 16px; /* 区块标题、工具箱标题 */
-  --tk-text-xl: 20px; /* 页面级大标题（Options / 预览页） */
+  /* —— 字号层级（全入口统一，随 --tk-font-scale 缩放） —— */
+  --tk-text-xs: calc(11px * var(--tk-font-scale)); /* 角标、副标题、注脚 */
+  --tk-text-sm: calc(12px * var(--tk-font-scale)); /* 辅助说明、标签、列表行 */
+  --tk-text-base: calc(13px * var(--tk-font-scale)); /* 正文、按钮、输入框 */
+  --tk-text-md: calc(14px * var(--tk-font-scale)); /* 小标题、Popup 标题 */
+  --tk-text-lg: calc(16px * var(--tk-font-scale)); /* 区块标题、工具箱标题 */
+  --tk-text-xl: calc(20px * var(--tk-font-scale)); /* 页面级大标题（Options / 预览页） */
 
-  /* —— 控件尺寸（按钮 / 输入框统一规格） —— */
-  --tk-control-h: 32px; /* 标准控件高 */
-  --tk-control-h-sm: 26px; /* 紧凑控件高（头部动作区） */
+  /* —— 控件尺寸（按钮 / 输入框统一规格，随 --tk-font-scale 缩放） —— */
+  --tk-control-h: calc(32px * var(--tk-font-scale)); /* 标准控件高 */
+  --tk-control-h-sm: calc(26px * var(--tk-font-scale)); /* 紧凑控件高（头部动作区） */
+}
+
+/* 字体缩放默认值只设在 :root 与 :host（两者是各场景的令牌宿主，页面取 :root、Shadow DOM 取
+   :host），不要设到 .tw —— 否则 .tw 会自带 --tk-font-scale:1 并遮蔽 JS 设置的值，导致
+   侧边栏/抽屉里的工具箱不跟随缩放。JS（applyFontScale）用 inline 值覆盖这两处默认值。 */
+:root,
+:host {
+  --tk-font-scale: 1;
 }

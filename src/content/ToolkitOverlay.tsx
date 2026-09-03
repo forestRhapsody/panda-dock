@@ -1,29 +1,49 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { isExtension, storageGet, storageSet } from '@/utils/env'
+import { useFontScale } from '@/utils/fontScale'
 import type { BallAction } from '@/utils/messages'
-import { MSG_OPEN_NATIVE_SIDE_PANEL, MSG_TOGGLE_DRAWER } from '@/utils/messages'
+import {
+  MSG_CLOSE_DRAWER,
+  MSG_CLOSE_NATIVE_SIDE_PANEL,
+  MSG_OPEN_DRAWER,
+  MSG_OPEN_NATIVE_SIDE_PANEL,
+  MSG_TOGGLE_DRAWER,
+} from '@/utils/messages'
 
 import Drawer from './Drawer'
-import FloatingBall, { clampDockTop, DOCK_H } from './FloatingBall'
+import FloatingBall, { clampBallPos, DOCK_H, snapToEdge } from './FloatingBall'
 import type { BallPos } from './FloatingBall'
 
 const POS_KEY = 'toolkit.ballPos'
 const SETTINGS_KEY = 'settings'
 const EDGE_MARGIN = 8
-const DEFAULT_SIDE: BallPos['side'] = 'right'
 /** 默认纵向位置：视口高度 45% 处 */
 const DEFAULT_Y_FRAC = 0.45
 const DEFAULT_BALL_ACTION: BallAction = 'drawer'
 
+/** 默认位置：吸边时为左缘；自由模式为右缘（完整显示） */
+function defaultPos(snap: boolean): BallPos {
+  return snap
+    ? { x: 0, y: fracToTop(DEFAULT_Y_FRAC) }
+    : { x: Math.max(0, window.innerWidth - DOCK_H - EDGE_MARGIN), y: fracToTop(DEFAULT_Y_FRAC) }
+}
+
 interface SavedPos {
-  side?: BallPos['side']
+  /** 旧格式：贴边方向 */
+  side?: 'left' | 'right'
+  /** 旧格式：纵向比例 */
   yFrac?: number
+  /** 新格式：球左上角（视口坐标） */
+  x?: number
+  y?: number
 }
 
 interface StoredSettings {
   quickOpen?: boolean
   ballAction?: BallAction
+  /** 悬浮球是否吸边（默认 true） */
+  ballSnap?: boolean
 }
 
 function clamp01(value: number): number {
@@ -35,9 +55,20 @@ function fracToTop(yFrac: number): number {
   return EDGE_MARGIN + clamp01(yFrac) * range
 }
 
-function topToFrac(topPx: number): number {
-  const range = Math.max(1, window.innerHeight - EDGE_MARGIN * 2 - DOCK_H)
-  return (clampDockTop(topPx) - EDGE_MARGIN) / range
+/** 根据存档（含旧格式）与吸边开关解析出位置 */
+function resolvePos(saved: SavedPos | null, snap: boolean): BallPos {
+  let pos: BallPos
+  if (saved?.x != null && saved?.y != null) {
+    pos = { x: saved.x, y: saved.y }
+  } else {
+    // 旧格式 { side, yFrac }
+    const side = saved?.side === 'left' ? 'left' : 'right'
+    pos = {
+      x: side === 'left' ? 0 : Math.max(0, window.innerWidth - DOCK_H),
+      y: fracToTop(saved?.yFrac ?? DEFAULT_Y_FRAC),
+    }
+  }
+  return snap ? snapToEdge(pos) : clampBallPos(pos)
 }
 
 /** 请 background 尽力唤起浏览器原生侧边栏（受用户手势限制，可能失败） */
@@ -60,11 +91,13 @@ async function requestNativeSidePanel(): Promise<boolean> {
  */
 export default function ToolkitOverlay() {
   const inExt = isExtension()
+  useFontScale()
   // 非扩展环境（浏览器预览）无需等待读取，直接渲染
   const [ready, setReady] = useState(!inExt)
   const [quickOpen, setQuickOpen] = useState(true)
   const [ballAction, setBallAction] = useState<BallAction>(DEFAULT_BALL_ACTION)
-  const [pos, setPos] = useState<BallPos>({ side: DEFAULT_SIDE, topPx: fracToTop(DEFAULT_Y_FRAC) })
+  const [ballSnap, setBallSnap] = useState(true)
+  const [pos, setPos] = useState<BallPos>(() => defaultPos(true))
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const noticeTimer = useRef<number | undefined>(undefined)
@@ -77,7 +110,7 @@ export default function ToolkitOverlay() {
 
   useEffect(() => () => window.clearTimeout(noticeTimer.current), [])
 
-  // 首次读取：快捷开关/点击行为 + 记忆位置（并行，读完统一生效避免闪烁）
+  // 首次读取：快捷开关/点击行为/吸边 + 记忆位置（并行，读完统一生效避免闪烁）
   useEffect(() => {
     if (!inExt) return
     let alive = true
@@ -91,25 +124,20 @@ export default function ToolkitOverlay() {
       if (settings?.ballAction === 'drawer' || settings?.ballAction === 'native') {
         setBallAction(settings.ballAction)
       }
-      setPos({
-        side: saved?.side === 'left' ? 'left' : 'right',
-        topPx: fracToTop(saved?.yFrac ?? DEFAULT_Y_FRAC),
-      })
+      const snap = settings?.ballSnap !== false
+      setBallSnap(snap)
+      setPos(resolvePos(saved, snap))
       setReady(true)
     })
 
-    const onResize = () =>
-      setPos((p) => ({
-        ...p,
-        topPx: Math.min(p.topPx, Math.max(EDGE_MARGIN, window.innerHeight - DOCK_H - EDGE_MARGIN)),
-      }))
+    const onResize = () => setPos((p) => (ballSnap ? snapToEdge(p) : clampBallPos(p)))
     window.addEventListener('resize', onResize)
 
     return () => {
       alive = false
       window.removeEventListener('resize', onResize)
     }
-  }, [inExt])
+  }, [inExt, ballSnap])
 
   // 配置即时同步：Options 修改后已打开的页面无需刷新即可生效
   useEffect(() => {
@@ -117,6 +145,11 @@ export default function ToolkitOverlay() {
     const applyStored = (s: StoredSettings | null | undefined) => {
       if (s?.quickOpen != null) setQuickOpen(s.quickOpen)
       if (s?.ballAction === 'drawer' || s?.ballAction === 'native') setBallAction(s.ballAction)
+      if (s?.ballSnap != null) {
+        setBallSnap(s.ballSnap)
+        // 切到吸边时立刻把当前球贴回最近一侧
+        if (s.ballSnap) setPos((p) => snapToEdge(p))
+      }
     }
     const reRead = () => {
       void storageGet<StoredSettings>('sync', SETTINGS_KEY).then(applyStored)
@@ -133,27 +166,39 @@ export default function ToolkitOverlay() {
     }
   }, [inExt])
 
-  // 接收来自原生侧边栏页的「切换网页内抽屉」消息
+  // 接收来自扩展页的抽屉消息：切换 / 强制打开。
+  // 强制打开只把抽屉这一帧设为开，不改 ballAction —— 即不影响点击悬浮球的默认行为。
   useEffect(() => {
     if (!inExt) return
-    const listener = (message: unknown) => {
-      if ((message as { action?: string })?.action === MSG_TOGGLE_DRAWER) {
+    const listener = (
+      message: unknown,
+      _sender: chrome.runtime.MessageSender,
+      sendResponse: (response?: unknown) => void,
+    ) => {
+      const action = (message as { action?: string })?.action
+      if (action === MSG_TOGGLE_DRAWER) {
         setDrawerOpen((open) => !open)
+      } else if (action === MSG_OPEN_DRAWER) {
+        setDrawerOpen(true)
+        sendResponse({ ok: true })
+      } else if (action === MSG_CLOSE_DRAWER) {
+        setDrawerOpen(false)
       }
     }
     chrome.runtime.onMessage.addListener(listener)
     return () => chrome.runtime.onMessage.removeListener(listener)
   }, [inExt])
 
-  // 拖拽结束后落点：更新状态 + 持久化
+  // 拖拽结束后落点：更新状态 + 持久化（存绝对坐标）
   const handleDrop = useCallback(
     (next: BallPos) => {
-      setPos(next)
+      const clamped = ballSnap ? snapToEdge(next) : clampBallPos(next)
+      setPos(clamped)
       if (inExt) {
-        void storageSet('local', POS_KEY, { side: next.side, yFrac: topToFrac(next.topPx) })
+        void storageSet('local', POS_KEY, { x: clamped.x, y: clamped.y })
       }
     },
-    [inExt],
+    [inExt, ballSnap],
   )
 
   // 悬浮球点击：抽屉开着则收起；否则按配置唤起原生侧边栏或打开抽屉
@@ -171,6 +216,8 @@ export default function ToolkitOverlay() {
       })
       return
     }
+    // 打开网页内抽屉前先把原生侧边栏关掉（互斥：两种工具箱不同时显示）
+    if (inExt) void chrome.runtime.sendMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
     setDrawerOpen(true)
   }, [ballAction, drawerOpen, inExt, showNotice])
 
@@ -178,7 +225,7 @@ export default function ToolkitOverlay() {
 
   return (
     <>
-      <FloatingBall pos={pos} onDrop={handleDrop} onToggle={handleBallClick} />
+      <FloatingBall pos={pos} snap={ballSnap} onDrop={handleDrop} onToggle={handleBallClick} />
       {drawerOpen && <Drawer onClose={() => setDrawerOpen(false)} />}
       {notice && inExt && (
         <div className='tek__toast' role='status'>

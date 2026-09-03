@@ -583,7 +583,7 @@
   border: 1px solid var(--tk-input);
   border-radius: var(--tk-radius);
   background: var(--tk-card);
-  font-size: 12px;
+  font-size: var(--tk-text-sm);
   color: var(--tk-foreground);
   outline: none;
   transition:

@@ -11,41 +11,23 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 import type { ToolId } from '@/tools/registry'
-import { DEFAULT_TOOLS, defaultToolLayout, normalizeToolLayout } from '@/tools/registry'
+import { DEFAULT_TOOLS, defaultToolLayout } from '@/tools/registry'
 import Icon from '@/ui/Icon'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
+import { useFontScale } from '@/utils/fontScale'
 import type { BallAction } from '@/utils/messages'
+import { defaultSettings, FONT_SCALE_OPTIONS, normalizeSettings } from '@/utils/settings'
+import type { Settings } from '@/utils/settings'
 
 import './index.css'
 
-interface Settings {
-  quickOpen: boolean
-  showEnvBadge: boolean
-  ballAction: BallAction
-  /** 工具顺序（含隐藏项），对应 registry 全量 */
-  toolOrder: ToolId[]
-  /** 工具显隐 */
-  toolEnabled: Record<string, boolean>
-}
-
 interface ToggleField {
-  key: 'quickOpen' | 'showEnvBadge'
+  key: 'quickOpen' | 'ballSnap'
   title: string
   desc: string
 }
 
 const TOOL_META = new Map(DEFAULT_TOOLS.map((t) => [t.id, t]))
-
-function defaultSettings(): Settings {
-  const layout = defaultToolLayout()
-  return {
-    quickOpen: true,
-    showEnvBadge: false,
-    ballAction: 'drawer',
-    toolOrder: layout.order,
-    toolEnabled: layout.enabled,
-  }
-}
 
 const TOGGLE_FIELDS: ToggleField[] = [
   {
@@ -54,23 +36,11 @@ const TOGGLE_FIELDS: ToggleField[] = [
     desc: '在网页上显示可拖拽的 Toolkit 悬浮球（由 Content Script 注入）',
   },
   {
-    key: 'showEnvBadge',
-    title: '显示版本角标',
-    desc: '在 Popup 首页展示当前运行环境标识',
+    key: 'ballSnap',
+    title: '悬浮球吸边',
+    desc: '拖拽后自动贴靠屏幕左右两侧；关闭后悬浮球可以停留在任意位置',
   },
 ]
-
-function normalizeSettings(raw: Partial<Settings> | null | undefined): Settings {
-  const base = defaultSettings()
-  const layout = normalizeToolLayout(raw?.toolOrder, raw?.toolEnabled)
-  return {
-    quickOpen: raw?.quickOpen ?? base.quickOpen,
-    showEnvBadge: raw?.showEnvBadge ?? base.showEnvBadge,
-    ballAction: raw?.ballAction === 'native' ? 'native' : base.ballAction,
-    toolOrder: layout.order,
-    toolEnabled: layout.enabled,
-  }
-}
 
 interface SortableToolRowProps {
   id: ToolId
@@ -115,8 +85,10 @@ function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
 /** Options 设置页：配置项 + chrome.storage.sync 持久化（含工具箱能力显隐与拖拽排序） */
 export default function OptionsPage() {
   const [settings, setSettings] = useState<Settings>(defaultSettings)
-  const [saved, setSaved] = useState(false)
   const inExt = isExtension()
+
+  // 使整体字体大小随设置即时缩放（含本设置页）
+  useFontScale()
 
   const sensors = useSensors(
     // 指针移动超过 6px 才视为拖拽，避免误触（保证开关点击可用）
@@ -138,18 +110,21 @@ export default function OptionsPage() {
 
   function persist(next: Settings) {
     setSettings(next)
-    setSaved(false)
     if (inExt) {
-      void storageSet('sync', 'settings', next).then((ok) => setSaved(ok))
+      void storageSet('sync', 'settings', next)
     }
   }
 
-  function toggle(key: 'quickOpen' | 'showEnvBadge') {
+  function toggle(key: 'quickOpen' | 'ballSnap') {
     persist({ ...settings, [key]: !settings[key] })
   }
 
   function setBallAction(ballAction: BallAction) {
     persist({ ...settings, ballAction })
+  }
+
+  function setFontScale(fontScale: number) {
+    persist({ ...settings, fontScale })
   }
 
   function toggleTool(id: ToolId) {
@@ -182,7 +157,9 @@ export default function OptionsPage() {
           Toolkit Extension 设置
         </h1>
         <p className='opt__env'>
-          {inExt ? '已连接 chrome.storage.sync' : '浏览器预览模式（配置不会被持久化）'}
+          {inExt
+            ? '已保存到 chrome.storage.sync（settings）'
+            : '浏览器预览模式（配置不会被持久化）'}
         </p>
       </header>
 
@@ -226,10 +203,30 @@ export default function OptionsPage() {
               </select>
             </li>
           </ul>
-          <p className={`opt__saved${saved ? ' opt__saved--show' : ''}`}>
-            <Icon name='check' size={12} />
-            已保存到 chrome.storage.sync（settings）
-          </p>
+        </div>
+
+        <div className='opt__card'>
+          <h2>显示与无障碍</h2>
+          <ul className='opt__list'>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>整体字体大小</strong>
+                <p>调整所有界面的文字与按钮大小，让内容更易读。</p>
+              </div>
+              <select
+                className='opt__select'
+                value={settings.fontScale}
+                onChange={(e) => setFontScale(Number(e.target.value))}
+                aria-label='整体字体大小'
+              >
+                {FONT_SCALE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </li>
+          </ul>
         </div>
 
         <div className='opt__card'>
@@ -264,27 +261,6 @@ export default function OptionsPage() {
           <p className='opt__env opt__env--hint'>
             拖动把手调整顺序（带滑动动画）；关闭开关即在工具箱隐藏该能力。修改即时保存。
           </p>
-        </div>
-
-        <div className='opt__card opt__card--muted'>
-          <h2>扩展骨架说明</h2>
-          <ul className='opt__notes'>
-            <li>
-              Popup → <code>popup.html</code>（<code>src/popup/</code>）
-            </li>
-            <li>
-              Options → <code>options.html</code>（<code>src/options/</code>）
-            </li>
-            <li>
-              原生侧边栏 → <code>sidepanel.html</code>（<code>src/sidepanel/</code>）
-            </li>
-            <li>
-              页面注入 → <code>src/content/</code>（悬浮球 + 网页内抽屉）
-            </li>
-            <li>
-              Background → <code>src/background/</code>（唤起侧边栏中转）
-            </li>
-          </ul>
         </div>
       </main>
     </div>

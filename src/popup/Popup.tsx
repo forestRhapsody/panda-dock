@@ -1,20 +1,36 @@
 import { useState } from 'react'
 
-import Home from '@/pages/home'
 import Icon from '@/ui/Icon'
+import { closeDrawerInActiveTab, openDrawerInActiveTab } from '@/utils/drawer'
 import { isExtension, openOptionsPage } from '@/utils/env'
-import { openNativeSidePanel } from '@/utils/sidePanel'
+import { useFontScale } from '@/utils/fontScale'
+import { closeNativeSidePanel, openNativeSidePanel } from '@/utils/sidePanel'
+
+import QuickSettings from './QuickSettings'
 
 import './index.css'
 
-/** Popup 弹窗界面：顶部工具栏 + 首页内容 */
+/** Popup 弹窗界面：顶部工具栏 + 打开工具箱快捷操作 + 快捷设置 */
 export default function Popup() {
   const inExt = isExtension()
+  useFontScale()
   const [nativeFailed, setNativeFailed] = useState(false)
+  const [drawerFailed, setDrawerFailed] = useState(false)
 
   async function openPanel() {
+    // 互斥：先关掉当前页的网页内抽屉，再唤起侧边栏；打开成功后自动关闭本 popup 面板
+    await closeDrawerInActiveTab()
     const ok = await openNativeSidePanel()
     setNativeFailed(!ok)
+    if (ok) window.close()
+  }
+
+  async function openDrawer() {
+    // 互斥：先关掉原生侧边栏，再在当前页打开网页内抽屉；打开成功后自动关闭本 popup 面板
+    await closeNativeSidePanel()
+    const ok = await openDrawerInActiveTab()
+    setDrawerFailed(!ok)
+    if (ok) window.close()
   }
 
   return (
@@ -36,19 +52,32 @@ export default function Popup() {
       </header>
       {inExt && (
         <div className='pop__native'>
-          <button
-            type='button'
-            className='tk-btn tk-btn--primary tk-btn--block'
-            onClick={() => void openPanel()}
-          >
-            <Icon name='panel-right' size={14} />
-            在浏览器侧边栏打开工具箱
-          </button>
+          <div className='pop__actions'>
+            <button
+              type='button'
+              className='tk-btn tk-btn--primary tk-btn--block'
+              onClick={() => void openPanel()}
+            >
+              <Icon name='panel-right' size={14} />
+              在浏览器侧边栏打开工具箱
+            </button>
+            <button
+              type='button'
+              className='tk-btn tk-btn--block'
+              onClick={() => void openDrawer()}
+            >
+              <Icon name='window' size={14} />
+              使用网页内抽屉打开
+            </button>
+          </div>
           {nativeFailed && <p className='pop__native-hint'>未能唤起侧边栏，请重试或更新 Chrome</p>}
+          {drawerFailed && (
+            <p className='pop__native-hint'>当前页面无法打开抽屉（非 http(s) 或未注入）</p>
+          )}
         </div>
       )}
       <main className='pop__body'>
-        <Home />
+        <QuickSettings />
       </main>
     </div>
   )

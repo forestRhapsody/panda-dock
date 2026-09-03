@@ -1,4 +1,8 @@
-import { MSG_OPEN_NATIVE_SIDE_PANEL, MSG_OPEN_OPTIONS } from '@/utils/messages'
+import {
+  MSG_CLOSE_NATIVE_SIDE_PANEL,
+  MSG_OPEN_NATIVE_SIDE_PANEL,
+  MSG_OPEN_OPTIONS,
+} from '@/utils/messages'
 
 /**
  * Background Service Worker：
@@ -14,6 +18,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (action === MSG_OPEN_OPTIONS) {
     void chrome.tabs.create({ url: chrome.runtime.getURL('options.html') }).then(
+      () => sendResponse(true),
+      () => sendResponse(false),
+    )
+    return true // 保持消息通道以异步 sendResponse
+  }
+
+  // 关闭原生侧边栏（content 开抽屉前先把侧边栏关掉，保证两种工具箱不同时显示）
+  if (action === MSG_CLOSE_NATIVE_SIDE_PANEL) {
+    const windowId = sender?.tab?.windowId
+    if (windowId == null || typeof chrome.sidePanel.close !== 'function') {
+      sendResponse(false)
+      return undefined
+    }
+    void chrome.sidePanel.close({ windowId }).then(
       () => sendResponse(true),
       () => sendResponse(false),
     )
