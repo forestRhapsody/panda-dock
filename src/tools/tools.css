@@ -385,9 +385,11 @@
   color: var(--tk-muted-foreground);
   cursor: pointer;
   white-space: nowrap;
+  touch-action: none;
   transition:
     color 0.15s,
-    border-color 0.15s;
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .tw-nav__btn:hover {
@@ -398,6 +400,16 @@
   color: var(--tk-foreground);
   border-bottom-color: var(--tk-primary);
   font-weight: 600;
+}
+
+/* 拖拽排序中的选项卡：轻微抬升，提示可放置 */
+.tw-nav__btn--drag {
+  z-index: 1;
+  background: var(--tk-muted);
+  color: var(--tk-foreground);
+  border-radius: var(--tk-radius-sm);
+  box-shadow: var(--tk-shadow-md);
+  cursor: grabbing;
 }
 
 /* —— JWT 标准声明列表 —— */

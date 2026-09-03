@@ -1,10 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
+import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
-import { extVersion, isExtension, openOptionsPage, storageGet } from '@/utils/env'
+import { extVersion, isExtension, openOptionsPage, storageGet, storageSet } from '@/utils/env'
+import { normalizeSettings } from '@/utils/settings'
+import type { Settings } from '@/utils/settings'
 
 import Base64Tool from './Base64Tool'
 import JsonTool from './JsonTool'
@@ -29,20 +40,83 @@ const TOOL_COMPONENTS: Record<ToolId, () => ReactNode> = {
 
 const NAV_PAD = 8
 
+interface SortableTabProps {
+  id: ToolId
+  label: string
+  selected: boolean
+  onSelect: (id: ToolId) => void
+}
+
+/** 单个可排序选项卡：按住拖动可调整顺序（保持点击仍能激活，与 Chrome 标签页一致） */
+function SortableTab({ id, label, selected, onSelect }: SortableTabProps) {
+  const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  return (
+    <button
+      ref={setNodeRef}
+      type='button'
+      role='tab'
+      aria-selected={selected}
+      data-tool={id}
+      className={`tw-nav__btn${selected ? ' tw-nav__btn--on' : ''}${isDragging ? ' tw-nav__btn--drag' : ''}`}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      {...listeners}
+      onClick={() => {
+        if (!isDragging) onSelect(id)
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+/**
+ * 把「可见项的新顺序」回填到完整 `order`（含隐藏工具）：
+ * 隐藏工具保持原位，可见工具按新顺序落到相对象槽位。
+ */
+function rebuildOrder(
+  fullOrder: ToolId[],
+  enabled: Record<string, boolean>,
+  nextVisibleIds: ToolId[],
+): ToolId[] {
+  let vi = 0
+  const used = new Set<ToolId>()
+  const out: ToolId[] = []
+  for (const id of fullOrder) {
+    if (enabled[id] !== false) {
+      const next = nextVisibleIds[vi] ?? id
+      out.push(next)
+      used.add(next)
+      vi++
+    } else {
+      out.push(id)
+    }
+  }
+  for (const id of nextVisibleIds) if (!used.has(id)) out.push(id)
+  return out
+}
+
 /**
  * 工具箱页面（共享 UI）：
  * 同一个页面被原生侧边栏(sidepanel.html)、网页内抽屉(content Drawer)复用。
  * - 显示哪些工具、顺序如何，由 Options 里的配置（chrome.storage.sync）决定；
+ * - 选项卡可**按住拖动排序**（chrome.storage.sync 即时持久化，Options 同步）；
  * - 配置修改后通过 chrome.storage.onChanged 即时同步到已打开的页面；
  * - 选项卡超出容器宽度时自动滚动，并把激活项滚到可视区（参考 Vant Tabs）。
  */
 export default function ToolsApp({ headerActions }: ToolsAppProps) {
   const { t } = useTranslation()
   const inExt = isExtension()
-  const [tools, setTools] = useState<ToolMeta[]>(() => visibleTools(defaultToolLayout()))
+  const [order, setOrder] = useState<ToolId[]>(() => defaultToolLayout().order)
+  const [enabled, setEnabled] = useState<Record<string, boolean>>(() => defaultToolLayout().enabled)
   const [active, setActive] = useState<ToolId>('base64')
   const navRef = useRef<HTMLElement>(null)
   const initializedRef = useRef(false)
+  const tools = useMemo<ToolMeta[]>(() => visibleTools({ order, enabled }), [order, enabled])
+
+  const sensors = useSensors(
+    // 指针移动超过 6px 才视为拖拽，避免误触（保证点击选项卡仍能正常激活）
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  )
 
   // 读取工具显示配置（浏览器预览时用默认值：全部显示）
   useEffect(() => {
@@ -50,11 +124,11 @@ export default function ToolsApp({ headerActions }: ToolsAppProps) {
     let alive = true
     const apply = (settings: { toolOrder?: unknown; toolEnabled?: unknown } | null | undefined) => {
       const layout = normalizeToolLayout(settings?.toolOrder, settings?.toolEnabled)
-      const list = visibleTools(layout)
-      setTools(list)
+      setOrder(layout.order)
+      setEnabled(layout.enabled)
       // 打开时激活「配置顺序」里的第一个可见工具（而非硬编码 base64）；仅首次生效
       if (!initializedRef.current) {
-        setActive(list[0]?.id ?? 'base64')
+        setActive(visibleTools(layout)[0]?.id ?? 'base64')
         initializedRef.current = true
       }
     }
@@ -79,6 +153,28 @@ export default function ToolsApp({ headerActions }: ToolsAppProps) {
   useEffect(() => {
     if (!activeVisible) setActive(tools[0]?.id ?? 'base64')
   }, [activeVisible, tools])
+
+  // 拖拽排序结束：更新顺序并持久化到 settings.toolOrder
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event
+      if (!over || active.id === over.id) return
+      const curVisibleIds = visibleTools({ order, enabled }).map((tool) => tool.id)
+      const from = curVisibleIds.indexOf(active.id as ToolId)
+      const to = curVisibleIds.indexOf(over.id as ToolId)
+      if (from < 0 || to < 0) return
+      const nextVisibleIds = arrayMove(curVisibleIds, from, to)
+      const nextOrder = rebuildOrder(order, enabled, nextVisibleIds)
+      setOrder(nextOrder)
+      if (inExt) {
+        void storageGet<Partial<Settings>>('sync', 'settings').then((cur) => {
+          const next = normalizeSettings({ ...(cur ?? {}), toolOrder: nextOrder })
+          void storageSet('sync', 'settings', next)
+        })
+      }
+    },
+    [order, enabled, inExt],
+  )
 
   /** 把激活的选项卡滚动到可视区（容器内水平滚动，不影响页面滚动） */
   const revealActiveTab = useCallback((toolId: ToolId) => {
@@ -123,19 +219,22 @@ export default function ToolsApp({ headerActions }: ToolsAppProps) {
       </header>
 
       <nav ref={navRef} className='tw-nav' role='tablist' aria-label={t('app.nav_label')}>
-        {tools.map((tool) => (
-          <button
-            key={tool.id}
-            type='button'
-            role='tab'
-            aria-selected={active === tool.id}
-            data-tool={tool.id}
-            className={`tw-nav__btn${active === tool.id ? ' tw-nav__btn--on' : ''}`}
-            onClick={() => setActive(tool.id)}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={tools.map((tool) => tool.id)}
+            strategy={horizontalListSortingStrategy}
           >
-            {t(`tool.registry.${tool.id}`)}
-          </button>
-        ))}
+            {tools.map((tool) => (
+              <SortableTab
+                key={tool.id}
+                id={tool.id}
+                label={t(`tool.registry.${tool.id}`)}
+                selected={active === tool.id}
+                onSelect={setActive}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
       </nav>
 
       <main className='tw__body' role='tabpanel'>
