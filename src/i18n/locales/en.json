@@ -130,7 +130,7 @@
         "search": "Query string",
         "hash": "Hash"
       },
-      "note": "Supports URLs with or without a protocol; relative paths are resolved against the current page origin."
+      "note": "Extracts and parses a URL from the input text; domains without a protocol automatically get https, and relative paths resolve against the current page origin."
     },
     "timestamp": {
       "sourceSeconds": "Parsed as Unix seconds",

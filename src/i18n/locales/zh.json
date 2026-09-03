@@ -130,7 +130,7 @@
         "search": "查询串",
         "hash": "哈希"
       },
-      "note": "支持带协议或无协议的网址；相对路径以当前页 origin 为基准解析。"
+      "note": "会从输入文本中识别并解析网址；无协议的完整域名会自动补 https，相对路径按当前页 origin 解析。"
     },
     "timestamp": {
       "sourceSeconds": "按 Unix 秒解析",

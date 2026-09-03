@@ -18,15 +18,41 @@ interface ParsedUrl {
   params: [string, string][]
 }
 
-/** 解析 URL：先用原生 URL（绝对），失败再按当前页 origin 兜底（相对路径） */
-function parseUrl(input: string): ParsedUrl {
-  const base = (typeof window !== 'undefined' && window.location.href) || 'http://localhost/'
-  let url: URL
+/** 当前页 origin，用作相对路径的解析基准 */
+function currentBase(): string {
+  return (typeof window !== 'undefined' && window.location.href) || 'http://localhost/'
+}
+
+/** 从文本中抽取 scheme:// 的网址（去除前后的干扰文字与尾部标点） */
+function extractUrlFromText(text: string): string | null {
+  const m = text.match(/[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s<>"'()]+/)
+  if (!m) return null
+  return m[0].replace(/[.,;:!?'")\]}]+$/, '')
+}
+
+/** 把候选字符串解析为 URL：绝对 → 无协议域名(补 https) → 相对路径(按当前页 origin) */
+function buildUrl(source: string): URL {
   try {
-    url = new URL(input)
+    return new URL(source)
   } catch {
-    url = new URL(input, base)
+    // 空的继续往下兜底
   }
+  // 无协议但像完整域名：补 https
+  if (/^[a-z0-9.-]+\.[a-z]{2,}([/?#].*)?$/i.test(source)) {
+    return new URL(`https://${source}`)
+  }
+  // 相对路径（以 / ./ ../ 开头）：按当前页 origin 解析
+  if (/^[./]/.test(source)) {
+    return new URL(source, currentBase())
+  }
+  throw new Error('invalid')
+}
+
+/** 解析 URL：先从文本抽取网址，再交给 buildUrl（避免把干扰文字当作相对路径） */
+function parseUrl(input: string): ParsedUrl {
+  const text = input.trim()
+  const extracted = extractUrlFromText(text) ?? text
+  const url = buildUrl(extracted)
   const parts: UrlPart[] = [
     { key: 'protocol', value: url.protocol },
     { key: 'origin', value: url.origin },
