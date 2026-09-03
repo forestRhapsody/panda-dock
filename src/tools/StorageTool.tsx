@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
+import JsonTextarea from './JsonTextarea'
 import {
   clearStorageArea,
   isPageContext,
@@ -26,6 +27,22 @@ function fmtSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+}
+
+/** 尝试解析 JSON：用于判断存储值是否为 JSON，以及编辑时的实时校验 */
+function parseJson(text: string): { ok: true; value: unknown } | { ok: false; error: string } {
+  const t = text.trim()
+  if (!t) return { ok: false, error: '内容为空' }
+  try {
+    return { ok: true, value: JSON.parse(t) }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'JSON 无效' }
+  }
+}
+
+/** 去除换行（保留行内空格），把多行文本紧凑为单行（用于保存非法 JSON 时去掉换行） */
+function stripLineBreaks(text: string): string {
+  return text.replace(/[ \t]*\r?\n[ \t]*/g, ' ').trim()
 }
 
 /**
@@ -94,6 +111,7 @@ export default function StorageTool() {
   const [filter, setFilter] = useState('')
   const [editingKey, setEditingKey] = useState<string | null>(null)
   const [draftValue, setDraftValue] = useState('')
+  const [editIsJson, setEditIsJson] = useState(false)
 
   /** 高优先级：自定义弹窗；仅极端情况（自定义弹窗无法渲染）下降级到 window.confirm */
   function requestConfirm(opts: ConfirmState): void {
@@ -169,32 +187,70 @@ export default function StorageTool() {
     })
   }
 
-  // 双击进入编辑；值过长已截断时禁止编辑（避免覆盖完整数据）
+  // 双击进入编辑；值过长已截断时禁止编辑（避免覆盖完整数据）。
+  // 若值是合法 JSON，则按 JSON 方式编辑（自动缩进格式化 + 校验）。
   function startEdit(entry: StorageEntry) {
     if (entry.truncated) {
       setStatus({ kind: 'info', text: '值过长已截断，为保护完整数据，暂不支持编辑' })
       return
     }
+    const parsed = parseJson(entry.value)
+    const isJson = parsed.ok
+    setEditIsJson(isJson)
     setEditingKey(entry.key)
-    setDraftValue(entry.value)
+    setDraftValue(isJson ? JSON.stringify(parsed.value, null, 2) : entry.value)
   }
 
   function cancelEdit() {
     setEditingKey(null)
     setDraftValue('')
+    setEditIsJson(false)
   }
 
-  // 保存编辑：写回存储后刷新
-  async function saveEdit() {
-    if (editingKey == null) return
-    const res = await setStorageValue(area, editingKey, draftValue)
+  // 写回存储并刷新
+  async function writeValue(key: string, value: string) {
+    const res = await setStorageValue(area, key, value)
     if (!res.ok) {
       setStatus({ kind: 'err', text: res.error })
       return
     }
-    setStatus({ kind: 'ok', text: `已更新 ${editingKey}` })
+    setStatus({ kind: 'ok', text: `已更新 ${key}` })
     cancelEdit()
     void load()
+  }
+
+  // 保存编辑：合法 JSON 压缩保存；非法 JSON 弹窗确认后可保存原文。
+  // 非法提示只出现在编辑行下方（draftJson 状态），不设底部全局错误。
+  function saveEdit() {
+    if (editingKey == null) return
+    if (!editIsJson) {
+      void writeValue(editingKey, draftValue)
+      return
+    }
+    const parsed = parseJson(draftValue)
+    if (parsed.ok) {
+      void writeValue(editingKey, JSON.stringify(parsed.value))
+      return
+    }
+    // JSON 无效：弹窗提示，用户可选择仍保存非法 JSON（保存前去换行）
+    requestConfirm({
+      title: 'JSON 无效',
+      message: '当前内容不是合法 JSON。仍要保存吗？（将去除换行后保存）',
+      onConfirm: () => void writeValue(editingKey, stripLineBreaks(draftValue)),
+    })
+  }
+
+  // 当前草稿是否是合法 JSON（用于编辑时的实时校验与格式化/压缩）
+  const draftJson = parseJson(draftValue)
+
+  function formatDraft() {
+    if (!draftJson.ok) return
+    setDraftValue(JSON.stringify(draftJson.value, null, 2))
+  }
+
+  function minifyDraft() {
+    if (!draftJson.ok) return
+    setDraftValue(JSON.stringify(draftJson.value))
   }
 
   const data = result?.ok ? result.data : null
@@ -278,15 +334,51 @@ export default function StorageTool() {
               </div>
               {editingKey === entry.key ? (
                 <div className='tw-store__edit'>
-                  <AutoArea
-                    className='tw-store__editval'
-                    value={draftValue}
-                    spellCheck={false}
-                    autoFocus
-                    maxHeight={240}
-                    onChange={(e) => setDraftValue(e.target.value)}
-                  />
+                  {editIsJson ? (
+                    <JsonTextarea
+                      value={draftValue}
+                      autoFocus
+                      maxHeight={240}
+                      onChange={(e) => setDraftValue(e.target.value)}
+                    />
+                  ) : (
+                    <AutoArea
+                      className='tw-store__editval'
+                      value={draftValue}
+                      spellCheck={false}
+                      autoFocus
+                      maxHeight={240}
+                      onChange={(e) => setDraftValue(e.target.value)}
+                    />
+                  )}
+                  {editIsJson && (
+                    <p className={`tw-status tw-status--${draftJson.ok ? 'ok' : 'err'}`}>
+                      {draftJson.ok
+                        ? 'JSON 有效（保存时自动压缩为单行）'
+                        : `JSON 无效：${draftJson.error}`}
+                    </p>
+                  )}
                   <div className='tw-store__edit-actions'>
+                    {editIsJson && (
+                      <>
+                        <button
+                          type='button'
+                          className='tw-link'
+                          disabled={!draftJson.ok}
+                          onClick={formatDraft}
+                        >
+                          格式化
+                        </button>
+                        <button
+                          type='button'
+                          className='tw-link'
+                          disabled={!draftJson.ok}
+                          onClick={minifyDraft}
+                        >
+                          压缩
+                        </button>
+                      </>
+                    )}
                     <button type='button' className='tw-link' onClick={cancelEdit}>
                       取消
                     </button>

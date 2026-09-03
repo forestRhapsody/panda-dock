@@ -24,9 +24,8 @@ export default function TimestampTool() {
       : { kind: 'err', text: '无法识别：请输入 Unix 秒/毫秒或可解析的日期文本' }
     : { kind: 'info', text: '输入时间戳（秒/毫秒）或日期文本，自动识别并实时转换' }
 
-  function fillNow(kind: 'secs' | 'ms') {
-    const now = Date.now()
-    setInput(kind === 'secs' ? String(Math.floor(now / 1000)) : String(now))
+  function fillNow() {
+    setInput(String(Date.now()))
   }
 
   return (
@@ -44,11 +43,8 @@ export default function TimestampTool() {
       </label>
 
       <div className='tw-actions'>
-        <button type='button' className='tw-btn' onClick={() => fillNow('secs')}>
-          当前秒
-        </button>
-        <button type='button' className='tw-btn' onClick={() => fillNow('ms')}>
-          当前毫秒
+        <button type='button' className='tw-btn' onClick={fillNow}>
+          当前时间
         </button>
         <button type='button' className='tw-btn' onClick={() => setInput('')}>
           清空

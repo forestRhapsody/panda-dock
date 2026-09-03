@@ -312,6 +312,80 @@
   color: var(--tk-muted-foreground);
 }
 
+/* —— 可编辑的 JSON 高亮输入框（高亮层 + 透明 textarea） —— */
+.json-editor {
+  position: relative;
+}
+
+.json-editor__hl,
+.json-editor__input {
+  font-family: var(--tk-font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 56px;
+  max-height: 240px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  border-radius: var(--tk-radius-sm);
+}
+
+.json-editor__hl {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--tk-input);
+  background: var(--tk-card);
+  color: var(--tk-foreground);
+  pointer-events: none;
+}
+
+.json-editor__input {
+  position: relative;
+  display: block;
+  border: 1px solid var(--tk-input);
+  background: transparent;
+  color: transparent;
+  caret-color: var(--tk-foreground);
+  resize: vertical;
+  overflow: auto;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.json-editor__input::selection {
+  background: color-mix(in srgb, var(--tk-ring) 30%, transparent);
+  color: transparent;
+}
+
+.json-editor__input:focus {
+  border-color: var(--tk-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+}
+
+/* 高亮 token 颜色 */
+.json-editor__hl .jhl-key {
+  color: hsl(220 70% 45%);
+}
+.json-editor__hl .jhl-str {
+  color: hsl(150 52% 36%);
+}
+.json-editor__hl .jhl-num {
+  color: hsl(32 88% 42%);
+}
+.json-editor__hl .jhl-kw {
+  color: hsl(268 52% 50%);
+}
+.json-editor__hl .jhl-punc {
+  color: var(--tk-muted-foreground);
+}
+
 /* —— 工具箱选项卡导航 —— */
 
 .tw-nav {
