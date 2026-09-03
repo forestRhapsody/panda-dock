@@ -1,3 +1,5 @@
+import { MSG_OPEN_OPTIONS } from '@/utils/messages'
+
 /**
  * 扩展环境相关的小工具。
  * 所有对 chrome.* API 的访问都做了降级保护：
@@ -21,18 +23,34 @@ export function extVersion(): string {
 
 /**
  * 打开扩展设置页（options.html）。
- * 主路径 chrome.tabs.create 开新标签（不依赖用户手势，popup 等扩展页稳定）；
- * 该 API 在部分侧边栏上下文会被拒绝，此时用标准 Web API window.open 兜底，确保总能打开。
+ * 扩展页面（popup/options/sidepanel）有 chrome.tabs：直接用 chrome.tabs.create 开新标签。
+ * content script（抽屉）没有 chrome.tabs，且 window.open 打开扩展页会被 Chrome 以
+ * ERR_BLOCKED_BY_CLIENT 拦截 —— 改为经 background（MSG_OPEN_OPTIONS）打开。
  */
 export async function openOptionsPage(): Promise<void> {
   if (typeof chrome === 'undefined') return
   const url = chrome.runtime.getURL('options.html')
+
+  if (typeof chrome.tabs?.create === 'function') {
+    try {
+      await chrome.tabs.create({ url })
+      return
+    } catch {
+      // 落到 background
+    }
+  }
+
+  // content script 或 tabs.create 不可用：经 background 打开
   try {
-    await chrome.tabs.create({ url })
-    return
+    const ok = await chrome.runtime.sendMessage({ action: MSG_OPEN_OPTIONS })
+    if (ok === true) return
   } catch {
-    // 侧边栏等上下文 tabs.create 被拒：用标准 Web API 直接打开（任意上下文可用）
+    // 落到最后兜底
+  }
+  try {
     window.open(url, '_blank')
+  } catch {
+    // 忽略
   }
 }
 

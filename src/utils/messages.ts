@@ -6,6 +6,9 @@ export const MSG_TOGGLE_DRAWER = 'TOGGLE_TOOLKIT_DRAWER'
 /** content → background：请求尽力唤起浏览器原生侧边栏 */
 export const MSG_OPEN_NATIVE_SIDE_PANEL = 'OPEN_NATIVE_SIDE_PANEL'
 
+/** content → background：请求打开扩展设置页（options.html） */
+export const MSG_OPEN_OPTIONS = 'OPEN_OPTIONS_PAGE'
+
 /** 扩展页面(侧边栏等) → content：读取当前页 localStorage/sessionStorage */
 export const MSG_STORAGE_READ = 'TOOLKIT_STORAGE_READ'
 
