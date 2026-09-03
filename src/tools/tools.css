@@ -237,6 +237,13 @@
   background: #fff;
   flex: none;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tw-nav::-webkit-scrollbar {
+  display: none;
+  height: 0;
 }
 
 .tw-nav__btn {

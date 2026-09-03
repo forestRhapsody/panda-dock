@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 
-export const BALL_SIZE = 52
+export const DOCK_H = 52 // 圆形悬浮球直径
+const DOCK_R = DOCK_H / 2
 const EDGE_MARGIN = 8
 /** 拖拽多少像素以上视为「拖动」，否则视为「点击」 */
 const DRAG_THRESHOLD = 6
@@ -16,21 +17,13 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** 纵向位置限制在视口内 */
-export function clampBallTop(topPx: number): number {
-  return clamp(
-    topPx,
-    EDGE_MARGIN,
-    Math.max(EDGE_MARGIN, window.innerHeight - BALL_SIZE - EDGE_MARGIN),
-  )
+export function clampDockTop(topPx: number): number {
+  return clamp(topPx, EDGE_MARGIN, Math.max(EDGE_MARGIN, window.innerHeight - DOCK_H - EDGE_MARGIN))
 }
 
-interface DragState {
-  /** 当前元素左上角位置 */
-  x: number
-  y: number
-  /** 按下点在元素内的偏移 */
-  grabX: number
-  grabY: number
+interface DownState {
+  startPX: number
+  startPY: number
   moved: boolean
   active: boolean
 }
@@ -44,66 +37,73 @@ interface FloatingBallProps {
 }
 
 /**
- * 悬浮球：可自由拖拽，松手自动吸附到最近的左/右屏幕边缘；
- * 停靠时鼠标移开只露出一半，悬停时完整滑出。
+ * 悬浮触发器（最初样式：圆形悬浮球）：
+ * - 贴边停靠，鼠标移开只露一半、悬停完整滑出；
+ * - 按住拖动：整圆以指针为中心跟随，松手按最近一侧贴回并记忆位置；
+ * - 轻点（未位移）不产生任何定位变化，避免点击抽动。
  */
 export default function FloatingBall({ pos, onDrop, onToggle }: FloatingBallProps) {
-  const dragRef = useRef<DragState | null>(null)
-  const [dragXY, setDragXY] = useState<{ x: number; y: number } | null>(null)
+  const downRef = useRef<DownState | null>(null)
   const [hovered, setHovered] = useState(false)
+  const [floatXY, setFloatXY] = useState<{ x: number; y: number } | null>(null)
+  const lastXY = useRef({ x: 0, y: 0 })
 
   function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (e.button !== 0) return
     e.preventDefault()
-    const rect = e.currentTarget.getBoundingClientRect()
-    dragRef.current = {
-      x: rect.left,
-      y: rect.top,
-      grabX: e.clientX - rect.left,
-      grabY: e.clientY - rect.top,
+    downRef.current = {
+      startPX: e.clientX,
+      startPY: e.clientY,
       moved: false,
       active: true,
     }
     e.currentTarget.setPointerCapture(e.pointerId)
     setHovered(true)
-    setDragXY({ x: rect.left, y: rect.top })
   }
 
   function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
-    const d = dragRef.current
+    const d = downRef.current
     if (!d?.active) return
-    const nextX = clamp(e.clientX - d.grabX, 0, Math.max(0, window.innerWidth - BALL_SIZE))
-    const nextY = clampBallTop(e.clientY - d.grabY)
-    if (Math.hypot(nextX - d.x, nextY - d.y) >= DRAG_THRESHOLD) d.moved = true
-    d.x = nextX
-    d.y = nextY
-    setDragXY({ x: nextX, y: nextY })
+    const dx = e.clientX - d.startPX
+    const dy = e.clientY - d.startPY
+
+    // 未超过阈值前保持原样，轻点=点击，绝不重新定位（消除抽动）
+    if (!d.moved) {
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return
+      d.moved = true
+    }
+
+    // 拖动：整圆以指针为中心跟随
+    const nextX = clamp(e.clientX - DOCK_R, 0, Math.max(0, window.innerWidth - DOCK_H))
+    const nextY = clampDockTop(e.clientY - DOCK_R)
+    lastXY.current = { x: nextX, y: nextY }
+    setFloatXY(lastXY.current)
+    setHovered(true)
   }
 
-  function endDrag(e: ReactPointerEvent<HTMLDivElement>) {
-    const d = dragRef.current
+  function endDrag() {
+    const d = downRef.current
     if (!d?.active) return
     d.active = false
-    dragRef.current = null
-    setDragXY(null)
+    downRef.current = null
+    setFloatXY(null)
 
     if (d.moved) {
-      // 吸附到水平方向更近的一侧
-      const centerX = d.x + BALL_SIZE / 2
+      // 吸附到水平方向更近的一侧（按圆球圆心判定）
+      const centerX = lastXY.current.x + DOCK_R
       const side = centerX <= window.innerWidth / 2 ? 'left' : 'right'
-      onDrop({ side, topPx: clampBallTop(d.y) })
+      onDrop({ side, topPx: clampDockTop(lastXY.current.y) })
     } else {
       onToggle()
     }
-    // 松手后鼠标若仍停在球上则保持展开
-    setHovered(document.elementFromPoint(e.clientX, e.clientY)?.closest('.tek__ball') != null)
   }
 
-  const visible = hovered || dragXY != null
+  const visible = hovered || floatXY != null
 
   let style: CSSProperties
-  if (dragXY) {
-    style = { left: dragXY.x, top: dragXY.y, transition: 'none' }
+  if (floatXY) {
+    // 拖动：整圆跟随指针
+    style = { left: floatXY.x, top: floatXY.y, transition: 'none' }
   } else {
     // 未悬停时只露一半：沿边缘向内收 50% 宽度
     const translate = visible
@@ -121,7 +121,7 @@ export default function FloatingBall({ pos, onDrop, onToggle }: FloatingBallProp
     <div
       role='button'
       aria-label='打开工具箱'
-      className={`tek__ball${dragXY ? ' tek__ball--drag' : ''}${visible ? ' tek__ball--visible' : ''}`}
+      className={`tek__dock${floatXY ? ' tek__dock--drag' : ''}`}
       style={style}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

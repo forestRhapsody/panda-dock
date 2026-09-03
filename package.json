@@ -19,6 +19,9 @@
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@eslint/js": "^9.33.0",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",

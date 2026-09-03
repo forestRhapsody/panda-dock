@@ -1,5 +1,17 @@
 import { useEffect, useState } from 'react'
 
+import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+
+import type { ToolId } from '@/tools/registry'
+import { DEFAULT_TOOLS, defaultToolLayout, normalizeToolLayout } from '@/tools/registry'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
 
@@ -9,6 +21,10 @@ interface Settings {
   quickOpen: boolean
   showEnvBadge: boolean
   ballAction: BallAction
+  /** 工具顺序（含隐藏项），对应 registry 全量 */
+  toolOrder: ToolId[]
+  /** 工具显隐 */
+  toolEnabled: Record<string, boolean>
 }
 
 interface ToggleField {
@@ -17,10 +33,17 @@ interface ToggleField {
   desc: string
 }
 
-const DEFAULTS: Settings = {
-  quickOpen: true,
-  showEnvBadge: false,
-  ballAction: 'drawer',
+const TOOL_META = new Map(DEFAULT_TOOLS.map((t) => [t.id, t]))
+
+function defaultSettings(): Settings {
+  const layout = defaultToolLayout()
+  return {
+    quickOpen: true,
+    showEnvBadge: false,
+    ballAction: 'drawer',
+    toolOrder: layout.order,
+    toolEnabled: layout.enabled,
+  }
 }
 
 const TOGGLE_FIELDS: ToggleField[] = [
@@ -37,18 +60,67 @@ const TOGGLE_FIELDS: ToggleField[] = [
 ]
 
 function normalizeSettings(raw: Partial<Settings> | null | undefined): Settings {
+  const base = defaultSettings()
+  const layout = normalizeToolLayout(raw?.toolOrder, raw?.toolEnabled)
   return {
-    quickOpen: raw?.quickOpen ?? DEFAULTS.quickOpen,
-    showEnvBadge: raw?.showEnvBadge ?? DEFAULTS.showEnvBadge,
-    ballAction: raw?.ballAction === 'native' ? 'native' : DEFAULTS.ballAction,
+    quickOpen: raw?.quickOpen ?? base.quickOpen,
+    showEnvBadge: raw?.showEnvBadge ?? base.showEnvBadge,
+    ballAction: raw?.ballAction === 'native' ? 'native' : base.ballAction,
+    toolOrder: layout.order,
+    toolEnabled: layout.enabled,
   }
 }
 
-/** Options 设置页：配置项 + chrome.storage.sync 持久化 */
+interface SortableToolRowProps {
+  id: ToolId
+  label: string
+  on: boolean
+  onToggle: (id: ToolId) => void
+}
+
+/** 单个可排序工具行：拖动「⠿」把手调整顺序（dnd-kit 自动处理滑动/回弹动画） */
+function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+  return (
+    <li
+      ref={setNodeRef}
+      className={`opt-tools__row${isDragging ? ' opt-tools__row--drag' : ''}`}
+      style={style}
+    >
+      <span className='opt-tools__grip' {...attributes} {...listeners} title='按住拖拽调整顺序'>
+        ⠿
+      </span>
+      <span className='opt-tools__name'>{label}</span>
+      <span className='opt-tools__hint'>{on ? '显示中' : '已隐藏'}</span>
+      <button
+        type='button'
+        role='switch'
+        aria-checked={on}
+        className={`opt__switch${on ? ' opt__switch--on' : ''}`}
+        onClick={() => onToggle(id)}
+      >
+        <span className='opt__switch-knob' />
+      </button>
+    </li>
+  )
+}
+
+/** Options 设置页：配置项 + chrome.storage.sync 持久化（含工具箱能力显隐与拖拽排序） */
 export default function OptionsPage() {
-  const [settings, setSettings] = useState<Settings>(DEFAULTS)
+  const [settings, setSettings] = useState<Settings>(defaultSettings)
   const [saved, setSaved] = useState(false)
   const inExt = isExtension()
+
+  const sensors = useSensors(
+    // 指针移动超过 6px 才视为拖拽，避免误触（保证开关点击可用）
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  )
 
   // 进入设置页时从扩展存储读取配置
   useEffect(() => {
@@ -77,6 +149,28 @@ export default function OptionsPage() {
 
   function setBallAction(ballAction: BallAction) {
     persist({ ...settings, ballAction })
+  }
+
+  function toggleTool(id: ToolId) {
+    persist({
+      ...settings,
+      toolEnabled: { ...settings.toolEnabled, [id]: !(settings.toolEnabled[id] ?? true) },
+    })
+  }
+
+  function onDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const order = [...settings.toolOrder]
+    const from = order.indexOf(active.id as ToolId)
+    const to = order.indexOf(over.id as ToolId)
+    if (from < 0 || to < 0) return
+    persist({ ...settings, toolOrder: arrayMove(order, from, to) })
+  }
+
+  function resetLayout() {
+    const layout = defaultToolLayout()
+    persist({ ...settings, toolOrder: layout.order, toolEnabled: layout.enabled })
   }
 
   return (
@@ -130,6 +224,40 @@ export default function OptionsPage() {
           </ul>
           <p className={`opt__saved${saved ? ' opt__saved--show' : ''}`}>
             ✓ 已保存到 chrome.storage.sync（settings）
+          </p>
+        </div>
+
+        <div className='opt__card'>
+          <div className='opt__card-head'>
+            <h2>工具箱能力</h2>
+            <button type='button' className='opt__reset' onClick={resetLayout}>
+              恢复默认
+            </button>
+          </div>
+          <p className='opt__env'>决定工具箱选项卡里显示哪些能力以及它们的顺序。</p>
+
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={settings.toolOrder} strategy={verticalListSortingStrategy}>
+              <ul className='opt-tools'>
+                {settings.toolOrder.map((id) => {
+                  const meta = TOOL_META.get(id)
+                  if (!meta) return null
+                  return (
+                    <SortableToolRow
+                      key={id}
+                      id={id}
+                      label={meta.label}
+                      on={settings.toolEnabled[id] !== false}
+                      onToggle={toggleTool}
+                    />
+                  )
+                })}
+              </ul>
+            </SortableContext>
+          </DndContext>
+
+          <p className='opt__env opt__env--hint'>
+            拖动「⠿」把手调整顺序（带滑动动画）；关闭开关即在工具箱隐藏该能力。修改即时保存。
           </p>
         </div>
 

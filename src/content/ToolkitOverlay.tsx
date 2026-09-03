@@ -5,13 +5,12 @@ import type { BallAction } from '@/utils/messages'
 import { MSG_OPEN_NATIVE_SIDE_PANEL, MSG_TOGGLE_DRAWER } from '@/utils/messages'
 
 import Drawer from './Drawer'
-import FloatingBall, { clampBallTop } from './FloatingBall'
+import FloatingBall, { clampDockTop, DOCK_H } from './FloatingBall'
 import type { BallPos } from './FloatingBall'
 
 const POS_KEY = 'toolkit.ballPos'
 const SETTINGS_KEY = 'settings'
 const EDGE_MARGIN = 8
-const BALL_SIZE = 52
 const DEFAULT_SIDE: BallPos['side'] = 'right'
 /** 默认纵向位置：视口高度 45% 处 */
 const DEFAULT_Y_FRAC = 0.45
@@ -32,13 +31,13 @@ function clamp01(value: number): number {
 }
 
 function fracToTop(yFrac: number): number {
-  const range = Math.max(1, window.innerHeight - EDGE_MARGIN * 2 - BALL_SIZE)
+  const range = Math.max(1, window.innerHeight - EDGE_MARGIN * 2 - DOCK_H)
   return EDGE_MARGIN + clamp01(yFrac) * range
 }
 
 function topToFrac(topPx: number): number {
-  const range = Math.max(1, window.innerHeight - EDGE_MARGIN * 2 - BALL_SIZE)
-  return (clampBallTop(topPx) - EDGE_MARGIN) / range
+  const range = Math.max(1, window.innerHeight - EDGE_MARGIN * 2 - DOCK_H)
+  return (clampDockTop(topPx) - EDGE_MARGIN) / range
 }
 
 /** 请 background 尽力唤起浏览器原生侧边栏（受用户手势限制，可能失败） */
@@ -102,10 +101,7 @@ export default function ToolkitOverlay() {
     const onResize = () =>
       setPos((p) => ({
         ...p,
-        topPx: Math.min(
-          p.topPx,
-          Math.max(EDGE_MARGIN, window.innerHeight - BALL_SIZE - EDGE_MARGIN),
-        ),
+        topPx: Math.min(p.topPx, Math.max(EDGE_MARGIN, window.innerHeight - DOCK_H - EDGE_MARGIN)),
       }))
     window.addEventListener('resize', onResize)
 

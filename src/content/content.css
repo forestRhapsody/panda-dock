@@ -5,9 +5,9 @@
   all: initial;
 }
 
-/* —— 悬浮球 —— */
+/* —— 悬浮触发器（圆形悬浮球：移开只露一半 / 悬停完整滑出） —— */
 
-.tek__ball {
+.tek__dock {
   all: initial;
   position: fixed;
   z-index: 2147483001;
@@ -24,19 +24,19 @@
   touch-action: none;
   color: #fff;
   background: linear-gradient(135deg, #7aa2ff, #4f7cff);
-  box-shadow: 0 6px 20px rgb(79 124 255 / 0.5);
+  box-shadow: 0 6px 18px rgb(79 124 255 / 0.5);
   /* transform 由组件内联控制：悬停滑出 / 移开缩回一半 */
 }
 
-.tek__ball--drag {
+.tek__dock--drag {
   cursor: grabbing;
-  box-shadow: 0 10px 26px rgb(79 124 255 / 0.6);
+  box-shadow: 0 12px 26px rgb(79 124 255 / 0.65);
 }
 
-.tek__ball--visible {
+.tek__dock:hover {
   box-shadow:
-    0 6px 20px rgb(79 124 255 / 0.55),
-    0 0 0 4px rgb(79 124 255 / 0.15);
+    0 6px 18px rgb(79 124 255 / 0.6),
+    0 0 0 4px rgb(79 124 255 / 0.16);
 }
 
 /* —— 网页内右侧抽屉（承载工具箱 ToolsApp，类 tw-* 见 tools.css） —— */
