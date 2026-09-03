@@ -102,7 +102,99 @@ function ConfirmDialog({
   )
 }
 
-/** 本地存储管理：查看/清理当前站点 localStorage / sessionStorage */
+interface EditorFormProps {
+  draftKey: string
+  draftValue: string
+  /** 原值是否是 JSON（决定是否强制 JSON 编辑器与严格校验） */
+  useJson: boolean
+  /** 表单内联校验错误（如「请填写 Key」），显示在 Key 下方 */
+  formError: string | null
+  onKeyChange: (v: string) => void
+  onValueChange: (v: string) => void
+  onCancel: () => void
+  onSave: () => void
+}
+
+/** 编辑器：key 输入 + 值编辑器 + 状态 + 格式化/压缩 + 取消/保存。编辑与新增共用。 */
+function EditorForm({
+  draftKey,
+  draftValue,
+  useJson,
+  formError,
+  onKeyChange,
+  onValueChange,
+  onCancel,
+  onSave,
+}: EditorFormProps) {
+  const draftJson = parseJson(draftValue)
+  // 原值是 JSON 则全程 JSON 编辑器；否则当前值一旦是 JSON 也切换到 JSON 编辑器
+  const showJson = useJson || draftJson.ok
+
+  function format() {
+    if (draftJson.ok) onValueChange(JSON.stringify(draftJson.value, null, 2))
+  }
+
+  function minify() {
+    if (draftJson.ok) onValueChange(JSON.stringify(draftJson.value))
+  }
+
+  return (
+    <div className='tw-store__edit'>
+      <label className='tw-field'>
+        <span className='tw-field__label'>Key</span>
+        <input
+          className='tw-input'
+          value={draftKey}
+          spellCheck={false}
+          onChange={(e) => onKeyChange(e.target.value)}
+        />
+      </label>
+      {formError && <p className='tw-status tw-status--err'>{formError}</p>}
+      {showJson ? (
+        <JsonTextarea
+          value={draftValue}
+          autoFocus
+          maxHeight={240}
+          onChange={(e) => onValueChange(e.target.value)}
+        />
+      ) : (
+        <AutoArea
+          className='tw-store__editval'
+          value={draftValue}
+          spellCheck={false}
+          autoFocus
+          maxHeight={240}
+          onChange={(e) => onValueChange(e.target.value)}
+        />
+      )}
+      {showJson && (
+        <p className={`tw-status tw-status--${draftJson.ok ? 'ok' : 'err'}`}>
+          {draftJson.ok ? 'JSON 有效（保存时自动压缩为单行）' : `JSON 无效：${draftJson.error}`}
+        </p>
+      )}
+      <div className='tw-store__edit-actions'>
+        {showJson && (
+          <>
+            <button type='button' className='tw-link' disabled={!draftJson.ok} onClick={format}>
+              格式化
+            </button>
+            <button type='button' className='tw-link' disabled={!draftJson.ok} onClick={minify}>
+              压缩
+            </button>
+          </>
+        )}
+        <button type='button' className='tw-link' onClick={onCancel}>
+          取消
+        </button>
+        <button type='button' className='tw-link' onClick={onSave}>
+          保存
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** 本地存储管理：查看/清理当前站点 localStorage / sessionStorage；支持改 key 与新增缓存 */
 export default function StorageTool() {
   const [area, setArea] = useState<StorageArea>('local')
   const [result, setResult] = useState<StorageResult | null>(null)
@@ -110,8 +202,11 @@ export default function StorageTool() {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
   const [filter, setFilter] = useState('')
   const [editingKey, setEditingKey] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [draftKey, setDraftKey] = useState('')
   const [draftValue, setDraftValue] = useState('')
   const [editIsJson, setEditIsJson] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   /** 高优先级：自定义弹窗；仅极端情况（自定义弹窗无法渲染）下降级到 window.confirm */
   function requestConfirm(opts: ConfirmState): void {
@@ -140,7 +235,6 @@ export default function StorageTool() {
   }, [load])
 
   // 扩展页面（侧边栏等）下：跟随活动标签页 —— 切换 tab 时自动重读该站存储。
-  // 抽屉（content script）直接读本页存储、无需跟随；tabs 事件无需新增权限。
   useEffect(() => {
     if (typeof chrome === 'undefined' || isPageContext()) return
     const reload = () => void load()
@@ -187,70 +281,93 @@ export default function StorageTool() {
     })
   }
 
-  // 双击进入编辑；值过长已截断时禁止编辑（避免覆盖完整数据）。
-  // 若值是合法 JSON，则按 JSON 方式编辑（自动缩进格式化 + 校验）。
+  // 进入编辑（可同时改 key）；值过长已截断时禁止编辑
   function startEdit(entry: StorageEntry) {
     if (entry.truncated) {
       setStatus({ kind: 'info', text: '值过长已截断，为保护完整数据，暂不支持编辑' })
       return
     }
     const parsed = parseJson(entry.value)
-    const isJson = parsed.ok
-    setEditIsJson(isJson)
+    setCreating(false)
     setEditingKey(entry.key)
-    setDraftValue(isJson ? JSON.stringify(parsed.value, null, 2) : entry.value)
+    setDraftKey(entry.key)
+    setEditIsJson(parsed.ok)
+    setDraftValue(parsed.ok ? JSON.stringify(parsed.value, null, 2) : entry.value)
+    setFormError(null)
   }
 
-  function cancelEdit() {
+  // 进入新增
+  function startCreate() {
     setEditingKey(null)
+    setCreating(true)
+    setDraftKey('')
     setDraftValue('')
     setEditIsJson(false)
+    setFormError(null)
   }
 
-  // 写回存储并刷新
-  async function writeValue(key: string, value: string) {
+  function closeEditor() {
+    setEditingKey(null)
+    setCreating(false)
+    setDraftKey('')
+    setDraftValue('')
+    setEditIsJson(false)
+    setFormError(null)
+  }
+
+  async function persist(key: string, value: string): Promise<boolean> {
     const res = await setStorageValue(area, key, value)
     if (!res.ok) {
       setStatus({ kind: 'err', text: res.error })
-      return
+      return false
     }
-    setStatus({ kind: 'ok', text: `已更新 ${key}` })
-    cancelEdit()
+    return true
+  }
+
+  // 保存：编辑（含改名）/ 新增
+  async function commitEntry(key: string, value: string) {
+    if (editingKey != null) {
+      if (key === editingKey) {
+        if (!(await persist(editingKey, value))) return
+      } else {
+        // 重命名：写新 key + 删旧 key
+        if (!(await persist(key, value))) return
+        const rm = await removeStorageKey(area, editingKey)
+        if (!rm.ok) {
+          setStatus({ kind: 'err', text: rm.error })
+          return
+        }
+      }
+      setStatus({ kind: 'ok', text: `已更新 ${key}` })
+    } else {
+      if (!(await persist(key, value))) return
+      setStatus({ kind: 'ok', text: `已新增 ${key}` })
+    }
+    closeEditor()
     void load()
   }
 
-  // 保存编辑：合法 JSON 压缩保存；非法 JSON 弹窗确认后可保存原文。
-  // 非法提示只出现在编辑行下方（draftJson 状态），不设底部全局错误。
-  function saveEdit() {
-    if (editingKey == null) return
-    if (!editIsJson) {
-      void writeValue(editingKey, draftValue)
+  // 保存：合法 JSON 压缩；非法 JSON（且原值为 JSON）弹窗确认后去换行；其余按原文
+  function saveEntry() {
+    const key = draftKey.trim()
+    if (!key) {
+      setFormError('请填写 Key')
       return
     }
     const parsed = parseJson(draftValue)
     if (parsed.ok) {
-      void writeValue(editingKey, JSON.stringify(parsed.value))
+      void commitEntry(key, JSON.stringify(parsed.value))
       return
     }
-    // JSON 无效：弹窗提示，用户可选择仍保存非法 JSON（保存前去换行）
-    requestConfirm({
-      title: 'JSON 无效',
-      message: '当前内容不是合法 JSON。仍要保存吗？（将去除换行后保存）',
-      onConfirm: () => void writeValue(editingKey, stripLineBreaks(draftValue)),
-    })
-  }
-
-  // 当前草稿是否是合法 JSON（用于编辑时的实时校验与格式化/压缩）
-  const draftJson = parseJson(draftValue)
-
-  function formatDraft() {
-    if (!draftJson.ok) return
-    setDraftValue(JSON.stringify(draftJson.value, null, 2))
-  }
-
-  function minifyDraft() {
-    if (!draftJson.ok) return
-    setDraftValue(JSON.stringify(draftJson.value))
+    if (editIsJson) {
+      requestConfirm({
+        title: 'JSON 无效',
+        message: '当前内容不是合法 JSON。仍要保存吗？（将去除换行后保存）',
+        onConfirm: () => void commitEntry(key, stripLineBreaks(draftValue)),
+      })
+      return
+    }
+    void commitEntry(key, draftValue)
   }
 
   const data = result?.ok ? result.data : null
@@ -262,6 +379,24 @@ export default function StorageTool() {
       )
     : []
   const noMatch = data != null && data.entries.length > 0 && entries.length === 0
+
+  const editorOpen = creating || editingKey != null
+  const editorProps = {
+    draftKey,
+    draftValue,
+    useJson: editIsJson,
+    formError,
+    onKeyChange: (v: string) => {
+      setDraftKey(v)
+      setFormError(null)
+    },
+    onValueChange: (v: string) => {
+      setDraftValue(v)
+      setFormError(null)
+    },
+    onCancel: closeEditor,
+    onSave: saveEntry,
+  }
 
   return (
     <div className='tw-card'>
@@ -290,6 +425,9 @@ export default function StorageTool() {
         <button type='button' className='tk-btn tk-btn--primary' onClick={() => void load()}>
           刷新
         </button>
+        <button type='button' className='tk-btn' onClick={startCreate} disabled={editorOpen}>
+          新增
+        </button>
         <button type='button' className='tk-btn' onClick={askClearAll} disabled={empty}>
           清空全部
         </button>
@@ -315,9 +453,9 @@ export default function StorageTool() {
         </p>
       )}
 
-      {data && data.entries.length > 0 && (
-        <p className='tw-note'>双击值或点「编辑」可直接修改，保存后写回存储。</p>
-      )}
+      {data && data.entries.length > 0 && <p className='tw-note'>双击值或点「编辑」可修改。</p>}
+
+      {creating && <EditorForm {...editorProps} />}
 
       {empty && <p className='tw-note'>该区域暂无数据。</p>}
       {noMatch && <p className='tw-note'>无匹配项。</p>}
@@ -325,70 +463,20 @@ export default function StorageTool() {
       {data && entries.length > 0 && (
         <ul className='tw-store'>
           {entries.map((entry) => (
-            <li key={entry.key} className='tw-store__row'>
-              <div className='tw-store__head'>
-                <span className='tw-store__key' title={entry.key}>
-                  {entry.key}
-                </span>
-                <span className='tw-store__size'>{fmtSize(entry.size)}</span>
-              </div>
+            <li
+              key={entry.key}
+              className={`tw-store__row${editingKey === entry.key ? ' tw-store__row--editing' : ''}`}
+            >
               {editingKey === entry.key ? (
-                <div className='tw-store__edit'>
-                  {editIsJson ? (
-                    <JsonTextarea
-                      value={draftValue}
-                      autoFocus
-                      maxHeight={240}
-                      onChange={(e) => setDraftValue(e.target.value)}
-                    />
-                  ) : (
-                    <AutoArea
-                      className='tw-store__editval'
-                      value={draftValue}
-                      spellCheck={false}
-                      autoFocus
-                      maxHeight={240}
-                      onChange={(e) => setDraftValue(e.target.value)}
-                    />
-                  )}
-                  {editIsJson && (
-                    <p className={`tw-status tw-status--${draftJson.ok ? 'ok' : 'err'}`}>
-                      {draftJson.ok
-                        ? 'JSON 有效（保存时自动压缩为单行）'
-                        : `JSON 无效：${draftJson.error}`}
-                    </p>
-                  )}
-                  <div className='tw-store__edit-actions'>
-                    {editIsJson && (
-                      <>
-                        <button
-                          type='button'
-                          className='tw-link'
-                          disabled={!draftJson.ok}
-                          onClick={formatDraft}
-                        >
-                          格式化
-                        </button>
-                        <button
-                          type='button'
-                          className='tw-link'
-                          disabled={!draftJson.ok}
-                          onClick={minifyDraft}
-                        >
-                          压缩
-                        </button>
-                      </>
-                    )}
-                    <button type='button' className='tw-link' onClick={cancelEdit}>
-                      取消
-                    </button>
-                    <button type='button' className='tw-link' onClick={() => void saveEdit()}>
-                      保存
-                    </button>
-                  </div>
-                </div>
+                <EditorForm {...editorProps} />
               ) : (
                 <>
+                  <div className='tw-store__head'>
+                    <span className='tw-store__key' title={entry.key}>
+                      {entry.key}
+                    </span>
+                    <span className='tw-store__size'>{fmtSize(entry.size)}</span>
+                  </div>
                   <code
                     className='tw-store__value'
                     onDoubleClick={() => startEdit(entry)}
