@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
-import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import {
+  closestCenter,
+  DndContext,
+  MeasuringStrategy,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import {
   arrayMove,
@@ -219,7 +226,13 @@ export default function ToolsApp({ headerActions }: ToolsAppProps) {
       </header>
 
       <nav ref={navRef} className='tw-nav' role='tablist' aria-label={t('app.nav_label')}>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          autoScroll={false}
+          measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext
             items={tools.map((tool) => tool.id)}
             strategy={horizontalListSortingStrategy}
