@@ -163,7 +163,7 @@ function EditorForm({
         <JsonTextarea
           value={draftValue}
           autoFocus
-          maxHeight={240}
+          maxHeight={300}
           onChange={(e) => onValueChange(e.target.value)}
         />
       ) : (
@@ -172,7 +172,7 @@ function EditorForm({
           value={draftValue}
           spellCheck={false}
           autoFocus
-          maxHeight={240}
+          maxHeight={300}
           onChange={(e) => onValueChange(e.target.value)}
         />
       )}

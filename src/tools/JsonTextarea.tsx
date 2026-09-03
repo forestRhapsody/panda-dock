@@ -5,7 +5,7 @@ import { highlightJson } from './JsonHighlight'
 
 interface JsonTextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value'> {
   value: string
-  /** 最大高度(px)，超出后内部滚动。默认 240 */
+  /** 最大高度(px)，超出后内部滚动。默认 300 */
   maxHeight?: number
 }
 
@@ -16,7 +16,7 @@ interface JsonTextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElem
  */
 export default function JsonTextarea({
   value,
-  maxHeight = 240,
+  maxHeight = 300,
   onChange,
   ...rest
 }: JsonTextareaProps) {

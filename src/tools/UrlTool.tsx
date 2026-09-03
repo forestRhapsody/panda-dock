@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 import { getCurrentPageUrl } from '@/utils/pageUrl'
 
+import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 
 interface UrlPart {
@@ -190,7 +191,7 @@ export default function UrlTool() {
     <div className='tw-card'>
       <label className='tw-field'>
         <span className='tw-field__label'>{t('tool.url.inputLabel')}</span>
-        <textarea
+        <AutoArea
           className='tw-area'
           value={input}
           placeholder={t('tool.url.inputPlaceholder')}
