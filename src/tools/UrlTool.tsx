@@ -4,9 +4,6 @@ import { useTranslation } from 'react-i18next'
 
 import { getCurrentPageUrl } from '@/utils/pageUrl'
 
-import AutoArea from './AutoArea'
-import CopyButton from './CopyButton'
-
 interface UrlPart {
   key: string
   value: string
@@ -48,29 +45,31 @@ function buildUrl(source: string): URL {
   throw new Error('invalid')
 }
 
+/** 只保留「有实际值」的组成部分，避免展示无用空列 */
+function collectParts(url: URL): UrlPart[] {
+  const parts: UrlPart[] = []
+  if (url.protocol) parts.push({ key: 'protocol', value: url.protocol })
+  if (url.host) parts.push({ key: 'host', value: url.host })
+  if (url.pathname && url.pathname !== '/') parts.push({ key: 'path', value: url.pathname })
+  if (url.search) parts.push({ key: 'search', value: url.search })
+  if (url.hash) parts.push({ key: 'hash', value: url.hash })
+  if (url.username) parts.push({ key: 'username', value: url.username })
+  if (url.password) parts.push({ key: 'password', value: '••••' })
+  return parts
+}
+
 /** 解析 URL：先从文本抽取网址，再交给 buildUrl（避免把干扰文字当作相对路径） */
 function parseUrl(input: string): ParsedUrl {
   const text = input.trim()
   const extracted = extractUrlFromText(text) ?? text
   const url = buildUrl(extracted)
-  const parts: UrlPart[] = [
-    { key: 'protocol', value: url.protocol },
-    { key: 'origin', value: url.origin },
-    { key: 'host', value: url.host || '—' },
-    { key: 'hostname', value: url.hostname || '—' },
-    { key: 'port', value: url.port || '—' },
-    { key: 'username', value: url.username || '—' },
-    { key: 'password', value: url.password ? '••••' : '—' },
-    { key: 'path', value: url.pathname },
-    { key: 'search', value: url.search || '—' },
-    { key: 'hash', value: url.hash || '—' },
-  ]
+  const parts = collectParts(url)
   const params: [string, string][] = []
   url.searchParams.forEach((value, key) => params.push([key, value]))
   return { url, parts, params }
 }
 
-/** 网址解析工具：手动输入或一键取当前网页 URL，拆解展示各组成部分 */
+/** 网址解析工具：手动输入或一键取当前网页 URL，拆解展示有意义的部分与查询参数 */
 export default function UrlTool() {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
@@ -151,28 +150,6 @@ export default function UrlTool() {
 
       {parsed && (
         <>
-          <div className='tw-field'>
-            <span className='tw-field__label'>
-              {t('tool.url.result')}
-              <CopyButton text={parsed.url.href} className='tw-link' />
-            </span>
-            <AutoArea
-              className='tw-area tw-area--result'
-              value={parsed.url.href}
-              readOnly
-              placeholder={t('tool.url.resultPlaceholder')}
-            />
-          </div>
-
-          <ul className='tw-kv'>
-            {parsed.parts.map((part) => (
-              <li key={part.key} className='tw-kv__row'>
-                <span className='tw-kv__k'>{t(`tool.url.component.${part.key}`)}</span>
-                <span className='tw-kv__v'>{part.value}</span>
-              </li>
-            ))}
-          </ul>
-
           {parsed.params.length > 0 && (
             <div className='tw-field'>
               <span className='tw-field__label'>{t('tool.url.queryParams')}</span>
@@ -185,6 +162,21 @@ export default function UrlTool() {
                 ))}
               </ul>
             </div>
+          )}
+
+          {parsed.parts.length > 0 && (
+            <ul className='tw-kv'>
+              {parsed.parts.map((part) => (
+                <li key={part.key} className='tw-kv__row'>
+                  <span className='tw-kv__k'>{t(`tool.url.component.${part.key}`)}</span>
+                  <span className='tw-kv__v'>{part.value}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {parsed.params.length === 0 && parsed.parts.length === 0 && (
+            <p className='tw-status tw-status--info'>{t('tool.url.noData')}</p>
           )}
         </>
       )}
