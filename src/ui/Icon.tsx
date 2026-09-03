@@ -14,6 +14,7 @@ export type IconName =
   | 'close' // 关闭
   | 'grip' // 拖拽把手（六点）
   | 'check' // 完成 / 已保存
+  | 'copy' // 复制
 
 interface IconProps {
   name: IconName
@@ -72,6 +73,12 @@ const GLYPHS: Record<IconName, ReactNode> = {
     </>
   ),
   check: <path d='M20 6 9 17l-5-5' />,
+  copy: (
+    <>
+      <rect x='9' y='9' width='11' height='11' rx='2' />
+      <path d='M5 15V5a2 2 0 0 1 2-2h9' />
+    </>
+  ),
 }
 
 export default function Icon({ name, size = 16, className, title }: IconProps) {

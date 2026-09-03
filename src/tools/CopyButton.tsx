@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import Icon from '@/ui/Icon'
 import { copyText } from '@/utils/clipboard'
 
 interface CopyButtonProps {
@@ -13,11 +14,13 @@ interface CopyButtonProps {
   label?: string
   /** 复制成功后的短时文案 */
   copiedLabel?: string
+  /** 是否只显示图标（复制 / 对勾），而非文字 */
+  icon?: boolean
   /** 复制结果回调（ok=true 成功） */
   onResult?: (ok: boolean) => void
 }
 
-/** 复制按钮：点击后短暂显示「已复制」，过一会儿变回原文案。 */
+/** 复制按钮：点击后短暂显示「已复制」，过一会儿变回原文案（icon 模式显示图标）。 */
 export default function CopyButton({
   text,
   disabled,
@@ -25,6 +28,7 @@ export default function CopyButton({
   title,
   label,
   copiedLabel,
+  icon = false,
   onResult,
 }: CopyButtonProps) {
   const { t } = useTranslation()
@@ -48,12 +52,13 @@ export default function CopyButton({
     <button
       type='button'
       className={className}
-      title={title}
+      title={title ?? labelText}
+      aria-label={labelText}
       aria-live='polite'
       disabled={disabled}
       onClick={() => void handleClick()}
     >
-      {copied ? copiedText : labelText}
+      {icon ? <Icon name={copied ? 'check' : 'copy'} size={14} /> : copied ? copiedText : labelText}
     </button>
   )
 }

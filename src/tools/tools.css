@@ -423,50 +423,80 @@
   gap: 6px;
 }
 
-/* —— 结构化查询参数树（qs 解析：嵌套对象 / 数组） —— */
+/* —— 网址解析结果行（it-tools 风格：label | 只读输入框 + 复制） —— */
 
-.tw-params {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.url-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
-.tw-params__row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-
-.tw-params__key {
-  flex: none;
-  min-width: 72px;
-  font-family: var(--tk-font-mono);
+.url-list__title {
   font-size: var(--tk-text-sm);
-  color: var(--tk-secondary-foreground);
-  word-break: break-all;
-}
-
-.tw-params__key::after {
-  content: ':';
+  font-weight: 600;
   color: var(--tk-muted-foreground);
 }
 
-.tw-params__val {
+.url-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
+}
+
+.url-row__label {
+  flex: 0 0 84px;
+  font-size: var(--tk-text-sm);
+  color: var(--tk-muted-foreground);
+  word-break: break-all;
+}
+
+.url-row__value {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.url-row__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--tk-control-h-sm);
+  padding: 0 10px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-muted);
   font-family: var(--tk-font-mono);
   font-size: var(--tk-text-sm);
   color: var(--tk-foreground);
-  word-break: break-all;
-  white-space: pre-wrap;
 }
 
-.tw-params__children {
-  padding-left: 14px;
-  border-left: 1px solid var(--tk-border);
+.url-row__input:focus {
+  outline: 2px solid var(--tk-ring);
+  outline-offset: 1px;
+}
+
+.url-row__copy {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: var(--tk-control-h-sm);
+  padding: 0;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-card);
+  color: var(--tk-muted-foreground);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.url-row__copy:hover {
+  color: var(--tk-foreground);
+  border-color: var(--tk-border-strong);
+  background: var(--tk-accent);
 }
 
 .tw-kv__row {

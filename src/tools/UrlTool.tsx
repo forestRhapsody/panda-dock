@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next'
 
 import { getCurrentPageUrl } from '@/utils/pageUrl'
 
+import CopyButton from './CopyButton'
+
 interface UrlPart {
   key: string
   value: string
@@ -13,8 +15,8 @@ interface UrlPart {
 interface ParsedUrl {
   url: URL
   parts: UrlPart[]
-  /** qs 解析出的结构化查询参数（支持嵌套对象 / 数组） */
-  query: Record<string, unknown>
+  /** 查询参数：qs 解析出结构化对象后扁平化为 kv 列表（嵌套/数组用括号记法） */
+  params: UrlPart[]
 }
 
 /** 当前页 origin，用作相对路径的解析基准 */
@@ -47,6 +49,35 @@ function buildUrl(source: string): URL {
   throw new Error('invalid')
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** 把 qs 解析出的结构化对象扁平化为 kv 列表（对象/数组用括号记法，如 filter[name]、ids[0]） */
+function flattenParams(query: Record<string, unknown>): UrlPart[] {
+  const out: UrlPart[] = []
+  const walk = (value: unknown, prefix: string) => {
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => {
+        if (isPlainObject(item) || Array.isArray(item)) walk(item, `${prefix}[${index}]`)
+        else out.push({ key: `${prefix}[${index}]`, value: String(item) })
+      })
+      return
+    }
+    if (isPlainObject(value)) {
+      for (const [k, v] of Object.entries(value)) {
+        const key = prefix ? `${prefix}[${k}]` : k
+        if (isPlainObject(v) || Array.isArray(v)) walk(v, key)
+        else out.push({ key, value: String(v) })
+      }
+      return
+    }
+    out.push({ key: prefix, value: String(value) })
+  }
+  walk(query, '')
+  return out
+}
+
 /** 只保留「有实际值」的组成部分，避免展示无用空列 */
 function collectParts(url: URL): UrlPart[] {
   const parts: UrlPart[] = []
@@ -60,78 +91,31 @@ function collectParts(url: URL): UrlPart[] {
   return parts
 }
 
-/** 解析 URL：先从文本抽取网址，再交给 buildUrl；查询参数用 qs 解析 */
+/** 解析 URL：先从文本抽取网址，再交给 buildUrl；查询参数用 qs 解析后扁平化 */
 function parseUrl(input: string): ParsedUrl {
   const text = input.trim()
   const extracted = extractUrlFromText(text) ?? text
   const url = buildUrl(extracted)
   const parts = collectParts(url)
   const query = qs.parse(url.search.replace(/^\?/, '')) as Record<string, unknown>
-  return { url, parts, query }
+  const params = flattenParams(query)
+  return { url, parts, params }
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function ParamValue({ value }: { value: unknown }) {
-  if (Array.isArray(value)) {
-    return (
-      <ul className='tw-params'>
-        {value.map((item, index) => (
-          <li key={index} className='tw-params__row'>
-            <span className='tw-params__key'>{index}</span>
-            {isPlainObject(item) || Array.isArray(item) ? (
-              <div className='tw-params__children'>
-                <ParamValue value={item} />
-              </div>
-            ) : (
-              <span className='tw-params__val'>{String(item)}</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    )
-  }
-  if (isPlainObject(value)) {
-    return (
-      <ul className='tw-params'>
-        {Object.entries(value).map(([k, v]) => (
-          <ParamNode key={k} k={k} v={v} />
-        ))}
-      </ul>
-    )
-  }
-  return <span className='tw-params__val'>{String(value)}</span>
-}
-
-function ParamNode({ k, v }: { k: string; v: unknown }) {
-  const nested = isPlainObject(v) || Array.isArray(v)
+/** 一行：左侧 label，右侧只读输入框 + 复制按钮（it-tools 风格） */
+function UrlField({ label, value }: { label: string; value: string }) {
   return (
-    <li className='tw-params__row'>
-      <span className='tw-params__key'>{k}</span>
-      {nested ? (
-        <div className='tw-params__children'>
-          <ParamValue value={v} />
-        </div>
-      ) : (
-        <span className='tw-params__val'>{String(v)}</span>
-      )}
-    </li>
+    <div className='url-row'>
+      <span className='url-row__label'>{label}</span>
+      <div className='url-row__value'>
+        <input className='url-row__input' readOnly value={value} />
+        <CopyButton text={value} icon className='url-row__copy' />
+      </div>
+    </div>
   )
 }
 
-function ParamTree({ data }: { data: Record<string, unknown> }) {
-  return (
-    <ul className='tw-params'>
-      {Object.entries(data).map(([k, v]) => (
-        <ParamNode key={k} k={k} v={v} />
-      ))}
-    </ul>
-  )
-}
-
-/** 网址解析工具：手动输入或一键取当前网页 URL，拆解展示有意义的部分与（qs 解析的）查询参数 */
+/** 网址解析工具：手动输入或一键取当前网页 URL，展示各组成部分与（qs 解析的）查询参数 */
 export default function UrlTool() {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
@@ -178,7 +162,7 @@ export default function UrlTool() {
     setError(null)
   }
 
-  const hasQuery = parsed ? Object.keys(parsed.query).length > 0 : false
+  const hasParams = parsed ? parsed.params.length > 0 : false
 
   return (
     <div className='tw-card'>
@@ -214,25 +198,28 @@ export default function UrlTool() {
 
       {parsed && (
         <>
-          {hasQuery && (
-            <div className='tw-field'>
-              <span className='tw-field__label'>{t('tool.url.queryParams')}</span>
-              <ParamTree data={parsed.query} />
+          {parsed.parts.length > 0 && (
+            <div className='url-list'>
+              {parsed.parts.map((part) => (
+                <UrlField
+                  key={part.key}
+                  label={t(`tool.url.component.${part.key}`)}
+                  value={part.value}
+                />
+              ))}
             </div>
           )}
 
-          {parsed.parts.length > 0 && (
-            <ul className='tw-kv'>
-              {parsed.parts.map((part) => (
-                <li key={part.key} className='tw-kv__row'>
-                  <span className='tw-kv__k'>{t(`tool.url.component.${part.key}`)}</span>
-                  <span className='tw-kv__v'>{part.value}</span>
-                </li>
+          {hasParams && (
+            <div className='url-list'>
+              <div className='url-list__title'>{t('tool.url.queryParams')}</div>
+              {parsed.params.map((param, index) => (
+                <UrlField key={`${param.key}-${index}`} label={param.key} value={param.value} />
               ))}
-            </ul>
+            </div>
           )}
 
-          {!hasQuery && parsed.parts.length === 0 && (
+          {!hasParams && parsed.parts.length === 0 && (
             <p className='tw-status tw-status--info'>{t('tool.url.noData')}</p>
           )}
         </>
