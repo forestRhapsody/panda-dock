@@ -1,4 +1,9 @@
-import { MSG_STORAGE_CLEAR, MSG_STORAGE_READ, MSG_STORAGE_REMOVE } from '@/utils/messages'
+import {
+  MSG_STORAGE_CLEAR,
+  MSG_STORAGE_READ,
+  MSG_STORAGE_REMOVE,
+  MSG_STORAGE_SET,
+} from '@/utils/messages'
 
 export type StorageArea = 'local' | 'session'
 
@@ -93,6 +98,23 @@ export async function removeStorageKey(area: StorageArea, key: string): Promise<
   }
 }
 
+/** 写入/更新某个 key 的值 */
+export async function setStorageValue(
+  area: StorageArea,
+  key: string,
+  value: string,
+): Promise<SimpleResult> {
+  try {
+    if (isPageContext()) {
+      areaStorage(area).setItem(key, value)
+      return { ok: true }
+    }
+    return (await askActiveTab({ action: MSG_STORAGE_SET, area, key, value })) as SimpleResult
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
 /** 清空某个存储区域 */
 export async function clearStorageArea(area: StorageArea): Promise<SimpleResult> {
   try {
@@ -132,6 +154,28 @@ export function installStorageBridge(): void {
       }
       try {
         areaStorage(area).removeItem(key)
+        sendResponse({ ok: true })
+      } catch (e) {
+        sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })
+      }
+      return undefined
+    }
+    if (action === MSG_STORAGE_SET) {
+      const {
+        area = 'local',
+        key,
+        value,
+      } = message as {
+        area?: StorageArea
+        key?: string
+        value?: string
+      }
+      if (!key) {
+        sendResponse({ ok: false, error: '缺少 key' })
+        return undefined
+      }
+      try {
+        areaStorage(area).setItem(key, value ?? '')
         sendResponse({ ok: true })
       } catch (e) {
         sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })

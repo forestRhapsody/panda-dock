@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
-import { copyText } from '@/utils/clipboard'
-
+import AutoArea from './AutoArea'
+import CopyButton from './CopyButton'
 import { decodeJwt, SAMPLE_JWT } from './jwt'
 import type { JwtDecoded } from './jwt'
 
@@ -57,12 +57,6 @@ export default function JwtTool() {
     setStatus({ kind: 'info', text: '已填入示例 JWT，点击「解码 →」查看效果' })
   }
 
-  async function copy(text: string, label: string) {
-    if (!text) return
-    const ok = await copyText(text)
-    setStatus({ kind: ok ? 'ok' : 'err', text: ok ? `${label}已复制` : '复制失败' })
-  }
-
   return (
     <div className='tw-card'>
       <label className='tw-field'>
@@ -92,43 +86,43 @@ export default function JwtTool() {
 
       {decoded && (
         <>
-          <label className='tw-field'>
+          <div className='tw-field'>
             <span className='tw-field__label'>
               Header（算法等）
-              <button
-                type='button'
+              <CopyButton
+                text={decoded.headerText}
                 className='tw-link'
-                onClick={() => void copy(decoded.headerText, 'Header ')}
-              >
-                复制
-              </button>
+                onResult={(ok) => {
+                  if (!ok) setStatus({ kind: 'err', text: '复制失败' })
+                }}
+              />
             </span>
-            <textarea
+            <AutoArea
               className='tw-area tw-area--result'
               value={decoded.headerText}
               readOnly
               spellCheck={false}
             />
-          </label>
+          </div>
 
-          <label className='tw-field'>
+          <div className='tw-field'>
             <span className='tw-field__label'>
               Payload（载荷）
-              <button
-                type='button'
+              <CopyButton
+                text={decoded.payloadText}
                 className='tw-link'
-                onClick={() => void copy(decoded.payloadText, 'Payload ')}
-              >
-                复制
-              </button>
+                onResult={(ok) => {
+                  if (!ok) setStatus({ kind: 'err', text: '复制失败' })
+                }}
+              />
             </span>
-            <textarea
+            <AutoArea
               className='tw-area tw-area--result'
               value={decoded.payloadText}
               readOnly
               spellCheck={false}
             />
-          </label>
+          </div>
 
           {decoded.claims.length > 0 && (
             <div className='tw-field'>
@@ -150,12 +144,7 @@ export default function JwtTool() {
         </>
       )}
 
-      {status && (
-        <p className={`tw-status tw-status--${status.kind}`}>
-          {status.kind === 'ok' ? '✓ ' : status.kind === 'err' ? '✕ ' : 'ℹ '}
-          {status.text}
-        </p>
-      )}
+      {status && <p className={`tw-status tw-status--${status.kind}`}>{status.text}</p>}
     </div>
   )
 }

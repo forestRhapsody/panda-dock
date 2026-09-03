@@ -38,6 +38,7 @@ export default function ToolsApp({ headerActions }: ToolsAppProps) {
   const [tools, setTools] = useState<ToolMeta[]>(() => visibleTools(defaultToolLayout()))
   const [active, setActive] = useState<ToolId>('base64')
   const navRef = useRef<HTMLElement>(null)
+  const initializedRef = useRef(false)
 
   // 读取工具显示配置（浏览器预览时用默认值：全部显示）
   useEffect(() => {
@@ -45,7 +46,13 @@ export default function ToolsApp({ headerActions }: ToolsAppProps) {
     let alive = true
     const apply = (settings: { toolOrder?: unknown; toolEnabled?: unknown } | null | undefined) => {
       const layout = normalizeToolLayout(settings?.toolOrder, settings?.toolEnabled)
-      setTools(visibleTools(layout))
+      const list = visibleTools(layout)
+      setTools(list)
+      // 打开时激活「配置顺序」里的第一个可见工具（而非硬编码 base64）；仅首次生效
+      if (!initializedRef.current) {
+        setActive(list[0]?.id ?? 'base64')
+        initializedRef.current = true
+      }
     }
     void storageGet<{ toolOrder?: unknown; toolEnabled?: unknown }>('sync', 'settings').then(
       (s) => {

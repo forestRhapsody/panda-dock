@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 
 import SidePanelPage from './SidePanelPage'
 
+import '@/theme.css'
 import '@/tools/tools.css'
 import './index.css'
 

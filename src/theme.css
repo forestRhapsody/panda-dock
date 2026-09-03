@@ -1,0 +1,60 @@
+/**
+ * Toolkit Extension · 设计令牌（Design Tokens）
+ * shadcn/ui 风格「冷寂」质感：冷调中性色、低饱和、细边框、柔和阴影。
+ * 纯 CSS 变量，不依赖 Tailwind / shadcn 库。
+ *
+ * 作用域说明：
+ *   - :root —— 扩展页面（Popup / Options / 侧边栏 / 预览页）
+ *   - .tw   —— 网页内抽屉 / 侧边栏共用的工具箱容器。
+ *              Shadow DOM 里的 CSS 变量不会穿透 `:root`，
+ *              因此需在 .tw 上重设一遍，让注入到网页的工具箱也能取到令牌。
+ */
+:root,
+.tw {
+  color-scheme: light;
+
+  /* —— 中性色（冷调，偏向 zinc / slate） —— */
+  --tk-background: hsl(0 0% 99%);
+  --tk-foreground: hsl(240 9% 9%);
+  --tk-card: hsl(0 0% 100%);
+  --tk-muted: hsl(240 5% 96%);
+  --tk-muted-foreground: hsl(240 4% 46%);
+  --tk-secondary: hsl(240 5% 96%);
+  --tk-secondary-foreground: hsl(240 8% 20%);
+  --tk-accent: hsl(240 6% 94%);
+  --tk-accent-foreground: #171717;
+
+  /* —— 强调色（主题色：炭黑 #171717，冷寂单色基调） —— */
+  --tk-primary: #171717;
+  --tk-primary-hover: #2b2b2b;
+  --tk-primary-active: #000000;
+  --tk-primary-foreground: #ffffff;
+  --tk-ring: #171717;
+
+  /* —— 功能色（低饱和） —— */
+  --tk-destructive: hsl(0 66% 48%);
+  --tk-success: hsl(149 46% 34%);
+  --tk-warning: hsl(36 78% 38%);
+  --tk-info: hsl(207 70% 42%);
+
+  /* —— 描边 / 输入 —— */
+  --tk-border: hsl(240 6% 90%);
+  --tk-border-strong: hsl(240 5% 82%);
+  --tk-input: hsl(240 6% 90%);
+
+  /* —— 圆角 —— */
+  --tk-radius: 0.625rem;
+  --tk-radius-sm: 0.375rem;
+  --tk-radius-lg: 0.75rem;
+
+  /* —— 阴影（柔和、低存在感） —— */
+  --tk-shadow-sm: 0 1px 2px 0 rgb(24 24 27 / 0.05), 0 1px 3px 0 rgb(24 24 27 / 0.05);
+  --tk-shadow-md: 0 4px 12px -2px rgb(24 24 27 / 0.08), 0 2px 6px -2px rgb(24 24 27 / 0.05);
+  --tk-shadow-lg: 0 12px 26px -6px rgb(24 24 27 / 0.18);
+
+  /* —— 字体 —— */
+  --tk-font:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --tk-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

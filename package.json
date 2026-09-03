@@ -15,6 +15,7 @@
     "type-check": "tsc -b"
   },
   "dependencies": {
+    "jsonc-parser": "^3.3.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

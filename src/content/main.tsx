@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 
 import { createRoot } from 'react-dom/client'
 
+import themeCss from '@/theme.css?inline'
 import { installStorageBridge } from '@/tools/storage'
 import toolsCss from '@/tools/tools.css?inline'
 
@@ -21,7 +22,7 @@ function mount() {
 
   // CSS 在构建期以 ?inline 内联进 bundle，写进 Shadow DOM 内的 <style>
   const style = document.createElement('style')
-  style.textContent = `${toolsCss}\n${contentCss}`
+  style.textContent = `${themeCss}\n${toolsCss}\n${contentCss}`
   shadow.appendChild(style)
 
   const app = document.createElement('div')

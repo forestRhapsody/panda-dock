@@ -19,13 +19,20 @@ export function extVersion(): string {
   }
 }
 
-/** 打开扩展设置页（options_ui），非扩展环境则忽略 */
-export function openOptionsPage(): void {
+/**
+ * 打开扩展设置页（options.html）。
+ * 主路径 chrome.tabs.create 开新标签（不依赖用户手势，popup 等扩展页稳定）；
+ * 该 API 在部分侧边栏上下文会被拒绝，此时用标准 Web API window.open 兜底，确保总能打开。
+ */
+export async function openOptionsPage(): Promise<void> {
   if (typeof chrome === 'undefined') return
+  const url = chrome.runtime.getURL('options.html')
   try {
-    void chrome.runtime.openOptionsPage()
+    await chrome.tabs.create({ url })
+    return
   } catch {
-    // 仅在浏览器预览等非扩展环境下才会走到这里
+    // 侧边栏等上下文 tabs.create 被拒：用标准 Web API 直接打开（任意上下文可用）
+    window.open(url, '_blank')
   }
 }
 

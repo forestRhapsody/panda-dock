@@ -12,6 +12,9 @@ export const MSG_STORAGE_READ = 'TOOLKIT_STORAGE_READ'
 /** 扩展页面(侧边栏等) → content：删除当前页存储里的某个 key */
 export const MSG_STORAGE_REMOVE = 'TOOLKIT_STORAGE_REMOVE'
 
+/** 扩展页面(侧边栏等) → content：写入/更新当前页存储里的某个 key */
+export const MSG_STORAGE_SET = 'TOOLKIT_STORAGE_SET'
+
 /** 扩展页面(侧边栏等) → content：清空当前页的某一存储区域 */
 export const MSG_STORAGE_CLEAR = 'TOOLKIT_STORAGE_CLEAR'
 

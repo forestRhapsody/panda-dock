@@ -1,4 +1,6 @@
-/* Content Script 悬浮球 + 网页内抽屉样式 —— 经 ?inline 注入 Shadow DOM，类名无需担心与网页冲突 */
+/* Content Script 悬浮球 + 网页内抽屉样式 —— 经 ?inline 注入 Shadow DOM，类名无需担心与网页冲突。
+   注意：Shadow DOM 内 `:host/.tek__*` 使用了 `all: initial` 以阻断宿主页样式继承，
+   因此这些组件用与令牌一致的冷寂字面色；抽屉内部 `.tw` 工具箱则走 theme.css 的令牌（.tw 作用域）。 */
 
 /* 阻断宿主页面继承样式影响本组件 */
 :host {
@@ -22,24 +24,24 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  color: #fff;
-  background: linear-gradient(135deg, #7aa2ff, #4f7cff);
-  box-shadow: 0 6px 18px rgb(79 124 255 / 0.5);
+  color: hsl(0 0% 100%);
+  background: linear-gradient(135deg, #3a3a3a, #171717);
+  box-shadow: 0 6px 18px rgb(23 23 23 / 0.45);
   /* transform 由组件内联控制：悬停滑出 / 移开缩回一半 */
 }
 
 .tek__dock--drag {
   cursor: grabbing;
-  box-shadow: 0 12px 26px rgb(79 124 255 / 0.65);
+  box-shadow: 0 12px 26px rgb(23 23 23 / 0.55);
 }
 
 .tek__dock:hover {
   box-shadow:
-    0 6px 18px rgb(79 124 255 / 0.6),
-    0 0 0 4px rgb(79 124 255 / 0.16);
+    0 6px 18px rgb(23 23 23 / 0.5),
+    0 0 0 4px rgb(23 23 23 / 0.14);
 }
 
-/* —— 网页内右侧抽屉（承载工具箱 ToolsApp，类 tw-* 见 tools.css） —— */
+/* —— 网页内右侧抽屉（承载工具箱 ToolsApp，类名 tw-* 见 tools.css） —— */
 
 .tek__drawer {
   position: fixed;
@@ -51,8 +53,8 @@
   flex-direction: row;
   width: 400px; /* 实际宽度由组件内联控制（可拖拽调整） */
   overflow: hidden;
-  background: #f7f8fa;
-  box-shadow: -10px 0 36px rgb(15 23 42 / 0.18);
+  background: hsl(0 0% 99%);
+  box-shadow: -10px 0 36px rgb(15 23 42 / 0.16);
   animation: tek-drawer-in 0.22s ease-out;
 }
 
@@ -91,14 +93,14 @@
   width: 3px;
   height: 40px;
   border-radius: 3px;
-  background: #d5dae2;
+  background: hsl(240 6% 88%);
   transition: background 0.15s;
 }
 
 .tek__drawer-handle:hover::after,
 .tek__drawer-handle:focus-visible::after,
 .tek__drawer--resizing .tek__drawer-handle::after {
-  background: #4f7cff;
+  background: #171717;
 }
 
 .tek__drawer > .tw {
@@ -113,15 +115,15 @@
   place-items: center;
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: 0.375rem;
   font-size: 15px;
-  color: #5b6472;
+  color: hsl(240 4% 46%);
   cursor: pointer;
 }
 
 .tek__drawer-close:hover {
-  background: #f0f1f4;
-  color: #1f2329;
+  background: hsl(240 5% 94%);
+  color: hsl(240 9% 9%);
 }
 
 /* —— 轻提示（原生侧边栏唤起受限等） —— */
@@ -137,14 +139,14 @@
   box-sizing: border-box;
   padding: 10px 18px;
   border-radius: 999px;
-  background: rgb(31 35 41 / 0.92);
-  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+  background: hsl(240 8% 12%);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.24);
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   font-size: 13px;
   line-height: 1.5;
-  color: #fff;
+  color: hsl(0 0% 100%);
   text-align: center;
   pointer-events: none;
   animation: tek-toast-in 0.2s ease-out;

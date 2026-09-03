@@ -1,3 +1,4 @@
+/* Popup 首页（仪表盘）样式：纯展示组件，配色走 src/theme.css 令牌。 */
 .home {
   display: flex;
   flex-direction: column;
@@ -18,13 +19,13 @@
   margin: 10px 0 4px;
   font-size: 18px;
   font-weight: 700;
-  color: #1f2329;
+  color: var(--tk-foreground);
 }
 
 .home__desc {
   margin: 0;
   font-size: 12px;
-  color: #8a919f;
+  color: var(--tk-muted-foreground);
 }
 
 .home__features {
@@ -38,9 +39,9 @@
   gap: 12px;
   align-items: flex-start;
   padding: 12px 14px;
-  border: 1px solid #eceff4;
-  border-radius: 12px;
-  background: #fafbfc;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-lg);
+  background: var(--tk-muted);
 }
 
 .home__feature-icon {
@@ -51,13 +52,13 @@
 .home__feature strong {
   display: block;
   font-size: 13px;
-  color: #1f2329;
+  color: var(--tk-foreground);
 }
 
 .home__feature p {
   margin: 4px 0 0;
   font-size: 12px;
-  color: #8a919f;
+  color: var(--tk-muted-foreground);
 }
 
 .home__footer {
@@ -65,7 +66,7 @@
   align-items: center;
   gap: 10px;
   font-size: 12px;
-  color: #8a919f;
+  color: var(--tk-muted-foreground);
 }
 
 .home__env {
@@ -75,13 +76,13 @@
 }
 
 .home__env--ext {
-  background: #e6f4ea;
-  color: #1e7e34;
+  background: color-mix(in srgb, var(--tk-success) 14%, var(--tk-card));
+  color: var(--tk-success);
 }
 
 .home__env--preview {
-  background: #fef7e0;
-  color: #946200;
+  background: color-mix(in srgb, var(--tk-warning) 14%, var(--tk-card));
+  color: var(--tk-warning);
 }
 
 .home__link {
@@ -89,7 +90,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: #4f7cff;
+  color: var(--tk-primary);
   font-size: 12px;
   cursor: pointer;
 }

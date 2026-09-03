@@ -1,4 +1,4 @@
-/* Popup 弹窗样式：.pop 的宽度就是弹窗宽度 */
+/* Popup 弹窗样式：.pop 的宽度就是弹窗宽度。配色走 src/theme.css 令牌。 */
 *,
 *::before,
 *::after {
@@ -14,11 +14,9 @@ body {
   flex-direction: column;
   width: 380px;
   max-height: 560px;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  color: #1f2329;
-  background: #fff;
+  font-family: var(--tk-font);
+  color: var(--tk-foreground);
+  background: var(--tk-card);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -27,13 +25,13 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  border-bottom: 1px solid #eceff4;
-  background: #fff;
+  border-bottom: 1px solid var(--tk-border);
+  background: var(--tk-card);
 }
 
 .pop__title {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .pop__settings {
@@ -42,38 +40,44 @@ body {
   font-size: 15px;
   padding: 4px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--tk-radius-sm);
   line-height: 1;
+  color: var(--tk-muted-foreground);
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .pop__settings:hover {
-  background: #f2f3f5;
+  background: var(--tk-accent);
+  color: var(--tk-foreground);
 }
 
 .pop__native {
   padding: 8px 14px;
-  border-bottom: 1px solid #eceff4;
+  border-bottom: 1px solid var(--tk-border);
 }
 
 .pop__native-btn {
   width: 100%;
   padding: 8px 0;
-  border: 1px solid #4f7cff;
-  border-radius: 9px;
-  background: #4f7cff;
-  color: #fff;
+  border: 1px solid var(--tk-primary);
+  border-radius: var(--tk-radius);
+  background: var(--tk-primary);
+  color: var(--tk-primary-foreground);
   font-size: 12px;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .pop__native-btn:hover {
-  background: #3b5fcc;
+  background: var(--tk-primary-hover);
 }
 
 .pop__native-hint {
   margin: 6px 0 0;
   font-size: 11px;
-  color: #d64541;
+  color: var(--tk-destructive);
 }
 
 .pop__body {

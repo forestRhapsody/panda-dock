@@ -1,8 +1,8 @@
 import { useState } from 'react'
 
-import { copyText } from '@/utils/clipboard'
-
+import AutoArea from './AutoArea'
 import { decodeBase64, encodeBase64, isLikelyBase64 } from './base64'
+import CopyButton from './CopyButton'
 
 type Mode = 'encode' | 'decode'
 
@@ -16,7 +16,7 @@ const DECODE_PLACEHOLDER = '粘贴 Base64 字符串（自动忽略换行）…'
 
 /** Base64 编解码工具卡片 */
 export default function Base64Tool() {
-  const [mode, setMode] = useState<Mode>('encode')
+  const [mode, setMode] = useState<Mode>('decode')
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
   const [status, setStatus] = useState<Status | null>(null)
@@ -65,24 +65,9 @@ export default function Base64Tool() {
     setStatus(null)
   }
 
-  async function copy() {
-    if (!output) return
-    const ok = await copyText(output)
-    if (ok) setStatus({ kind: 'ok', text: '已复制到剪贴板' })
-  }
-
   return (
     <div className='tw-card'>
       <div className='tw-tabs' role='tablist'>
-        <button
-          type='button'
-          role='tab'
-          aria-selected={mode === 'encode'}
-          className={`tw-tabs__btn${mode === 'encode' ? ' tw-tabs__btn--on' : ''}`}
-          onClick={() => switchMode('encode')}
-        >
-          编码
-        </button>
         <button
           type='button'
           role='tab'
@@ -91,6 +76,15 @@ export default function Base64Tool() {
           onClick={() => switchMode('decode')}
         >
           解码
+        </button>
+        <button
+          type='button'
+          role='tab'
+          aria-selected={mode === 'encode'}
+          className={`tw-tabs__btn${mode === 'encode' ? ' tw-tabs__btn--on' : ''}`}
+          onClick={() => switchMode('encode')}
+        >
+          编码
         </button>
       </div>
 
@@ -114,27 +108,27 @@ export default function Base64Tool() {
         </button>
       </div>
 
-      <label className='tw-field'>
+      <div className='tw-field'>
         <span className='tw-field__label'>
           结果
-          <button type='button' className='tw-link' onClick={() => void copy()} disabled={!output}>
-            复制
-          </button>
+          <CopyButton
+            text={output}
+            disabled={!output}
+            className='tw-link'
+            onResult={(ok) => {
+              if (!ok) setStatus({ kind: 'err', text: '复制失败' })
+            }}
+          />
         </span>
-        <textarea
+        <AutoArea
           className='tw-area tw-area--result'
           value={output}
           readOnly
           placeholder='结果会显示在这里…'
         />
-      </label>
+      </div>
 
-      {status && (
-        <p className={`tw-status tw-status--${status.kind}`}>
-          {status.kind === 'ok' ? '✓ ' : status.kind === 'err' ? '✕ ' : 'ℹ '}
-          {status.text}
-        </p>
-      )}
+      {status && <p className={`tw-status tw-status--${status.kind}`}>{status.text}</p>}
       <p className='tw-note'>
         编码采用 UTF-8；解码时自动识别是否为文本，非文本内容按原始字节展示。
       </p>

@@ -9,6 +9,7 @@ import ToolsApp from '@/tools/ToolsApp'
 
 import '@/content/content.css'
 import '@/tools/tools.css'
+import '@/theme.css'
 import './index.css'
 
 /**
