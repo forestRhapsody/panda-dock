@@ -1,0 +1,46 @@
+{
+  "name": "toolkit-extension",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "packageManager": "pnpm@10.17.0",
+  "scripts": {
+    "dev": "vite",
+    "icons": "node scripts/generate-icons.mjs",
+    "build": "tsc -b && vite build --config vite.content.config.ts && vite build --config vite.background.config.ts && vite build",
+    "lint": "eslint . --fix",
+    "preview": "vite preview",
+    "preinstall": "npx only-allow pnpm",
+    "format": "prettier --write src/",
+    "type-check": "tsc -b"
+  },
+  "dependencies": {
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "@types/chrome": "^0.2.8",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react-swc": "^4.0.0",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.39.1",
+    "vite": "^7.1.2",
+    "vite-plugin-checker": "^0.10.3",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "volta": {
+    "node": "24.8.0"
+  }
+}

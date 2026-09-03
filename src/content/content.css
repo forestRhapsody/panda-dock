@@ -1,0 +1,162 @@
+/* Content Script 悬浮球 + 网页内抽屉样式 —— 经 ?inline 注入 Shadow DOM，类名无需担心与网页冲突 */
+
+/* 阻断宿主页面继承样式影响本组件 */
+:host {
+  all: initial;
+}
+
+/* —— 悬浮球 —— */
+
+.tek__ball {
+  all: initial;
+  position: fixed;
+  z-index: 2147483001;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  color: #fff;
+  background: linear-gradient(135deg, #7aa2ff, #4f7cff);
+  box-shadow: 0 6px 20px rgb(79 124 255 / 0.5);
+  /* transform 由组件内联控制：悬停滑出 / 移开缩回一半 */
+}
+
+.tek__ball--drag {
+  cursor: grabbing;
+  box-shadow: 0 10px 26px rgb(79 124 255 / 0.6);
+}
+
+.tek__ball--visible {
+  box-shadow:
+    0 6px 20px rgb(79 124 255 / 0.55),
+    0 0 0 4px rgb(79 124 255 / 0.15);
+}
+
+/* —— 网页内右侧抽屉（承载工具箱 ToolsApp，类 tw-* 见 tools.css） —— */
+
+.tek__drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2147483010;
+  display: flex;
+  flex-direction: row;
+  width: 400px; /* 实际宽度由组件内联控制（可拖拽调整） */
+  overflow: hidden;
+  background: #f7f8fa;
+  box-shadow: -10px 0 36px rgb(15 23 42 / 0.18);
+  animation: tek-drawer-in 0.22s ease-out;
+}
+
+.tek__drawer--resizing {
+  transition: none;
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@keyframes tek-drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* 左缘拖拽把手 */
+.tek__drawer-handle {
+  all: initial;
+  flex: none;
+  align-self: stretch;
+  width: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+
+.tek__drawer-handle::after {
+  content: '';
+  width: 3px;
+  height: 40px;
+  border-radius: 3px;
+  background: #d5dae2;
+  transition: background 0.15s;
+}
+
+.tek__drawer-handle:hover::after,
+.tek__drawer-handle:focus-visible::after,
+.tek__drawer--resizing .tek__drawer-handle::after {
+  background: #4f7cff;
+}
+
+.tek__drawer > .tw {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: auto;
+}
+
+.tek__drawer-close {
+  all: initial;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #5b6472;
+  cursor: pointer;
+}
+
+.tek__drawer-close:hover {
+  background: #f0f1f4;
+  color: #1f2329;
+}
+
+/* —— 轻提示（原生侧边栏唤起受限等） —— */
+
+.tek__toast {
+  all: initial;
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483012;
+  max-width: min(560px, 80vw);
+  box-sizing: border-box;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgb(31 35 41 / 0.92);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #fff;
+  text-align: center;
+  pointer-events: none;
+  animation: tek-toast-in 0.2s ease-out;
+}
+
+@keyframes tek-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
