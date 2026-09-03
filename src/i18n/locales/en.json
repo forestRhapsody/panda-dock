@@ -6,7 +6,9 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "retry": "Retry",
-    "collapse": "Collapse"
+    "collapse": "Collapse",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "popup": {
     "quickSettings": "Quick settings",
@@ -101,7 +103,34 @@
       "json": "JSON",
       "jwt": "JWT",
       "timestamp": "Timestamp",
-      "storage": "Local Storage"
+      "storage": "Local Storage",
+      "url": "URL"
+    },
+    "url": {
+      "inputLabel": "URL / Uri",
+      "inputPlaceholder": "Enter a URL, e.g. https://example.com/path?q=1#hash",
+      "parse": "Parse",
+      "fetchCurrent": "Get current page URL",
+      "clear": "Clear",
+      "empty": "Enter a URL",
+      "errorInvalid": "Invalid URL",
+      "fetchFailed": "Could not get the current page URL",
+      "result": "Parsed result",
+      "resultPlaceholder": "Full parsed URL",
+      "queryParams": "Query parameters",
+      "component": {
+        "protocol": "Protocol",
+        "origin": "Origin",
+        "host": "Host",
+        "hostname": "Hostname",
+        "port": "Port",
+        "username": "Username",
+        "password": "Password",
+        "path": "Path",
+        "search": "Query string",
+        "hash": "Hash"
+      },
+      "note": "Supports URLs with or without a protocol; relative paths are resolved against the current page origin."
     },
     "timestamp": {
       "sourceSeconds": "Parsed as Unix seconds",

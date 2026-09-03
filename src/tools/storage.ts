@@ -1,5 +1,6 @@
 import i18n from '@/i18n'
 import {
+  MSG_GET_PAGE_URL,
   MSG_STORAGE_CLEAR,
   MSG_STORAGE_READ,
   MSG_STORAGE_REMOVE,
@@ -138,6 +139,14 @@ export function installStorageBridge(): void {
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     const action = (message as { action?: string } | undefined)?.action
+    if (action === MSG_GET_PAGE_URL) {
+      try {
+        sendResponse({ ok: true, url: window.location.href })
+      } catch (e) {
+        sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })
+      }
+      return undefined
+    }
     if (action === MSG_STORAGE_READ) {
       const area = (message as { area?: StorageArea }).area ?? 'local'
       try {

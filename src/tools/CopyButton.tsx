@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import { copyText } from '@/utils/clipboard'
 
 interface CopyButtonProps {
@@ -21,12 +23,15 @@ export default function CopyButton({
   disabled,
   className,
   title,
-  label = '复制',
-  copiedLabel = '已复制',
+  label,
+  copiedLabel,
   onResult,
 }: CopyButtonProps) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
   const timer = useRef<number | undefined>(undefined)
+  const labelText = label ?? t('common.copy')
+  const copiedText = copiedLabel ?? t('common.copied')
 
   useEffect(() => () => window.clearTimeout(timer.current), [])
 
@@ -48,7 +53,7 @@ export default function CopyButton({
       disabled={disabled}
       onClick={() => void handleClick()}
     >
-      {copied ? copiedLabel : label}
+      {copied ? copiedText : labelText}
     </button>
   )
 }

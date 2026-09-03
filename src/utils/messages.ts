@@ -21,6 +21,9 @@ export const MSG_OPEN_OPTIONS = 'OPEN_OPTIONS_PAGE'
 /** 扩展页面(侧边栏等) → content：读取当前页 localStorage/sessionStorage */
 export const MSG_STORAGE_READ = 'TOOLKIT_STORAGE_READ'
 
+/** 扩展页面(侧边栏等) → content：读取当前页的网址（window.location.href） */
+export const MSG_GET_PAGE_URL = 'TOOLKIT_GET_PAGE_URL'
+
 /** 扩展页面(侧边栏等) → content：删除当前页存储里的某个 key */
 export const MSG_STORAGE_REMOVE = 'TOOLKIT_STORAGE_REMOVE'
 

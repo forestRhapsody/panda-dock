@@ -6,7 +6,9 @@
     "cancel": "取消",
     "confirm": "确认",
     "retry": "重试",
-    "collapse": "收起"
+    "collapse": "收起",
+    "copy": "复制",
+    "copied": "已复制"
   },
   "popup": {
     "quickSettings": "快捷设置",
@@ -101,7 +103,34 @@
       "json": "JSON",
       "jwt": "JWT",
       "timestamp": "时间戳",
-      "storage": "本地存储"
+      "storage": "本地存储",
+      "url": "网址"
+    },
+    "url": {
+      "inputLabel": "网址 / URL",
+      "inputPlaceholder": "输入网址，如 https://example.com/path?q=1#hash",
+      "parse": "解析",
+      "fetchCurrent": "获取当前网页 URL",
+      "clear": "清空",
+      "empty": "请输入网址",
+      "errorInvalid": "无效的 URL",
+      "fetchFailed": "无法获取当前网页 URL",
+      "result": "解析结果",
+      "resultPlaceholder": "解析后的完整 URL",
+      "queryParams": "查询参数",
+      "component": {
+        "protocol": "协议",
+        "origin": "来源",
+        "host": "主机",
+        "hostname": "主机名",
+        "port": "端口",
+        "username": "用户名",
+        "password": "密码",
+        "path": "路径",
+        "search": "查询串",
+        "hash": "哈希"
+      },
+      "note": "支持带协议或无协议的网址；相对路径以当前页 origin 为基准解析。"
     },
     "timestamp": {
       "sourceSeconds": "按 Unix 秒解析",

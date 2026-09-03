@@ -31,6 +31,7 @@ import type { ToolId, ToolMeta } from './registry'
 import { defaultToolLayout, normalizeToolLayout, visibleTools } from './registry'
 import StorageTool from './StorageTool'
 import TimestampTool from './TimestampTool'
+import UrlTool from './UrlTool'
 
 interface ToolsAppProps {
   /** 头部右侧的动作区（各宿主自定义：关闭、唤起抽屉等） */
@@ -43,6 +44,7 @@ const TOOL_COMPONENTS: Record<ToolId, () => ReactNode> = {
   jwt: () => <JwtTool />,
   timestamp: () => <TimestampTool />,
   storage: () => <StorageTool />,
+  url: () => <UrlTool />,
 }
 
 const NAV_PAD = 8
