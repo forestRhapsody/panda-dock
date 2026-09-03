@@ -29,7 +29,8 @@ export default function JsonTextarea({
     const ta = taRef.current
     if (!ta) return
     ta.style.height = 'auto'
-    const h = Math.min(ta.scrollHeight, maxHeight)
+    // 加一点容错余量，避免因最后一行舍入/descender 出现多余滚动条
+    const h = Math.min(ta.scrollHeight + 12, maxHeight)
     ta.style.height = `${h}px`
   }, [value, maxHeight])
 

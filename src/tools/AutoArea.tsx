@@ -24,7 +24,8 @@ export default function AutoArea({
     const el = ref.current
     if (!el) return
     el.style.height = 'auto'
-    const h = Math.min(el.scrollHeight, maxHeight)
+    // 加一点容错余量，避免因最后一行舍入/descender 出现多余滚动条
+    const h = Math.min(el.scrollHeight + 12, maxHeight)
     el.style.height = `${h}px`
     // 内容超出上限时内部滚动，否则隐藏滚动条
     el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden'
