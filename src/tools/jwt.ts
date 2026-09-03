@@ -1,3 +1,5 @@
+import i18n from '@/i18n'
+
 export interface JwtDecoded {
   headerText: string
   payloadText: string
@@ -29,7 +31,7 @@ function parseJson(text: string, what: string): unknown {
     return JSON.parse(text) as unknown
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
-    throw new Error(`${what}不是合法 JSON：${message}`)
+    throw new Error(i18n.t('tool.jwt.errorNotJson', { what, message }))
   }
 }
 
@@ -70,20 +72,20 @@ export function decodeJwt(token: string): JwtResult {
   if (parts.length !== 3) {
     return {
       ok: false,
-      error: `JWT 应包含 header.payload.signature 三段，当前为 ${parts.length} 段`,
+      error: i18n.t('tool.jwt.errorSegmentCount', { count: parts.length }),
     }
   }
   const [headerSeg, payloadSeg, signatureSeg] = parts
   if (!headerSeg || !payloadSeg || !signatureSeg) {
-    return { ok: false, error: 'JWT 存在空白段：header.payload.signature 三段都不能为空' }
+    return { ok: false, error: i18n.t('tool.jwt.errorEmptySegment') }
   }
   if (!/^[A-Za-z0-9_-]+$/.test(headerSeg) || !/^[A-Za-z0-9_-]+$/.test(payloadSeg)) {
-    return { ok: false, error: 'JWT 段包含非法字符（应为 Base64URL 字符集）' }
+    return { ok: false, error: i18n.t('tool.jwt.errorInvalidChars') }
   }
 
   try {
-    const header = parseJson(decodeSegment(headerSeg), 'Header ')
-    const payload = parseJson(decodeSegment(payloadSeg), 'Payload ')
+    const header = parseJson(decodeSegment(headerSeg), i18n.t('tool.jwt.header'))
+    const payload = parseJson(decodeSegment(payloadSeg), i18n.t('tool.jwt.payload'))
     return {
       ok: true,
       data: {

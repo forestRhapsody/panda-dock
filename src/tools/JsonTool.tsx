@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import { formatJson, minifyJson } from './json'
@@ -14,6 +16,7 @@ type Mode = 'format' | 'minify'
 
 /** 单个 JSON 处理面板：独立维护输入/结果/状态 */
 function JsonPanel({ mode }: { mode: Mode }) {
+  const { t } = useTranslation()
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
   const [status, setStatus] = useState<Status | null>(null)
@@ -22,7 +25,7 @@ function JsonPanel({ mode }: { mode: Mode }) {
     const raw = input.trim()
     if (!raw) {
       setOutput('')
-      setStatus({ kind: 'info', text: '请先粘贴 JSON 内容' })
+      setStatus({ kind: 'info', text: t('tool.json.pasteFirst') })
       return
     }
     const result = mode === 'format' ? formatJson(raw) : minifyJson(raw)
@@ -30,11 +33,11 @@ function JsonPanel({ mode }: { mode: Mode }) {
       setOutput(result.text ?? '')
       setStatus({
         kind: 'ok',
-        text: mode === 'format' ? '格式化成功（2 空格缩进）' : '压缩成功（单行）',
+        text: mode === 'format' ? t('tool.json.formatOk') : t('tool.json.minifyOk'),
       })
     } else {
       setOutput('')
-      setStatus({ kind: 'err', text: result.error ?? '处理失败' })
+      setStatus({ kind: 'err', text: result.error ?? t('tool.json.failed') })
     }
   }
 
@@ -47,11 +50,11 @@ function JsonPanel({ mode }: { mode: Mode }) {
   return (
     <div className='tw-json-sec'>
       <label className='tw-field'>
-        <span className='tw-field__label'>JSON 输入</span>
+        <span className='tw-field__label'>{t('tool.json.inputLabel')}</span>
         <textarea
           className='tw-area tw-area--tall'
           value={input}
-          placeholder='粘贴 JSON，例如 {"name":"toolkit"}…'
+          placeholder={t('tool.json.inputPlaceholder')}
           onChange={(e) => setInput(e.target.value)}
           spellCheck={false}
         />
@@ -59,22 +62,22 @@ function JsonPanel({ mode }: { mode: Mode }) {
 
       <div className='tw-actions'>
         <button type='button' className='tk-btn tk-btn--primary' onClick={run}>
-          {mode === 'format' ? '格式化 →' : '压缩 →'}
+          {mode === 'format' ? t('tool.json.formatBtn') : t('tool.json.minifyBtn')}
         </button>
         <button type='button' className='tk-btn' onClick={clear}>
-          清空
+          {t('tool.json.clear')}
         </button>
       </div>
 
       <div className='tw-field'>
         <span className='tw-field__label'>
-          结果
+          {t('tool.json.result')}
           <CopyButton
             text={output}
             disabled={!output}
             className='tw-link'
             onResult={(ok) => {
-              if (!ok) setStatus({ kind: 'err', text: '复制失败' })
+              if (!ok) setStatus({ kind: 'err', text: t('tool.json.copyFailed') })
             }}
           />
         </span>
@@ -85,7 +88,7 @@ function JsonPanel({ mode }: { mode: Mode }) {
             className='tw-area tw-area--result'
             value={output}
             readOnly
-            placeholder='结果会显示在这里…'
+            placeholder={t('tool.json.resultPlaceholder')}
           />
         )}
       </div>
@@ -97,6 +100,7 @@ function JsonPanel({ mode }: { mode: Mode }) {
 
 /** JSON 工具：格式化 / 压缩 tab 切换，各自独立输入与结果（切 tab 时各自保留） */
 export default function JsonTool() {
+  const { t } = useTranslation()
   const [tab, setTab] = useState<Mode>('format')
 
   return (
@@ -109,7 +113,7 @@ export default function JsonTool() {
           className={`tw-tabs__btn${tab === 'format' ? ' tw-tabs__btn--on' : ''}`}
           onClick={() => setTab('format')}
         >
-          格式化
+          {t('tool.json.format')}
         </button>
         <button
           type='button'
@@ -118,7 +122,7 @@ export default function JsonTool() {
           className={`tw-tabs__btn${tab === 'minify' ? ' tw-tabs__btn--on' : ''}`}
           onClick={() => setTab('minify')}
         >
-          压缩
+          {t('tool.json.minify')}
         </button>
       </div>
 
@@ -130,9 +134,7 @@ export default function JsonTool() {
         <JsonPanel mode='minify' />
       </div>
 
-      <p className='tw-note'>
-        支持带注释（JSONC）与尾随逗号；输出为去掉注释和多余逗号后的合法 JSON。
-      </p>
+      <p className='tw-note'>{t('tool.json.note')}</p>
     </div>
   )
 }

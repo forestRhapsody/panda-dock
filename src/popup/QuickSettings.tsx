@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
-import { FONT_SCALE_OPTIONS, normalizeSettings, THEME_OPTIONS } from '@/utils/settings'
-import type { Settings, ThemeMode } from '@/utils/settings'
+import {
+  FONT_SCALE_OPTIONS,
+  LOCALE_OPTIONS,
+  normalizeSettings,
+  THEME_OPTIONS,
+} from '@/utils/settings'
+import type { LocaleSetting, Settings, ThemeMode } from '@/utils/settings'
 
 const SETTINGS_KEY = 'settings'
 
@@ -12,6 +19,7 @@ const SETTINGS_KEY = 'settings'
  * 与 Options 共用同一份 `settings`（chrome.storage.sync），改动即时同步。
  */
 export default function QuickSettings() {
+  const { t } = useTranslation()
   const inExt = isExtension()
   const [settings, setSettings] = useState<Settings>(() => normalizeSettings(null))
 
@@ -46,37 +54,42 @@ export default function QuickSettings() {
     [inExt],
   )
 
-  const toggles: { value: boolean; label: string; desc: string; set: (v: boolean) => void }[] = [
+  const toggles: {
+    value: boolean
+    labelKey: string
+    descKey: string
+    set: (v: boolean) => void
+  }[] = [
     {
       value: settings.quickOpen,
-      label: '页面悬浮球',
-      desc: '在网页上显示悬浮球',
+      labelKey: 'settings.quickOpen',
+      descKey: 'settings.quickOpenDesc',
       set: (v) => update({ quickOpen: v }),
     },
     {
       value: settings.ballSnap,
-      label: '悬浮球吸边',
-      desc: '拖拽后贴靠左右两侧',
+      labelKey: 'settings.ballSnap',
+      descKey: 'settings.ballSnapDesc',
       set: (v) => update({ ballSnap: v }),
     },
   ]
 
   return (
     <div className='pop__settings'>
-      <div className='pop__settings-head'>快捷设置</div>
+      <div className='pop__settings-head'>{t('popup.quickSettings')}</div>
       <ul className='pop__settings-list'>
-        {toggles.map((t) => (
-          <li key={t.label} className='pop__setting'>
+        {toggles.map((item) => (
+          <li key={item.labelKey} className='pop__setting'>
             <div className='pop__setting-text'>
-              <strong>{t.label}</strong>
-              <p>{t.desc}</p>
+              <strong>{t(item.labelKey)}</strong>
+              <p>{t(item.descKey)}</p>
             </div>
             <button
               type='button'
               role='switch'
-              aria-checked={t.value}
-              className={`pop__switch${t.value ? ' pop__switch--on' : ''}`}
-              onClick={() => t.set(!t.value)}
+              aria-checked={item.value}
+              className={`pop__switch${item.value ? ' pop__switch--on' : ''}`}
+              onClick={() => item.set(!item.value)}
             >
               <span className='pop__switch-knob' />
             </button>
@@ -84,51 +97,83 @@ export default function QuickSettings() {
         ))}
         <li className='pop__setting'>
           <div className='pop__setting-text'>
-            <strong>点击悬浮球的动作</strong>
-            <p>网页内抽屉 / 浏览器原生侧边栏</p>
+            <strong>{t('settings.ballAction')}</strong>
+            <p>
+              {t('settings.actionDrawer')} / {t('settings.actionNative')}
+            </p>
           </div>
           <select
             className='pop__select'
             value={settings.ballAction}
             onChange={(e) => update({ ballAction: e.target.value as BallAction })}
-            aria-label='点击悬浮球的动作'
+            aria-label={t('settings.ballAction')}
           >
-            <option value='drawer'>网页内抽屉</option>
-            <option value='native'>浏览器原生侧边栏</option>
+            <option value='drawer'>{t('settings.actionDrawer')}</option>
+            <option value='native'>{t('settings.actionNative')}</option>
           </select>
         </li>
         <li className='pop__setting'>
           <div className='pop__setting-text'>
-            <strong>主题</strong>
-            <p>跟随系统 / 浅色 / 深色</p>
+            <strong>{t('settings.theme')}</strong>
+            <p>{t('settings.themeDesc')}</p>
           </div>
           <select
             className='pop__select'
             value={settings.theme}
             onChange={(e) => update({ theme: e.target.value as ThemeMode })}
-            aria-label='主题'
+            aria-label={t('settings.theme')}
           >
             {THEME_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
-                {o.label}
+                {t(
+                  o.value === 'system'
+                    ? 'settings.themeSystem'
+                    : o.value === 'light'
+                      ? 'settings.themeLight'
+                      : 'settings.themeDark',
+                )}
               </option>
             ))}
           </select>
         </li>
         <li className='pop__setting'>
           <div className='pop__setting-text'>
-            <strong>整体字体大小</strong>
-            <p>调整所有界面的文字与按钮大小</p>
+            <strong>{t('settings.language')}</strong>
+            <p>{t('settings.languageDesc')}</p>
+          </div>
+          <select
+            className='pop__select'
+            value={settings.locale}
+            onChange={(e) => update({ locale: e.target.value as LocaleSetting })}
+            aria-label={t('settings.language')}
+          >
+            {LOCALE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.value === 'system' ? t('settings.localeSystem') : o.label}
+              </option>
+            ))}
+          </select>
+        </li>
+        <li className='pop__setting'>
+          <div className='pop__setting-text'>
+            <strong>{t('settings.fontScale')}</strong>
+            <p>{t('settings.fontScaleDesc')}</p>
           </div>
           <select
             className='pop__select'
             value={settings.fontScale}
             onChange={(e) => update({ fontScale: Number(e.target.value) })}
-            aria-label='整体字体大小'
+            aria-label={t('settings.fontScale')}
           >
             {FONT_SCALE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
-                {o.label}
+                {t(
+                  o.value === 1
+                    ? 'settings.fontStandard'
+                    : o.value === 1.1
+                      ? 'settings.fontLarge'
+                      : 'settings.fontMax',
+                )}
               </option>
             ))}
           </select>

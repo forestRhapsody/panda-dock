@@ -1,5 +1,6 @@
 /** 工具箱工具注册表：工具的唯一事实来源（id / 显示名 / 默认顺序）。
- *  新增工具：1) 在这里登记；2) 在 ToolsApp 里补组件映射；3) Options 配置列表自动出现。 */
+ *  新增工具：1) 在这里登记；2) 在 ToolsApp 里补组件映射；3) Options 配置列表自动出现。
+ *  label 为英文规范名；界面显示经 `t(\`tool.registry.${id}\`)` 本地化（见 ToolsApp / Options）。 */
 
 export type ToolId = 'base64' | 'json' | 'jwt' | 'timestamp' | 'storage'
 
@@ -13,8 +14,8 @@ export const DEFAULT_TOOLS: ToolMeta[] = [
   { id: 'base64', label: 'Base64' },
   { id: 'json', label: 'JSON' },
   { id: 'jwt', label: 'JWT' },
-  { id: 'timestamp', label: '时间戳' },
-  { id: 'storage', label: '本地存储' },
+  { id: 'timestamp', label: 'Timestamp' },
+  { id: 'storage', label: 'Local Storage' },
 ]
 
 export function isToolId(value: unknown): value is ToolId {

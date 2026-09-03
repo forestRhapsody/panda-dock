@@ -15,6 +15,16 @@ export const THEME_OPTIONS: { label: string; value: ThemeMode }[] = [
   { label: '深色', value: 'dark' },
 ]
 
+/** 语言设置：中文 / English / 跟随系统 */
+export type LocaleSetting = 'zh' | 'en' | 'system'
+
+/** 允许的语言档位 */
+export const LOCALE_OPTIONS: { label: string; value: LocaleSetting }[] = [
+  { label: '跟随系统', value: 'system' },
+  { label: '中文', value: 'zh' },
+  { label: 'English', value: 'en' },
+]
+
 /** 允许的字体缩放档位 */
 export const FONT_SCALE_OPTIONS: { label: string; value: number }[] = [
   { label: '标准', value: 1 },
@@ -31,6 +41,8 @@ export interface Settings {
   ballAction: BallAction
   /** 主题模式：浅色 / 深色 / 跟随系统 */
   theme: ThemeMode
+  /** 语言：中文 / English / 跟随系统 */
+  locale: LocaleSetting
   /** 整体字体缩放（1 / 1.1 / 1.25） */
   fontScale: number
   /** 工具顺序（含隐藏项），对应 registry 全量 */
@@ -47,6 +59,10 @@ function normalizeTheme(value: unknown): ThemeMode {
   return value === 'light' || value === 'dark' || value === 'system' ? value : 'system'
 }
 
+function normalizeLocale(value: unknown): LocaleSetting {
+  return value === 'zh' || value === 'en' || value === 'system' ? value : 'system'
+}
+
 export function defaultSettings(): Settings {
   const layout = defaultToolLayout()
   return {
@@ -54,6 +70,7 @@ export function defaultSettings(): Settings {
     ballSnap: true,
     ballAction: 'drawer',
     theme: 'system',
+    locale: 'system',
     fontScale: 1,
     toolOrder: layout.order,
     toolEnabled: layout.enabled,
@@ -69,6 +86,7 @@ export function normalizeSettings(raw: Partial<Settings> | null | undefined): Se
     ballSnap: raw?.ballSnap !== false,
     ballAction: raw?.ballAction === 'native' ? 'native' : base.ballAction,
     theme: normalizeTheme(raw?.theme),
+    locale: normalizeLocale(raw?.locale),
     fontScale: normalizeFontScale(raw?.fontScale),
     toolOrder: layout.order,
     toolEnabled: layout.enabled,

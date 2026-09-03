@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import ToolsApp from '@/tools/ToolsApp'
 import Icon from '@/ui/Icon'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
@@ -24,6 +26,7 @@ interface DrawerProps {
 
 /** 网页内右侧抽屉：承载与原生侧边栏同一套工具箱（运行时挂载在 Shadow DOM 内），左缘可拖拽调宽 */
 export default function Drawer({ onClose }: DrawerProps) {
+  const { t } = useTranslation()
   const inExt = isExtension()
   const [width, setWidth] = useState(DEFAULT_WIDTH)
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
@@ -96,16 +99,16 @@ export default function Drawer({ onClose }: DrawerProps) {
       className={`tek__drawer${dragging ? ' tek__drawer--resizing' : ''}`}
       style={{ width: `${clampWidth(width)}px` }}
       role='dialog'
-      aria-label='工具箱抽屉'
+      aria-label={t('drawer.ariaLabel')}
     >
       <div
         role='separator'
         aria-orientation='vertical'
-        aria-label='调整抽屉宽度'
+        aria-label={t('drawer.ariaResize')}
         aria-valuemin={MIN_WIDTH}
         aria-valuemax={maxDrawerWidth()}
         aria-valuenow={Math.round(width)}
-        title='拖拽调整宽度（← 拉宽 / → 收窄）'
+        title={t('drawer.resizeTitle')}
         tabIndex={0}
         className='tek__drawer-handle'
         onPointerDown={onResizeStart}
@@ -119,8 +122,8 @@ export default function Drawer({ onClose }: DrawerProps) {
           <button
             type='button'
             className='tk-icon-btn'
-            aria-label='关闭抽屉'
-            title='关闭抽屉'
+            aria-label={t('drawer.ariaClose')}
+            title={t('drawer.ariaClose')}
             onClick={onClose}
           >
             <Icon name='close' size={14} />

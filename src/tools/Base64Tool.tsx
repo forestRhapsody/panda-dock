@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import AutoArea from './AutoArea'
 import { decodeBase64, encodeBase64, isLikelyBase64 } from './base64'
 import CopyButton from './CopyButton'
@@ -11,11 +13,9 @@ interface Status {
   text: string
 }
 
-const ENCODE_PLACEHOLDER = '输入要编码的文本（支持中文等 UTF-8 字符）…'
-const DECODE_PLACEHOLDER = '粘贴 Base64 字符串（自动忽略换行）…'
-
 /** Base64 编解码工具卡片 */
 export default function Base64Tool() {
+  const { t } = useTranslation()
   const [mode, setMode] = useState<Mode>('decode')
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
@@ -31,7 +31,7 @@ export default function Base64Tool() {
   function run() {
     const text = input.trim()
     if (!text) {
-      setStatus({ kind: 'info', text: '请先输入内容' })
+      setStatus({ kind: 'info', text: t('tool.base64.statusEmpty') })
       setOutput('')
       return
     }
@@ -39,10 +39,10 @@ export default function Base64Tool() {
       if (mode === 'encode') {
         const result = encodeBase64(text)
         setOutput(result)
-        setStatus({ kind: 'ok', text: `已编码（UTF-8）：${result.length} 字符` })
+        setStatus({ kind: 'ok', text: t('tool.base64.statusEncoded', { count: result.length }) })
       } else {
         if (!isLikelyBase64(text)) {
-          setStatus({ kind: 'err', text: '输入内容不太像 Base64（需为 A-Za-z0-9+/ 与 = 组成）' })
+          setStatus({ kind: 'err', text: t('tool.base64.statusNotBase64') })
           setOutput('')
           return
         }
@@ -50,12 +50,15 @@ export default function Base64Tool() {
         setOutput(decoded)
         setStatus({
           kind: 'ok',
-          text: isText ? '解码成功（UTF-8 文本）' : '解码成功（非 UTF-8 内容，已按原始字节展示）',
+          text: isText ? t('tool.base64.statusDecodedText') : t('tool.base64.statusDecodedBytes'),
         })
       }
     } catch (e) {
       setOutput('')
-      setStatus({ kind: 'err', text: e instanceof Error ? e.message : '转换失败' })
+      setStatus({
+        kind: 'err',
+        text: e instanceof Error ? e.message : t('tool.base64.statusFailed'),
+      })
     }
   }
 
@@ -75,7 +78,7 @@ export default function Base64Tool() {
           className={`tw-tabs__btn${mode === 'decode' ? ' tw-tabs__btn--on' : ''}`}
           onClick={() => switchMode('decode')}
         >
-          解码
+          {t('tool.base64.decode')}
         </button>
         <button
           type='button'
@@ -84,16 +87,24 @@ export default function Base64Tool() {
           className={`tw-tabs__btn${mode === 'encode' ? ' tw-tabs__btn--on' : ''}`}
           onClick={() => switchMode('encode')}
         >
-          编码
+          {t('tool.base64.encode')}
         </button>
       </div>
 
       <label className='tw-field'>
-        <span className='tw-field__label'>{mode === 'encode' ? '原文' : 'Base64'}</span>
+        <span className='tw-field__label'>
+          {mode === 'encode'
+            ? t('tool.base64.labelInputEncode')
+            : t('tool.base64.labelInputDecode')}
+        </span>
         <textarea
           className='tw-area'
           value={input}
-          placeholder={mode === 'encode' ? ENCODE_PLACEHOLDER : DECODE_PLACEHOLDER}
+          placeholder={
+            mode === 'encode'
+              ? t('tool.base64.inputPlaceholderEncode')
+              : t('tool.base64.inputPlaceholderDecode')
+          }
           onChange={(e) => setInput(e.target.value)}
           spellCheck={false}
         />
@@ -101,22 +112,22 @@ export default function Base64Tool() {
 
       <div className='tw-actions'>
         <button type='button' className='tk-btn tk-btn--primary' onClick={run}>
-          {mode === 'encode' ? '编码 →' : '解码 →'}
+          {mode === 'encode' ? t('tool.base64.runEncode') : t('tool.base64.runDecode')}
         </button>
         <button type='button' className='tk-btn' onClick={clear}>
-          清空
+          {t('tool.base64.clear')}
         </button>
       </div>
 
       <div className='tw-field'>
         <span className='tw-field__label'>
-          结果
+          {t('tool.base64.result')}
           <CopyButton
             text={output}
             disabled={!output}
             className='tw-link'
             onResult={(ok) => {
-              if (!ok) setStatus({ kind: 'err', text: '复制失败' })
+              if (!ok) setStatus({ kind: 'err', text: t('tool.base64.copyFailed') })
             }}
           />
         </span>
@@ -124,14 +135,12 @@ export default function Base64Tool() {
           className='tw-area tw-area--result'
           value={output}
           readOnly
-          placeholder='结果会显示在这里…'
+          placeholder={t('tool.base64.resultPlaceholder')}
         />
       </div>
 
       {status && <p className={`tw-status tw-status--${status.kind}`}>{status.text}</p>}
-      <p className='tw-note'>
-        编码采用 UTF-8；解码时自动识别是否为文本，非文本内容按原始字节展示。
-      </p>
+      <p className='tw-note'>{t('tool.base64.note')}</p>
     </div>
   )
 }

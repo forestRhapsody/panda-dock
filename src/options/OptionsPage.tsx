@@ -9,7 +9,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useTranslation } from 'react-i18next'
 
+import { useLocale } from '@/i18n/useLocale'
 import type { ToolId } from '@/tools/registry'
 import { DEFAULT_TOOLS, defaultToolLayout } from '@/tools/registry'
 import Icon from '@/ui/Icon'
@@ -19,18 +21,19 @@ import type { BallAction } from '@/utils/messages'
 import {
   defaultSettings,
   FONT_SCALE_OPTIONS,
+  LOCALE_OPTIONS,
   normalizeSettings,
   THEME_OPTIONS,
 } from '@/utils/settings'
-import type { Settings, ThemeMode } from '@/utils/settings'
+import type { LocaleSetting, Settings, ThemeMode } from '@/utils/settings'
 import { useTheme } from '@/utils/theme'
 
 import './index.css'
 
 interface ToggleField {
   key: 'quickOpen' | 'ballSnap'
-  title: string
-  desc: string
+  titleKey: string
+  descKey: string
 }
 
 const TOOL_META = new Map(DEFAULT_TOOLS.map((t) => [t.id, t]))
@@ -38,13 +41,13 @@ const TOOL_META = new Map(DEFAULT_TOOLS.map((t) => [t.id, t]))
 const TOGGLE_FIELDS: ToggleField[] = [
   {
     key: 'quickOpen',
-    title: '页面悬浮球',
-    desc: '在网页上显示可拖拽的 Toolkit 悬浮球（由 Content Script 注入）',
+    titleKey: 'settings.quickOpen',
+    descKey: 'settings.quickOpenDesc',
   },
   {
     key: 'ballSnap',
-    title: '悬浮球吸边',
-    desc: '拖拽后自动贴靠屏幕左右两侧；关闭后悬浮球可以停留在任意位置',
+    titleKey: 'settings.ballSnap',
+    descKey: 'settings.ballSnapDesc',
   },
 ]
 
@@ -57,6 +60,7 @@ interface SortableToolRowProps {
 
 /** 单个可排序工具行：拖动把手调整顺序（dnd-kit 自动处理滑动/回弹动画） */
 function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
+  const { t } = useTranslation()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   })
@@ -70,11 +74,16 @@ function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
       className={`opt-tools__row${isDragging ? ' opt-tools__row--drag' : ''}`}
       style={style}
     >
-      <span className='opt-tools__grip' {...attributes} {...listeners} title='按住拖拽调整顺序'>
+      <span
+        className='opt-tools__grip'
+        {...attributes}
+        {...listeners}
+        title={t('settings.dragToReorder')}
+      >
         <Icon name='grip' size={14} />
       </span>
       <span className='opt-tools__name'>{label}</span>
-      <span className='opt-tools__hint'>{on ? '显示中' : '已隐藏'}</span>
+      <span className='opt-tools__hint'>{on ? t('settings.showing') : t('settings.hidden')}</span>
       <button
         type='button'
         role='switch'
@@ -90,10 +99,12 @@ function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
 
 /** Options 设置页：配置项 + chrome.storage.sync 持久化（含工具箱能力显隐与拖拽排序） */
 export default function OptionsPage() {
+  const { t } = useTranslation()
   const [settings, setSettings] = useState<Settings>(defaultSettings)
   const inExt = isExtension()
 
   // 使整体字体大小随设置即时缩放（含本设置页）
+  useLocale()
   useFontScale()
   useTheme()
 
@@ -138,6 +149,10 @@ export default function OptionsPage() {
     persist({ ...settings, theme })
   }
 
+  function setLocale(locale: LocaleSetting) {
+    persist({ ...settings, locale })
+  }
+
   function toggleTool(id: ToolId) {
     persist({
       ...settings,
@@ -165,24 +180,20 @@ export default function OptionsPage() {
       <header className='opt__header'>
         <h1>
           <Icon name='toolbox' size={20} />
-          Toolkit Extension 设置
+          {t('settings.title')}
         </h1>
-        <p className='opt__env'>
-          {inExt
-            ? '已保存到 chrome.storage.sync（settings）'
-            : '浏览器预览模式（配置不会被持久化）'}
-        </p>
+        <p className='opt__env'>{inExt ? t('settings.saved') : t('settings.previewMode')}</p>
       </header>
 
       <main className='opt__main'>
         <div className='opt__card'>
-          <h2>悬浮球与侧边栏</h2>
+          <h2>{t('settings.ballSection')}</h2>
           <ul className='opt__list'>
             {TOGGLE_FIELDS.map((f) => (
               <li key={f.key} className='opt__item'>
                 <div className='opt__item-text'>
-                  <strong>{f.title}</strong>
-                  <p>{f.desc}</p>
+                  <strong>{t(f.titleKey)}</strong>
+                  <p>{t(f.descKey)}</p>
                 </div>
                 <button
                   type='button'
@@ -197,42 +208,63 @@ export default function OptionsPage() {
             ))}
             <li className='opt__item'>
               <div className='opt__item-text'>
-                <strong>点击悬浮球的动作</strong>
-                <p>
-                  网页内抽屉：在网页右侧弹出工具箱；浏览器侧边栏：尽力唤起原生侧边栏 （受 Chrome
-                  手势限制，无法唤起时自动回退为网页内抽屉）。
-                </p>
+                <strong>{t('settings.ballAction')}</strong>
+                <p>{t('settings.ballActionDesc')}</p>
               </div>
               <select
                 className='opt__select'
                 value={settings.ballAction}
                 onChange={(e) => setBallAction(e.target.value as BallAction)}
-                aria-label='点击悬浮球的动作'
+                aria-label={t('settings.ballAction')}
               >
-                <option value='drawer'>网页内抽屉</option>
-                <option value='native'>浏览器原生侧边栏</option>
+                <option value='drawer'>{t('settings.actionDrawer')}</option>
+                <option value='native'>{t('settings.actionNative')}</option>
               </select>
             </li>
           </ul>
         </div>
 
         <div className='opt__card'>
-          <h2>外观</h2>
+          <h2>{t('settings.appearance')}</h2>
           <ul className='opt__list'>
             <li className='opt__item'>
               <div className='opt__item-text'>
-                <strong>主题</strong>
-                <p>选择界面配色：跟随系统 / 浅色 / 深色。切换即时生效。</p>
+                <strong>{t('settings.theme')}</strong>
+                <p>{t('settings.themeDesc')}</p>
               </div>
               <select
                 className='opt__select'
                 value={settings.theme}
                 onChange={(e) => setTheme(e.target.value as ThemeMode)}
-                aria-label='主题'
+                aria-label={t('settings.theme')}
               >
                 {THEME_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
-                    {o.label}
+                    {t(
+                      o.value === 'system'
+                        ? 'settings.themeSystem'
+                        : o.value === 'light'
+                          ? 'settings.themeLight'
+                          : 'settings.themeDark',
+                    )}
+                  </option>
+                ))}
+              </select>
+            </li>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.language')}</strong>
+                <p>{t('settings.languageDesc')}</p>
+              </div>
+              <select
+                className='opt__select'
+                value={settings.locale}
+                onChange={(e) => setLocale(e.target.value as LocaleSetting)}
+                aria-label={t('settings.language')}
+              >
+                {LOCALE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.value === 'system' ? t('settings.localeSystem') : o.label}
                   </option>
                 ))}
               </select>
@@ -241,22 +273,28 @@ export default function OptionsPage() {
         </div>
 
         <div className='opt__card'>
-          <h2>显示与无障碍</h2>
+          <h2>{t('settings.display')}</h2>
           <ul className='opt__list'>
             <li className='opt__item'>
               <div className='opt__item-text'>
-                <strong>整体字体大小</strong>
-                <p>调整所有界面的文字与按钮大小，让内容更易读。</p>
+                <strong>{t('settings.fontScale')}</strong>
+                <p>{t('settings.fontScaleDesc')}</p>
               </div>
               <select
                 className='opt__select'
                 value={settings.fontScale}
                 onChange={(e) => setFontScale(Number(e.target.value))}
-                aria-label='整体字体大小'
+                aria-label={t('settings.fontScale')}
               >
                 {FONT_SCALE_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
-                    {o.label}
+                    {t(
+                      o.value === 1
+                        ? 'settings.fontStandard'
+                        : o.value === 1.1
+                          ? 'settings.fontLarge'
+                          : 'settings.fontMax',
+                    )}
                   </option>
                 ))}
               </select>
@@ -266,12 +304,12 @@ export default function OptionsPage() {
 
         <div className='opt__card'>
           <div className='opt__card-head'>
-            <h2>工具箱能力</h2>
+            <h2>{t('settings.toolbox')}</h2>
             <button type='button' className='opt__reset' onClick={resetLayout}>
-              恢复默认
+              {t('settings.resetDefault')}
             </button>
           </div>
-          <p className='opt__env'>决定工具箱选项卡里显示哪些能力以及它们的顺序。</p>
+          <p className='opt__env'>{t('settings.toolboxDesc')}</p>
 
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={settings.toolOrder} strategy={verticalListSortingStrategy}>
@@ -283,7 +321,7 @@ export default function OptionsPage() {
                     <SortableToolRow
                       key={id}
                       id={id}
-                      label={meta.label}
+                      label={t(`tool.registry.${id}`)}
                       on={settings.toolEnabled[id] !== false}
                       onToggle={toggleTool}
                     />
@@ -293,9 +331,7 @@ export default function OptionsPage() {
             </SortableContext>
           </DndContext>
 
-          <p className='opt__env opt__env--hint'>
-            拖动把手调整顺序（带滑动动画）；关闭开关即在工具箱隐藏该能力。修改即时保存。
-          </p>
+          <p className='opt__env opt__env--hint'>{t('settings.toolboxHint')}</p>
         </div>
       </main>
     </div>

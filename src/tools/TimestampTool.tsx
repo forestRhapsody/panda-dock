@@ -1,12 +1,14 @@
 import { useState } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import CopyButton from './CopyButton'
 import { parseStamp } from './timestamp'
 
-const SOURCE_LABEL: Record<string, string> = {
-  secs: '按 Unix 秒解析',
-  ms: '按 Unix 毫秒解析',
-  text: '按日期文本解析',
+const SOURCE_KEY: Record<string, string> = {
+  secs: 'tool.timestamp.sourceSeconds',
+  ms: 'tool.timestamp.sourceMilliseconds',
+  text: 'tool.timestamp.sourceText',
 }
 
 interface Status {
@@ -16,13 +18,14 @@ interface Status {
 
 /** 时间戳转换工具：输入秒/毫秒/日期文本，实时输出多格式 */
 export default function TimestampTool() {
+  const { t } = useTranslation()
   const [input, setInput] = useState('')
   const result = parseStamp(input)
   const status: Status | null = input.trim()
     ? result.ok
-      ? { kind: 'ok', text: SOURCE_LABEL[result.source] }
-      : { kind: 'err', text: '无法识别：请输入 Unix 秒/毫秒或可解析的日期文本' }
-    : { kind: 'info', text: '输入时间戳（秒/毫秒）或日期文本，自动识别并实时转换' }
+      ? { kind: 'ok', text: t(SOURCE_KEY[result.source]) }
+      : { kind: 'err', text: t('tool.timestamp.errorInvalid') }
+    : { kind: 'info', text: t('tool.timestamp.hint') }
 
   function fillNow() {
     setInput(String(Date.now()))
@@ -31,12 +34,12 @@ export default function TimestampTool() {
   return (
     <div className='tw-card'>
       <label className='tw-field'>
-        <span className='tw-field__label'>时间戳 / 日期</span>
+        <span className='tw-field__label'>{t('tool.timestamp.labelInput')}</span>
         <textarea
           className='tw-area'
           value={input}
           rows={2}
-          placeholder='例如 1516239022 / 1516239022000 / 2024-01-01 12:00:00…'
+          placeholder={t('tool.timestamp.placeholder')}
           onChange={(e) => setInput(e.target.value)}
           spellCheck={false}
         />
@@ -44,10 +47,10 @@ export default function TimestampTool() {
 
       <div className='tw-actions'>
         <button type='button' className='tk-btn' onClick={fillNow}>
-          当前时间
+          {t('tool.timestamp.now')}
         </button>
         <button type='button' className='tk-btn' onClick={() => setInput('')}>
-          清空
+          {t('tool.timestamp.clear')}
         </button>
       </div>
 

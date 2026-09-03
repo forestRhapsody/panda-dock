@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import { decodeJwt, SAMPLE_JWT } from './jwt'
@@ -10,17 +12,18 @@ interface Status {
   text: string
 }
 
-function headerAlg(decoded: JwtDecoded): string {
+function headerAlg(decoded: JwtDecoded, unknownLabel: string): string {
   try {
     const header = JSON.parse(decoded.headerText) as { alg?: string }
-    return header.alg ?? '未知'
+    return header.alg ?? unknownLabel
   } catch {
-    return '未知'
+    return unknownLabel
   }
 }
 
 /** JWT 解码工具：解码 header / payload，展示标准声明；不校验签名 */
 export default function JwtTool() {
+  const { t } = useTranslation()
   const [token, setToken] = useState('')
   const [decoded, setDecoded] = useState<JwtDecoded | null>(null)
   const [status, setStatus] = useState<Status | null>(null)
@@ -29,7 +32,7 @@ export default function JwtTool() {
     const raw = token.trim()
     if (!raw) {
       setDecoded(null)
-      setStatus({ kind: 'info', text: '请先粘贴 JWT（header.payload.signature）' })
+      setStatus({ kind: 'info', text: t('tool.jwt.statusEmpty') })
       return
     }
     const result = decodeJwt(raw)
@@ -41,7 +44,10 @@ export default function JwtTool() {
     setDecoded(result.data)
     setStatus({
       kind: 'ok',
-      text: `解码成功：alg=${headerAlg(result.data)} · 签名长度 ${result.data.signatureB64.length} 字符（本地解码，未校验签名）`,
+      text: t('tool.jwt.statusSuccess', {
+        alg: headerAlg(result.data, t('tool.jwt.algUnknown')),
+        len: result.data.signatureB64.length,
+      }),
     })
   }
 
@@ -54,7 +60,7 @@ export default function JwtTool() {
   function fillSample() {
     setToken(SAMPLE_JWT)
     setDecoded(null)
-    setStatus({ kind: 'info', text: '已填入示例 JWT，点击「解码 →」查看效果' })
+    setStatus({ kind: 'info', text: t('tool.jwt.statusSample') })
   }
 
   return (
@@ -63,13 +69,13 @@ export default function JwtTool() {
         <span className='tw-field__label'>
           JWT Token
           <button type='button' className='tw-link' onClick={fillSample}>
-            填入示例
+            {t('tool.jwt.fillSample')}
           </button>
         </span>
         <textarea
           className='tw-area'
           value={token}
-          placeholder='粘贴 JWT，例如 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.SflKxwRJSM…'
+          placeholder={t('tool.jwt.placeholder')}
           onChange={(e) => setToken(e.target.value)}
           spellCheck={false}
         />
@@ -77,10 +83,10 @@ export default function JwtTool() {
 
       <div className='tw-actions'>
         <button type='button' className='tk-btn tk-btn--primary' onClick={run}>
-          解码 →
+          {t('tool.jwt.decode')}
         </button>
         <button type='button' className='tk-btn' onClick={clear}>
-          清空
+          {t('tool.jwt.clear')}
         </button>
       </div>
 
@@ -88,12 +94,12 @@ export default function JwtTool() {
         <>
           <div className='tw-field'>
             <span className='tw-field__label'>
-              Header（算法等）
+              {t('tool.jwt.headerLabel')}
               <CopyButton
                 text={decoded.headerText}
                 className='tw-link'
                 onResult={(ok) => {
-                  if (!ok) setStatus({ kind: 'err', text: '复制失败' })
+                  if (!ok) setStatus({ kind: 'err', text: t('tool.jwt.copyFailed') })
                 }}
               />
             </span>
@@ -107,12 +113,12 @@ export default function JwtTool() {
 
           <div className='tw-field'>
             <span className='tw-field__label'>
-              Payload（载荷）
+              {t('tool.jwt.payloadLabel')}
               <CopyButton
                 text={decoded.payloadText}
                 className='tw-link'
                 onResult={(ok) => {
-                  if (!ok) setStatus({ kind: 'err', text: '复制失败' })
+                  if (!ok) setStatus({ kind: 'err', text: t('tool.jwt.copyFailed') })
                 }}
               />
             </span>
@@ -126,7 +132,7 @@ export default function JwtTool() {
 
           {decoded.claims.length > 0 && (
             <div className='tw-field'>
-              <span className='tw-field__label'>标准声明（时间已转本地时间）</span>
+              <span className='tw-field__label'>{t('tool.jwt.claimsLabel')}</span>
               <ul className='tw-kv'>
                 {decoded.claims.map((c) => (
                   <li key={c.key} className='tw-kv__row'>
@@ -138,9 +144,7 @@ export default function JwtTool() {
             </div>
           )}
 
-          <p className='tw-note'>
-            本地解码，Token 不会上传到任何服务器；本工具不校验签名（无密钥无法校验）。
-          </p>
+          <p className='tw-note'>{t('tool.jwt.noteLocal')}</p>
         </>
       )}
 

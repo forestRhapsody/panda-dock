@@ -1,30 +1,32 @@
 import { parse, printParseErrorCode } from 'jsonc-parser'
 import type { ParseError } from 'jsonc-parser'
 
+import i18n from '@/i18n'
+
 export interface JsonResult {
   ok: boolean
   text?: string
   error?: string
 }
 
-/** jsonc-parser 错误码(字符串) → 中文友好提示 */
-const ERR_MESSAGES: Record<string, string> = {
-  InvalidSymbol: '包含非法字符',
-  InvalidNumberFormat: '数字格式非法',
-  PropertyNameExpected: '缺少属性名',
-  ValueExpected: '缺少值',
-  ColonExpected: '缺少冒号 ":"',
-  CommaExpected: '缺少逗号 ","',
-  CloseBraceExpected: '缺少右花括号 "}"',
-  CloseBracketExpected: '缺少右方括号 "]"',
-  EndOfFileExpected: 'JSON 已结束但仍有额外内容',
-  InvalidCommentToken: '注释格式非法',
-  UnexpectedEndOfComment: '注释未闭合',
-  UnexpectedEndOfString: '字符串未闭合',
-  UnexpectedEndOfNumber: '数字未结束',
-  InvalidUnicode: 'Unicode 转义非法',
-  InvalidEscapeCharacter: '转义字符非法',
-  InvalidCharacter: '包含非法字符',
+/** jsonc-parser 错误码(字符串) → 错误提示 i18n key */
+const ERR_KEYS: Record<string, string> = {
+  InvalidSymbol: 'tool.json.errInvalidSymbol',
+  InvalidNumberFormat: 'tool.json.errInvalidNumberFormat',
+  PropertyNameExpected: 'tool.json.errPropertyNameExpected',
+  ValueExpected: 'tool.json.errValueExpected',
+  ColonExpected: 'tool.json.errColonExpected',
+  CommaExpected: 'tool.json.errCommaExpected',
+  CloseBraceExpected: 'tool.json.errCloseBraceExpected',
+  CloseBracketExpected: 'tool.json.errCloseBracketExpected',
+  EndOfFileExpected: 'tool.json.errEndOfFileExpected',
+  InvalidCommentToken: 'tool.json.errInvalidCommentToken',
+  UnexpectedEndOfComment: 'tool.json.errUnexpectedEndOfComment',
+  UnexpectedEndOfString: 'tool.json.errUnexpectedEndOfString',
+  UnexpectedEndOfNumber: 'tool.json.errUnexpectedEndOfNumber',
+  InvalidUnicode: 'tool.json.errInvalidUnicode',
+  InvalidEscapeCharacter: 'tool.json.errInvalidEscapeCharacter',
+  InvalidCharacter: 'tool.json.errInvalidCharacter',
 }
 
 /** 解析 JSON/JSONC：允许注释（// 行注释与块注释）与尾随逗号；错误时给出友好提示 */
@@ -34,12 +36,12 @@ function parseJsonc(raw: string): { ok: true; value: unknown } | { ok: false; er
 
   // JSON 允许 null（解析为 null），空内容解析为 undefined
   if (value === undefined && errors.length === 0) {
-    return { ok: false, error: '请输入 JSON 内容' }
+    return { ok: false, error: i18n.t('tool.json.errorEmpty') }
   }
   if (errors.length > 0) {
     const code = printParseErrorCode(errors[0].error)
-    const detail = ERR_MESSAGES[code] ?? '格式错误'
-    return { ok: false, error: `JSON 解析失败：${detail}` }
+    const detail = i18n.t(ERR_KEYS[code] ?? 'tool.json.errGeneric')
+    return { ok: false, error: i18n.t('tool.json.parseFailed', { detail }) }
   }
   return { ok: true, value }
 }

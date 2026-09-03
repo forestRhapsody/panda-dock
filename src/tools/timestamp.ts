@@ -1,3 +1,5 @@
+import i18n from '@/i18n'
+
 export type StampSource = 'secs' | 'ms' | 'text'
 
 export interface ParsedStamp {
@@ -25,22 +27,28 @@ function toLocalText(date: Date): string {
 function toRelative(date: Date): string {
   const diffSec = Math.round((date.getTime() - Date.now()) / 1000)
   const abs = Math.abs(diffSec)
-  if (abs < 5) return '刚刚'
+  if (abs < 5) return i18n.t('tool.timestamp.justNow')
   const map: [number, string][] = [
-    [31536000, '年'],
-    [2592000, '个月'],
-    [86400, '天'],
-    [3600, '小时'],
-    [60, '分钟'],
-    [1, '秒'],
+    [31536000, 'unitYear'],
+    [2592000, 'unitMonth'],
+    [86400, 'unitDay'],
+    [3600, 'unitHour'],
+    [60, 'unitMinute'],
+    [1, 'unitSecond'],
   ]
-  for (const [sec, label] of map) {
+  for (const [sec, unitKey] of map) {
     if (abs >= sec) {
       const n = Math.floor(abs / sec)
-      return diffSec >= 0 ? `${n} ${label}后` : `${n} ${label}前`
+      const unit = i18n.t(`tool.timestamp.${unitKey}`)
+      return diffSec >= 0
+        ? i18n.t('tool.timestamp.relativeFuture', { count: n, unit })
+        : i18n.t('tool.timestamp.relativePast', { count: n, unit })
     }
   }
-  return `${abs} 秒前`
+  return i18n.t('tool.timestamp.relativePast', {
+    count: abs,
+    unit: i18n.t('tool.timestamp.unitSecond'),
+  })
 }
 
 /** 解析时间戳：纯数字自动判断秒/毫秒；否则尝试按日期文本解析 */
@@ -72,13 +80,13 @@ export function parseStamp(input: string): StampResult {
     ok: true,
     source,
     rows: [
-      { label: 'Unix 秒', value: String(secs) },
-      { label: 'Unix 毫秒', value: String(date.getTime()) },
+      { label: i18n.t('tool.timestamp.unixSeconds'), value: String(secs) },
+      { label: i18n.t('tool.timestamp.unixMilliseconds'), value: String(date.getTime()) },
       { label: 'ISO 8601', value: date.toISOString() },
-      { label: '本地时间', value: toLocalText(date) },
-      { label: '本地时间(可读)', value: date.toLocaleString() },
-      { label: 'UTC 时间', value: date.toUTCString() },
-      { label: '相对现在', value: toRelative(date) },
+      { label: i18n.t('tool.timestamp.localTime'), value: toLocalText(date) },
+      { label: i18n.t('tool.timestamp.localTimeReadable'), value: date.toLocaleString() },
+      { label: i18n.t('tool.timestamp.utcTime'), value: date.toUTCString() },
+      { label: i18n.t('tool.timestamp.relativeNow'), value: toRelative(date) },
     ],
   }
 }

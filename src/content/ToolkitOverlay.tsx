@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
+import { useLocale } from '@/i18n/useLocale'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
 import type { BallAction } from '@/utils/messages'
@@ -91,7 +94,9 @@ async function requestNativeSidePanel(): Promise<boolean> {
  * - 可被原生侧边栏页以消息唤起（MSG_TOGGLE_DRAWER）
  */
 export default function ToolkitOverlay() {
+  const { t } = useTranslation()
   const inExt = isExtension()
+  useLocale()
   useFontScale()
   useTheme()
   // 非扩展环境（浏览器预览）无需等待读取，直接渲染
@@ -212,7 +217,7 @@ export default function ToolkitOverlay() {
     if (ballAction === 'native' && inExt) {
       void requestNativeSidePanel().then((ok) => {
         if (!ok) {
-          showNotice('已尝试唤起浏览器原生侧边栏，但被 Chrome 手势限制拒绝，已改用网页内抽屉')
+          showNotice(t('toast.nativeSidePanelFallback'))
           setDrawerOpen(true)
         }
       })
@@ -221,7 +226,7 @@ export default function ToolkitOverlay() {
     // 打开网页内抽屉前先把原生侧边栏关掉（互斥：两种工具箱不同时显示）
     if (inExt) void chrome.runtime.sendMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
     setDrawerOpen(true)
-  }, [ballAction, drawerOpen, inExt, showNotice])
+  }, [ballAction, drawerOpen, inExt, showNotice, t])
 
   if (!ready || (quickOpen === false && inExt)) return null
 

@@ -1,3 +1,6 @@
+import { useTranslation } from 'react-i18next'
+
+import { useLocale } from '@/i18n/useLocale'
 import ToolsApp from '@/tools/ToolsApp'
 import { isExtension } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
@@ -11,7 +14,9 @@ import './index.css'
  * 内容与网页内抽屉共用同一套 <ToolsApp/> 工具箱。
  */
 export default function SidePanelPage() {
+  const { t } = useTranslation()
   const inExt = isExtension()
+  useLocale()
   useFontScale()
   useTheme()
 
@@ -23,10 +28,10 @@ export default function SidePanelPage() {
             <button
               type='button'
               className='tk-btn tk-btn--sm'
-              title='收起侧边栏'
+              title={t('sidepanel.collapse-sidebar')}
               onClick={() => void closeNativeSidePanel()}
             >
-              收起
+              {t('sidepanel.collapse')}
             </button>
           )
         }

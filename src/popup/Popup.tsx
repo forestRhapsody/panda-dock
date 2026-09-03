@@ -1,5 +1,8 @@
 import { useState } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
+import { useLocale } from '@/i18n/useLocale'
 import Icon from '@/ui/Icon'
 import { closeDrawerInActiveTab, openDrawerInActiveTab } from '@/utils/drawer'
 import { isExtension, openOptionsPage } from '@/utils/env'
@@ -13,7 +16,9 @@ import './index.css'
 
 /** Popup 弹窗界面：顶部工具栏 + 打开工具箱快捷操作 + 快捷设置 */
 export default function Popup() {
+  const { t } = useTranslation()
   const inExt = isExtension()
+  useLocale()
   useFontScale()
   useTheme()
   const [nativeFailed, setNativeFailed] = useState(false)
@@ -45,8 +50,8 @@ export default function Popup() {
         <button
           type='button'
           className='tk-icon-btn'
-          title='打开设置页'
-          aria-label='打开设置页'
+          title={t('popup.openOptions')}
+          aria-label={t('popup.openOptions')}
           onClick={openOptionsPage}
         >
           <Icon name='settings' size={15} />
@@ -61,7 +66,7 @@ export default function Popup() {
               onClick={() => void openPanel()}
             >
               <Icon name='panel-right' size={14} />
-              在浏览器侧边栏打开工具箱
+              {t('popup.openSidePanel')}
             </button>
             <button
               type='button'
@@ -69,13 +74,11 @@ export default function Popup() {
               onClick={() => void openDrawer()}
             >
               <Icon name='window' size={14} />
-              使用网页内抽屉打开
+              {t('popup.openDrawer')}
             </button>
           </div>
-          {nativeFailed && <p className='pop__native-hint'>未能唤起侧边栏，请重试或更新 Chrome</p>}
-          {drawerFailed && (
-            <p className='pop__native-hint'>当前页面无法打开抽屉（非 http(s) 或未注入）</p>
-          )}
+          {nativeFailed && <p className='pop__native-hint'>{t('popup.sidePanelFail')}</p>}
+          {drawerFailed && <p className='pop__native-hint'>{t('popup.drawerFail')}</p>}
         </div>
       )}
       <main className='pop__body'>

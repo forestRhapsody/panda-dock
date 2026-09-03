@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import Icon from '@/ui/Icon'
 
 export const DOCK_H = 44 // 圆形悬浮球直径
@@ -69,6 +71,7 @@ interface FloatingBallProps {
  * - 轻点（未位移）不产生定位变化，避免点击抽动。
  */
 export default function FloatingBall({ pos, snap, onDrop, onToggle }: FloatingBallProps) {
+  const { t } = useTranslation()
   const downRef = useRef<DownState | null>(null)
   const [hovered, setHovered] = useState(false)
   const [floatXY, setFloatXY] = useState<{ x: number; y: number } | null>(null)
@@ -150,7 +153,7 @@ export default function FloatingBall({ pos, snap, onDrop, onToggle }: FloatingBa
   return (
     <div
       role='button'
-      aria-label='打开工具箱'
+      aria-label={t('ball.ariaOpen')}
       className={`tek__dock${floatXY ? ' tek__dock--drag' : ''}`}
       style={style}
       onPointerDown={onPointerDown}

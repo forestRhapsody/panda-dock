@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
+import i18n from '@/i18n'
+
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import JsonTextarea from './JsonTextarea'
@@ -32,11 +36,14 @@ function fmtSize(bytes: number): string {
 /** 尝试解析 JSON：用于判断存储值是否为 JSON，以及编辑时的实时校验 */
 function parseJson(text: string): { ok: true; value: unknown } | { ok: false; error: string } {
   const t = text.trim()
-  if (!t) return { ok: false, error: '内容为空' }
+  if (!t) return { ok: false, error: i18n.t('tool.storage.errorEmpty') }
   try {
     return { ok: true, value: JSON.parse(t) }
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'JSON 无效' }
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : i18n.t('tool.storage.jsonInvalid'),
+    }
   }
 }
 
@@ -61,6 +68,7 @@ function ConfirmDialog({
   onCancel: () => void
   onConfirm: () => void
 }) {
+  const { t } = useTranslation()
   const confirmRef = useRef<HTMLButtonElement>(null)
 
   // Escape 取消 + 打开后自动聚焦确定按钮
@@ -86,7 +94,7 @@ function ConfirmDialog({
         <p className='tw-modal__msg'>{message}</p>
         <div className='tw-modal__actions'>
           <button type='button' className='tk-btn' onClick={onCancel}>
-            取消
+            {t('tool.storage.cancel')}
           </button>
           <button
             type='button'
@@ -94,7 +102,7 @@ function ConfirmDialog({
             className='tk-btn tk-btn--primary'
             onClick={onConfirm}
           >
-            确定
+            {t('tool.storage.confirm')}
           </button>
         </div>
       </div>
@@ -126,6 +134,7 @@ function EditorForm({
   onCancel,
   onSave,
 }: EditorFormProps) {
+  const { t } = useTranslation()
   const draftJson = parseJson(draftValue)
   // 原值是 JSON 则全程 JSON 编辑器；否则当前值一旦是 JSON 也切换到 JSON 编辑器
   const showJson = useJson || draftJson.ok
@@ -141,7 +150,7 @@ function EditorForm({
   return (
     <div className='tw-store__edit'>
       <label className='tw-field'>
-        <span className='tw-field__label'>Key</span>
+        <span className='tw-field__label'>{t('tool.storage.key')}</span>
         <input
           className='tw-input'
           value={draftKey}
@@ -169,25 +178,27 @@ function EditorForm({
       )}
       {showJson && (
         <p className={`tw-status tw-status--${draftJson.ok ? 'ok' : 'err'}`}>
-          {draftJson.ok ? 'JSON 有效（保存时自动压缩为单行）' : `JSON 无效：${draftJson.error}`}
+          {draftJson.ok
+            ? t('tool.storage.jsonValid')
+            : t('tool.storage.jsonInvalidDetail', { error: draftJson.error })}
         </p>
       )}
       <div className='tw-store__edit-actions'>
         {showJson && (
           <>
             <button type='button' className='tw-link' disabled={!draftJson.ok} onClick={format}>
-              格式化
+              {t('tool.storage.format')}
             </button>
             <button type='button' className='tw-link' disabled={!draftJson.ok} onClick={minify}>
-              压缩
+              {t('tool.storage.minify')}
             </button>
           </>
         )}
         <button type='button' className='tw-link' onClick={onCancel}>
-          取消
+          {t('tool.storage.cancel')}
         </button>
         <button type='button' className='tw-link' onClick={onSave}>
-          保存
+          {t('tool.storage.save')}
         </button>
       </div>
     </div>
@@ -196,6 +207,7 @@ function EditorForm({
 
 /** 本地存储管理：查看/清理当前站点 localStorage / sessionStorage；支持改 key 与新增缓存 */
 export default function StorageTool() {
+  const { t } = useTranslation()
   const [area, setArea] = useState<StorageArea>('local')
   const [result, setResult] = useState<StorageResult | null>(null)
   const [status, setStatus] = useState<Status | null>(null)
@@ -249,14 +261,17 @@ export default function StorageTool() {
       setStatus({ kind: 'err', text: res.error })
       return
     }
-    setStatus({ kind: 'ok', text: `已删除 ${key}` })
+    setStatus({ kind: 'ok', text: t('tool.storage.deleted', { key }) })
     void load()
   }
 
   function askRemove(key: string) {
     requestConfirm({
-      title: '删除缓存值',
-      message: `确定删除「${key}」吗？（${area === 'local' ? 'localStorage' : 'sessionStorage'}）`,
+      title: t('tool.storage.deleteTitle'),
+      message: t('tool.storage.deleteMessage', {
+        key,
+        area: area === 'local' ? 'localStorage' : 'sessionStorage',
+      }),
       onConfirm: () => void doRemove(key),
     })
   }
@@ -268,15 +283,19 @@ export default function StorageTool() {
       setStatus({ kind: 'err', text: res.error })
       return
     }
-    setStatus({ kind: 'ok', text: '已清空' })
+    setStatus({ kind: 'ok', text: t('tool.storage.cleared') })
     void load()
   }
 
   function askClearAll() {
     if (!result?.ok || result.data.entries.length === 0) return
     requestConfirm({
-      title: '清空缓存',
-      message: `确定清空 ${result.data.origin} 的 ${area === 'local' ? 'localStorage' : 'sessionStorage'} 吗？（共 ${result.data.totalCount} 项）`,
+      title: t('tool.storage.clearTitle'),
+      message: t('tool.storage.clearMessage', {
+        origin: result.data.origin,
+        area: area === 'local' ? 'localStorage' : 'sessionStorage',
+        count: result.data.totalCount,
+      }),
       onConfirm: () => void doClearAll(),
     })
   }
@@ -284,7 +303,7 @@ export default function StorageTool() {
   // 进入编辑（可同时改 key）；值过长已截断时禁止编辑
   function startEdit(entry: StorageEntry) {
     if (entry.truncated) {
-      setStatus({ kind: 'info', text: '值过长已截断，为保护完整数据，暂不支持编辑' })
+      setStatus({ kind: 'info', text: t('tool.storage.truncatedNoEdit') })
       return
     }
     const parsed = parseJson(entry.value)
@@ -338,10 +357,10 @@ export default function StorageTool() {
           return
         }
       }
-      setStatus({ kind: 'ok', text: `已更新 ${key}` })
+      setStatus({ kind: 'ok', text: t('tool.storage.updated', { key }) })
     } else {
       if (!(await persist(key, value))) return
-      setStatus({ kind: 'ok', text: `已新增 ${key}` })
+      setStatus({ kind: 'ok', text: t('tool.storage.added', { key }) })
     }
     closeEditor()
     void load()
@@ -351,7 +370,7 @@ export default function StorageTool() {
   function saveEntry() {
     const key = draftKey.trim()
     if (!key) {
-      setFormError('请填写 Key')
+      setFormError(t('tool.storage.errorKeyRequired'))
       return
     }
     const parsed = parseJson(draftValue)
@@ -361,8 +380,8 @@ export default function StorageTool() {
     }
     if (editIsJson) {
       requestConfirm({
-        title: 'JSON 无效',
-        message: '当前内容不是合法 JSON。仍要保存吗？（将去除换行后保存）',
+        title: t('tool.storage.jsonInvalid'),
+        message: t('tool.storage.invalidJsonSaveMessage'),
         onConfirm: () => void commitEntry(key, stripLineBreaks(draftValue)),
       })
       return
@@ -423,13 +442,13 @@ export default function StorageTool() {
 
       <div className='tw-actions'>
         <button type='button' className='tk-btn tk-btn--primary' onClick={() => void load()}>
-          刷新
+          {t('tool.storage.refresh')}
         </button>
         <button type='button' className='tk-btn' onClick={startCreate} disabled={editorOpen}>
-          新增
+          {t('tool.storage.add')}
         </button>
         <button type='button' className='tk-btn' onClick={askClearAll} disabled={empty}>
-          清空全部
+          {t('tool.storage.clearAll')}
         </button>
       </div>
 
@@ -437,8 +456,8 @@ export default function StorageTool() {
         <input
           type='search'
           className='tw-filter'
-          placeholder='筛选：按 key 或值过滤…'
-          aria-label='筛选缓存条目'
+          placeholder={t('tool.storage.filter')}
+          aria-label={t('tool.storage.filterAriaLabel')}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
@@ -446,19 +465,19 @@ export default function StorageTool() {
 
       {data && (
         <p className='tw-status tw-status--info'>
-          当前站点：{data.origin} · 共 {data.totalCount} 项
-          {q ? `（筛选出 ${entries.length} 项）` : ''}
-          {data.listTruncated ? '（过多，仅显示前 2000 项）' : ''}
-          {data.area === 'session' && ' · sessionStorage 仅当前标签页会话有效'}
+          {t('tool.storage.statusSummary', { origin: data.origin, count: data.totalCount })}
+          {q ? t('tool.storage.statusFiltered', { count: entries.length }) : ''}
+          {data.listTruncated ? t('tool.storage.statusTruncated') : ''}
+          {data.area === 'session' && ` · ${t('tool.storage.statusSessionNote')}`}
         </p>
       )}
 
-      {data && data.entries.length > 0 && <p className='tw-note'>双击值或点「编辑」可修改。</p>}
+      {data && data.entries.length > 0 && <p className='tw-note'>{t('tool.storage.editHint')}</p>}
 
       {creating && <EditorForm {...editorProps} />}
 
-      {empty && <p className='tw-note'>该区域暂无数据。</p>}
-      {noMatch && <p className='tw-note'>无匹配项。</p>}
+      {empty && <p className='tw-note'>{t('tool.storage.empty')}</p>}
+      {noMatch && <p className='tw-note'>{t('tool.storage.noMatch')}</p>}
 
       {data && entries.length > 0 && (
         <ul className='tw-store'>
@@ -480,29 +499,41 @@ export default function StorageTool() {
                   <code
                     className='tw-store__value'
                     onDoubleClick={() => startEdit(entry)}
-                    title={entry.truncated ? '值过长已截断，暂不支持编辑' : '双击编辑值'}
+                    title={
+                      entry.truncated
+                        ? t('tool.storage.truncatedShort')
+                        : t('tool.storage.dblClickEdit')
+                    }
                   >
                     {entry.truncated
-                      ? `${entry.value}…（值过长，仅展示前 8000 字符）`
-                      : entry.value || '（空字符串）'}
+                      ? t('tool.storage.truncatedPreview', { value: entry.value })
+                      : entry.value || t('tool.storage.emptyString')}
                   </code>
                   <div className='tw-store__actions'>
                     <button
                       type='button'
                       className='tw-link'
                       disabled={entry.truncated}
-                      title={entry.truncated ? '值过长已截断，暂不支持编辑' : '编辑值'}
+                      title={
+                        entry.truncated
+                          ? t('tool.storage.truncatedShort')
+                          : t('tool.storage.editValue')
+                      }
                       onClick={() => startEdit(entry)}
                     >
-                      编辑
+                      {t('tool.storage.edit')}
                     </button>
                     <CopyButton
                       text={entry.value}
                       className='tw-link'
                       disabled={entry.truncated}
-                      title={entry.truncated ? '值过长，已截断，禁止复制不完整内容' : '复制完整值'}
+                      title={
+                        entry.truncated
+                          ? t('tool.storage.truncatedNoCopy')
+                          : t('tool.storage.copyFullValue')
+                      }
                       onResult={(ok) => {
-                        if (!ok) setStatus({ kind: 'err', text: '复制失败' })
+                        if (!ok) setStatus({ kind: 'err', text: t('tool.storage.copyFailed') })
                       }}
                     />
                     <button
@@ -510,7 +541,7 @@ export default function StorageTool() {
                       className='tw-link tw-link--danger'
                       onClick={() => askRemove(entry.key)}
                     >
-                      删除
+                      {t('tool.storage.delete')}
                     </button>
                   </div>
                 </>
@@ -520,11 +551,7 @@ export default function StorageTool() {
         </ul>
       )}
 
-      {!isPageContext() && (
-        <p className='tw-note'>
-          当前在扩展页面中，读取的是「活动标签页」网页的存储；请先切到目标网页再刷新。
-        </p>
-      )}
+      {!isPageContext() && <p className='tw-note'>{t('tool.storage.extPageNote')}</p>}
 
       {status && <p className={`tw-status tw-status--${status.kind}`}>{status.text}</p>}
 

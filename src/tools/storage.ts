@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import {
   MSG_STORAGE_CLEAR,
   MSG_STORAGE_READ,
@@ -66,12 +67,12 @@ export function buildSnapshot(area: StorageArea): StorageSnapshot {
 async function askActiveTab(message: unknown): Promise<StorageResult | SimpleResult> {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    if (tab?.id == null) throw new Error('找不到活动标签页')
+    if (tab?.id == null) throw new Error(i18n.t('tool.storage.errorNoActiveTab'))
     const res = await chrome.tabs.sendMessage(tab.id, message)
     if (res?.ok) return res
-    return { ok: false, error: res?.error ?? '当前页面没有响应（可能未注入 content script）' }
+    return { ok: false, error: res?.error ?? i18n.t('tool.storage.errorNoResponse') }
   } catch {
-    return { ok: false, error: '无法读取：当前标签页不是 http(s) 页面或尚未注入' }
+    return { ok: false, error: i18n.t('tool.storage.errorUnreadable') }
   }
 }
 
@@ -149,7 +150,7 @@ export function installStorageBridge(): void {
     if (action === MSG_STORAGE_REMOVE) {
       const { area = 'local', key } = message as { area?: StorageArea; key?: string }
       if (!key) {
-        sendResponse({ ok: false, error: '缺少 key' })
+        sendResponse({ ok: false, error: i18n.t('tool.storage.errorMissingKey') })
         return undefined
       }
       try {
@@ -171,7 +172,7 @@ export function installStorageBridge(): void {
         value?: string
       }
       if (!key) {
-        sendResponse({ ok: false, error: '缺少 key' })
+        sendResponse({ ok: false, error: i18n.t('tool.storage.errorMissingKey') })
         return undefined
       }
       try {
