@@ -202,7 +202,7 @@ export default function UrlTool() {
       <div className='tw-actions'>
         <button
           type='button'
-          className='tk-btn tk-btn--primary'
+          className='tk-btn'
           disabled={fetching}
           onClick={() => void fetchCurrent()}
         >

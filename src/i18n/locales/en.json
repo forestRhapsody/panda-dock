@@ -110,7 +110,7 @@
       "inputLabel": "URL / Uri",
       "inputPlaceholder": "Enter a URL, e.g. https://example.com/path?q=1#hash",
       "parse": "Parse",
-      "fetchCurrent": "Get current page URL",
+      "fetchCurrent": "Parse current page URL",
       "clear": "Clear",
       "empty": "Enter a URL",
       "errorInvalid": "Invalid URL",

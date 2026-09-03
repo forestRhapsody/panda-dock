@@ -110,7 +110,7 @@
       "inputLabel": "网址 / URL",
       "inputPlaceholder": "输入网址，如 https://example.com/path?q=1#hash",
       "parse": "解析",
-      "fetchCurrent": "获取当前网页 URL",
+      "fetchCurrent": "解析当前网页 URL",
       "clear": "清空",
       "empty": "请输入网址",
       "errorInvalid": "无效的 URL",
