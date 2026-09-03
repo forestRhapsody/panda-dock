@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import qs from 'qs'
 import { useTranslation } from 'react-i18next'
 
 import { getCurrentPageUrl } from '@/utils/pageUrl'
@@ -12,7 +13,8 @@ interface UrlPart {
 interface ParsedUrl {
   url: URL
   parts: UrlPart[]
-  params: [string, string][]
+  /** qs 解析出的结构化查询参数（支持嵌套对象 / 数组） */
+  query: Record<string, unknown>
 }
 
 /** 当前页 origin，用作相对路径的解析基准 */
@@ -58,18 +60,78 @@ function collectParts(url: URL): UrlPart[] {
   return parts
 }
 
-/** 解析 URL：先从文本抽取网址，再交给 buildUrl（避免把干扰文字当作相对路径） */
+/** 解析 URL：先从文本抽取网址，再交给 buildUrl；查询参数用 qs 解析 */
 function parseUrl(input: string): ParsedUrl {
   const text = input.trim()
   const extracted = extractUrlFromText(text) ?? text
   const url = buildUrl(extracted)
   const parts = collectParts(url)
-  const params: [string, string][] = []
-  url.searchParams.forEach((value, key) => params.push([key, value]))
-  return { url, parts, params }
+  const query = qs.parse(url.search.replace(/^\?/, '')) as Record<string, unknown>
+  return { url, parts, query }
 }
 
-/** 网址解析工具：手动输入或一键取当前网页 URL，拆解展示有意义的部分与查询参数 */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function ParamValue({ value }: { value: unknown }) {
+  if (Array.isArray(value)) {
+    return (
+      <ul className='tw-params'>
+        {value.map((item, index) => (
+          <li key={index} className='tw-params__row'>
+            <span className='tw-params__key'>{index}</span>
+            {isPlainObject(item) || Array.isArray(item) ? (
+              <div className='tw-params__children'>
+                <ParamValue value={item} />
+              </div>
+            ) : (
+              <span className='tw-params__val'>{String(item)}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  if (isPlainObject(value)) {
+    return (
+      <ul className='tw-params'>
+        {Object.entries(value).map(([k, v]) => (
+          <ParamNode key={k} k={k} v={v} />
+        ))}
+      </ul>
+    )
+  }
+  return <span className='tw-params__val'>{String(value)}</span>
+}
+
+function ParamNode({ k, v }: { k: string; v: unknown }) {
+  const nested = isPlainObject(v) || Array.isArray(v)
+  return (
+    <li className='tw-params__row'>
+      <span className='tw-params__key'>{k}</span>
+      {nested ? (
+        <div className='tw-params__children'>
+          <ParamValue value={v} />
+        </div>
+      ) : (
+        <span className='tw-params__val'>{String(v)}</span>
+      )}
+    </li>
+  )
+}
+
+function ParamTree({ data }: { data: Record<string, unknown> }) {
+  return (
+    <ul className='tw-params'>
+      {Object.entries(data).map(([k, v]) => (
+        <ParamNode key={k} k={k} v={v} />
+      ))}
+    </ul>
+  )
+}
+
+/** 网址解析工具：手动输入或一键取当前网页 URL，拆解展示有意义的部分与（qs 解析的）查询参数 */
 export default function UrlTool() {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
@@ -116,6 +178,8 @@ export default function UrlTool() {
     setError(null)
   }
 
+  const hasQuery = parsed ? Object.keys(parsed.query).length > 0 : false
+
   return (
     <div className='tw-card'>
       <label className='tw-field'>
@@ -150,17 +214,10 @@ export default function UrlTool() {
 
       {parsed && (
         <>
-          {parsed.params.length > 0 && (
+          {hasQuery && (
             <div className='tw-field'>
               <span className='tw-field__label'>{t('tool.url.queryParams')}</span>
-              <ul className='tw-kv'>
-                {parsed.params.map(([key, value], index) => (
-                  <li key={`${key}-${index}`} className='tw-kv__row'>
-                    <span className='tw-kv__k'>{key}</span>
-                    <span className='tw-kv__v'>{value}</span>
-                  </li>
-                ))}
-              </ul>
+              <ParamTree data={parsed.query} />
             </div>
           )}
 
@@ -175,7 +232,7 @@ export default function UrlTool() {
             </ul>
           )}
 
-          {parsed.params.length === 0 && parsed.parts.length === 0 && (
+          {!hasQuery && parsed.parts.length === 0 && (
             <p className='tw-status tw-status--info'>{t('tool.url.noData')}</p>
           )}
         </>

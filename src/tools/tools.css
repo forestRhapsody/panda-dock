@@ -423,6 +423,52 @@
   gap: 6px;
 }
 
+/* —— 结构化查询参数树（qs 解析：嵌套对象 / 数组） —— */
+
+.tw-params {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tw-params__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tw-params__key {
+  flex: none;
+  min-width: 72px;
+  font-family: var(--tk-font-mono);
+  font-size: var(--tk-text-sm);
+  color: var(--tk-secondary-foreground);
+  word-break: break-all;
+}
+
+.tw-params__key::after {
+  content: ':';
+  color: var(--tk-muted-foreground);
+}
+
+.tw-params__val {
+  min-width: 0;
+  font-family: var(--tk-font-mono);
+  font-size: var(--tk-text-sm);
+  color: var(--tk-foreground);
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.tw-params__children {
+  padding-left: 14px;
+  border-left: 1px solid var(--tk-border);
+}
+
 .tw-kv__row {
   display: flex;
   align-items: baseline;
