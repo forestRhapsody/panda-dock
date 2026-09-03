@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import qs from 'qs'
 import { useTranslation } from 'react-i18next'
@@ -19,32 +19,45 @@ interface ParsedUrl {
   params: UrlPart[]
 }
 
+/** 认可的网络协议白名单（仅 http/https 等，非法 scheme 如 httpas:// 一律判无效） */
+const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'ftp:', 'ws:', 'wss:', 'file:'])
+
 /** 当前页 origin，用作相对路径的解析基准 */
 function currentBase(): string {
   return (typeof window !== 'undefined' && window.location.href) || 'http://localhost/'
 }
 
-/** 从文本中抽取 scheme:// 的网址（去除前后的干扰文字与尾部标点） */
+/** 从文本中抽取已认可协议的网址（去除前后的干扰文字与尾部标点） */
 function extractUrlFromText(text: string): string | null {
-  const m = text.match(/[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s<>"'()]+/)
+  const m = text.match(/(?:https?|ftp|ws|wss|file):\/\/[^\s<>"'()]+/i)
   if (!m) return null
   return m[0].replace(/[.,;:!?'")\]}]+$/, '')
 }
 
-/** 把候选字符串解析为 URL：绝对 → 无协议域名(补 https) → 相对路径(按当前页 origin) */
+/** 把候选字符串解析为 URL：绝对 → 无协议域名(补 https) → 相对路径(按当前页 origin)；校验协议合法性 */
 function buildUrl(source: string): URL {
-  try {
-    return new URL(source)
-  } catch {
-    // 空的继续往下兜底
-  }
-  // 无协议但像完整域名：补 https
-  if (/^[a-z0-9.-]+\.[a-z]{2,}([/?#].*)?$/i.test(source)) {
-    return new URL(`https://${source}`)
-  }
-  // 相对路径（以 / ./ ../ 开头）：按当前页 origin 解析
-  if (/^[./]/.test(source)) {
-    return new URL(source, currentBase())
+  const candidates: (() => URL)[] = [
+    () => new URL(source),
+    // 无协议但像完整域名：补 https
+    () => {
+      if (/^[a-z0-9.-]+\.[a-z]{2,}([/?#].*)?$/i.test(source)) {
+        return new URL(`https://${source}`)
+      }
+      throw new Error('invalid')
+    },
+    // 相对路径（以 / ./ ../ 开头）：按当前页 origin 解析
+    () => {
+      if (/^[./]/.test(source)) return new URL(source, currentBase())
+      throw new Error('invalid')
+    },
+  ]
+  for (const make of candidates) {
+    try {
+      const url = make()
+      if (ALLOWED_PROTOCOLS.has(url.protocol)) return url
+    } catch {
+      // 继续尝试下一种
+    }
   }
   throw new Error('invalid')
 }
@@ -91,7 +104,7 @@ function collectParts(url: URL): UrlPart[] {
   return parts
 }
 
-/** 解析 URL：先从文本抽取网址，再交给 buildUrl；查询参数用 qs 解析后扁平化 */
+/** 解析 URL：先从文本抽取网址，再交给 buildUrl（校验协议）；查询参数用 qs 解析后扁平化 */
 function parseUrl(input: string): ParsedUrl {
   const text = input.trim()
   const extracted = extractUrlFromText(text) ?? text
@@ -115,7 +128,7 @@ function UrlField({ label, value }: { label: string; value: string }) {
   )
 }
 
-/** 网址解析工具：手动输入或一键取当前网页 URL，展示各组成部分与（qs 解析的）查询参数 */
+/** 网址解析工具：输入实时校验并解析，或一键取当前网页 URL；非法协议（如 httpas://）判无效 */
 export default function UrlTool() {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
@@ -123,11 +136,12 @@ export default function UrlTool() {
   const [error, setError] = useState<string | null>(null)
   const [fetching, setFetching] = useState(false)
 
-  function run(raw?: string) {
-    const text = (raw ?? input).trim()
+  /** 实时解析：输入为空清空；合法则展示，否则判无效 */
+  const liveParse = (raw: string) => {
+    const text = raw.trim()
     if (!text) {
       setParsed(null)
-      setError(t('tool.url.empty'))
+      setError(null)
       return
     }
     try {
@@ -139,17 +153,25 @@ export default function UrlTool() {
     }
   }
 
+  // 输入防抖解析：改动即实时更新结果
+  const debounceRef = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    window.clearTimeout(debounceRef.current)
+    debounceRef.current = window.setTimeout(() => liveParse(input), 200)
+    return () => window.clearTimeout(debounceRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input])
+
   async function fetchCurrent() {
     setFetching(true)
     try {
       const url = await getCurrentPageUrl()
       if (!url) {
         setInput('')
-        setParsed(null)
         setError(t('tool.url.fetchFailed'))
+        setParsed(null)
       } else {
         setInput(url)
-        run(url)
       }
     } finally {
       setFetching(false)
@@ -158,8 +180,8 @@ export default function UrlTool() {
 
   function clear() {
     setInput('')
-    setParsed(null)
     setError(null)
+    setParsed(null)
   }
 
   const hasParams = parsed ? parsed.params.length > 0 : false
@@ -178,12 +200,9 @@ export default function UrlTool() {
       </label>
 
       <div className='tw-actions'>
-        <button type='button' className='tk-btn tk-btn--primary' onClick={() => run()}>
-          {t('tool.url.parse')}
-        </button>
         <button
           type='button'
-          className='tk-btn'
+          className='tk-btn tk-btn--primary'
           disabled={fetching}
           onClick={() => void fetchCurrent()}
         >

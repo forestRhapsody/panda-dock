@@ -126,7 +126,7 @@
         "search": "查询串",
         "hash": "哈希"
       },
-      "note": "会从输入文本中识别并解析网址；无协议的完整域名会自动补 https，相对路径按当前页 origin 解析。"
+      "note": "仅认可 http/https 等网络协议，非法协议（如 httpas://）判为无效；无协议的完整域名自动补 https，相对路径按当前页 origin 解析。"
     },
     "timestamp": {
       "sourceSeconds": "按 Unix 秒解析",
