@@ -1,8 +1,39 @@
 import {
   MSG_CLOSE_NATIVE_SIDE_PANEL,
+  MSG_DETECT_SELECTION,
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_OPEN_OPTIONS,
 } from '@/utils/messages'
+
+const DETECT_MENU_ID = 'toolkit-detect-selection'
+
+/**
+ * 右键菜单「智能识别选中文字」：安装/更新时注册。
+ * 选中文字后点击 → 把选中文本与点击位置转给当前页 content script，在网页内弹出悬浮面板。
+ */
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.removeAll(() => {
+    const zh = chrome.i18n.getUILanguage().toLowerCase().startsWith('zh')
+    chrome.contextMenus.create({
+      id: DETECT_MENU_ID,
+      title: zh ? '智能识别选中文字' : 'Detect selected text',
+      contexts: ['selection'],
+    })
+  })
+})
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== DETECT_MENU_ID || !info.selectionText || !tab?.id) return
+  // 说明：OnClickData 不提供鼠标坐标，面板位置由 content script 自己记录右键位置。
+  void chrome.tabs
+    .sendMessage(tab.id, {
+      action: MSG_DETECT_SELECTION,
+      text: info.selectionText,
+    })
+    .catch(() => {
+      // 目标页未注入 content script（非 http(s) 页 / 扩展安装前已打开的页面）：静默忽略
+    })
+})
 
 /**
  * Background Service Worker：

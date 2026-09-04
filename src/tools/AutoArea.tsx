@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import type { TextareaHTMLAttributes } from 'react'
 
 interface AutoAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value'> {
@@ -20,7 +20,9 @@ export default function AutoArea({
 }: AutoAreaProps) {
   const ref = useRef<HTMLTextAreaElement>(null)
 
-  useEffect(() => {
+  // 用 useLayoutEffect：在 paint 前就把高度撑开，避免父级（悬浮面板）在测量面板高度时
+  // 拿到"未撑开"的过矮高度，导致贴边打开时位置/翻转判断错误。
+  useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
     el.style.height = 'auto'

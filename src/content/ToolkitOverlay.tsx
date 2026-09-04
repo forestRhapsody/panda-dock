@@ -10,6 +10,7 @@ import type { BallAction } from '@/utils/messages'
 import {
   MSG_CLOSE_DRAWER,
   MSG_CLOSE_NATIVE_SIDE_PANEL,
+  MSG_DETECT_SELECTION,
   MSG_OPEN_DRAWER,
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_TOGGLE_DRAWER,
@@ -20,6 +21,7 @@ import { useTheme } from '@/utils/theme'
 import Drawer from './Drawer'
 import FloatingBall, { clampBallPos, DOCK_H, snapToEdge } from './FloatingBall'
 import type { BallPos } from './FloatingBall'
+import SelectionDetectPanel from './SelectionDetectPanel'
 
 const POS_KEY = 'toolkit.ballPos'
 const SETTINGS_KEY = 'settings'
@@ -115,7 +117,14 @@ export default function ToolkitOverlay() {
   const [pos, setPos] = useState<BallPos>(() => defaultPos(true))
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const [selectionDetect, setSelectionDetect] = useState<{
+    text: string
+    x?: number
+    y?: number
+  } | null>(null)
   const noticeTimer = useRef<number | undefined>(undefined)
+  // 记录最后一次右键位置：Chrome 右键菜单回调不提供坐标，面板靠它跟随点击点
+  const lastCtxPos = useRef({ x: 8, y: 8 })
 
   const showNotice = useCallback((text: string) => {
     setNotice(text)
@@ -124,6 +133,15 @@ export default function ToolkitOverlay() {
   }, [])
 
   useEffect(() => () => window.clearTimeout(noticeTimer.current), [])
+
+  // 记录最后一次右键位置，供「智能识别选中文字」悬浮面板跟随
+  useEffect(() => {
+    const onCtx = (e: MouseEvent) => {
+      lastCtxPos.current = { x: e.clientX, y: e.clientY }
+    }
+    window.addEventListener('contextmenu', onCtx, true)
+    return () => window.removeEventListener('contextmenu', onCtx, true)
+  }, [])
 
   // 首次读取：快捷开关/点击行为/吸边/域名黑白名单 + 记忆位置（并行，读完统一生效避免闪烁）
   useEffect(() => {
@@ -204,6 +222,16 @@ export default function ToolkitOverlay() {
         sendResponse({ ok: true })
       } else if (action === MSG_CLOSE_DRAWER) {
         setDrawerOpen(false)
+      } else if (action === MSG_DETECT_SELECTION) {
+        // 右键菜单「智能识别选中文字」→ 弹出悬浮面板（位置取 content 记录的右键点）
+        const { text } = message as { text?: string }
+        if (text) {
+          setSelectionDetect({
+            text,
+            x: lastCtxPos.current.x,
+            y: lastCtxPos.current.y,
+          })
+        }
       }
     }
     chrome.runtime.onMessage.addListener(listener)
@@ -256,7 +284,7 @@ export default function ToolkitOverlay() {
     : quickOpen
 
   if (!ready) return null
-  if (!showBall && !drawerOpen && !notice) return null
+  if (!showBall && !drawerOpen && !notice && !selectionDetect) return null
 
   return (
     <>
@@ -264,6 +292,14 @@ export default function ToolkitOverlay() {
         <FloatingBall pos={pos} snap={ballSnap} onDrop={handleDrop} onToggle={handleBallClick} />
       )}
       {drawerOpen && <Drawer onClose={() => setDrawerOpen(false)} />}
+      {selectionDetect && (
+        <SelectionDetectPanel
+          text={selectionDetect.text}
+          x={selectionDetect.x}
+          y={selectionDetect.y}
+          onClose={() => setSelectionDetect(null)}
+        />
+      )}
       {notice && inExt && (
         <div className='tek__toast' role='status'>
           {notice}

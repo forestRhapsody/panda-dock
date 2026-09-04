@@ -194,6 +194,8 @@
 .tw-area--result {
   min-height: 88px;
   background: var(--tk-muted);
+  /* 只读输出自动增高，禁止手动拉伸（否则会超出外层容器导致多余滚动条） */
+  resize: none;
 }
 
 .tw-actions {

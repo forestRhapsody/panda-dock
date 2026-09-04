@@ -33,5 +33,8 @@ export const MSG_STORAGE_SET = 'TOOLKIT_STORAGE_SET'
 /** 扩展页面(侧边栏等) → content：清空当前页的某一存储区域 */
 export const MSG_STORAGE_CLEAR = 'TOOLKIT_STORAGE_CLEAR'
 
+/** background → content：右键菜单「智能识别选中文字」→ 显示悬浮面板（携带选中文本与位置） */
+export const MSG_DETECT_SELECTION = 'TOOLKIT_DETECT_SELECTION'
+
 /** 悬浮球点击行为配置 */
 export type BallAction = 'drawer' | 'native'

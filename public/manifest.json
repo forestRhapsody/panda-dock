@@ -34,5 +34,5 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["storage", "sidePanel"]
+  "permissions": ["storage", "sidePanel", "contextMenus"]
 }

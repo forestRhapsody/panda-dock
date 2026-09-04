@@ -144,3 +144,67 @@
     transform: translate(-50%, 0);
   }
 }
+
+/* —— 右键「智能识别选中文字」悬浮面板 —— */
+
+.tek-detect-panel {
+  position: fixed;
+  z-index: 2147483013;
+  /* 盖过悬浮球(3011)/抽屉(3010)/轻提示(3012)，始终在网页内容之上 */
+  box-sizing: border-box;
+  width: min(480px, calc(100vw - 16px));
+  max-height: min(480px, calc(100vh - 16px));
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: var(--tk-card);
+  box-shadow: var(--tk-shadow-lg);
+  font-family: var(--tk-font);
+  color: var(--tk-foreground);
+  /* 定位好后再显示，避免首帧越界闪烁 */
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tek-detect-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: var(--tk-text-md);
+  font-weight: 600;
+  cursor: move;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.tek-detect-panel__grip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--tk-muted-foreground);
+}
+
+.tek-detect-panel__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tek-detect-panel__pin--on {
+  background: var(--tk-accent);
+  color: var(--tk-primary);
+}
+
+.tek-detect-panel__body {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

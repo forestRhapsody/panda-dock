@@ -130,6 +130,9 @@
       "detect": "智能识别"
     },
     "detect": {
+      "title": "智能识别",
+      "pin": "钉住（点击页面其它区域不关闭）",
+      "unpin": "取消钉住（点击页面其它区域可关闭）",
       "inputLabel": "粘贴或输入内容",
       "inputPlaceholder": "自动识别 Base64 / JSON / URL / 时间戳 / UUID / JWT / 十六进制…",
       "detected": "识别为",

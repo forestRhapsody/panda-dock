@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import type { ReactNode } from 'react'
 
 /** JSON 语法着色：把合法 JSON 文本切分成带颜色类名的 span */
@@ -86,7 +86,8 @@ export default function JsonHighlight({ text, maxHeight = 360 }: JsonHighlightPr
   const ref = useRef<HTMLPreElement>(null)
   const nodes = useMemo(() => highlightJson(text), [text])
 
-  useEffect(() => {
+  // 用 useLayoutEffect：paint 前撑开高度，父级（悬浮面板）测量面板高度时能拿到正确块高
+  useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
     el.style.height = 'auto'

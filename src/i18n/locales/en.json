@@ -130,6 +130,9 @@
       "detect": "Detect"
     },
     "detect": {
+      "title": "Detect",
+      "pin": "Pin (keep open when clicking outside)",
+      "unpin": "Unpin (close when clicking outside)",
       "inputLabel": "Paste or type something",
       "inputPlaceholder": "Auto-detects Base64 / JSON / URL / timestamp / UUID / JWT / hex…",
       "detected": "Detected",
