@@ -221,6 +221,17 @@ body {
   margin-top: 12px;
 }
 
+/* —— 恢复默认设置（全局） —— */
+.opt__card--danger {
+  border-color: color-mix(in srgb, var(--tk-destructive) 22%, var(--tk-border));
+}
+
+.opt__reset-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
 /* —— 域名黑白名单规则配置 —— */
 .opt__domain-header {
   display: flex;

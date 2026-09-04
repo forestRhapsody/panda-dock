@@ -65,6 +65,10 @@
     "fontMax": "最大",
     "toolbox": "工具箱能力",
     "resetDefault": "恢复默认",
+    "restoreDefaults": "恢复默认设置",
+    "restoreDefaultsDesc": "将全部设置恢复为默认值——包括悬浮球行为（动作/吸边/是否显示）、域名黑白名单规则、外观（主题/语言/字体）与工具箱能力的显隐与排序。",
+    "restoreDefaultsConfirmTitle": "恢复默认设置",
+    "restoreDefaultsConfirmMsg": "确定要将所有设置恢复为默认值吗？此操作会覆盖当前的悬浮球、域名规则与工具箱配置，且无法撤销。",
     "toolboxDesc": "决定工具箱选项卡里显示哪些能力以及它们的顺序。",
     "toolboxHint": "拖动把手调整顺序（带滑动动画）；关闭开关即在工具箱隐藏该能力。修改即时保存。",
     "dragToReorder": "按住拖拽调整顺序",
@@ -122,7 +126,31 @@
       "timestamp": "时间戳",
       "storage": "本地存储",
       "url": "网址",
-      "qrcode": "二维码"
+      "qrcode": "二维码",
+      "detect": "智能识别"
+    },
+    "detect": {
+      "inputLabel": "粘贴或输入内容",
+      "inputPlaceholder": "自动识别 Base64 / JSON / URL / 时间戳 / UUID / JWT / 十六进制…",
+      "detected": "识别为",
+      "none": "未能识别出常见类型，可尝试切换到对应工具处理。",
+      "note": "仅在本地检测，不会上传任何数据。",
+      "resultPlaceholder": "识别结果将显示在这里…",
+      "row": {
+        "decoded": "解码结果",
+        "formatted": "格式化结果",
+        "minified": "压缩结果",
+        "seconds": "秒",
+        "milliseconds": "毫秒",
+        "date": "本地时间",
+        "iso": "ISO 8601",
+        "bytes": "字节数",
+        "valid": "有效",
+        "version": "版本",
+        "algorithm": "算法",
+        "header": "头部 (Header)",
+        "payload": "载荷 (Payload)"
+      }
     },
     "qrcode": {
       "inputLabel": "输入内容",

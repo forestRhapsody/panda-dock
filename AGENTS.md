@@ -68,11 +68,13 @@ vite.background.config.ts → service worker 打成单个 IIFE
 | 能力内子切换（编解码/格式化压缩/存储区/生成解析…） | `src/tools/ToolTabs.tsx` | 别手写一组 `.tw-tabs__btn` |
 | 字段 label | `tw-field` / `tw-field__label` | 字段标题 + 右侧动作位（复制按钮等） |
 | 多行输入/只读输出 | `AutoArea` + `tw-area`（输出可加 `--result`/`--tall`） | 别用裸 `<textarea>` |
-| 单行输入 / 筛选 | `tw-input` | 本地存储 Key、筛选框等 |
+| 单行输入 / 筛选 | `tw-input` | 高度统一为 `--tk-control-h`；不要往下叠加小号高度 |
+| 下拉选择 | `src/ui/TkSelect.tsx`（默认 `md`） | 与同排输入框同高 `--tk-control-h`；`variant='sm'` 仅用于**真正紧凑**场景（如弹窗快捷设置、头部动作），不要为此让工具箱里的下拉显得比旁边的输入框矮 |
 | 按钮 | `ui.css` 的 `tk-btn`（主按钮 `--primary`，紧凑 `--sm`），通栏 `--block` | **工具内禁用**新按钮样式 |
 | 复制 | `src/tools/CopyButton.tsx` | 图标/文字变体；失败回调接状态 |
 | 图标 | `src/ui/Icon.tsx` 内联 SVG | **禁用 emoji** |
 | 状态提示 | `src/tools/StatusText.tsx` + `ToolStatus` 类型 | `kind='ok'\|'err'\|'info'` |
+| 确认弹窗 | `src/ui/ConfirmDialog.tsx`（`.tk-modal`） | 替代 `window.confirm`（content 抽屉里会被禁用）；Escape/点遮罩取消 + 聚焦确定 |
 | 说明/切分 | `tw-note` / `tw-status--*` / `tw-actions` | 灰色说明、状态行、按钮行 |
 | 颜色/圆角/阴影/字色 | 只用 `var(--tk-*)` | 禁止硬编码色值、圆角、shadow |
 

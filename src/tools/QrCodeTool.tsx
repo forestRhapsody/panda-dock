@@ -376,7 +376,6 @@ export default function QrCodeTool() {
                 </label>
                 <TkSelect
                   id='tw-qr-margin'
-                  variant='sm'
                   value={margin}
                   onChange={(e) => setMargin(Number(e.target.value))}
                 >
@@ -395,7 +394,6 @@ export default function QrCodeTool() {
                 </label>
                 <TkSelect
                   id='tw-qr-ec'
-                  variant='sm'
                   value={ecLevel}
                   disabled={Boolean(logoUrl)}
                   onChange={(e) => setEcLevel(e.target.value as QrErrorCorrectionLevel)}
@@ -503,7 +501,6 @@ export default function QrCodeTool() {
                 <div className='tw-qr__custom-col' style={{ flex: '0 0 auto' }}>
                   <span className='tw-qr__custom-label'>{t('tool.qrcode.labelFontSize')}:</span>
                   <TkSelect
-                    variant='sm'
                     value={labelFontSize}
                     onChange={(e) => setLabelFontSize(Number(e.target.value))}
                   >

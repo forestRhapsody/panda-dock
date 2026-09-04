@@ -65,6 +65,10 @@
     "fontMax": "Extra large",
     "toolbox": "Toolbox capabilities",
     "resetDefault": "Reset to default",
+    "restoreDefaults": "Restore all defaults",
+    "restoreDefaultsDesc": "Reset every setting to its default — floating-ball behavior (action/snap/visibility), domain blacklist & whitelist rules, appearance (theme/language/font), and toolbox capability visibility & order.",
+    "restoreDefaultsConfirmTitle": "Restore all defaults",
+    "restoreDefaultsConfirmMsg": "Reset ALL settings to their defaults? This overrides the current floating-ball, domain rules and toolbox configuration, and cannot be undone.",
     "toolboxDesc": "Choose which tools appear in the toolbox tabs and their order.",
     "toolboxHint": "Drag the handle to reorder (with sliding animation); toggling a switch hides that tool. Changes are saved instantly.",
     "dragToReorder": "Hold and drag to reorder",
@@ -122,7 +126,31 @@
       "timestamp": "Timestamp",
       "storage": "Local Storage",
       "url": "URL",
-      "qrcode": "QR Code"
+      "qrcode": "QR Code",
+      "detect": "Detect"
+    },
+    "detect": {
+      "inputLabel": "Paste or type something",
+      "inputPlaceholder": "Auto-detects Base64 / JSON / URL / timestamp / UUID / JWT / hex…",
+      "detected": "Detected",
+      "none": "No common type detected — try the relevant tool instead.",
+      "note": "Detection runs purely locally; nothing is uploaded.",
+      "resultPlaceholder": "Detection result appears here…",
+      "row": {
+        "decoded": "Decoded",
+        "formatted": "Formatted",
+        "minified": "Minified",
+        "seconds": "Seconds",
+        "milliseconds": "Milliseconds",
+        "date": "Local time",
+        "iso": "ISO 8601",
+        "bytes": "Bytes",
+        "valid": "Valid",
+        "version": "Version",
+        "algorithm": "Algorithm",
+        "header": "Header",
+        "payload": "Payload"
+      }
     },
     "qrcode": {
       "inputLabel": "Content",

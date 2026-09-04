@@ -268,3 +268,46 @@
   white-space: nowrap;
 }
 
+/* —— 确认弹窗（替代 window.confirm，设置在 shadow/扩展页都能用） —— */
+
+.tk-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--tk-foreground) 38%, transparent);
+}
+
+.tk-modal__card {
+  width: min(320px, 100%);
+  padding: 18px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-lg);
+  background: var(--tk-card);
+  box-shadow: var(--tk-shadow-lg);
+}
+
+.tk-modal__title {
+  margin: 0 0 8px;
+  font-size: var(--tk-text-lg);
+  font-weight: 600;
+  color: var(--tk-foreground);
+}
+
+.tk-modal__msg {
+  margin: 0 0 16px;
+  font-size: var(--tk-text-base);
+  line-height: 1.6;
+  color: var(--tk-secondary-foreground);
+  word-break: break-all;
+}
+
+.tk-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+

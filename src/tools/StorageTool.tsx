@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
 import i18n from '@/i18n'
+import ConfirmDialog from '@/ui/ConfirmDialog'
 
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
@@ -51,62 +52,10 @@ function stripLineBreaks(text: string): string {
 }
 
 /**
- * 自定义确认弹窗（替代 window.confirm）。
+ * 确认弹窗复用 src/ui/ConfirmDialog.tsx（替代 window.confirm）。
  * window.confirm 在 content script（网页内抽屉，Shadow DOM）里会被 Chrome 禁用，
  * 用 React 渲染的弹窗在抽屉与侧边栏里都能可靠弹出，作为被阻止时的降级方案。
  */
-function ConfirmDialog({
-  title,
-  message,
-  onCancel,
-  onConfirm,
-}: {
-  title: string
-  message: string
-  onCancel: () => void
-  onConfirm: () => void
-}) {
-  const { t } = useTranslation()
-  const confirmRef = useRef<HTMLButtonElement>(null)
-
-  // Escape 取消 + 打开后自动聚焦确定按钮
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel()
-    }
-    document.addEventListener('keydown', onKey)
-    confirmRef.current?.focus()
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onCancel])
-
-  return (
-    <div
-      className='tw-modal'
-      role='alertdialog'
-      aria-modal='true'
-      aria-label={title}
-      onClick={onCancel}
-    >
-      <div className='tw-modal__card' onClick={(e) => e.stopPropagation()}>
-        <h3 className='tw-modal__title'>{title}</h3>
-        <p className='tw-modal__msg'>{message}</p>
-        <div className='tw-modal__actions'>
-          <button type='button' className='tk-btn' onClick={onCancel}>
-            {t('tool.storage.cancel')}
-          </button>
-          <button
-            type='button'
-            ref={confirmRef}
-            className='tk-btn tk-btn--primary'
-            onClick={onConfirm}
-          >
-            {t('tool.storage.confirm')}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 interface EditorFormProps {
   draftKey: string
@@ -545,6 +494,8 @@ export default function StorageTool() {
         <ConfirmDialog
           title={confirm.title}
           message={confirm.message}
+          confirmLabel={t('tool.storage.confirm')}
+          cancelLabel={t('tool.storage.cancel')}
           onCancel={() => setConfirm(null)}
           onConfirm={() => {
             confirm.onConfirm()

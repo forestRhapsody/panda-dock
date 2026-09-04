@@ -25,6 +25,7 @@ import { normalizeSettings } from '@/utils/settings'
 import type { Settings } from '@/utils/settings'
 
 import Base64Tool from './Base64Tool'
+import DetectTool from './DetectTool'
 import JsonTool from './JsonTool'
 import JwtTool from './JwtTool'
 import QrCodeTool from './QrCodeTool'
@@ -47,6 +48,7 @@ const TOOL_COMPONENTS: Record<ToolId, () => ReactNode> = {
   storage: () => <StorageTool />,
   url: () => <UrlTool />,
   qrcode: () => <QrCodeTool />,
+  detect: () => <DetectTool />,
 }
 
 const NAV_PAD = 8

@@ -463,10 +463,10 @@
 .url-row__input {
   flex: 1 1 auto;
   min-width: 0;
-  height: var(--tk-control-h-sm);
+  height: var(--tk-control-h);
   padding: 0 10px;
   border: 1px solid var(--tk-border-strong);
-  border-radius: var(--tk-radius-sm);
+  border-radius: var(--tk-radius);
   background: var(--tk-muted);
   font-family: var(--tk-font-mono);
   font-size: var(--tk-text-sm);
@@ -482,8 +482,8 @@
   flex: none;
   display: inline-grid;
   place-items: center;
-  width: 26px;
-  height: var(--tk-control-h-sm);
+  width: var(--tk-control-h);
+  height: var(--tk-control-h);
   padding: 0;
   border: 1px solid var(--tk-border);
   border-radius: var(--tk-radius-sm);
@@ -570,6 +570,84 @@
 .tw-link--danger:hover {
   color: color-mix(in srgb, var(--tk-destructive) 82%, black);
   text-decoration: underline;
+}
+
+/* —— 智能识别 (tw-detect) —— */
+
+.tw-detect {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tw-detect__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tw-detect__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tw-detect__field {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-card);
+  font-size: var(--tk-text-sm);
+}
+
+.tw-detect__field-label {
+  flex: none;
+  font-family: var(--tk-font-mono);
+  color: var(--tk-primary);
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+.tw-detect__field-value {
+  flex: 1;
+  min-width: 0;
+  word-break: break-all;
+  color: var(--tk-foreground);
+  font-family: var(--tk-font);
+}
+
+.tw-detect__field-value--mono {
+  font-family: var(--tk-font-mono);
+}
+
+.tw-detect__copy {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--tk-radius-sm);
+  background: none;
+  color: var(--tk-muted-foreground);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tw-detect__copy:hover {
+  background: var(--tk-accent);
+  color: var(--tk-foreground);
+}
+
+.tw-detect__block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 /* —— 本地存储条目 —— */
@@ -711,47 +789,7 @@
   gap: 12px;
 }
 
-/* —— 自定义确认弹窗（替代 window.confirm，抽屉/侧边栏通用） —— */
-
-.tw-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: color-mix(in srgb, var(--tk-foreground) 38%, transparent);
-}
-
-.tw-modal__card {
-  width: min(320px, 100%);
-  padding: 18px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-lg);
-  background: var(--tk-card);
-  box-shadow: var(--tk-shadow-lg);
-}
-
-.tw-modal__title {
-  margin: 0 0 8px;
-  font-size: var(--tk-text-lg);
-  font-weight: 600;
-  color: var(--tk-foreground);
-}
-
-.tw-modal__msg {
-  margin: 0 0 16px;
-  font-size: var(--tk-text-base);
-  line-height: 1.6;
-  color: var(--tk-secondary-foreground);
-  word-break: break-all;
-}
-
-.tw-modal__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
+/* 确认弹窗改用 src/ui/ui.css 的 .tk-modal（抽屉/侧边栏/设置页通用） */
 
 /* —— 二维码生成与解析工具 (tw-qr) —— */
 
@@ -920,10 +958,9 @@
 }
 
 .tw-qr__label-input {
+  /* 只负责在行内填满剩余宽度；高度/字号/padding/圆角全部交给统一的 .tw-input，
+     保证与其它工具的单行输入框同高（--tk-control-h），不再另起一套小号高度 */
   flex: 1;
-  height: var(--tk-control-h-sm);
-  padding: 0 8px;
-  font-size: var(--tk-text-xs);
 }
 
 .tw-qr__preview-box {

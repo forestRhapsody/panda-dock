@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { useLocale } from '@/i18n/useLocale'
 import type { ToolId } from '@/tools/registry'
 import { DEFAULT_TOOLS, defaultToolLayout } from '@/tools/registry'
+import ConfirmDialog from '@/ui/ConfirmDialog'
 import Icon from '@/ui/Icon'
 import TkSelect from '@/ui/TkSelect'
 import { parseDomainPatterns } from '@/utils/domainMatch'
@@ -106,6 +107,7 @@ export default function OptionsPage() {
   const [domainTab, setDomainTab] = useState<DomainMatchMode>('blacklist')
   const [blacklistText, setBlacklistText] = useState('')
   const [whitelistText, setWhitelistText] = useState('')
+  const [showGlobalConfirm, setShowGlobalConfirm] = useState(false)
   const inExt = isExtension()
 
   // 使整体字体大小随设置即时缩放（含本设置页）
@@ -186,6 +188,35 @@ export default function OptionsPage() {
     persist({ ...settings, toolOrder: layout.order, toolEnabled: layout.enabled })
   }
 
+  /** 恢复「域名黑白名单」这块到默认（黑名单模式 + 清空名单） */
+  function resetDomainRules() {
+    const base = defaultSettings()
+    persist({
+      ...settings,
+      ballDomainMode: base.ballDomainMode,
+      ballBlacklist: base.ballBlacklist,
+      ballWhitelist: base.ballWhitelist,
+    })
+    setDomainTab(base.ballDomainMode)
+    setBlacklistText('')
+    setWhitelistText('')
+  }
+
+  /** 打开「恢复默认设置」确认弹窗 */
+  function requestGlobalReset() {
+    setShowGlobalConfirm(true)
+  }
+
+  /** 确认后：把全部设置恢复为默认，并同步重置本页的域名编辑状态 */
+  function doGlobalReset() {
+    const base = defaultSettings()
+    persist(base)
+    setDomainTab(base.ballDomainMode)
+    setBlacklistText('')
+    setWhitelistText('')
+    setShowGlobalConfirm(false)
+  }
+
   return (
     <div className='opt'>
       <header className='opt__header'>
@@ -235,7 +266,17 @@ export default function OptionsPage() {
         </div>
 
         <div className='opt__card'>
-          <h2>{t('settings.domainSection')}</h2>
+          <div className='opt__card-head'>
+            <h2>{t('settings.domainSection')}</h2>
+            <button
+              type='button'
+              className='opt__reset'
+              onClick={resetDomainRules}
+              title={t('settings.resetDefault')}
+            >
+              {t('settings.resetDefault')}
+            </button>
+          </div>
           <ul className='opt__list'>
             <li className='opt__item'>
               <div className='opt__item-text'>
@@ -442,7 +483,26 @@ export default function OptionsPage() {
 
           <p className='opt__env opt__env--hint'>{t('settings.toolboxHint')}</p>
         </div>
+
+        <div className='opt__card opt__card--danger'>
+          <h2>{t('settings.restoreDefaults')}</h2>
+          <p className='opt__env'>{t('settings.restoreDefaultsDesc')}</p>
+          <div className='opt__reset-row'>
+            <button type='button' className='tk-btn' onClick={requestGlobalReset}>
+              {t('settings.restoreDefaults')}
+            </button>
+          </div>
+        </div>
       </main>
+
+      {showGlobalConfirm && (
+        <ConfirmDialog
+          title={t('settings.restoreDefaultsConfirmTitle')}
+          message={t('settings.restoreDefaultsConfirmMsg')}
+          onCancel={() => setShowGlobalConfirm(false)}
+          onConfirm={doGlobalReset}
+        />
+      )}
     </div>
   )
 }
