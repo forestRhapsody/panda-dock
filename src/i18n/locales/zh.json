@@ -127,7 +127,8 @@
       "storage": "本地存储",
       "url": "网址",
       "qrcode": "二维码",
-      "detect": "智能识别"
+      "detect": "智能识别",
+      "file-b64": "文件转Base64"
     },
     "detect": {
       "title": "智能识别",
@@ -139,6 +140,8 @@
       "none": "未能识别出常见类型，可尝试切换到对应工具处理。",
       "note": "仅在本地检测，不会上传任何数据。",
       "resultPlaceholder": "识别结果将显示在这里…",
+      "download": "下载文件",
+      "previewAlt": "预览",
       "row": {
         "decoded": "解码结果",
         "formatted": "格式化结果",
@@ -152,8 +155,33 @@
         "version": "版本",
         "algorithm": "算法",
         "header": "头部 (Header)",
-        "payload": "载荷 (Payload)"
+        "payload": "载荷 (Payload)",
+        "mime": "MIME",
+        "image": "图片预览"
       }
+    },
+    "fileB64": {
+      "encodeTab": "文件 → Base64",
+      "decodeTab": "Base64 → 文件",
+      "dropText": "点击选择文件，或拖拽 / 粘贴图片到此处",
+      "dropSubtitle": "支持任意文件；图片会显示预览",
+      "previewAlt": "预览",
+      "unknownType": "未知类型",
+      "rechoose": "重新选择",
+      "sizeWarning": "文件较大，转出的 Base64 也会很大，请留意内存与复制性能。",
+      "base64Label": "Base64",
+      "dataUrlLabel": "Data URL",
+      "decodeInputLabel": "粘贴 Base64 或 Data URL",
+      "decodePlaceholder": "支持 data:image/png;base64,... 或纯 Base64…",
+      "pasteFromClipboard": "从剪贴板粘贴",
+      "fileSize": "文件大小",
+      "download": "下载文件",
+      "tooLarge": "文件超过 5MB，已拒绝读取（避免内存与性能问题）。",
+      "readFailed": "文件读取失败。",
+      "invalidBase64": "无效的 Base64 / Data URL。",
+      "noClipboardText": "剪贴板里没有文本。",
+      "clipboardDenied": "无法读取剪贴板。",
+      "note": "文件在本地读取并转码，不会上传。Base64 约比原文件大 37%。"
     },
     "qrcode": {
       "inputLabel": "输入内容",

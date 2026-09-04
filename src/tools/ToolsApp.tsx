@@ -26,6 +26,7 @@ import type { Settings } from '@/utils/settings'
 
 import Base64Tool from './Base64Tool'
 import DetectTool from './DetectTool'
+import FileBase64Tool from './FileBase64Tool'
 import JsonTool from './JsonTool'
 import JwtTool from './JwtTool'
 import QrCodeTool from './QrCodeTool'
@@ -48,6 +49,7 @@ const TOOL_COMPONENTS: Record<ToolId, () => ReactNode> = {
   storage: () => <StorageTool />,
   url: () => <UrlTool />,
   qrcode: () => <QrCodeTool />,
+  'file-b64': () => <FileBase64Tool />,
   detect: () => <DetectTool />,
 }
 

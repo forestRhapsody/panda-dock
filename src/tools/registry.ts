@@ -11,6 +11,7 @@ export type ToolId =
   | 'url'
   | 'qrcode'
   | 'detect'
+  | 'file-b64'
 
 export interface ToolMeta {
   id: ToolId
@@ -26,6 +27,7 @@ export const DEFAULT_TOOLS: ToolMeta[] = [
   { id: 'storage', label: 'Local Storage' },
   { id: 'url', label: 'URL' },
   { id: 'qrcode', label: 'QR Code' },
+  { id: 'file-b64', label: 'File → Base64' },
   { id: 'detect', label: 'Detect' },
 ]
 

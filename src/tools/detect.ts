@@ -1,8 +1,17 @@
 import { decodeBase64 } from './base64'
+import { base64ToDataUrl, detectMimeFromBytes, fmtSize } from './file'
 import { formatJson, minifyJson } from './json'
 import { decodeJwt } from './jwt'
 
-export type DetectKind = 'json' | 'jwt' | 'url' | 'timestamp' | 'uuid' | 'base64' | 'hex'
+export type DetectKind =
+  | 'json'
+  | 'jwt'
+  | 'url'
+  | 'timestamp'
+  | 'uuid'
+  | 'base64'
+  | 'hex'
+  | 'dataurl'
 
 /** 短字段（单行 label|value，可逐项复制） */
 export interface DetectField {
@@ -11,11 +20,20 @@ export interface DetectField {
   mono?: boolean
 }
 
-/** 长文本输出（格式化 JSON / 解码结果，整块复制），json=true 用语法高亮展示 */
+/** 长文本输出（格式化 JSON / 解码结果，整块复制），json=true 用语法高亮展示，image=true 展示图片 */
 export interface DetectBlock {
   key: string
   value: string
   json?: boolean
+  image?: boolean
+}
+
+/** 可下载的文件（base64 反解成原始文件，点击可还原下载） */
+export interface DetectDownload {
+  mime: string
+  /** Data URL（含 base64 数据），用于还原文件 */
+  dataUrl: string
+  sizeBytes: number
 }
 
 export interface DetectResult {
@@ -24,11 +42,14 @@ export interface DetectResult {
   blocks: DetectBlock[]
   /** 主复制文本（优先取第一个 block，否则第一个 field） */
   copy: string
+  /** 若输入是一段 Base64 / Data URL 文件，携带还原下载所需的信息 */
+  download?: DetectDownload
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const HEX_RE = /^[0-9a-fA-F]+$/
 const B64_RE = /^[A-Za-z0-9+/]+={0,2}$/
+const DATA_URL_RE = /^data:([^;,]+)(?:;charset=[^;,]+)?;base64,(.+)$/i
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'ftp:', 'ws:', 'wss:', 'file:'])
 
 function isJsonLike(s: string): boolean {
@@ -161,18 +182,29 @@ function detectBase64(s: string): DetectResult | null {
         copy: decoded.text,
       }
     }
-    // 非 UTF-8 文本：按原始字节转十六进制展示
-    const binary = atob(clean)
-    const bytes = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-    const hex = Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join(' ')
+    // 非 UTF-8 文本 = 二进制文件：按魔数识别类型并支持还原下载；图片直接预览
+    const sizeBytes = atob(clean).length
+    const mime = detectMimeFromBytes(clean) ?? 'application/octet-stream'
+    const dataUrl = base64ToDataUrl(clean, mime)
+    const blocks: DetectBlock[] = []
+    if (mime.startsWith('image/')) {
+      blocks.push({ key: 'image', value: dataUrl, image: true })
+    } else {
+      // 非图片二进制：按原始字节转十六进制展示（供查看）
+      const binary = atob(clean)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      const hex = Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join(' ')
+      blocks.push({ key: 'decoded', value: hex })
+    }
     return {
       kind: 'base64',
-      fields: [{ key: 'bytes', value: `${bytes.length} B`, mono: true }],
-      blocks: [{ key: 'decoded', value: hex }],
-      copy: hex,
+      fields: [{ key: 'bytes', value: fmtSize(sizeBytes), mono: true }],
+      blocks,
+      copy: dataUrl,
+      download: { mime, dataUrl, sizeBytes },
     }
   } catch {
     return null
@@ -194,12 +226,40 @@ function detectHex(s: string): DetectResult | null {
   }
 }
 
+/** Data URL：data:<mime>;base64,<base64> —— 识别类型，图片会展示预览 */
+function detectDataUrl(s: string): DetectResult | null {
+  const m = s.match(DATA_URL_RE)
+  if (!m) return null
+  const mime = m[1].toLowerCase()
+  const b64 = m[2].replace(/\s+/g, '')
+  if (b64.length < 4 || b64.length % 4 !== 0 || !B64_RE.test(b64)) return null
+  let sizeBytes = 0
+  try {
+    sizeBytes = atob(b64).length
+  } catch {
+    return null
+  }
+  const cleanUrl = `data:${mime};base64,${b64}`
+  const isImg = mime.startsWith('image/')
+  return {
+    kind: 'dataurl',
+    fields: [
+      { key: 'mime', value: mime, mono: true },
+      { key: 'bytes', value: fmtSize(sizeBytes), mono: true },
+    ],
+    blocks: isImg ? [{ key: 'image', value: cleanUrl, image: true }] : [],
+    copy: cleanUrl,
+    download: { mime, dataUrl: cleanUrl, sizeBytes },
+  }
+}
+
 /** 入口：对一段输入做保守检测，返回首个命中的类型结果；识别不出返回 null */
 export function detect(input: string): DetectResult | null {
   const s = input.trim()
   if (!s) return null
   return (
     detectJson(s) ??
+    detectDataUrl(s) ??
     detectJwt(s) ??
     detectUrl(s) ??
     detectTimestamp(s) ??

@@ -194,8 +194,9 @@
 .tw-area--result {
   min-height: 88px;
   background: var(--tk-muted);
-  /* 只读输出自动增高，禁止手动拉伸（否则会超出外层容器导致多余滚动条） */
+  /* 只读输出自动增高，禁止手动拉伸（否则会超出外层容器导致多余滚动条）；长串强制换行 */
   resize: none;
+  word-break: break-all;
 }
 
 .tw-actions {
@@ -650,6 +651,118 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.tw-detect__image {
+  display: block;
+  max-width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: var(--tk-muted);
+}
+
+/* —— 文件 / 图片 → Base64 (tw-fileb64) —— */
+
+.tw-fileb64 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tw-fileb64__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 140px;
+  padding: 20px 16px;
+  border: 2px dashed var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: color-mix(in srgb, var(--tk-muted) 35%, var(--tk-card));
+  color: var(--tk-muted-foreground);
+  cursor: pointer;
+  text-align: center;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.tw-fileb64__drop:hover,
+.tw-fileb64__drop:focus {
+  border-color: var(--tk-ring);
+  background: color-mix(in srgb, var(--tk-muted) 60%, var(--tk-card));
+}
+
+.tw-fileb64__drop--drag {
+  border-color: var(--tk-primary);
+  background: color-mix(in srgb, var(--tk-primary) 10%, var(--tk-card));
+}
+
+.tw-fileb64__drop-icon {
+  margin-bottom: 4px;
+}
+
+.tw-fileb64__drop strong {
+  font-size: var(--tk-text-sm);
+  color: var(--tk-foreground);
+}
+
+.tw-fileb64__drop p {
+  margin: 0;
+  font-size: var(--tk-text-xs);
+}
+
+.tw-fileb64__file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: var(--tk-card);
+}
+
+.tw-fileb64__thumb {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: var(--tk-radius-sm);
+  border: 1px solid var(--tk-border);
+  background: var(--tk-muted);
+}
+
+.tw-fileb64__fileinfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tw-fileb64__filename {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--tk-text-sm);
+  font-weight: 600;
+}
+
+.tw-fileb64__meta {
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+  word-break: break-all;
+}
+
+.tw-fileb64__result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* —— 本地存储条目 —— */

@@ -127,7 +127,8 @@
       "storage": "Local Storage",
       "url": "URL",
       "qrcode": "QR Code",
-      "detect": "Detect"
+      "detect": "Detect",
+      "file-b64": "File to Base64"
     },
     "detect": {
       "title": "Detect",
@@ -139,6 +140,8 @@
       "none": "No common type detected — try the relevant tool instead.",
       "note": "Detection runs purely locally; nothing is uploaded.",
       "resultPlaceholder": "Detection result appears here…",
+      "download": "Download",
+      "previewAlt": "Preview",
       "row": {
         "decoded": "Decoded",
         "formatted": "Formatted",
@@ -152,8 +155,33 @@
         "version": "Version",
         "algorithm": "Algorithm",
         "header": "Header",
-        "payload": "Payload"
+        "payload": "Payload",
+        "mime": "MIME",
+        "image": "Image preview"
       }
+    },
+    "fileB64": {
+      "encodeTab": "File → Base64",
+      "decodeTab": "Base64 → File",
+      "dropText": "Click to choose a file, or drag / paste an image here",
+      "dropSubtitle": "Any file works; images get a preview",
+      "previewAlt": "Preview",
+      "unknownType": "Unknown type",
+      "rechoose": "Choose again",
+      "sizeWarning": "Large file — the Base64 will be large too; watch memory and copy performance.",
+      "base64Label": "Base64",
+      "dataUrlLabel": "Data URL",
+      "decodeInputLabel": "Paste Base64 or a Data URL",
+      "decodePlaceholder": "Supports data:image/png;base64,... or plain Base64…",
+      "pasteFromClipboard": "Paste from clipboard",
+      "fileSize": "File size",
+      "download": "Download",
+      "tooLarge": "File exceeds 5MB — refused to read (memory/perf).",
+      "readFailed": "Failed to read the file.",
+      "invalidBase64": "Invalid Base64 / Data URL.",
+      "noClipboardText": "No text in clipboard.",
+      "clipboardDenied": "Could not read clipboard.",
+      "note": "Files are read and encoded locally; nothing is uploaded. Base64 is ~37% larger than the original."
     },
     "qrcode": {
       "inputLabel": "Content",

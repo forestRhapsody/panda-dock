@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import type { DetectField, DetectResult } from './detect'
+import DownloadButton from './DownloadButton'
 import JsonHighlight from './JsonHighlight'
 import { StatusText } from './StatusText'
 
@@ -14,6 +15,7 @@ const KIND_LABEL: Record<DetectResult['kind'], string> = {
   uuid: 'UUID',
   base64: 'Base64',
   hex: 'Hex',
+  dataurl: 'Data URL',
 }
 
 /** 字段的语义 key → i18n label；claim.* 直接用声明名（如 exp / iat） */
@@ -76,7 +78,9 @@ export default function DetectResultView({
             {t(`tool.detect.row.${block.key}`)}
             <CopyButton text={block.value} icon className='tw-link' />
           </span>
-          {block.json ? (
+          {block.image ? (
+            <img src={block.value} alt={t('tool.detect.previewAlt')} className='tw-detect__image' />
+          ) : block.json ? (
             <JsonHighlight text={block.value} maxHeight={blockMaxHeight} />
           ) : (
             <AutoArea
@@ -89,6 +93,16 @@ export default function DetectResultView({
           )}
         </div>
       ))}
+
+      {result.download && (
+        <div className='tw-actions'>
+          <DownloadButton
+            mime={result.download.mime}
+            dataUrl={result.download.dataUrl}
+            label={t('tool.detect.download')}
+          />
+        </div>
+      )}
     </div>
   )
 }
