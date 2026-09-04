@@ -5,13 +5,11 @@ import { useTranslation } from 'react-i18next'
 import AutoArea from './AutoArea'
 import { decodeBase64, encodeBase64, isLikelyBase64 } from './base64'
 import CopyButton from './CopyButton'
+import { StatusText } from './StatusText'
+import type { ToolStatus } from './StatusText'
+import ToolTabs from './ToolTabs'
 
 type Mode = 'encode' | 'decode'
-
-interface Status {
-  kind: 'ok' | 'err' | 'info'
-  text: string
-}
 
 /** Base64 编解码工具卡片 */
 export default function Base64Tool() {
@@ -19,7 +17,7 @@ export default function Base64Tool() {
   const [mode, setMode] = useState<Mode>('decode')
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
-  const [status, setStatus] = useState<Status | null>(null)
+  const [status, setStatus] = useState<ToolStatus | null>(null)
 
   function switchMode(next: Mode) {
     setMode(next)
@@ -70,26 +68,14 @@ export default function Base64Tool() {
 
   return (
     <div className='tw-card'>
-      <div className='tw-tabs' role='tablist'>
-        <button
-          type='button'
-          role='tab'
-          aria-selected={mode === 'decode'}
-          className={`tw-tabs__btn${mode === 'decode' ? ' tw-tabs__btn--on' : ''}`}
-          onClick={() => switchMode('decode')}
-        >
-          {t('tool.base64.decode')}
-        </button>
-        <button
-          type='button'
-          role='tab'
-          aria-selected={mode === 'encode'}
-          className={`tw-tabs__btn${mode === 'encode' ? ' tw-tabs__btn--on' : ''}`}
-          onClick={() => switchMode('encode')}
-        >
-          {t('tool.base64.encode')}
-        </button>
-      </div>
+      <ToolTabs<Mode>
+        value={mode}
+        onChange={switchMode}
+        items={[
+          { id: 'decode', label: t('tool.base64.decode') },
+          { id: 'encode', label: t('tool.base64.encode') },
+        ]}
+      />
 
       <label className='tw-field'>
         <span className='tw-field__label'>
@@ -139,7 +125,7 @@ export default function Base64Tool() {
         />
       </div>
 
-      {status && <p className={`tw-status tw-status--${status.kind}`}>{status.text}</p>}
+      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
       <p className='tw-note'>{t('tool.base64.note')}</p>
     </div>
   )

@@ -7,6 +7,7 @@ import { getCurrentPageUrl } from '@/utils/pageUrl'
 
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
+import { StatusText } from './StatusText'
 
 interface UrlPart {
   key: string
@@ -214,7 +215,7 @@ export default function UrlTool() {
         </button>
       </div>
 
-      {error && <p className='tw-status tw-status--err'>{error}</p>}
+      {error && <StatusText kind='err'>{error}</StatusText>}
 
       {parsed && (
         <>
@@ -240,7 +241,7 @@ export default function UrlTool() {
           )}
 
           {!hasParams && parsed.parts.length === 0 && (
-            <p className='tw-status tw-status--info'>{t('tool.url.noData')}</p>
+            <StatusText kind='info'>{t('tool.url.noData')}</StatusText>
           )}
         </>
       )}

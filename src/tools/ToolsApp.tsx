@@ -27,6 +27,7 @@ import type { Settings } from '@/utils/settings'
 import Base64Tool from './Base64Tool'
 import JsonTool from './JsonTool'
 import JwtTool from './JwtTool'
+import QrCodeTool from './QrCodeTool'
 import type { ToolId, ToolMeta } from './registry'
 import { defaultToolLayout, normalizeToolLayout, visibleTools } from './registry'
 import StorageTool from './StorageTool'
@@ -45,6 +46,7 @@ const TOOL_COMPONENTS: Record<ToolId, () => ReactNode> = {
   timestamp: () => <TimestampTool />,
   storage: () => <StorageTool />,
   url: () => <UrlTool />,
+  qrcode: () => <QrCodeTool />,
 }
 
 const NAV_PAD = 8

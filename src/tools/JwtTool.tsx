@@ -6,11 +6,8 @@ import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import { decodeJwt, SAMPLE_JWT } from './jwt'
 import type { JwtDecoded } from './jwt'
-
-interface Status {
-  kind: 'ok' | 'err' | 'info'
-  text: string
-}
+import { StatusText } from './StatusText'
+import type { ToolStatus } from './StatusText'
 
 function headerAlg(decoded: JwtDecoded, unknownLabel: string): string {
   try {
@@ -26,7 +23,7 @@ export default function JwtTool() {
   const { t } = useTranslation()
   const [token, setToken] = useState('')
   const [decoded, setDecoded] = useState<JwtDecoded | null>(null)
-  const [status, setStatus] = useState<Status | null>(null)
+  const [status, setStatus] = useState<ToolStatus | null>(null)
 
   function run() {
     const raw = token.trim()
@@ -148,7 +145,7 @@ export default function JwtTool() {
         </>
       )}
 
-      {status && <p className={`tw-status tw-status--${status.kind}`}>{status.text}</p>}
+      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
     </div>
   )
 }

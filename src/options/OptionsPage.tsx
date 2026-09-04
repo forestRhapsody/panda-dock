@@ -15,6 +15,7 @@ import { useLocale } from '@/i18n/useLocale'
 import type { ToolId } from '@/tools/registry'
 import { DEFAULT_TOOLS, defaultToolLayout } from '@/tools/registry'
 import Icon from '@/ui/Icon'
+import TkSelect from '@/ui/TkSelect'
 import { parseDomainPatterns } from '@/utils/domainMatch'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
@@ -221,15 +222,14 @@ export default function OptionsPage() {
                 <strong>{t('settings.ballAction')}</strong>
                 <p>{t('settings.ballActionDesc')}</p>
               </div>
-              <select
-                className='opt__select'
+              <TkSelect
                 value={settings.ballAction}
                 onChange={(e) => setBallAction(e.target.value as BallAction)}
                 aria-label={t('settings.ballAction')}
               >
                 <option value='drawer'>{t('settings.actionDrawer')}</option>
                 <option value='native'>{t('settings.actionNative')}</option>
-              </select>
+              </TkSelect>
             </li>
           </ul>
         </div>
@@ -242,8 +242,7 @@ export default function OptionsPage() {
                 <strong>{t('settings.domainMode')}</strong>
                 <p>{t('settings.domainModeDesc')}</p>
               </div>
-              <select
-                className='opt__select'
+              <TkSelect
                 value={settings.ballDomainMode}
                 onChange={(e) => {
                   const mode = e.target.value as DomainMatchMode
@@ -254,7 +253,7 @@ export default function OptionsPage() {
               >
                 <option value='blacklist'>{t('settings.domainModeBlacklist')}</option>
                 <option value='whitelist'>{t('settings.domainModeWhitelist')}</option>
-              </select>
+              </TkSelect>
             </li>
           </ul>
 
@@ -345,8 +344,7 @@ export default function OptionsPage() {
                 <strong>{t('settings.theme')}</strong>
                 <p>{t('settings.themeDesc')}</p>
               </div>
-              <select
-                className='opt__select'
+              <TkSelect
                 value={settings.theme}
                 onChange={(e) => setTheme(e.target.value as ThemeMode)}
                 aria-label={t('settings.theme')}
@@ -362,15 +360,14 @@ export default function OptionsPage() {
                     )}
                   </option>
                 ))}
-              </select>
+              </TkSelect>
             </li>
             <li className='opt__item'>
               <div className='opt__item-text'>
                 <strong>{t('settings.language')}</strong>
                 <p>{t('settings.languageDesc')}</p>
               </div>
-              <select
-                className='opt__select'
+              <TkSelect
                 value={settings.locale}
                 onChange={(e) => setLocale(e.target.value as LocaleSetting)}
                 aria-label={t('settings.language')}
@@ -380,7 +377,7 @@ export default function OptionsPage() {
                     {o.value === 'system' ? t('settings.localeSystem') : o.label}
                   </option>
                 ))}
-              </select>
+              </TkSelect>
             </li>
           </ul>
         </div>
@@ -393,8 +390,7 @@ export default function OptionsPage() {
                 <strong>{t('settings.fontScale')}</strong>
                 <p>{t('settings.fontScaleDesc')}</p>
               </div>
-              <select
-                className='opt__select'
+              <TkSelect
                 value={settings.fontScale}
                 onChange={(e) => setFontScale(Number(e.target.value))}
                 aria-label={t('settings.fontScale')}
@@ -410,7 +406,7 @@ export default function OptionsPage() {
                     )}
                   </option>
                 ))}
-              </select>
+              </TkSelect>
             </li>
           </ul>
         </div>

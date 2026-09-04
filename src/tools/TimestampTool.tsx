@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import CopyButton from './CopyButton'
+import { StatusText } from './StatusText'
+import type { ToolStatus } from './StatusText'
 import { parseStamp } from './timestamp'
 
 const SOURCE_KEY: Record<string, string> = {
@@ -11,17 +13,12 @@ const SOURCE_KEY: Record<string, string> = {
   text: 'tool.timestamp.sourceText',
 }
 
-interface Status {
-  kind: 'ok' | 'err' | 'info'
-  text: string
-}
-
 /** 时间戳转换工具：输入秒/毫秒/日期文本，实时输出多格式 */
 export default function TimestampTool() {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
   const result = parseStamp(input)
-  const status: Status | null = input.trim()
+  const status: ToolStatus | null = input.trim()
     ? result.ok
       ? { kind: 'ok', text: t(SOURCE_KEY[result.source]) }
       : { kind: 'err', text: t('tool.timestamp.errorInvalid') }
@@ -66,7 +63,7 @@ export default function TimestampTool() {
         </ul>
       )}
 
-      {status && <p className={`tw-status tw-status--${status.kind}`}>{status.text}</p>}
+      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
     </div>
   )
 }

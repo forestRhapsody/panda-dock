@@ -6,11 +6,9 @@ import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import { formatJson, minifyJson } from './json'
 import JsonHighlight from './JsonHighlight'
-
-interface Status {
-  kind: 'ok' | 'err' | 'info'
-  text: string
-}
+import { StatusText } from './StatusText'
+import type { ToolStatus } from './StatusText'
+import ToolTabs from './ToolTabs'
 
 type Mode = 'format' | 'minify'
 
@@ -19,7 +17,7 @@ function JsonPanel({ mode }: { mode: Mode }) {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
-  const [status, setStatus] = useState<Status | null>(null)
+  const [status, setStatus] = useState<ToolStatus | null>(null)
 
   function run() {
     const raw = input.trim()
@@ -93,7 +91,7 @@ function JsonPanel({ mode }: { mode: Mode }) {
         )}
       </div>
 
-      {status && <p className={`tw-status tw-status--${status.kind}`}>{status.text}</p>}
+      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
     </div>
   )
 }
@@ -105,26 +103,14 @@ export default function JsonTool() {
 
   return (
     <div className='tw-card'>
-      <div className='tw-tabs' role='tablist'>
-        <button
-          type='button'
-          role='tab'
-          aria-selected={tab === 'format'}
-          className={`tw-tabs__btn${tab === 'format' ? ' tw-tabs__btn--on' : ''}`}
-          onClick={() => setTab('format')}
-        >
-          {t('tool.json.format')}
-        </button>
-        <button
-          type='button'
-          role='tab'
-          aria-selected={tab === 'minify'}
-          className={`tw-tabs__btn${tab === 'minify' ? ' tw-tabs__btn--on' : ''}`}
-          onClick={() => setTab('minify')}
-        >
-          {t('tool.json.minify')}
-        </button>
-      </div>
+      <ToolTabs<Mode>
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: 'format', label: t('tool.json.format') },
+          { id: 'minify', label: t('tool.json.minify') },
+        ]}
+      />
 
       {/* 两个面板都挂载，仅按 tab 显隐，以保留各自独立的输入/结果状态 */}
       <div hidden={tab !== 'format'}>

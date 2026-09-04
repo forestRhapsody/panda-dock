@@ -636,38 +636,13 @@
   gap: 14px;
 }
 
-/* —— 筛选输入框 —— */
-.tw-filter {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 7px 10px;
-  border: 1px solid var(--tk-input);
-  border-radius: var(--tk-radius);
-  background: var(--tk-card);
-  font-size: var(--tk-text-sm);
-  color: var(--tk-foreground);
-  outline: none;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-
-.tw-filter::placeholder {
-  color: var(--tk-muted-foreground);
-}
-
-.tw-filter:focus {
-  border-color: var(--tk-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
-}
-
-/* —— 通用单行输入框（本地存储 Key 等） —— */
+/* —— 通用单行输入框（本地存储 Key / 筛选等） —— */
 .tw-input {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  padding: 7px 10px;
+  height: var(--tk-control-h);
+  padding: 0 10px;
   border: 1px solid var(--tk-input);
   border-radius: var(--tk-radius);
   background: var(--tk-card);
@@ -777,3 +752,381 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* —— 二维码生成与解析工具 (tw-qr) —— */
+
+
+
+.tw-qr__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tw-qr__quick-opts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tw-qr__opt-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tw-qr__opt-label {
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+  white-space: nowrap;
+}
+
+
+.tw-qr__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tw-qr__input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tw-qr__input-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* —— 二维码定制与美化面板 —— */
+
+.tw-qr__custom-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: color-mix(in srgb, var(--tk-muted) 35%, var(--tk-card));
+}
+
+.tw-qr__custom-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.tw-qr__custom-col {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tw-qr__custom-label {
+  font-size: var(--tk-text-xs);
+  font-weight: 500;
+  color: var(--tk-muted-foreground);
+}
+
+.tw-qr__color-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tw-qr__color-input {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-sm);
+  background: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.tw-qr__color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.tw-qr__color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--tk-radius-sm) - 1px);
+}
+
+.tw-qr__color-swatches {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tw-qr__swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.tw-qr__swatch:hover {
+  transform: scale(1.15);
+}
+
+.tw-qr__swatch--active {
+  outline: 2px solid var(--tk-ring);
+  outline-offset: 1px;
+}
+
+.tw-qr__logo-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tw-qr__logo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-card);
+}
+
+.tw-qr__logo-thumb {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 2px;
+}
+
+.tw-qr__label-wrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.tw-qr__label-input {
+  flex: 1;
+  height: var(--tk-control-h-sm);
+  padding: 0 8px;
+  font-size: var(--tk-text-xs);
+}
+
+.tw-qr__preview-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: 16px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: color-mix(in srgb, var(--tk-muted) 40%, var(--tk-card));
+}
+
+.tw-qr__result-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.tw-qr__img-loading {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--tk-radius) - 2px);
+  background: color-mix(in srgb, var(--tk-background) 55%, transparent);
+  animation: tw-qr-pulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes tw-qr-pulse {
+  from { opacity: 0.3; }
+  to   { opacity: 0.7; }
+}
+
+.tw-qr__img-wrapper {
+  position: relative;
+  /* padding 由 inline style 按边距档位动态控制，这里不设固定值 */
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  box-shadow: var(--tk-shadow-sm);
+  transition: padding 0.15s;
+}
+
+.tw-qr__img {
+  display: block;
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: calc(var(--tk-radius) - 2px);
+}
+
+.tw-qr__btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tw-qr__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--tk-muted-foreground);
+  text-align: center;
+  font-size: var(--tk-text-sm);
+}
+
+.tw-qr__ph-icon {
+  opacity: 0.35;
+}
+
+.tw-qr__file-input {
+  display: none;
+}
+
+.tw-qr__drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  padding: 20px 16px;
+  border: 2px dashed var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: color-mix(in srgb, var(--tk-muted) 35%, var(--tk-card));
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  outline: none;
+}
+
+.tw-qr__drop-zone:hover,
+.tw-qr__drop-zone:focus {
+  border-color: var(--tk-ring);
+  background: color-mix(in srgb, var(--tk-muted) 60%, var(--tk-card));
+}
+
+.tw-qr__drop-zone--drag {
+  border-color: var(--tk-primary);
+  background: color-mix(in srgb, var(--tk-primary) 10%, var(--tk-card));
+}
+
+.tw-qr__drop-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.tw-qr__drop-icon {
+  color: var(--tk-muted-foreground);
+  margin-bottom: 4px;
+}
+
+.tw-qr__drop-prompt strong {
+  font-size: var(--tk-text-sm);
+  color: var(--tk-foreground);
+}
+
+.tw-qr__drop-prompt p {
+  margin: 0;
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+}
+
+.tw-qr__drop-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.tw-qr__thumb {
+  max-width: 140px;
+  max-height: 140px;
+  object-fit: contain;
+  border-radius: var(--tk-radius-sm);
+  border: 1px solid var(--tk-border);
+  box-shadow: var(--tk-shadow-xs);
+}
+
+.tw-qr__reupload-hint {
+  margin: 0;
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+}
+
+.tw-qr__decode-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tw-qr__loading-msg {
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+}
+
+.tw-qr__result-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: var(--tk-card);
+}
+
+.tw-qr__result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tw-qr__result-title {
+  font-size: var(--tk-text-sm);
+  font-weight: 600;
+  color: var(--tk-foreground);
+}
+
+.tw-qr__result-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tw-qr__result-content {
+  padding: 8px 10px;
+  border: 1px solid var(--tk-input);
+  border-radius: var(--tk-radius-sm);
+  background: color-mix(in srgb, var(--tk-muted) 35%, var(--tk-card));
+  font-family: var(--tk-font);
+  font-size: var(--tk-text-sm);
+  line-height: 1.5;
+  color: var(--tk-foreground);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+  user-select: text;
+}
+

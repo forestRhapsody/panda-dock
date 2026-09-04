@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import TkSelect from '@/ui/TkSelect'
 import { isDomainMatched, shouldShowFloatingBall } from '@/utils/domainMatch'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
@@ -187,23 +188,23 @@ export default function QuickSettings() {
               {t('settings.actionDrawer')} / {t('settings.actionNative')}
             </p>
           </div>
-          <select
-            className='pop__select'
+          <TkSelect
+            variant='sm'
             value={settings.ballAction}
             onChange={(e) => update({ ballAction: e.target.value as BallAction })}
             aria-label={t('settings.ballAction')}
           >
             <option value='drawer'>{t('settings.actionDrawer')}</option>
             <option value='native'>{t('settings.actionNative')}</option>
-          </select>
+          </TkSelect>
         </li>
         <li className='pop__setting'>
           <div className='pop__setting-text'>
             <strong>{t('settings.theme')}</strong>
             <p>{t('settings.themeDesc')}</p>
           </div>
-          <select
-            className='pop__select'
+          <TkSelect
+            variant='sm'
             value={settings.theme}
             onChange={(e) => update({ theme: e.target.value as ThemeMode })}
             aria-label={t('settings.theme')}
@@ -219,15 +220,15 @@ export default function QuickSettings() {
                 )}
               </option>
             ))}
-          </select>
+          </TkSelect>
         </li>
         <li className='pop__setting'>
           <div className='pop__setting-text'>
             <strong>{t('settings.language')}</strong>
             <p>{t('settings.languageDesc')}</p>
           </div>
-          <select
-            className='pop__select'
+          <TkSelect
+            variant='sm'
             value={settings.locale}
             onChange={(e) => update({ locale: e.target.value as LocaleSetting })}
             aria-label={t('settings.language')}
@@ -237,15 +238,15 @@ export default function QuickSettings() {
                 {o.value === 'system' ? t('settings.localeSystem') : o.label}
               </option>
             ))}
-          </select>
+          </TkSelect>
         </li>
         <li className='pop__setting'>
           <div className='pop__setting-text'>
             <strong>{t('settings.fontScale')}</strong>
             <p>{t('settings.fontScaleDesc')}</p>
           </div>
-          <select
-            className='pop__select'
+          <TkSelect
+            variant='sm'
             value={settings.fontScale}
             onChange={(e) => update({ fontScale: Number(e.target.value) })}
             aria-label={t('settings.fontScale')}
@@ -261,7 +262,7 @@ export default function QuickSettings() {
                 )}
               </option>
             ))}
-          </select>
+          </TkSelect>
         </li>
       </ul>
     </div>

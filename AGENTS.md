@@ -58,10 +58,33 @@ vite.background.config.ts → service worker 打成单个 IIFE
 6. **页面侵入最小化**：不在网页上凭空显示高亮/弹层/改动页面元素；需要"就地能力"时优先复用悬浮球/抽屉/工具箱自身 UI。
 7. **配置持久化**：chrome.storage.sync 单一对象存 `settings`（Options 里 `normalizeSettings` 兜底旧数据缺字段）；local 存 `toolkit.ballPos`、`toolkit.drawerWidth`。增删配置字段要同时更新 Options 读写与消费方（含 content 的即时同步 onChanged）。
 
+## UI 一致性硬约定（新增能力必须复用）
+
+**新能力/新工具的界面不得自创一套样式**，必须直接复用下面的共享构件与类名，保证各工具观感一致（布局、间距、圆角、配色、字号全走 `theme.css` 设计令牌）。这是合并门槛，不是建议。
+
+| 场景 | 复用 | 备注 |
+| --- | --- | --- |
+| 工具卡片外壳 | `tw-card` | 每个工具的根容器 |
+| 能力内子切换（编解码/格式化压缩/存储区/生成解析…） | `src/tools/ToolTabs.tsx` | 别手写一组 `.tw-tabs__btn` |
+| 字段 label | `tw-field` / `tw-field__label` | 字段标题 + 右侧动作位（复制按钮等） |
+| 多行输入/只读输出 | `AutoArea` + `tw-area`（输出可加 `--result`/`--tall`） | 别用裸 `<textarea>` |
+| 单行输入 / 筛选 | `tw-input` | 本地存储 Key、筛选框等 |
+| 按钮 | `ui.css` 的 `tk-btn`（主按钮 `--primary`，紧凑 `--sm`），通栏 `--block` | **工具内禁用**新按钮样式 |
+| 复制 | `src/tools/CopyButton.tsx` | 图标/文字变体；失败回调接状态 |
+| 图标 | `src/ui/Icon.tsx` 内联 SVG | **禁用 emoji** |
+| 状态提示 | `src/tools/StatusText.tsx` + `ToolStatus` 类型 | `kind='ok'\|'err'\|'info'` |
+| 说明/切分 | `tw-note` / `tw-status--*` / `tw-actions` | 灰色说明、状态行、按钮行 |
+| 颜色/圆角/阴影/字色 | 只用 `var(--tk-*)` | 禁止硬编码色值、圆角、shadow |
+
+硬约束：
+- 类名前缀：content=`tek-`、工具=`tw-`、options=`opt-`、popup=`pop-`、共享 UI（`src/ui/`）=`tk-`；新工具样式一律进 `tools.css`，不要在组件文件里写 `<style>` 或内联样式刷色。
+- 只有"确实无法用以上构件表达、且全工具唯一"的定制（如二维码画布、拖拽上传区）才允许新增 `tw-` 类，且要写注释说明为何不复用。
+- 新增公共构件时优先放进 `src/tools/`（工具间共享）或 `src/ui/`（跨入口共享），并在本节登记一行，避免各工具各写一套。
+
 ## 新增一个工具（标准流程）
 
 1. `src/tools/registry.ts` 注册 `{ id, label }`（默认顺序即展示顺序，Options 可改）
-2. `src/tools/` 下写工具组件（样式进 `tools.css`，前缀 `tw-`；复制工具用 `@/utils/clipboard`）
+2. `src/tools/` 下写工具组件；界面**先对照「UI 一致性硬约定」的构件表**复用，样式进 `tools.css`（前缀 `tw-`），复制工具用 `@/utils/clipboard`
 3. `src/tools/ToolsApp.tsx` 的 `TOOL_COMPONENTS` 补分支（自动滚动/显隐排序均无需额外处理）
 4. 若工具依赖页面上下文（localStorage 等），阅读 `src/tools/storage.ts` 的桥接模式（侧边栏→content）
 5. `pnpm lint && pnpm build`，刷新扩展验证；更新 `TASKS.md`/README
@@ -73,4 +96,5 @@ vite.background.config.ts → service worker 打成单个 IIFE
 - [ ] content script 改动后刷新了目标网页
 - [ ] 页面无样式污染、无多余权限请求
 - [ ] 消息协议两端同步、chrome 缺失时优雅降级
+- [ ] 新增能力复用了统一 UI 构件（无自创样式 / emoji / 硬编码色值，见「UI 一致性硬约定」）
 - [ ] TASKS.md 同步

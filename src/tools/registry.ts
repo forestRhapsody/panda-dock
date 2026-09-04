@@ -2,7 +2,7 @@
  *  新增工具：1) 在这里登记；2) 在 ToolsApp 里补组件映射；3) Options 配置列表自动出现。
  *  label 为英文规范名；界面显示经 `t(\`tool.registry.${id}\`)` 本地化（见 ToolsApp / Options）。 */
 
-export type ToolId = 'base64' | 'json' | 'jwt' | 'timestamp' | 'storage' | 'url'
+export type ToolId = 'base64' | 'json' | 'jwt' | 'timestamp' | 'storage' | 'url' | 'qrcode'
 
 export interface ToolMeta {
   id: ToolId
@@ -17,6 +17,7 @@ export const DEFAULT_TOOLS: ToolMeta[] = [
   { id: 'timestamp', label: 'Timestamp' },
   { id: 'storage', label: 'Local Storage' },
   { id: 'url', label: 'URL' },
+  { id: 'qrcode', label: 'QR Code' },
 ]
 
 export function isToolId(value: unknown): value is ToolId {

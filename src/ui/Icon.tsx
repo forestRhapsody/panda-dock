@@ -15,6 +15,12 @@ export type IconName =
   | 'grip' // 拖拽把手（六点）
   | 'check' // 完成 / 已保存
   | 'copy' // 复制
+  | 'qr-code' // 二维码
+  | 'upload' // 上传
+  | 'download' // 下载
+  | 'external-link' // 外部链接
+  | 'image' // 图片
+  | 'chevron-down' // 下拉箭头
 
 interface IconProps {
   name: IconName
@@ -79,6 +85,43 @@ const GLYPHS: Record<IconName, ReactNode> = {
       <path d='M5 15V5a2 2 0 0 1 2-2h9' />
     </>
   ),
+  'qr-code': (
+    <>
+      <rect x='3' y='3' width='7' height='7' rx='1' />
+      <rect x='14' y='3' width='7' height='7' rx='1' />
+      <rect x='3' y='14' width='7' height='7' rx='1' />
+      <path d='M14 14h3v3h-3zM20 14v3M14 20h7M7 7h.01M18 7h.01M7 18h.01' />
+    </>
+  ),
+  upload: (
+    <>
+      <path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' />
+      <polyline points='17 8 12 3 7 8' />
+      <line x1='12' y1='3' x2='12' y2='15' />
+    </>
+  ),
+  download: (
+    <>
+      <path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' />
+      <polyline points='7 10 12 15 17 10' />
+      <line x1='12' y1='15' x2='12' y2='3' />
+    </>
+  ),
+  'external-link': (
+    <>
+      <path d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' />
+      <polyline points='15 3 21 3 21 9' />
+      <line x1='10' y1='14' x2='21' y2='3' />
+    </>
+  ),
+  image: (
+    <>
+      <rect x='3' y='3' width='18' height='18' rx='2' />
+      <circle cx='8.5' cy='8.5' r='1.5' />
+      <path d='m21 15-5-5L5 21' />
+    </>
+  ),
+  'chevron-down': <path d='m6 9 6 6 6-6' />,
 }
 
 export default function Icon({ name, size = 16, className, title }: IconProps) {

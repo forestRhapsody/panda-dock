@@ -141,22 +141,3 @@ body {
   left: 22px;
 }
 
-.pop__select {
-  flex: none;
-  width: auto;
-  max-width: 152px;
-  height: var(--tk-control-h-sm);
-  padding: 0 10px;
-  border: 1px solid var(--tk-border-strong);
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-card);
-  font-family: var(--tk-font);
-  font-size: var(--tk-text-sm);
-  color: var(--tk-foreground);
-  cursor: pointer;
-}
-
-.pop__select:focus {
-  outline: 2px solid var(--tk-ring);
-  outline-offset: 1px;
-}

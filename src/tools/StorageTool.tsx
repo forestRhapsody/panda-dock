@@ -7,6 +7,8 @@ import i18n from '@/i18n'
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import JsonTextarea from './JsonTextarea'
+import { StatusText } from './StatusText'
+import type { ToolStatus } from './StatusText'
 import {
   clearStorageArea,
   isPageContext,
@@ -15,11 +17,7 @@ import {
   setStorageValue,
 } from './storage'
 import type { StorageArea, StorageEntry, StorageResult } from './storage'
-
-interface Status {
-  kind: 'ok' | 'err' | 'info'
-  text: string
-}
+import ToolTabs from './ToolTabs'
 
 interface ConfirmState {
   title: string
@@ -158,7 +156,7 @@ function EditorForm({
           onChange={(e) => onKeyChange(e.target.value)}
         />
       </label>
-      {formError && <p className='tw-status tw-status--err'>{formError}</p>}
+      {formError && <StatusText kind='err'>{formError}</StatusText>}
       {showJson ? (
         <JsonTextarea
           value={draftValue}
@@ -177,11 +175,11 @@ function EditorForm({
         />
       )}
       {showJson && (
-        <p className={`tw-status tw-status--${draftJson.ok ? 'ok' : 'err'}`}>
+        <StatusText kind={draftJson.ok ? 'ok' : 'err'}>
           {draftJson.ok
             ? t('tool.storage.jsonValid')
             : t('tool.storage.jsonInvalidDetail', { error: draftJson.error })}
-        </p>
+        </StatusText>
       )}
       <div className='tw-store__edit-actions'>
         {showJson && (
@@ -210,7 +208,7 @@ export default function StorageTool() {
   const { t } = useTranslation()
   const [area, setArea] = useState<StorageArea>('local')
   const [result, setResult] = useState<StorageResult | null>(null)
-  const [status, setStatus] = useState<Status | null>(null)
+  const [status, setStatus] = useState<ToolStatus | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
   const [filter, setFilter] = useState('')
   const [editingKey, setEditingKey] = useState<string | null>(null)
@@ -419,26 +417,14 @@ export default function StorageTool() {
 
   return (
     <div className='tw-card'>
-      <div className='tw-tabs' role='tablist'>
-        <button
-          type='button'
-          role='tab'
-          aria-selected={area === 'local'}
-          className={`tw-tabs__btn${area === 'local' ? ' tw-tabs__btn--on' : ''}`}
-          onClick={() => setArea('local')}
-        >
-          localStorage
-        </button>
-        <button
-          type='button'
-          role='tab'
-          aria-selected={area === 'session'}
-          className={`tw-tabs__btn${area === 'session' ? ' tw-tabs__btn--on' : ''}`}
-          onClick={() => setArea('session')}
-        >
-          sessionStorage
-        </button>
-      </div>
+      <ToolTabs<StorageArea>
+        value={area}
+        onChange={setArea}
+        items={[
+          { id: 'local', label: 'localStorage' },
+          { id: 'session', label: 'sessionStorage' },
+        ]}
+      />
 
       <div className='tw-actions'>
         <button type='button' className='tk-btn tk-btn--primary' onClick={() => void load()}>
@@ -455,7 +441,7 @@ export default function StorageTool() {
       {data && (
         <input
           type='search'
-          className='tw-filter'
+          className='tw-input'
           placeholder={t('tool.storage.filter')}
           aria-label={t('tool.storage.filterAriaLabel')}
           value={filter}
@@ -464,12 +450,12 @@ export default function StorageTool() {
       )}
 
       {data && (
-        <p className='tw-status tw-status--info'>
+        <StatusText kind='info'>
           {t('tool.storage.statusSummary', { origin: data.origin, count: data.totalCount })}
           {q ? t('tool.storage.statusFiltered', { count: entries.length }) : ''}
           {data.listTruncated ? t('tool.storage.statusTruncated') : ''}
           {data.area === 'session' && ` · ${t('tool.storage.statusSessionNote')}`}
-        </p>
+        </StatusText>
       )}
 
       {data && data.entries.length > 0 && <p className='tw-note'>{t('tool.storage.editHint')}</p>}
@@ -553,7 +539,7 @@ export default function StorageTool() {
 
       {!isPageContext() && <p className='tw-note'>{t('tool.storage.extPageNote')}</p>}
 
-      {status && <p className={`tw-status tw-status--${status.kind}`}>{status.text}</p>}
+      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
 
       {confirm && (
         <ConfirmDialog
