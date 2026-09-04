@@ -32,6 +32,8 @@ export const FONT_SCALE_OPTIONS: { label: string; value: number }[] = [
   { label: '最大', value: 1.25 },
 ]
 
+export type DomainMatchMode = 'blacklist' | 'whitelist'
+
 export interface Settings {
   /** 是否在网页上显示悬浮球 */
   quickOpen: boolean
@@ -39,6 +41,12 @@ export interface Settings {
   ballSnap: boolean
   /** 点击悬浮球的动作：网页内抽屉 / 浏览器原生侧边栏 */
   ballAction: BallAction
+  /** 域名过滤模式：黑名单模式（默认）/ 白名单模式 */
+  ballDomainMode: DomainMatchMode
+  /** 悬浮球黑名单域名规则列表 */
+  ballBlacklist: string[]
+  /** 悬浮球白名单域名规则列表 */
+  ballWhitelist: string[]
   /** 主题模式：浅色 / 深色 / 跟随系统 */
   theme: ThemeMode
   /** 语言：中文 / English / 跟随系统 */
@@ -63,12 +71,31 @@ function normalizeLocale(value: unknown): LocaleSetting {
   return value === 'zh' || value === 'en' || value === 'system' ? value : 'system'
 }
 
+function normalizeDomainMode(value: unknown): DomainMatchMode {
+  return value === 'whitelist' ? 'whitelist' : 'blacklist'
+}
+
+function normalizeDomainList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const set = new Set<string>()
+  for (const item of value) {
+    if (typeof item === 'string') {
+      const trimmed = item.trim().toLowerCase()
+      if (trimmed) set.add(trimmed)
+    }
+  }
+  return Array.from(set)
+}
+
 export function defaultSettings(): Settings {
   const layout = defaultToolLayout()
   return {
     quickOpen: true,
     ballSnap: true,
     ballAction: 'drawer',
+    ballDomainMode: 'blacklist',
+    ballBlacklist: [],
+    ballWhitelist: [],
     theme: 'system',
     locale: 'system',
     fontScale: 1,
@@ -85,6 +112,9 @@ export function normalizeSettings(raw: Partial<Settings> | null | undefined): Se
     quickOpen: raw?.quickOpen ?? base.quickOpen,
     ballSnap: raw?.ballSnap !== false,
     ballAction: raw?.ballAction === 'native' ? 'native' : base.ballAction,
+    ballDomainMode: normalizeDomainMode(raw?.ballDomainMode),
+    ballBlacklist: normalizeDomainList(raw?.ballBlacklist),
+    ballWhitelist: normalizeDomainList(raw?.ballWhitelist),
     theme: normalizeTheme(raw?.theme),
     locale: normalizeLocale(raw?.locale),
     fontScale: normalizeFontScale(raw?.fontScale),

@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import { isDomainMatched, shouldShowFloatingBall } from '@/utils/domainMatch'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
+import { getCurrentPageUrl } from '@/utils/pageUrl'
 import {
   FONT_SCALE_OPTIONS,
   LOCALE_OPTIONS,
@@ -22,6 +24,7 @@ export default function QuickSettings() {
   const { t } = useTranslation()
   const inExt = isExtension()
   const [settings, setSettings] = useState<Settings>(() => normalizeSettings(null))
+  const [currentSite, setCurrentSite] = useState<{ host: string; hostname: string } | null>(null)
 
   // 读取已存配置 + 监听外部（Options / 悬浮球等）改动即时同步
   useEffect(() => {
@@ -43,6 +46,24 @@ export default function QuickSettings() {
     }
   }, [inExt])
 
+  // 获取当前活动标签页的 host / hostname
+  useEffect(() => {
+    if (!inExt) return
+    let alive = true
+    void getCurrentPageUrl().then((url) => {
+      if (!alive || !url) return
+      try {
+        const u = new URL(url)
+        setCurrentSite({ host: u.host, hostname: u.hostname })
+      } catch {
+        // 非合法 URL 忽略
+      }
+    })
+    return () => {
+      alive = false
+    }
+  }, [inExt])
+
   const update = useCallback(
     (patch: Partial<Settings>) => {
       setSettings((prev) => {
@@ -53,6 +74,43 @@ export default function QuickSettings() {
     },
     [inExt],
   )
+
+  const siteAllowed = currentSite ? shouldShowFloatingBall(settings, currentSite) : true
+
+  const toggleSiteBall = useCallback(() => {
+    if (!currentSite) return
+    const mode = settings.ballDomainMode
+    const hostKey = currentSite.hostname
+
+    if (mode === 'blacklist') {
+      if (siteAllowed) {
+        update({ ballBlacklist: [...settings.ballBlacklist, hostKey] })
+      } else {
+        update({
+          ballBlacklist: settings.ballBlacklist.filter(
+            (p) => !isDomainMatched(currentSite.host, currentSite.hostname, p),
+          ),
+        })
+      }
+    } else {
+      if (siteAllowed) {
+        update({
+          ballWhitelist: settings.ballWhitelist.filter(
+            (p) => !isDomainMatched(currentSite.host, currentSite.hostname, p),
+          ),
+        })
+      } else {
+        update({ ballWhitelist: [...settings.ballWhitelist, hostKey] })
+      }
+    }
+  }, [
+    currentSite,
+    settings.ballDomainMode,
+    settings.ballBlacklist,
+    settings.ballWhitelist,
+    siteAllowed,
+    update,
+  ])
 
   const toggles: {
     value: boolean
@@ -95,6 +153,33 @@ export default function QuickSettings() {
             </button>
           </li>
         ))}
+        {currentSite && settings.quickOpen && (
+          <li className='pop__setting'>
+            <div className='pop__setting-text'>
+              <strong>{currentSite.hostname}</strong>
+              <p>
+                {siteAllowed ? t('popup.siteBallShown') : t('popup.siteBallHidden')}
+                {' · '}
+                <span>
+                  {settings.ballDomainMode === 'blacklist'
+                    ? t('settings.domainModeBlacklist').split('（')[0]
+                    : t('settings.domainModeWhitelist').split('（')[0]}
+                </span>
+              </p>
+            </div>
+            <button
+              type='button'
+              role='switch'
+              aria-checked={siteAllowed}
+              className={`pop__switch${siteAllowed ? ' pop__switch--on' : ''}`}
+              onClick={toggleSiteBall}
+              title={siteAllowed ? t('popup.disableOnSite') : t('popup.enableOnSite')}
+              aria-label={siteAllowed ? t('popup.disableOnSite') : t('popup.enableOnSite')}
+            >
+              <span className='pop__switch-knob' />
+            </button>
+          </li>
+        )}
         <li className='pop__setting'>
           <div className='pop__setting-text'>
             <strong>{t('settings.ballAction')}</strong>

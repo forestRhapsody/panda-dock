@@ -240,3 +240,108 @@ body {
 .opt__env--hint {
   margin-top: 12px;
 }
+
+/* —— 域名黑白名单规则配置 —— */
+.opt__domain-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.opt__domain-tabs {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-muted);
+  gap: 2px;
+}
+
+.opt__domain-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: none;
+  border-radius: calc(var(--tk-radius-sm) - 2px);
+  background: transparent;
+  color: var(--tk-muted-foreground);
+  font-size: var(--tk-text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.opt__domain-tab:hover {
+  color: var(--tk-foreground);
+}
+
+.opt__domain-tab--active {
+  background: var(--tk-card);
+  color: var(--tk-foreground);
+  box-shadow: var(--tk-shadow-xs);
+}
+
+.opt__domain-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: var(--tk-text-xs);
+  background: color-mix(in srgb, var(--tk-muted-foreground) 16%, transparent);
+  color: var(--tk-muted-foreground);
+}
+
+.opt__domain-tag--active {
+  background: color-mix(in srgb, var(--tk-primary) 18%, transparent);
+  color: var(--tk-primary);
+  font-weight: 600;
+}
+
+.opt__domain-box {
+  margin-top: 12px;
+}
+
+.opt__domain-desc {
+  margin: 0 0 10px;
+  font-size: var(--tk-text-sm);
+  color: var(--tk-muted-foreground);
+  line-height: 1.5;
+}
+
+.opt__domain-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120px;
+  padding: 10px 12px;
+  border: 1px solid var(--tk-input);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-card);
+  color: var(--tk-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: var(--tk-text-sm);
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.opt__domain-textarea:focus {
+  border-color: var(--tk-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+}
+
+.opt__domain-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+}
+

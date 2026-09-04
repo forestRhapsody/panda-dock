@@ -15,6 +15,7 @@ import { useLocale } from '@/i18n/useLocale'
 import type { ToolId } from '@/tools/registry'
 import { DEFAULT_TOOLS, defaultToolLayout } from '@/tools/registry'
 import Icon from '@/ui/Icon'
+import { parseDomainPatterns } from '@/utils/domainMatch'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
 import type { BallAction } from '@/utils/messages'
@@ -25,7 +26,7 @@ import {
   normalizeSettings,
   THEME_OPTIONS,
 } from '@/utils/settings'
-import type { LocaleSetting, Settings, ThemeMode } from '@/utils/settings'
+import type { DomainMatchMode, LocaleSetting, Settings, ThemeMode } from '@/utils/settings'
 import { useTheme } from '@/utils/theme'
 
 import './index.css'
@@ -101,6 +102,9 @@ function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
 export default function OptionsPage() {
   const { t } = useTranslation()
   const [settings, setSettings] = useState<Settings>(defaultSettings)
+  const [domainTab, setDomainTab] = useState<DomainMatchMode>('blacklist')
+  const [blacklistText, setBlacklistText] = useState('')
+  const [whitelistText, setWhitelistText] = useState('')
   const inExt = isExtension()
 
   // 使整体字体大小随设置即时缩放（含本设置页）
@@ -119,7 +123,13 @@ export default function OptionsPage() {
     let alive = true
     void (async () => {
       const stored = await storageGet<Partial<Settings>>('sync', 'settings')
-      if (alive) setSettings(normalizeSettings(stored))
+      if (alive) {
+        const s = normalizeSettings(stored)
+        setSettings(s)
+        setDomainTab(s.ballDomainMode)
+        setBlacklistText(s.ballBlacklist.join('\n'))
+        setWhitelistText(s.ballWhitelist.join('\n'))
+      }
     })()
     return () => {
       alive = false
@@ -222,6 +232,109 @@ export default function OptionsPage() {
               </select>
             </li>
           </ul>
+        </div>
+
+        <div className='opt__card'>
+          <h2>{t('settings.domainSection')}</h2>
+          <ul className='opt__list'>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.domainMode')}</strong>
+                <p>{t('settings.domainModeDesc')}</p>
+              </div>
+              <select
+                className='opt__select'
+                value={settings.ballDomainMode}
+                onChange={(e) => {
+                  const mode = e.target.value as DomainMatchMode
+                  persist({ ...settings, ballDomainMode: mode })
+                  setDomainTab(mode)
+                }}
+                aria-label={t('settings.domainMode')}
+              >
+                <option value='blacklist'>{t('settings.domainModeBlacklist')}</option>
+                <option value='whitelist'>{t('settings.domainModeWhitelist')}</option>
+              </select>
+            </li>
+          </ul>
+
+          <div className='opt__domain-header'>
+            <div className='opt__domain-tabs' role='tablist'>
+              <button
+                type='button'
+                role='tab'
+                aria-selected={domainTab === 'blacklist'}
+                className={`opt__domain-tab${domainTab === 'blacklist' ? ' opt__domain-tab--active' : ''}`}
+                onClick={() => setDomainTab('blacklist')}
+              >
+                <span>{t('settings.domainBlacklist')}</span>
+                <span
+                  className={`opt__domain-tag${settings.ballDomainMode === 'blacklist' ? ' opt__domain-tag--active' : ''}`}
+                >
+                  {settings.ballBlacklist.length}
+                </span>
+              </button>
+              <button
+                type='button'
+                role='tab'
+                aria-selected={domainTab === 'whitelist'}
+                className={`opt__domain-tab${domainTab === 'whitelist' ? ' opt__domain-tab--active' : ''}`}
+                onClick={() => setDomainTab('whitelist')}
+              >
+                <span>{t('settings.domainWhitelist')}</span>
+                <span
+                  className={`opt__domain-tag${settings.ballDomainMode === 'whitelist' ? ' opt__domain-tag--active' : ''}`}
+                >
+                  {settings.ballWhitelist.length}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div className='opt__domain-box'>
+            <p className='opt__domain-desc'>
+              {domainTab === 'blacklist'
+                ? t('settings.domainBlacklistDesc')
+                : t('settings.domainWhitelistDesc')}
+            </p>
+            {domainTab === 'blacklist' ? (
+              <textarea
+                className='opt__domain-textarea'
+                rows={5}
+                placeholder={t('settings.domainPlaceholder')}
+                value={blacklistText}
+                onChange={(e) => setBlacklistText(e.target.value)}
+                onBlur={() => {
+                  const parsed = parseDomainPatterns(blacklistText)
+                  setBlacklistText(parsed.join('\n'))
+                  persist({ ...settings, ballBlacklist: parsed })
+                }}
+              />
+            ) : (
+              <textarea
+                className='opt__domain-textarea'
+                rows={5}
+                placeholder={t('settings.domainPlaceholder')}
+                value={whitelistText}
+                onChange={(e) => setWhitelistText(e.target.value)}
+                onBlur={() => {
+                  const parsed = parseDomainPatterns(whitelistText)
+                  setWhitelistText(parsed.join('\n'))
+                  persist({ ...settings, ballWhitelist: parsed })
+                }}
+              />
+            )}
+            <div className='opt__domain-foot'>
+              <span>
+                {t('settings.domainCount', {
+                  count:
+                    domainTab === 'blacklist'
+                      ? settings.ballBlacklist.length
+                      : settings.ballWhitelist.length,
+                })}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className='opt__card'>

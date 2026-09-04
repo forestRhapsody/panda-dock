@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useLocale } from '@/i18n/useLocale'
+import { shouldShowFloatingBall } from '@/utils/domainMatch'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
 import type { BallAction } from '@/utils/messages'
@@ -13,6 +14,7 @@ import {
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_TOGGLE_DRAWER,
 } from '@/utils/messages'
+import type { DomainMatchMode } from '@/utils/settings'
 import { useTheme } from '@/utils/theme'
 
 import Drawer from './Drawer'
@@ -48,6 +50,9 @@ interface StoredSettings {
   ballAction?: BallAction
   /** 悬浮球是否吸边（默认 true） */
   ballSnap?: boolean
+  ballDomainMode?: DomainMatchMode
+  ballBlacklist?: string[]
+  ballWhitelist?: string[]
 }
 
 function clamp01(value: number): number {
@@ -104,6 +109,9 @@ export default function ToolkitOverlay() {
   const [quickOpen, setQuickOpen] = useState(true)
   const [ballAction, setBallAction] = useState<BallAction>(DEFAULT_BALL_ACTION)
   const [ballSnap, setBallSnap] = useState(true)
+  const [ballDomainMode, setBallDomainMode] = useState<DomainMatchMode>('blacklist')
+  const [ballBlacklist, setBallBlacklist] = useState<string[]>([])
+  const [ballWhitelist, setBallWhitelist] = useState<string[]>([])
   const [pos, setPos] = useState<BallPos>(() => defaultPos(true))
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
@@ -117,7 +125,7 @@ export default function ToolkitOverlay() {
 
   useEffect(() => () => window.clearTimeout(noticeTimer.current), [])
 
-  // 首次读取：快捷开关/点击行为/吸边 + 记忆位置（并行，读完统一生效避免闪烁）
+  // 首次读取：快捷开关/点击行为/吸边/域名黑白名单 + 记忆位置（并行，读完统一生效避免闪烁）
   useEffect(() => {
     if (!inExt) return
     let alive = true
@@ -131,6 +139,9 @@ export default function ToolkitOverlay() {
       if (settings?.ballAction === 'drawer' || settings?.ballAction === 'native') {
         setBallAction(settings.ballAction)
       }
+      if (settings?.ballDomainMode != null) setBallDomainMode(settings.ballDomainMode)
+      if (settings?.ballBlacklist != null) setBallBlacklist(settings.ballBlacklist)
+      if (settings?.ballWhitelist != null) setBallWhitelist(settings.ballWhitelist)
       const snap = settings?.ballSnap !== false
       setBallSnap(snap)
       setPos(resolvePos(saved, snap))
@@ -152,6 +163,9 @@ export default function ToolkitOverlay() {
     const applyStored = (s: StoredSettings | null | undefined) => {
       if (s?.quickOpen != null) setQuickOpen(s.quickOpen)
       if (s?.ballAction === 'drawer' || s?.ballAction === 'native') setBallAction(s.ballAction)
+      if (s?.ballDomainMode != null) setBallDomainMode(s.ballDomainMode)
+      if (s?.ballBlacklist != null) setBallBlacklist(s.ballBlacklist)
+      if (s?.ballWhitelist != null) setBallWhitelist(s.ballWhitelist)
       if (s?.ballSnap != null) {
         setBallSnap(s.ballSnap)
         // 切到吸边时立刻把当前球贴回最近一侧
@@ -228,11 +242,27 @@ export default function ToolkitOverlay() {
     setDrawerOpen(true)
   }, [ballAction, drawerOpen, inExt, showNotice, t])
 
-  if (!ready || (quickOpen === false && inExt)) return null
+  // 判定当前网页是否按黑白名单规则显示悬浮球
+  const showBall = inExt
+    ? shouldShowFloatingBall(
+        {
+          quickOpen,
+          ballDomainMode,
+          ballBlacklist,
+          ballWhitelist,
+        },
+        typeof window !== 'undefined' ? window.location : undefined,
+      )
+    : quickOpen
+
+  if (!ready) return null
+  if (!showBall && !drawerOpen && !notice) return null
 
   return (
     <>
-      <FloatingBall pos={pos} snap={ballSnap} onDrop={handleDrop} onToggle={handleBallClick} />
+      {showBall && (
+        <FloatingBall pos={pos} snap={ballSnap} onDrop={handleDrop} onToggle={handleBallClick} />
+      )}
       {drawerOpen && <Drawer onClose={() => setDrawerOpen(false)} />}
       {notice && inExt && (
         <div className='tek__toast' role='status'>
