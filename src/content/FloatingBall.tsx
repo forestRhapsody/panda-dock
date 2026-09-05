@@ -4,7 +4,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { BallPreset, BallShape, BallSize } from '@/utils/settings'
-import { BALL_PRESET_OPTIONS, BALL_SIZE_PX } from '@/utils/settings'
+import { BALL_PRESET_OPTIONS, BALL_SIZE_PX, ballAssetUrl } from '@/utils/settings'
 
 export const DOCK_H = BALL_SIZE_PX.md // 默认（中）直径，供定位兜底
 const EDGE_MARGIN = 8
@@ -54,9 +54,11 @@ function buildBallStyle(shape: BallShape, d: number, image?: string | null): CSS
   if (image) {
     return {
       ...base,
+      // 垫一层背景色：避免透明角/资源加载失败时露出页面，也让透明 logo 不至于"整个球透明"
       backgroundImage: `url("${image}")`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
+      backgroundColor: 'var(--tk-card)',
     }
   }
   // 无自定义图片：球面显示所选内置 logo（现为 emoji 占位），垫一层中性底让 logo 清晰可见
@@ -107,7 +109,10 @@ export default function FloatingBall({
   const { t } = useTranslation()
   const d = BALL_SIZE_PX[size]
   const r = d / 2
-  const presetLogo = BALL_PRESET_OPTIONS.find((o) => o.value === preset)?.icon ?? '🔵'
+  const presetOption = BALL_PRESET_OPTIONS.find((o) => o.value === preset)
+  const presetLogo = presetOption?.icon ?? '🔵'
+  // 展示图：优先自定义图片，否则用预设 logo 的图片（如有）；都没有则显示 emoji 占位
+  const displayImage = image ?? (presetOption?.image ? ballAssetUrl(presetOption.image) : null)
   const downRef = useRef<DownState | null>(null)
   const [hovered, setHovered] = useState(false)
   const [floatXY, setFloatXY] = useState<{ x: number; y: number } | null>(null)
@@ -165,7 +170,7 @@ export default function FloatingBall({
   // 自由模式/拖拽中：球要盖在网页内抽屉之上，否则抽屉打开后会挡住球，而球是唯一触发器会点不到。
   const aboveDrawer = floatXY != null || !snap
 
-  const geo = buildBallStyle(shape, d, image)
+  const geo = buildBallStyle(shape, d, displayImage)
   let style: CSSProperties = aboveDrawer ? { zIndex: Z_ABOVE_DRAWER, ...geo } : { ...geo }
   if (floatXY) {
     // 拖动：整圆跟随指针
@@ -205,7 +210,7 @@ export default function FloatingBall({
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
-      {!image && (
+      {!displayImage && (
         <span className='tek__dock-logo' style={{ fontSize: Math.round(d * 0.5) }}>
           {presetLogo}
         </span>

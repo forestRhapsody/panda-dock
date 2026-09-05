@@ -27,6 +27,7 @@ import {
   BALL_PRESET_OPTIONS,
   BALL_SHAPE_OPTIONS,
   BALL_SIZE_OPTIONS,
+  ballAssetUrl,
   defaultSettings,
   FONT_SCALE_OPTIONS,
   getBallImage,
@@ -377,7 +378,17 @@ export default function OptionsPage() {
                     className={`opt-ball-preset${settings.ballPreset === o.value ? ' opt-ball-preset--on' : ''}`}
                     onClick={() => setBallPreset(o.value)}
                   >
-                    <span className='opt-ball-preset__logo'>{o.icon}</span>
+                    {o.image ? (
+                      <img
+                        src={ballAssetUrl(o.image)}
+                        alt=''
+                        aria-hidden='true'
+                        draggable={false}
+                        className='opt-ball-preset__img'
+                      />
+                    ) : (
+                      <span className='opt-ball-preset__logo'>{o.icon}</span>
+                    )}
                   </button>
                 ))}
               </div>

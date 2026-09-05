@@ -49,8 +49,19 @@ export const BALL_SHAPE_OPTIONS: { labelKey: string; value: BallShape }[] = [
   { labelKey: 'settings.ballShapeRounded', value: 'rounded' },
 ]
 
-export const BALL_PRESET_OPTIONS: { labelKey: string; value: BallPreset; icon: string }[] = [
-  { labelKey: 'settings.ballPresetPrimary', value: 'primary', icon: '🔵' },
+export const BALL_PRESET_OPTIONS: {
+  labelKey: string
+  value: BallPreset
+  icon: string
+  /** 若为图片 logo，则为相对 public 的路径（如 ball-default.png），否则用 emoji icon 占位 */
+  image?: string
+}[] = [
+  {
+    labelKey: 'settings.ballPresetPrimary',
+    value: 'primary',
+    icon: '🔵',
+    image: 'ball-default.png',
+  },
   { labelKey: 'settings.ballPresetOutline', value: 'outline', icon: '⚪' },
   { labelKey: 'settings.ballPresetSoft', value: 'soft', icon: '🌸' },
 ]
@@ -63,6 +74,18 @@ export const BALL_SIZE_OPTIONS: { labelKey: string; value: BallSize }[] = [
 
 /** 各档位的悬浮球直径（px） */
 export const BALL_SIZE_PX: Record<BallSize, number> = { sm: 36, md: 44, lg: 56 }
+
+/** 解析悬浮球 logo 图片的运行时 URL（扩展环境 chrome.runtime.getURL，其余回退 /path） */
+export function ballAssetUrl(path: string): string {
+  try {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+      return chrome.runtime.getURL(path)
+    }
+  } catch {
+    // 忽略，回退
+  }
+  return `/${path}`
+}
 
 /** 自定义悬浮球图片（base64 data URL）存于 chrome.storage.local 的 key */
 export const BALL_IMAGE_KEY = 'ballImage'

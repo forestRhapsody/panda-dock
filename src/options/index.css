@@ -118,6 +118,12 @@ body {
   line-height: 1;
 }
 
+.opt-ball-preset__img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
 .opt-ball-preset:hover {
   border-color: var(--tk-ring);
 }
