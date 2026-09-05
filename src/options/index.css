@@ -31,6 +31,10 @@ body {
   color: var(--tk-muted-foreground);
 }
 
+.opt__env--error {
+  color: var(--tk-destructive);
+}
+
 .opt__main {
   display: flex;
   flex-direction: column;
@@ -80,6 +84,47 @@ body {
   margin: 4px 0 0;
   font-size: var(--tk-text-sm);
   color: var(--tk-muted-foreground);
+}
+
+/* 悬浮球预设样式：3 个 logo 选项（先以 emoji 占位，后续替换为元素） */
+.opt-ball-presets {
+  display: flex;
+  gap: 10px;
+}
+
+.opt-ball-preset {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 1px solid var(--tk-input);
+  border-radius: var(--tk-radius);
+  background: var(--tk-card);
+  color: var(--tk-foreground);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.opt-ball-preset:focus-visible {
+  outline: none;
+  border-color: var(--tk-ring);
+}
+
+.opt-ball-preset__logo {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.opt-ball-preset:hover {
+  border-color: var(--tk-ring);
+}
+
+.opt-ball-preset--on {
+  border-color: var(--tk-primary);
+  background: color-mix(in srgb, var(--tk-primary) 12%, var(--tk-card));
 }
 
 

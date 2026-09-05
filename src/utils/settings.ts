@@ -3,6 +3,7 @@
 
 import type { ToolId } from '@/tools/registry'
 import { defaultToolLayout, normalizeToolLayout } from '@/tools/registry'
+import { storageGet, storageSet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
 
 /** 主题模式：浅色 / 深色 / 跟随系统 */
@@ -34,11 +35,77 @@ export const FONT_SCALE_OPTIONS: { label: string; value: number }[] = [
 
 export type DomainMatchMode = 'blacklist' | 'whitelist'
 
+/** 悬浮球形状：圆形 / 带圆角方形 */
+export type BallShape = 'circle' | 'rounded'
+
+/** 悬浮球预设样式（无自定义图片时的外观）：主题色实心 / 描边 / 柔和 */
+export type BallPreset = 'primary' | 'outline' | 'soft'
+
+/** 悬浮球大小档位：小 / 中 / 大 */
+export type BallSize = 'sm' | 'md' | 'lg'
+
+export const BALL_SHAPE_OPTIONS: { labelKey: string; value: BallShape }[] = [
+  { labelKey: 'settings.ballShapeCircle', value: 'circle' },
+  { labelKey: 'settings.ballShapeRounded', value: 'rounded' },
+]
+
+export const BALL_PRESET_OPTIONS: { labelKey: string; value: BallPreset; icon: string }[] = [
+  { labelKey: 'settings.ballPresetPrimary', value: 'primary', icon: '🔵' },
+  { labelKey: 'settings.ballPresetOutline', value: 'outline', icon: '⚪' },
+  { labelKey: 'settings.ballPresetSoft', value: 'soft', icon: '🌸' },
+]
+
+export const BALL_SIZE_OPTIONS: { labelKey: string; value: BallSize }[] = [
+  { labelKey: 'settings.ballSizeSm', value: 'sm' },
+  { labelKey: 'settings.ballSizeMd', value: 'md' },
+  { labelKey: 'settings.ballSizeLg', value: 'lg' },
+]
+
+/** 各档位的悬浮球直径（px） */
+export const BALL_SIZE_PX: Record<BallSize, number> = { sm: 36, md: 44, lg: 56 }
+
+/** 自定义悬浮球图片（base64 data URL）存于 chrome.storage.local 的 key */
+export const BALL_IMAGE_KEY = 'ballImage'
+
+/** 自定义图片 base64 data URL 的最大长度（128KB），超出拒绝 */
+export const BALL_IMAGE_MAX_BYTES = 128 * 1024
+
+function normalizeBallShape(value: unknown): BallShape {
+  return value === 'rounded' ? 'rounded' : 'circle'
+}
+
+function normalizeBallPreset(value: unknown): BallPreset {
+  return value === 'outline' || value === 'soft' ? value : 'primary'
+}
+
+function normalizeBallSize(value: unknown): BallSize {
+  return value === 'sm' || value === 'lg' ? value : 'md'
+}
+
+/** 读取自定义悬浮球图片（base64 data URL），不存在返回 null */
+export async function getBallImage(): Promise<string | null> {
+  return storageGet<string>('local', BALL_IMAGE_KEY)
+}
+
+/** 保存（或置空）自定义悬浮球图片。dataUrl 超过 128KB 抛错；传 null 清除。 */
+export async function setBallImage(dataUrl: string | null): Promise<void> {
+  if (dataUrl && dataUrl.length > BALL_IMAGE_MAX_BYTES) {
+    throw new Error('图片过大，base64 后不能超过 128KB')
+  }
+  await storageSet('local', BALL_IMAGE_KEY, dataUrl)
+}
+
 export interface Settings {
   /** 是否在网页上显示悬浮球 */
   quickOpen: boolean
   /** 悬浮球是否吸边（true=贴靠左右；false=可自由停留） */
   ballSnap: boolean
+  /** 悬浮球形状：圆形 / 带圆角方形 */
+  ballShape: BallShape
+  /** 悬浮球预设样式（无自定义图片时） */
+  ballPreset: BallPreset
+  /** 悬浮球大小档位 */
+  ballSize: BallSize
   /** 点击悬浮球的动作：网页内抽屉 / 浏览器原生侧边栏 */
   ballAction: BallAction
   /** 域名过滤模式：黑名单模式（默认）/ 白名单模式 */
@@ -92,6 +159,9 @@ export function defaultSettings(): Settings {
   return {
     quickOpen: true,
     ballSnap: true,
+    ballShape: 'circle',
+    ballPreset: 'primary',
+    ballSize: 'md',
     ballAction: 'drawer',
     ballDomainMode: 'blacklist',
     ballBlacklist: [],
@@ -111,6 +181,9 @@ export function normalizeSettings(raw: Partial<Settings> | null | undefined): Se
   return {
     quickOpen: raw?.quickOpen ?? base.quickOpen,
     ballSnap: raw?.ballSnap !== false,
+    ballShape: normalizeBallShape(raw?.ballShape),
+    ballPreset: normalizeBallPreset(raw?.ballPreset),
+    ballSize: normalizeBallSize(raw?.ballSize),
     ballAction: raw?.ballAction === 'native' ? 'native' : base.ballAction,
     ballDomainMode: normalizeDomainMode(raw?.ballDomainMode),
     ballBlacklist: normalizeDomainList(raw?.ballBlacklist),

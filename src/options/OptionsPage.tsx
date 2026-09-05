@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { useLocale } from '@/i18n/useLocale'
 import type { ToolId } from '@/tools/registry'
 import { DEFAULT_TOOLS, defaultToolLayout } from '@/tools/registry'
+import AppLogo from '@/ui/AppLogo'
 import ConfirmDialog from '@/ui/ConfirmDialog'
 import Icon from '@/ui/Icon'
 import TkSelect from '@/ui/TkSelect'
@@ -22,13 +23,27 @@ import { isExtension, storageGet, storageSet } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
 import type { BallAction } from '@/utils/messages'
 import {
+  BALL_IMAGE_MAX_BYTES,
+  BALL_PRESET_OPTIONS,
+  BALL_SHAPE_OPTIONS,
+  BALL_SIZE_OPTIONS,
   defaultSettings,
   FONT_SCALE_OPTIONS,
+  getBallImage,
   LOCALE_OPTIONS,
   normalizeSettings,
+  setBallImage,
   THEME_OPTIONS,
 } from '@/utils/settings'
-import type { DomainMatchMode, LocaleSetting, Settings, ThemeMode } from '@/utils/settings'
+import type {
+  BallPreset,
+  BallShape,
+  BallSize,
+  DomainMatchMode,
+  LocaleSetting,
+  Settings,
+  ThemeMode,
+} from '@/utils/settings'
 import { useTheme } from '@/utils/theme'
 
 import './index.css'
@@ -108,6 +123,9 @@ export default function OptionsPage() {
   const [blacklistText, setBlacklistText] = useState('')
   const [whitelistText, setWhitelistText] = useState('')
   const [showGlobalConfirm, setShowGlobalConfirm] = useState(false)
+  const [ballImage, setBallImageState] = useState<string | null>(null)
+  const [ballImageError, setBallImageError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const inExt = isExtension()
 
   // 使整体字体大小随设置即时缩放（含本设置页）
@@ -139,6 +157,17 @@ export default function OptionsPage() {
     }
   }, [inExt])
 
+  // 加载自定义悬浮球图片（chrome.storage.local）
+  useEffect(() => {
+    let alive = true
+    void getBallImage().then((img) => {
+      if (alive) setBallImageState(img)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+
   function persist(next: Settings) {
     setSettings(next)
     if (inExt) {
@@ -164,6 +193,46 @@ export default function OptionsPage() {
 
   function setLocale(locale: LocaleSetting) {
     persist({ ...settings, locale })
+  }
+
+  function setBallShape(ballShape: BallShape) {
+    persist({ ...settings, ballShape })
+  }
+
+  function setBallPreset(ballPreset: BallPreset) {
+    persist({ ...settings, ballPreset })
+  }
+
+  function setBallSize(ballSize: BallSize) {
+    persist({ ...settings, ballSize })
+  }
+
+  /** 选择自定义图片：读为 base64 data URL，校验体积（≤128KB）后存 local */
+  function onPickImage(file: File | undefined) {
+    setBallImageError(null)
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setBallImageError(t('settings.ballImageTypeError'))
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = String(reader.result ?? '')
+      if (dataUrl.length > BALL_IMAGE_MAX_BYTES) {
+        setBallImageError(t('settings.ballImageTooLarge'))
+        return
+      }
+      setBallImageState(dataUrl)
+      if (inExt) void setBallImage(dataUrl)
+    }
+    reader.onerror = () => setBallImageError(t('settings.ballImageReadError'))
+    reader.readAsDataURL(file)
+  }
+
+  function removeBallImage() {
+    setBallImageError(null)
+    setBallImageState(null)
+    if (inExt) void setBallImage(null)
   }
 
   function toggleTool(id: ToolId) {
@@ -214,6 +283,9 @@ export default function OptionsPage() {
     setDomainTab(base.ballDomainMode)
     setBlacklistText('')
     setWhitelistText('')
+    setBallImageState(null)
+    setBallImageError(null)
+    if (inExt) void setBallImage(null)
     setShowGlobalConfirm(false)
   }
 
@@ -221,7 +293,7 @@ export default function OptionsPage() {
     <div className='opt'>
       <header className='opt__header'>
         <h1>
-          <Icon name='toolbox' size={20} />
+          <AppLogo size={20} />
           {t('settings.title')}
         </h1>
         <p className='opt__env'>{inExt ? t('settings.saved') : t('settings.previewMode')}</p>
@@ -263,6 +335,118 @@ export default function OptionsPage() {
               </TkSelect>
             </li>
           </ul>
+        </div>
+
+        <div className='opt__card'>
+          <h2>{t('settings.ballStyleSection')}</h2>
+          <ul className='opt__list'>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.ballShape')}</strong>
+                <p>{t('settings.ballShapeDesc')}</p>
+              </div>
+              <TkSelect
+                value={settings.ballShape}
+                onChange={(e) => setBallShape(e.target.value as BallShape)}
+                aria-label={t('settings.ballShape')}
+              >
+                {BALL_SHAPE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {t(o.labelKey)}
+                  </option>
+                ))}
+              </TkSelect>
+            </li>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.ballPreset')}</strong>
+                <p>{t('settings.ballPresetDesc')}</p>
+              </div>
+              <div
+                className='opt-ball-presets'
+                role='radiogroup'
+                aria-label={t('settings.ballPreset')}
+              >
+                {BALL_PRESET_OPTIONS.map((o) => (
+                  <button
+                    key={o.value}
+                    type='button'
+                    role='radio'
+                    aria-checked={settings.ballPreset === o.value}
+                    title={t(o.labelKey)}
+                    className={`opt-ball-preset${settings.ballPreset === o.value ? ' opt-ball-preset--on' : ''}`}
+                    onClick={() => setBallPreset(o.value)}
+                  >
+                    <span className='opt-ball-preset__logo'>{o.icon}</span>
+                  </button>
+                ))}
+              </div>
+            </li>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.ballSize')}</strong>
+                <p>{t('settings.ballSizeDesc')}</p>
+              </div>
+              <TkSelect
+                value={settings.ballSize}
+                onChange={(e) => setBallSize(e.target.value as BallSize)}
+                aria-label={t('settings.ballSize')}
+              >
+                {BALL_SIZE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {t(o.labelKey)}
+                  </option>
+                ))}
+              </TkSelect>
+            </li>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.ballImage')}</strong>
+                <p>{t('settings.ballImageDesc')}</p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {ballImage ? (
+                  <img
+                    src={ballImage}
+                    alt=''
+                    aria-hidden='true'
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 8,
+                      objectFit: 'cover',
+                      border: '1px solid var(--tk-input)',
+                    }}
+                  />
+                ) : null}
+                <button
+                  type='button'
+                  className='tk-btn tk-btn--sm'
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {t('settings.ballImageChoose')}
+                </button>
+                {ballImage && (
+                  <button type='button' className='tk-btn tk-btn--sm' onClick={removeBallImage}>
+                    {t('settings.ballImageRemove')}
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type='file'
+                  accept='image/*'
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    onPickImage(e.target.files?.[0])
+                    e.target.value = ''
+                  }}
+                />
+              </div>
+            </li>
+          </ul>
+          {ballImageError && <p className='opt__env opt__env--error'>{ballImageError}</p>}
+          <p className='opt__env opt__env--hint'>{t('settings.ballImageLimit')}</p>
+          {ballImage && <p className='opt__env opt__env--hint'>{t('settings.ballImageNote')}</p>}
         </div>
 
         <div className='opt__card'>

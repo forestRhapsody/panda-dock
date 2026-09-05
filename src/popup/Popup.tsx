@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useLocale } from '@/i18n/useLocale'
+import AppLogo from '@/ui/AppLogo'
 import Icon from '@/ui/Icon'
 import { closeDrawerInActiveTab, openDrawerInActiveTab } from '@/utils/drawer'
 import { isExtension, openOptionsPage } from '@/utils/env'
@@ -44,8 +45,8 @@ export default function Popup() {
     <div className='pop'>
       <header className='pop__header'>
         <span className='pop__title'>
-          <Icon name='toolbox' size={15} />
-          Toolkit
+          <AppLogo size={15} />
+          Panda Dock
         </span>
         <button
           type='button'

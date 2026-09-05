@@ -3,10 +3,10 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
-import Icon from '@/ui/Icon'
+import type { BallPreset, BallShape, BallSize } from '@/utils/settings'
+import { BALL_PRESET_OPTIONS, BALL_SIZE_PX } from '@/utils/settings'
 
-export const DOCK_H = 44 // 圆形悬浮球直径
-const DOCK_R = DOCK_H / 2
+export const DOCK_H = BALL_SIZE_PX.md // 默认（中）直径，供定位兜底
 const EDGE_MARGIN = 8
 /** 拖拽多少像素以上视为「拖动」，否则视为「点击」 */
 const DRAG_THRESHOLD = 6
@@ -24,27 +24,43 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
 }
 
-/** 纵向位置限制在视口内 */
-export function clampDockTop(topPx: number): number {
-  return clamp(topPx, EDGE_MARGIN, Math.max(EDGE_MARGIN, window.innerHeight - DOCK_H - EDGE_MARGIN))
+/** 纵向位置限制在视口内（d = 悬浮球直径） */
+export function clampDockTop(topPx: number, d: number): number {
+  return clamp(topPx, EDGE_MARGIN, Math.max(EDGE_MARGIN, window.innerHeight - d - EDGE_MARGIN))
 }
 
-/** 横向限制在视口内 */
-function clampX(x: number): number {
-  return clamp(x, 0, Math.max(0, window.innerWidth - DOCK_H))
+/** 横向限制在视口内（d = 悬浮球直径） */
+function clampX(x: number, d: number): number {
+  return clamp(x, 0, Math.max(0, window.innerWidth - d))
 }
 
 /** 把位置夹回视口内（自由模式） */
-export function clampBallPos(pos: BallPos): BallPos {
-  return { x: clampX(pos.x), y: clampDockTop(pos.y) }
+export function clampBallPos(pos: BallPos, d: number): BallPos {
+  return { x: clampX(pos.x, d), y: clampDockTop(pos.y, d) }
 }
 
-/** 吸边模式：按圆心归到最近一侧，返回贴边位置 */
-export function snapToEdge(pos: BallPos): BallPos {
-  const c = clampBallPos(pos)
-  const centerX = c.x + DOCK_R
+/** 吸边模式：按圆心归到最近一侧，返回贴边位置（d = 悬浮球直径） */
+export function snapToEdge(pos: BallPos, d: number): BallPos {
+  const c = clampBallPos(pos, d)
+  const centerX = c.x + d / 2
   const side = centerX <= window.innerWidth / 2 ? 'left' : 'right'
-  return { x: side === 'left' ? 0 : Math.max(0, window.innerWidth - DOCK_H), y: c.y }
+  return { x: side === 'left' ? 0 : Math.max(0, window.innerWidth - d), y: c.y }
+}
+
+/** 根据形状/大小/图片计算球的外观样式（几何 + 背景），无图片时按预设填充 */
+function buildBallStyle(shape: BallShape, d: number, image?: string | null): CSSProperties {
+  const radius = shape === 'circle' ? '50%' : `${Math.round(d * 0.28)}px`
+  const base: CSSProperties = { width: d, height: d, borderRadius: radius }
+  if (image) {
+    return {
+      ...base,
+      backgroundImage: `url("${image}")`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    }
+  }
+  // 无自定义图片：球面显示所选内置 logo（现为 emoji 占位），垫一层中性底让 logo 清晰可见
+  return { ...base, background: 'var(--tk-card)', color: 'var(--tk-foreground)' }
 }
 
 interface DownState {
@@ -58,6 +74,14 @@ interface FloatingBallProps {
   pos: BallPos
   /** 是否吸边：true 贴靠左右（含半隐）；false 可停留在任意位置 */
   snap: boolean
+  /** 形状：圆形 / 带圆角方形 */
+  shape?: BallShape
+  /** 大小档位 */
+  size?: BallSize
+  /** 预设样式（无自定义图片时） */
+  preset?: BallPreset
+  /** 自定义图片（base64 data URL） */
+  image?: string | null
   /** 拖拽结束后（贴边/落定）回调 */
   onDrop: (pos: BallPos) => void
   /** 轻点（未拖动）回调 */
@@ -65,13 +89,25 @@ interface FloatingBallProps {
 }
 
 /**
- * 悬浮触发器（圆形悬浮球）：
+ * 悬浮触发器（悬浮球，形状/大小/样式可配置）：
  * - 吸边模式：贴靠左右，鼠标移开只露一半、悬停完整滑出；拖动松手按最近一侧贴回。
  * - 自由模式：可拖到任意位置并停留，始终完整显示。
  * - 轻点（未位移）不产生定位变化，避免点击抽动。
  */
-export default function FloatingBall({ pos, snap, onDrop, onToggle }: FloatingBallProps) {
+export default function FloatingBall({
+  pos,
+  snap,
+  shape = 'circle',
+  size = 'md',
+  preset = 'primary',
+  image,
+  onDrop,
+  onToggle,
+}: FloatingBallProps) {
   const { t } = useTranslation()
+  const d = BALL_SIZE_PX[size]
+  const r = d / 2
+  const presetLogo = BALL_PRESET_OPTIONS.find((o) => o.value === preset)?.icon ?? '🔵'
   const downRef = useRef<DownState | null>(null)
   const [hovered, setHovered] = useState(false)
   const [floatXY, setFloatXY] = useState<{ x: number; y: number } | null>(null)
@@ -91,46 +127,46 @@ export default function FloatingBall({ pos, snap, onDrop, onToggle }: FloatingBa
   }
 
   function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
-    const d = downRef.current
-    if (!d?.active) return
-    const dx = e.clientX - d.startPX
-    const dy = e.clientY - d.startPY
+    const down = downRef.current
+    if (!down?.active) return
+    const dx = e.clientX - down.startPX
+    const dy = e.clientY - down.startPY
 
     // 未超过阈值前保持原样，轻点=点击，绝不重新定位（消除抽动）
-    if (!d.moved) {
+    if (!down.moved) {
       if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return
-      d.moved = true
+      down.moved = true
     }
 
     // 拖动：整圆以指针为中心跟随（始终完整显示，不越出视口）
-    const nextX = clampX(e.clientX - DOCK_R)
-    const nextY = clampDockTop(e.clientY - DOCK_R)
+    const nextX = clampX(e.clientX - r, d)
+    const nextY = clampDockTop(e.clientY - r, d)
     lastXY.current = { x: nextX, y: nextY }
     setFloatXY(lastXY.current)
     setHovered(true)
   }
 
   function endDrag() {
-    const d = downRef.current
-    if (!d?.active) return
-    d.active = false
+    const down = downRef.current
+    if (!down?.active) return
+    down.active = false
     downRef.current = null
     setFloatXY(null)
 
-    if (d.moved) {
-      onDrop(snap ? snapToEdge(lastXY.current) : clampBallPos(lastXY.current))
+    if (down.moved) {
+      onDrop(snap ? snapToEdge(lastXY.current, d) : clampBallPos(lastXY.current, d))
     } else {
       onToggle()
     }
   }
 
   const visible = hovered || floatXY != null
-  const side = pos.x + DOCK_R <= window.innerWidth / 2 ? 'left' : 'right'
+  const side = pos.x + r <= window.innerWidth / 2 ? 'left' : 'right'
   // 自由模式/拖拽中：球要盖在网页内抽屉之上，否则抽屉打开后会挡住球，而球是唯一触发器会点不到。
-  // 吸边模式下球贴边、被抽屉盖住是符合预期的，保持默认 z-index（低于抽屉）即可。
   const aboveDrawer = floatXY != null || !snap
 
-  let style: CSSProperties = aboveDrawer ? { zIndex: Z_ABOVE_DRAWER } : {}
+  const geo = buildBallStyle(shape, d, image)
+  let style: CSSProperties = aboveDrawer ? { zIndex: Z_ABOVE_DRAWER, ...geo } : { ...geo }
   if (floatXY) {
     // 拖动：整圆跟随指针
     style = { ...style, left: floatXY.x, top: floatXY.y, transition: 'none' }
@@ -146,8 +182,14 @@ export default function FloatingBall({ pos, snap, onDrop, onToggle }: FloatingBa
         : 'translateX(50%)'
     style =
       side === 'left'
-        ? { left: 0, top: pos.y, transform: translate, transition: 'transform 0.3s ease' }
-        : { right: 0, top: pos.y, transform: translate, transition: 'transform 0.3s ease' }
+        ? { ...style, left: 0, top: pos.y, transform: translate, transition: 'transform 0.3s ease' }
+        : {
+            ...style,
+            right: 0,
+            top: pos.y,
+            transform: translate,
+            transition: 'transform 0.3s ease',
+          }
   }
 
   return (
@@ -163,7 +205,11 @@ export default function FloatingBall({ pos, snap, onDrop, onToggle }: FloatingBa
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
-      <Icon name='toolbox' size={18} />
+      {!image && (
+        <span className='tek__dock-logo' style={{ fontSize: Math.round(d * 0.5) }}>
+          {presetLogo}
+        </span>
+      )}
     </div>
   )
 }

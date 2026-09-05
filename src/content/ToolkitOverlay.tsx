@@ -15,11 +15,12 @@ import {
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_TOGGLE_DRAWER,
 } from '@/utils/messages'
-import type { DomainMatchMode } from '@/utils/settings'
+import type { BallPreset, BallShape, BallSize, DomainMatchMode } from '@/utils/settings'
+import { BALL_IMAGE_KEY, BALL_SIZE_PX, getBallImage } from '@/utils/settings'
 import { useTheme } from '@/utils/theme'
 
 import Drawer from './Drawer'
-import FloatingBall, { clampBallPos, DOCK_H, snapToEdge } from './FloatingBall'
+import FloatingBall, { clampBallPos, snapToEdge } from './FloatingBall'
 import type { BallPos } from './FloatingBall'
 import SelectionDetectPanel from './SelectionDetectPanel'
 
@@ -30,11 +31,11 @@ const EDGE_MARGIN = 8
 const DEFAULT_Y_FRAC = 0.45
 const DEFAULT_BALL_ACTION: BallAction = 'drawer'
 
-/** 默认位置：吸边时为左缘；自由模式为右缘（完整显示） */
-function defaultPos(snap: boolean): BallPos {
+/** 默认位置：吸边时为左缘；自由模式为右缘（完整显示）。d = 悬浮球直径 */
+function defaultPos(snap: boolean, d: number): BallPos {
   return snap
-    ? { x: 0, y: fracToTop(DEFAULT_Y_FRAC) }
-    : { x: Math.max(0, window.innerWidth - DOCK_H - EDGE_MARGIN), y: fracToTop(DEFAULT_Y_FRAC) }
+    ? { x: 0, y: fracToTop(DEFAULT_Y_FRAC, d) }
+    : { x: Math.max(0, window.innerWidth - d - EDGE_MARGIN), y: fracToTop(DEFAULT_Y_FRAC, d) }
 }
 
 interface SavedPos {
@@ -52,6 +53,9 @@ interface StoredSettings {
   ballAction?: BallAction
   /** 悬浮球是否吸边（默认 true） */
   ballSnap?: boolean
+  ballShape?: BallShape
+  ballPreset?: BallPreset
+  ballSize?: BallSize
   ballDomainMode?: DomainMatchMode
   ballBlacklist?: string[]
   ballWhitelist?: string[]
@@ -61,13 +65,13 @@ function clamp01(value: number): number {
   return Math.min(Math.max(value, 0), 1)
 }
 
-function fracToTop(yFrac: number): number {
-  const range = Math.max(1, window.innerHeight - EDGE_MARGIN * 2 - DOCK_H)
+function fracToTop(yFrac: number, d: number): number {
+  const range = Math.max(1, window.innerHeight - EDGE_MARGIN * 2 - d)
   return EDGE_MARGIN + clamp01(yFrac) * range
 }
 
-/** 根据存档（含旧格式）与吸边开关解析出位置 */
-function resolvePos(saved: SavedPos | null, snap: boolean): BallPos {
+/** 根据存档（含旧格式）与吸边开关解析出位置（d = 悬浮球直径） */
+function resolvePos(saved: SavedPos | null, snap: boolean, d: number): BallPos {
   let pos: BallPos
   if (saved?.x != null && saved?.y != null) {
     pos = { x: saved.x, y: saved.y }
@@ -75,11 +79,11 @@ function resolvePos(saved: SavedPos | null, snap: boolean): BallPos {
     // 旧格式 { side, yFrac }
     const side = saved?.side === 'left' ? 'left' : 'right'
     pos = {
-      x: side === 'left' ? 0 : Math.max(0, window.innerWidth - DOCK_H),
-      y: fracToTop(saved?.yFrac ?? DEFAULT_Y_FRAC),
+      x: side === 'left' ? 0 : Math.max(0, window.innerWidth - d),
+      y: fracToTop(saved?.yFrac ?? DEFAULT_Y_FRAC, d),
     }
   }
-  return snap ? snapToEdge(pos) : clampBallPos(pos)
+  return snap ? snapToEdge(pos, d) : clampBallPos(pos, d)
 }
 
 /** 请 background 尽力唤起浏览器原生侧边栏（受用户手势限制，可能失败） */
@@ -111,10 +115,14 @@ export default function ToolkitOverlay() {
   const [quickOpen, setQuickOpen] = useState(true)
   const [ballAction, setBallAction] = useState<BallAction>(DEFAULT_BALL_ACTION)
   const [ballSnap, setBallSnap] = useState(true)
+  const [ballShape, setBallShape] = useState<BallShape>('circle')
+  const [ballPreset, setBallPreset] = useState<BallPreset>('primary')
+  const [ballSize, setBallSize] = useState<BallSize>('md')
+  const [ballImage, setBallImage] = useState<string | null>(null)
   const [ballDomainMode, setBallDomainMode] = useState<DomainMatchMode>('blacklist')
   const [ballBlacklist, setBallBlacklist] = useState<string[]>([])
   const [ballWhitelist, setBallWhitelist] = useState<string[]>([])
-  const [pos, setPos] = useState<BallPos>(() => defaultPos(true))
+  const [pos, setPos] = useState<BallPos>(() => defaultPos(true, BALL_SIZE_PX.md))
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [selectionDetect, setSelectionDetect] = useState<{
@@ -143,7 +151,7 @@ export default function ToolkitOverlay() {
     return () => window.removeEventListener('contextmenu', onCtx, true)
   }, [])
 
-  // 首次读取：快捷开关/点击行为/吸边/域名黑白名单 + 记忆位置（并行，读完统一生效避免闪烁）
+  // 首次读取：快捷开关/点击行为/吸边/形状/预设/大小/图片 + 记忆位置（并行，读完统一生效避免闪烁）
   useEffect(() => {
     if (!inExt) return
     let alive = true
@@ -151,29 +159,39 @@ export default function ToolkitOverlay() {
     void Promise.all([
       storageGet<StoredSettings>('sync', SETTINGS_KEY),
       storageGet<SavedPos>('local', POS_KEY),
-    ]).then(([settings, saved]) => {
+      getBallImage(),
+    ]).then(([settings, saved, image]) => {
       if (!alive) return
       if (settings?.quickOpen != null) setQuickOpen(settings.quickOpen)
       if (settings?.ballAction === 'drawer' || settings?.ballAction === 'native') {
         setBallAction(settings.ballAction)
       }
+      if (settings?.ballShape != null) setBallShape(settings.ballShape)
+      if (settings?.ballPreset != null) setBallPreset(settings.ballPreset)
+      if (settings?.ballSize != null) setBallSize(settings.ballSize)
+      if (image != null) setBallImage(image)
       if (settings?.ballDomainMode != null) setBallDomainMode(settings.ballDomainMode)
       if (settings?.ballBlacklist != null) setBallBlacklist(settings.ballBlacklist)
       if (settings?.ballWhitelist != null) setBallWhitelist(settings.ballWhitelist)
       const snap = settings?.ballSnap !== false
       setBallSnap(snap)
-      setPos(resolvePos(saved, snap))
+      setPos(resolvePos(saved, snap, BALL_SIZE_PX[settings?.ballSize ?? 'md']))
       setReady(true)
     })
 
-    const onResize = () => setPos((p) => (ballSnap ? snapToEdge(p) : clampBallPos(p)))
-    window.addEventListener('resize', onResize)
-
     return () => {
       alive = false
-      window.removeEventListener('resize', onResize)
     }
-  }, [inExt, ballSnap])
+  }, [inExt])
+
+  // 窗口尺寸变化时把球夹回视口内（随当前吸附与大小）
+  useEffect(() => {
+    if (!inExt) return
+    const d = BALL_SIZE_PX[ballSize]
+    const onResize = () => setPos((p) => (ballSnap ? snapToEdge(p, d) : clampBallPos(p, d)))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [inExt, ballSnap, ballSize])
 
   // 配置即时同步：Options 修改后已打开的页面无需刷新即可生效
   useEffect(() => {
@@ -181,13 +199,22 @@ export default function ToolkitOverlay() {
     const applyStored = (s: StoredSettings | null | undefined) => {
       if (s?.quickOpen != null) setQuickOpen(s.quickOpen)
       if (s?.ballAction === 'drawer' || s?.ballAction === 'native') setBallAction(s.ballAction)
+      if (s?.ballShape != null) setBallShape(s.ballShape)
+      if (s?.ballPreset != null) setBallPreset(s.ballPreset)
+      if (s?.ballSize != null) {
+        const prev = s.ballSize
+        setBallSize(prev)
+        setPos((p) =>
+          ballSnap ? snapToEdge(p, BALL_SIZE_PX[prev]) : clampBallPos(p, BALL_SIZE_PX[prev]),
+        )
+      }
       if (s?.ballDomainMode != null) setBallDomainMode(s.ballDomainMode)
       if (s?.ballBlacklist != null) setBallBlacklist(s.ballBlacklist)
       if (s?.ballWhitelist != null) setBallWhitelist(s.ballWhitelist)
       if (s?.ballSnap != null) {
         setBallSnap(s.ballSnap)
         // 切到吸边时立刻把当前球贴回最近一侧
-        if (s.ballSnap) setPos((p) => snapToEdge(p))
+        if (s.ballSnap) setPos((p) => snapToEdge(p, BALL_SIZE_PX[ballSize]))
       }
     }
     const reRead = () => {
@@ -203,6 +230,18 @@ export default function ToolkitOverlay() {
       chrome.storage.onChanged.removeListener(onChange)
       window.removeEventListener('focus', reRead)
     }
+  }, [inExt, ballSnap, ballSize])
+
+  // 自定义悬浮球图片（chrome.storage.local）变更即时同步
+  useEffect(() => {
+    if (!inExt) return
+    const onLocal = (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
+      if (areaName !== 'local' || changes[BALL_IMAGE_KEY] == null) return
+      const next = changes[BALL_IMAGE_KEY].newValue as string | null | undefined
+      setBallImage(next ?? null)
+    }
+    chrome.storage.onChanged.addListener(onLocal)
+    return () => chrome.storage.onChanged.removeListener(onLocal)
   }, [inExt])
 
   // 接收来自扩展页的抽屉消息：切换 / 强制打开。
@@ -241,13 +280,14 @@ export default function ToolkitOverlay() {
   // 拖拽结束后落点：更新状态 + 持久化（存绝对坐标）
   const handleDrop = useCallback(
     (next: BallPos) => {
-      const clamped = ballSnap ? snapToEdge(next) : clampBallPos(next)
+      const d = BALL_SIZE_PX[ballSize]
+      const clamped = ballSnap ? snapToEdge(next, d) : clampBallPos(next, d)
       setPos(clamped)
       if (inExt) {
         void storageSet('local', POS_KEY, { x: clamped.x, y: clamped.y })
       }
     },
-    [inExt, ballSnap],
+    [inExt, ballSnap, ballSize],
   )
 
   // 悬浮球点击：抽屉开着则收起；否则按配置唤起原生侧边栏或打开抽屉
@@ -289,7 +329,16 @@ export default function ToolkitOverlay() {
   return (
     <>
       {showBall && (
-        <FloatingBall pos={pos} snap={ballSnap} onDrop={handleDrop} onToggle={handleBallClick} />
+        <FloatingBall
+          pos={pos}
+          snap={ballSnap}
+          shape={ballShape}
+          size={ballSize}
+          preset={ballPreset}
+          image={ballImage}
+          onDrop={handleDrop}
+          onToggle={handleBallClick}
+        />
       )}
       {drawerOpen && <Drawer onClose={() => setDrawerOpen(false)} />}
       {selectionDetect && (

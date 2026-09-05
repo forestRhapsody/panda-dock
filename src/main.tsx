@@ -7,7 +7,7 @@ import ToolkitOverlay from '@/content/ToolkitOverlay'
 import OptionsPage from '@/options/OptionsPage'
 import Popup from '@/popup/Popup'
 import ToolsApp from '@/tools/ToolsApp'
-import Icon from '@/ui/Icon'
+import AppLogo from '@/ui/AppLogo'
 
 import '@/content/content.css'
 import '@/tools/tools.css'
@@ -27,7 +27,7 @@ function DevPreview() {
     <div className='pv'>
       <header className='pv__hero'>
         <h1>
-          <Icon name='toolbox' size={22} />
+          <AppLogo size={22} />
           {t('preview.title')}
         </h1>
         <p>

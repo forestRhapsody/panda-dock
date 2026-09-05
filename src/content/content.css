@@ -15,31 +15,28 @@
   z-index: 2147483001;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
   line-height: 1;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  color: var(--tk-primary-foreground);
-  background: var(--tk-primary);
   box-shadow: var(--tk-shadow-lg);
-  transition: background 0.15s;
-  /* transform 由组件内联控制：悬停滑出 / 移开缩回一半 */
+  transition: filter 0.15s;
+  /* 尺寸 / 圆角 / 背景由组件内联 style 控制（buildBallStyle） */
 }
 
 .tek__dock:hover {
-  background: var(--tk-primary-hover);
-  box-shadow:
-    var(--tk-shadow-lg),
-    0 0 0 4px color-mix(in srgb, var(--tk-primary) 14%, transparent);
+  filter: brightness(1.05);
 }
 
 .tek__dock--drag {
   cursor: grabbing;
-  background: var(--tk-primary-active);
+}
+
+/* 悬浮球 logo（无自定义图片时显示所选预设 logo，现为 emoji 占位） */
+.tek__dock-logo {
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* —— 网页内右侧抽屉（承载工具箱 ToolsApp，类名 tw-* 见 tools.css） —— */

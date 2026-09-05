@@ -19,7 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useTranslation } from 'react-i18next'
 
-import Icon from '@/ui/Icon'
+import AppLogo from '@/ui/AppLogo'
 import { extVersion, isExtension, openOptionsPage, storageGet, storageSet } from '@/utils/env'
 import { normalizeSettings } from '@/utils/settings'
 import type { Settings } from '@/utils/settings'
@@ -225,7 +225,7 @@ export default function ToolsApp({ headerActions }: ToolsAppProps) {
       <header className='tw__header'>
         <div className='tw__header-text'>
           <h1 className='tw__title'>
-            <Icon name='toolbox' size={17} />
+            <AppLogo size={17} />
             {t('app.title')}
           </h1>
           <p className='tw__subtitle'>{t('app.subtitle')}</p>
