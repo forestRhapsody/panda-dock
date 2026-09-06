@@ -53,8 +53,6 @@ const TOOL_COMPONENTS: Record<ToolId, () => ReactNode> = {
   detect: () => <DetectTool />,
 }
 
-const NAV_PAD = 8
-
 interface SortableTabProps {
   id: ToolId
   label: string
@@ -191,7 +189,7 @@ export default function ToolsApp({ headerActions }: ToolsAppProps) {
     [order, enabled, inExt],
   )
 
-  /** 把激活的选项卡滚动到可视区（容器内水平滚动，不影响页面滚动） */
+  /** 把激活的选项卡滚动到容器水平居中（类似 Vant） */
   const revealActiveTab = useCallback((toolId: ToolId) => {
     const nav = navRef.current
     if (!nav) return
@@ -199,11 +197,9 @@ export default function ToolsApp({ headerActions }: ToolsAppProps) {
     if (!btn) return
     const navRect = nav.getBoundingClientRect()
     const btnRect = btn.getBoundingClientRect()
-    if (btnRect.left < navRect.left + NAV_PAD) {
-      nav.scrollBy({ left: btnRect.left - navRect.left - NAV_PAD, behavior: 'smooth' })
-    } else if (btnRect.right > navRect.right - NAV_PAD) {
-      nav.scrollBy({ left: btnRect.right - navRect.right + NAV_PAD, behavior: 'smooth' })
-    }
+    // 滚动量 = 按钮中心 与 容器中心 的水平偏移；浏览器会自动夹取在 [0, maxScroll]
+    const delta = btnRect.left + btnRect.width / 2 - (navRect.left + navRect.width / 2)
+    if (Math.abs(delta) > 0.5) nav.scrollBy({ left: delta, behavior: 'smooth' })
   }, [])
 
   // 激活项变化时自动滚动到可视位置
