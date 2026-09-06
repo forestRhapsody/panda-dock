@@ -36,7 +36,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["ball-default.png", "icons/*.png"],
+      "resources": ["ball*.png", "icons/*.png"],
       "matches": ["http://*/*", "https://*/*"]
     }
   ],

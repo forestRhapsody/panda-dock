@@ -62,7 +62,12 @@ export const BALL_PRESET_OPTIONS: {
     icon: '🔵',
     image: 'ball-default.png',
   },
-  { labelKey: 'settings.ballPresetOutline', value: 'outline', icon: '⚪' },
+  {
+    labelKey: 'settings.ballPresetOutline',
+    value: 'outline',
+    icon: '⚪',
+    image: 'ball-preset-outline.png',
+  },
   { labelKey: 'settings.ballPresetSoft', value: 'soft', icon: '🌸' },
 ]
 
