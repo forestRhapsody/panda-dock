@@ -20,16 +20,19 @@ export interface ToolMeta {
 }
 
 export const DEFAULT_TOOLS: ToolMeta[] = [
-  { id: 'base64', label: 'Base64' },
-  { id: 'json', label: 'JSON' },
-  { id: 'jwt', label: 'JWT' },
-  { id: 'timestamp', label: 'Timestamp' },
-  { id: 'storage', label: 'Local Storage' },
-  { id: 'url', label: 'URL' },
-  { id: 'qrcode', label: 'QR Code' },
-  { id: 'file-b64', label: 'File → Base64' },
   { id: 'detect', label: 'Detect' },
+  { id: 'storage', label: 'Local Storage' },
+  { id: 'base64', label: 'Base64' },
+  { id: 'timestamp', label: 'Timestamp' },
+  { id: 'qrcode', label: 'QR Code Tool' },
+  { id: 'json', label: 'JSON' },
+  { id: 'file-b64', label: 'File → Base64' },
+  { id: 'url', label: 'URL' },
+  { id: 'jwt', label: 'JWT' },
 ]
+
+/** 默认隐藏（不启用）的工具：用户截图里关闭的那几个 */
+const DEFAULT_HIDDEN_TOOLS: ToolId[] = ['file-b64', 'url', 'jwt']
 
 export function isToolId(value: unknown): value is ToolId {
   return DEFAULT_TOOLS.some((t) => t.id === value)
@@ -44,15 +47,18 @@ export interface ToolLayout {
 }
 
 export function defaultToolLayout(): ToolLayout {
+  const enabled = Object.fromEntries(DEFAULT_TOOLS.map((t) => [t.id, true]))
+  for (const id of DEFAULT_HIDDEN_TOOLS) enabled[id] = false
   return {
     order: DEFAULT_TOOLS.map((t) => t.id),
-    enabled: Object.fromEntries(DEFAULT_TOOLS.map((t) => [t.id, true])),
+    enabled,
   }
 }
 
 /** 归一化存储的配置：保证包含全部已注册工具且顺序完整 */
 export function normalizeToolLayout(storedOrder?: unknown, storedEnabled?: unknown): ToolLayout {
   const enabledRaw = (storedEnabled ?? {}) as Record<string, unknown>
+  const defaultEnabled = defaultToolLayout().enabled
   const ordered = Array.isArray(storedOrder) ? (storedOrder as unknown[]).filter(isToolId) : []
   // 去重并按存储顺序排列
   const seen = new Set<ToolId>()
@@ -68,7 +74,9 @@ export function normalizeToolLayout(storedOrder?: unknown, storedEnabled?: unkno
   }
   const enabled: Record<string, boolean> = {}
   for (const t of DEFAULT_TOOLS) {
-    enabled[t.id] = enabledRaw[t.id] !== false
+    // 存过的以存储为准；未存过（新工具/首次）回退到产品默认
+    enabled[t.id] =
+      enabledRaw[t.id] !== undefined ? enabledRaw[t.id] !== false : defaultEnabled[t.id]
   }
   return { order, enabled }
 }

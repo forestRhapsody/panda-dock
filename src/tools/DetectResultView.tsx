@@ -16,6 +16,7 @@ const KIND_LABEL: Record<DetectResult['kind'], string> = {
   base64: 'Base64',
   hex: 'Hex',
   dataurl: 'Data URL',
+  urls: 'URLs',
 }
 
 /** 字段的语义 key → i18n label；claim.* 直接用声明名（如 exp / iat） */
@@ -29,8 +30,13 @@ function fieldLabelKey(key: string): string {
 
 function FieldRow({ field }: { field: DetectField }) {
   const { t } = useTranslation()
+  const urlIdx = field.key.match(/^url\.(\d+)$/)
   const isClaim = field.key.startsWith('claim.')
-  const label = isClaim ? field.key.slice('claim.'.length) : t(fieldLabelKey(field.key))
+  const label = urlIdx
+    ? `${t('tool.detect.row.url')} ${urlIdx[1]}`
+    : isClaim
+      ? field.key.slice('claim.'.length)
+      : t(fieldLabelKey(field.key))
   return (
     <div className='tw-detect__field'>
       <span className='tw-detect__field-label'>{label}</span>

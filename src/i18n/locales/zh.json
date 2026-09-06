@@ -30,7 +30,7 @@
     "previewMode": "浏览器预览模式（配置不会被持久化）",
     "ballSection": "悬浮球与侧边栏",
     "quickOpen": "页面悬浮球",
-    "quickOpenDesc": "在网页上显示可拖拽的 Panda Dock 悬浮球（由 Content Script 注入）",
+    "quickOpenDesc": "在网页上显示可拖拽的悬浮球",
     "ballSnap": "悬浮球吸边",
     "ballSnapDesc": "拖拽后自动贴靠屏幕左右两侧；关闭后悬浮球可以停留在任意位置",
     "ballAction": "点击悬浮球的动作",
@@ -73,6 +73,7 @@
     "domainPlaceholder": "例如：\ngithub.com\n*.google.com\nlocalhost:5173",
     "domainCount": "已配置 {{count}} 条规则",
     "appearance": "外观",
+    "appearanceDisplay": "外观与显示",
     "theme": "主题",
     "themeDesc": "选择界面配色：跟随系统 / 浅色 / 深色。切换即时生效。",
     "themeSystem": "跟随系统",
@@ -93,9 +94,11 @@
     "restoreDefaultsDesc": "将全部设置恢复为默认值——包括悬浮球行为（动作/吸边/是否显示）、域名黑白名单规则、外观（主题/语言/字体）与工具箱能力的显隐与排序。",
     "restoreDefaultsConfirmTitle": "恢复默认设置",
     "restoreDefaultsConfirmMsg": "确定要将所有设置恢复为默认值吗？此操作会覆盖当前的悬浮球、域名规则与工具箱配置，且无法撤销。",
-    "toolboxDesc": "决定工具箱选项卡里显示哪些能力以及它们的顺序。",
-    "toolboxHint": "拖动把手调整顺序（带滑动动画）；关闭开关即在工具箱隐藏该能力。修改即时保存。",
+    "toolboxDesc": "选择在工具箱中显示哪些工具，以及它们的顺序。",
+    "toolboxHint": "拖动把手调整顺序；关闭开关即在工具箱隐藏该工具。修改即时保存。",
     "dragToReorder": "按住拖拽调整顺序",
+    "toolShow": "显示该工具",
+    "toolHide": "隐藏该工具",
     "showing": "显示中",
     "hidden": "已隐藏"
   },
@@ -150,7 +153,7 @@
       "timestamp": "时间戳",
       "storage": "本地存储",
       "url": "网址",
-      "qrcode": "二维码",
+      "qrcode": "二维码工具",
       "detect": "智能识别",
       "file-b64": "文件转Base64"
     },
@@ -159,10 +162,10 @@
       "pin": "钉住（点击页面其它区域不关闭）",
       "unpin": "取消钉住（点击页面其它区域可关闭）",
       "inputLabel": "粘贴或输入内容",
-      "inputPlaceholder": "自动识别 Base64 / JSON / URL / 时间戳 / UUID / JWT / 十六进制…",
+      "inputPlaceholder": "自动识别 Base64 / JSON / URL / 时间戳 / UUID / JWT / 十六进制；含网址会提取网址…",
       "detected": "识别为",
       "none": "未能识别出常见类型，可尝试切换到对应工具处理。",
-      "note": "仅在本地检测，不会上传任何数据。",
+      "note": "仅在本地检测，不会上传任何数据。含网址的文本会自动提取所有网址。",
       "resultPlaceholder": "识别结果将显示在这里…",
       "download": "下载文件",
       "previewAlt": "预览",
@@ -181,7 +184,8 @@
         "header": "头部 (Header)",
         "payload": "载荷 (Payload)",
         "mime": "MIME",
-        "image": "图片预览"
+        "image": "图片预览",
+        "url": "网址"
       }
     },
     "fileB64": {

@@ -30,7 +30,7 @@
     "previewMode": "Browser preview (settings are not persisted)",
     "ballSection": "Floating Ball & Side Panel",
     "quickOpen": "Page floating ball",
-    "quickOpenDesc": "Show the draggable Panda Dock floating ball on web pages (injected via Content Script)",
+    "quickOpenDesc": "Show the draggable floating ball on web pages",
     "ballSnap": "Snap to edge",
     "ballSnapDesc": "Snap to the left/right edge after dragging; turn off to let the ball stay anywhere",
     "ballAction": "Action when clicking the ball",
@@ -73,6 +73,7 @@
     "domainPlaceholder": "e.g.:\ngithub.com\n*.google.com\nlocalhost:5173",
     "domainCount": "{{count}} rules configured",
     "appearance": "Appearance",
+    "appearanceDisplay": "Appearance & Display",
     "theme": "Theme",
     "themeDesc": "Choose the color scheme: System / Light / Dark. Applied instantly.",
     "themeSystem": "System",
@@ -93,9 +94,11 @@
     "restoreDefaultsDesc": "Reset every setting to its default — floating-ball behavior (action/snap/visibility), domain blacklist & whitelist rules, appearance (theme/language/font), and toolbox capability visibility & order.",
     "restoreDefaultsConfirmTitle": "Restore all defaults",
     "restoreDefaultsConfirmMsg": "Reset ALL settings to their defaults? This overrides the current floating-ball, domain rules and toolbox configuration, and cannot be undone.",
-    "toolboxDesc": "Choose which tools appear in the toolbox tabs and their order.",
-    "toolboxHint": "Drag the handle to reorder (with sliding animation); toggling a switch hides that tool. Changes are saved instantly.",
+    "toolboxDesc": "Choose which tools appear in the toolbox and their order.",
+    "toolboxHint": "Drag the handle to reorder; toggling a switch hides that tool. Changes are saved instantly.",
     "dragToReorder": "Hold and drag to reorder",
+    "toolShow": "Show this tool",
+    "toolHide": "Hide this tool",
     "showing": "Showing",
     "hidden": "Hidden"
   },
@@ -150,7 +153,7 @@
       "timestamp": "Timestamp",
       "storage": "Local Storage",
       "url": "URL",
-      "qrcode": "QR Code",
+      "qrcode": "QR Code Tool",
       "detect": "Detect",
       "file-b64": "File to Base64"
     },
@@ -159,10 +162,10 @@
       "pin": "Pin (keep open when clicking outside)",
       "unpin": "Unpin (close when clicking outside)",
       "inputLabel": "Paste or type something",
-      "inputPlaceholder": "Auto-detects Base64 / JSON / URL / timestamp / UUID / JWT / hex…",
+      "inputPlaceholder": "Auto-detects Base64 / JSON / URL / timestamp / UUID / JWT / hex; extracts URLs from text…",
       "detected": "Detected",
       "none": "No common type detected — try the relevant tool instead.",
-      "note": "Detection runs purely locally; nothing is uploaded.",
+      "note": "Detection runs purely locally; nothing is uploaded. Text containing URLs will have them extracted.",
       "resultPlaceholder": "Detection result appears here…",
       "download": "Download",
       "previewAlt": "Preview",
@@ -181,7 +184,8 @@
         "header": "Header",
         "payload": "Payload",
         "mime": "MIME",
-        "image": "Image preview"
+        "image": "Image preview",
+        "url": "URL"
       }
     },
     "fileB64": {

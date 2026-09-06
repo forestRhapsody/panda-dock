@@ -12,6 +12,7 @@ export type DetectKind =
   | 'base64'
   | 'hex'
   | 'dataurl'
+  | 'urls'
 
 /** 短字段（单行 label|value，可逐项复制） */
 export interface DetectField {
@@ -51,6 +52,50 @@ const HEX_RE = /^[0-9a-fA-F]+$/
 const B64_RE = /^[A-Za-z0-9+/]+={0,2}$/
 const DATA_URL_RE = /^data:([^;,]+)(?:;charset=[^;,]+)?;base64,(.+)$/i
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'ftp:', 'ws:', 'wss:', 'file:'])
+
+// 带协议的 URL（http/https/ftp/ws/wss/file）：后面跟到 空白/引号/尖括号/CJK/全角标点 为止
+const URL_PROTO_RE =
+  /(?:https?:\/\/|ftp:\/\/|ws:\/\/|wss:\/\/|file:\/\/)[^\s<>"'`\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]+/gi
+// 裸域名（无协议，含 www.）：用于从文本里捞网址；负向后顾避免命中邮箱里的域名（user@qq.com）
+const BARE_URL_RE =
+  /(?<![@\w])(?:[a-z0-9-]+\.)+[a-z]{2,}(?::\d+)?(?:[/?#][^\s<>"'`\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]*)?/gi
+
+/** 把一条候选 URL 规范化（去尾部标点、无协议补 https、校验协议），返回规范 href 或 null */
+function normalizeUrl(raw: string): string | null {
+  const u = raw.replace(/[.,;:!?)\]}>'"`]+$/g, '').trim()
+  if (!u) return null
+  try {
+    const url = new URL(/^[a-z][a-z0-9+.-]*:/i.test(u) ? u : `https://${u}`)
+    if (ALLOWED_PROTOCOLS.has(url.protocol)) return url.href
+  } catch {
+    // 忽略
+  }
+  return null
+}
+
+/**
+ * 从一段文本中提取所有 URL（带协议 or 裸域名）。
+ * 保留每处出现（含完全相同的重复，如两行相同的 https://baidu.com）；
+ * 仅当裸域名是某个带协议 URL 的一部分时跳过，避免 a.com 在 https://a.com 里重复计一次。
+ */
+function extractUrls(input: string): string[] {
+  const found: { value: string; start: number; end: number }[] = []
+  for (const m of input.matchAll(URL_PROTO_RE)) {
+    const start = m.index ?? 0
+    const url = normalizeUrl(m[0])
+    if (url) found.push({ value: url, start, end: start + m[0].length })
+  }
+  for (const m of input.matchAll(BARE_URL_RE)) {
+    const start = m.index ?? 0
+    const end = start + m[0].length
+    if (found.some((p) => start >= p.start && end <= p.end)) continue
+    const url = normalizeUrl(m[0])
+    if (url) found.push({ value: url, start, end })
+  }
+  // 按文本出现顺序输出（保留重复）
+  found.sort((a, b) => a.start - b.start)
+  return found.map((f) => f.value)
+}
 
 function isJsonLike(s: string): boolean {
   return s.startsWith('{') || s.startsWith('[')
@@ -99,6 +144,9 @@ function detectJwt(s: string): DetectResult | null {
 }
 
 function detectUrl(s: string): DetectResult | null {
+  // 单个 URL 不应含空白（换行/空格）。含空白说明是多段文本（如两行相同网址），
+  // 交给「提取网址」(detectUrls) 逐条列出，而不是按单个 URL 解析出协议/主机/路径。
+  if (/\s/.test(s)) return null
   let url: URL | null = null
   try {
     url = new URL(s)
@@ -114,16 +162,13 @@ function detectUrl(s: string): DetectResult | null {
   }
   if (!url || !ALLOWED_PROTOCOLS.has(url.protocol)) return null
 
-  const fields: DetectField[] = []
-  if (url.protocol) fields.push({ key: 'protocol', value: url.protocol, mono: true })
-  if (url.host) fields.push({ key: 'host', value: url.host, mono: true })
-  if (url.pathname && url.pathname !== '/')
-    fields.push({ key: 'path', value: url.pathname, mono: true })
-  if (url.search) fields.push({ key: 'search', value: url.search, mono: true })
-  if (url.hash) fields.push({ key: 'hash', value: url.hash, mono: true })
-  if (url.username) fields.push({ key: 'username', value: url.username, mono: true })
-  if (url.password) fields.push({ key: 'password', value: url.password, mono: true })
-  return { kind: 'url', fields, blocks: [], copy: url.href }
+  // 只需展示网址本身，不再拆分协议/主机/路径等
+  return {
+    kind: 'url',
+    fields: [{ key: 'url', value: url.href, mono: true }],
+    blocks: [],
+    copy: url.href,
+  }
 }
 
 function pad(n: number): string {
@@ -253,6 +298,18 @@ function detectDataUrl(s: string): DetectResult | null {
   }
 }
 
+/** 提取文本中出现的所有 URL（用于「智能提取网址」）。返回 null 表示没有命中任何 URL。 */
+function detectUrls(s: string): DetectResult | null {
+  const urls = extractUrls(s)
+  if (urls.length === 0) return null
+  return {
+    kind: 'urls',
+    fields: urls.map((url, i) => ({ key: `url.${i + 1}`, value: url, mono: true })),
+    blocks: [],
+    copy: urls.join('\n'),
+  }
+}
+
 /** 入口：对一段输入做保守检测，返回首个命中的类型结果；识别不出返回 null */
 export function detect(input: string): DetectResult | null {
   const s = input.trim()
@@ -265,6 +322,7 @@ export function detect(input: string): DetectResult | null {
     detectTimestamp(s) ??
     detectUuid(s) ??
     detectBase64(s) ??
-    detectHex(s)
+    detectHex(s) ??
+    detectUrls(s)
   )
 }

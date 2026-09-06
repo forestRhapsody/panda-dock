@@ -102,11 +102,12 @@ function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
         <Icon name='grip' size={14} />
       </span>
       <span className='opt-tools__name'>{label}</span>
-      <span className='opt-tools__hint'>{on ? t('settings.showing') : t('settings.hidden')}</span>
       <button
         type='button'
         role='switch'
         aria-checked={on}
+        aria-label={label}
+        title={on ? t('settings.toolHide') : t('settings.toolShow')}
         className={`opt__switch${on ? ' opt__switch--on' : ''}`}
         onClick={() => onToggle(id)}
       >
@@ -272,6 +273,42 @@ export default function OptionsPage() {
     setWhitelistText('')
   }
 
+  /** 恢复「悬浮球与侧边栏」这块到默认（显示、吸边、点击动作） */
+  function resetBallSection() {
+    const base = defaultSettings()
+    persist({
+      ...settings,
+      quickOpen: base.quickOpen,
+      ballSnap: base.ballSnap,
+      ballAction: base.ballAction,
+    })
+  }
+
+  /** 恢复「悬浮球样式」到默认（形状、预设、大小、自定义图片） */
+  function resetBallStyle() {
+    const base = defaultSettings()
+    persist({
+      ...settings,
+      ballShape: base.ballShape,
+      ballPreset: base.ballPreset,
+      ballSize: base.ballSize,
+    })
+    setBallImageState(null)
+    setBallImageError(null)
+    if (inExt) void setBallImage(null)
+  }
+
+  /** 恢复「外观与显示」到默认（主题、语言、字号） */
+  function resetAppearance() {
+    const base = defaultSettings()
+    persist({
+      ...settings,
+      theme: base.theme,
+      locale: base.locale,
+      fontScale: base.fontScale,
+    })
+  }
+
   /** 打开「恢复默认设置」确认弹窗 */
   function requestGlobalReset() {
     setShowGlobalConfirm(true)
@@ -302,7 +339,17 @@ export default function OptionsPage() {
 
       <main className='opt__main'>
         <div className='opt__card'>
-          <h2>{t('settings.ballSection')}</h2>
+          <div className='opt__card-head'>
+            <h2>{t('settings.ballSection')}</h2>
+            <button
+              type='button'
+              className='opt__reset'
+              onClick={resetBallSection}
+              title={t('settings.resetDefault')}
+            >
+              {t('settings.resetDefault')}
+            </button>
+          </div>
           <ul className='opt__list'>
             {TOGGLE_FIELDS.map((f) => (
               <li key={f.key} className='opt__item'>
@@ -339,7 +386,17 @@ export default function OptionsPage() {
         </div>
 
         <div className='opt__card'>
-          <h2>{t('settings.ballStyleSection')}</h2>
+          <div className='opt__card-head'>
+            <h2>{t('settings.ballStyleSection')}</h2>
+            <button
+              type='button'
+              className='opt__reset'
+              onClick={resetBallStyle}
+              title={t('settings.resetDefault')}
+            >
+              {t('settings.resetDefault')}
+            </button>
+          </div>
           <ul className='opt__list'>
             <li className='opt__item'>
               <div className='opt__item-text'>
@@ -462,6 +519,38 @@ export default function OptionsPage() {
 
         <div className='opt__card'>
           <div className='opt__card-head'>
+            <h2>{t('settings.toolbox')}</h2>
+            <button type='button' className='opt__reset' onClick={resetLayout}>
+              {t('settings.resetDefault')}
+            </button>
+          </div>
+          <p className='opt__env'>{t('settings.toolboxDesc')}</p>
+
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={settings.toolOrder} strategy={verticalListSortingStrategy}>
+              <ul className='opt-tools'>
+                {settings.toolOrder.map((id) => {
+                  const meta = TOOL_META.get(id)
+                  if (!meta) return null
+                  return (
+                    <SortableToolRow
+                      key={id}
+                      id={id}
+                      label={t(`tool.registry.${id}`)}
+                      on={settings.toolEnabled[id] !== false}
+                      onToggle={toggleTool}
+                    />
+                  )
+                })}
+              </ul>
+            </SortableContext>
+          </DndContext>
+
+          <p className='opt__env opt__env--hint'>{t('settings.toolboxHint')}</p>
+        </div>
+
+        <div className='opt__card'>
+          <div className='opt__card-head'>
             <h2>{t('settings.domainSection')}</h2>
             <button
               type='button'
@@ -573,7 +662,17 @@ export default function OptionsPage() {
         </div>
 
         <div className='opt__card'>
-          <h2>{t('settings.appearance')}</h2>
+          <div className='opt__card-head'>
+            <h2>{t('settings.appearanceDisplay')}</h2>
+            <button
+              type='button'
+              className='opt__reset'
+              onClick={resetAppearance}
+              title={t('settings.resetDefault')}
+            >
+              {t('settings.resetDefault')}
+            </button>
+          </div>
           <ul className='opt__list'>
             <li className='opt__item'>
               <div className='opt__item-text'>
@@ -615,12 +714,6 @@ export default function OptionsPage() {
                 ))}
               </TkSelect>
             </li>
-          </ul>
-        </div>
-
-        <div className='opt__card'>
-          <h2>{t('settings.display')}</h2>
-          <ul className='opt__list'>
             <li className='opt__item'>
               <div className='opt__item-text'>
                 <strong>{t('settings.fontScale')}</strong>
@@ -645,38 +738,6 @@ export default function OptionsPage() {
               </TkSelect>
             </li>
           </ul>
-        </div>
-
-        <div className='opt__card'>
-          <div className='opt__card-head'>
-            <h2>{t('settings.toolbox')}</h2>
-            <button type='button' className='opt__reset' onClick={resetLayout}>
-              {t('settings.resetDefault')}
-            </button>
-          </div>
-          <p className='opt__env'>{t('settings.toolboxDesc')}</p>
-
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={settings.toolOrder} strategy={verticalListSortingStrategy}>
-              <ul className='opt-tools'>
-                {settings.toolOrder.map((id) => {
-                  const meta = TOOL_META.get(id)
-                  if (!meta) return null
-                  return (
-                    <SortableToolRow
-                      key={id}
-                      id={id}
-                      label={t(`tool.registry.${id}`)}
-                      on={settings.toolEnabled[id] !== false}
-                      onToggle={toggleTool}
-                    />
-                  )
-                })}
-              </ul>
-            </SortableContext>
-          </DndContext>
-
-          <p className='opt__env opt__env--hint'>{t('settings.toolboxHint')}</p>
         </div>
 
         <div className='opt__card opt__card--danger'>
