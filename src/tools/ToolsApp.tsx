@@ -39,6 +39,12 @@ import UrlTool from './UrlTool'
 interface ToolsAppProps {
   /** 头部右侧的动作区（各宿主自定义：关闭、唤起抽屉等） */
   headerActions?: ReactNode
+  /**
+   * 是否渲染头部（标题 + 副标题 + headerActions）。
+   * 原生侧边栏宿主已由 Chrome 提供「扩展名 + 图标 + 关闭」header，为避免两个 header，
+   * 宿主应关闭本头部；网页内抽屉无 Chrome header，保持默认 true。
+   */
+  showHeader?: boolean
 }
 
 const TOOL_COMPONENTS: Record<ToolId, () => ReactNode> = {
@@ -116,7 +122,7 @@ function rebuildOrder(
  * - 配置修改后通过 chrome.storage.onChanged 即时同步到已打开的页面；
  * - 选项卡超出容器宽度时自动滚动，并把激活项滚到可视区（参考 Vant Tabs）。
  */
-export default function ToolsApp({ headerActions }: ToolsAppProps) {
+export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppProps) {
   const { t } = useTranslation()
   const inExt = isExtension()
   const [order, setOrder] = useState<ToolId[]>(() => defaultToolLayout().order)
@@ -218,16 +224,18 @@ export default function ToolsApp({ headerActions }: ToolsAppProps) {
 
   return (
     <div className='tw'>
-      <header className='tw__header'>
-        <div className='tw__header-text'>
-          <h1 className='tw__title'>
-            <AppLogo size={17} />
-            {t('app.title')}
-          </h1>
-          <p className='tw__subtitle'>{t('app.subtitle')}</p>
-        </div>
-        {headerActions && <div className='tw__header-actions'>{headerActions}</div>}
-      </header>
+      {showHeader && (
+        <header className='tw__header'>
+          <div className='tw__header-text'>
+            <h1 className='tw__title'>
+              <AppLogo size={17} />
+              {t('app.title')}
+            </h1>
+            <p className='tw__subtitle'>{t('app.subtitle')}</p>
+          </div>
+          {headerActions && <div className='tw__header-actions'>{headerActions}</div>}
+        </header>
+      )}
 
       <nav ref={navRef} className='tw-nav' role='tablist' aria-label={t('app.nav_label')}>
         <DndContext
