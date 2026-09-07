@@ -9,8 +9,9 @@ import { getCurrentPageUrl } from '@/utils/pageUrl'
 
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
-import { decodeQrCodeFromBlob, generateQrCodeBlob, generateQrCodeDataUrl } from './qrcode'
-import type { QrErrorCorrectionLevel } from './qrcode'
+import { decodeQrCodeFromBlob, generateQrCodeBlob, generateQrCodeResult } from './qrcode'
+import type { QrErrorCorrectionLevel, QrLogoShape } from './qrcode'
+import QrLogoCropModal from './QrLogoCropModal'
 import { StatusText } from './StatusText'
 import ToolTabs from './ToolTabs'
 
@@ -40,6 +41,19 @@ const MARGIN_OPTIONS = [
   { labelKey: 'tool.qrcode.marginLoose', value: 4 },
 ]
 
+const RESOLUTION_OPTIONS = [
+  { labelKey: 'tool.qrcode.sizeSm', value: 800 },
+  { labelKey: 'tool.qrcode.sizeMd', value: 1200 },
+  { labelKey: 'tool.qrcode.sizeLg', value: 1600 },
+  { labelKey: 'tool.qrcode.sizeXl', value: 2400 },
+]
+
+const LOGO_SIZE_OPTIONS = [
+  { labelKey: 'tool.qrcode.logoSizeSm', value: 0.18 },
+  { labelKey: 'tool.qrcode.logoSizeMd', value: 0.22 },
+  { labelKey: 'tool.qrcode.logoSizeLg', value: 0.26 },
+]
+
 const FONT_SIZE_OPTIONS = [
   { labelKey: 'tool.qrcode.fontSizeSm', value: 14 },
   { labelKey: 'tool.qrcode.fontSizeMd', value: 18 },
@@ -55,20 +69,27 @@ export default function QrCodeTool() {
   const [inputText, setInputText] = useState('')
   const [ecLevel, setEcLevel] = useState<QrErrorCorrectionLevel>('M')
   const [margin, setMargin] = useState(2)
+  const [resolution, setResolution] = useState(1200)
   const [labelFontSize, setLabelFontSize] = useState(18)
   const [fgColor, setFgColor] = useState('#000000')
   const [bgColor, setBgColor] = useState('#ffffff')
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [logoShape, setLogoShape] = useState<QrLogoShape>('rounded')
+  const [logoSizeRatio, setLogoSizeRatio] = useState<number>(0.22)
+  const [cropSourceUrl, setCropSourceUrl] = useState<string | null>(null)
+  const [showCropModal, setShowCropModal] = useState(false)
   const [label, setLabel] = useState('')
   const [showCustomize, setShowCustomize] = useState(false)
 
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [qrDimensions, setQrDimensions] = useState<{ width: number; height: number } | null>(null)
   const [generating, setGenerating] = useState(false)
   const [copiedImage, setCopiedImage] = useState(false)
   const copyImageTimer = useRef<number | undefined>(undefined)
   const logoInputRef = useRef<HTMLInputElement>(null)
-  // 跟踪当前 logo / 解析预览的 object URL，替换或卸载时及时 revoke，避免 Blob 内存泄漏
+  // 跟踪当前 logo / 裁剪源图 / 解析预览的 object URL，替换或卸载时及时 revoke，避免 Blob 内存泄漏
   const logoUrlRef = useRef<string | null>(null)
+  const cropSourceUrlRef = useRef<string | null>(null)
   const imagePreviewUrlRef = useRef<string | null>(null)
 
   // —— 解析模式状态 ——
@@ -83,41 +104,47 @@ export default function QrCodeTool() {
     () => () => {
       window.clearTimeout(copyImageTimer.current)
       if (logoUrlRef.current) URL.revokeObjectURL(logoUrlRef.current)
+      if (cropSourceUrlRef.current) URL.revokeObjectURL(cropSourceUrlRef.current)
       if (imagePreviewUrlRef.current) URL.revokeObjectURL(imagePreviewUrlRef.current)
     },
     [],
   )
 
-  // 防抖实时生成超清零锯齿二维码（支持边距、字号、配色、Logo、标签）
+  // 防抖实时生成超清零锯齿二维码（支持边距、清晰度、字号、配色、Logo、标签）
   useEffect(() => {
     const text = inputText.trim()
     if (!text) {
       setQrDataUrl(null)
+      setQrDimensions(null)
       return
     }
 
     let alive = true
     setGenerating(true)
     const timer = setTimeout(() => {
-      generateQrCodeDataUrl(text, {
+      generateQrCodeResult(text, {
         errorCorrectionLevel: ecLevel,
         margin,
-        targetWidth: 800,
+        targetWidth: resolution,
         foregroundColor: fgColor,
         backgroundColor: bgColor,
         logoUrl,
+        logoShape,
+        logoSizeRatio,
         label,
         labelFontSize,
       })
-        .then((url) => {
+        .then((res) => {
           if (alive) {
-            setQrDataUrl(url)
+            setQrDataUrl(res.dataUrl)
+            setQrDimensions({ width: res.width, height: res.height })
             setGenerating(false)
           }
         })
         .catch(() => {
           if (alive) {
             setQrDataUrl(null)
+            setQrDimensions(null)
             setGenerating(false)
           }
         })
@@ -127,7 +154,19 @@ export default function QrCodeTool() {
       alive = false
       clearTimeout(timer)
     }
-  }, [inputText, ecLevel, margin, labelFontSize, fgColor, bgColor, logoUrl, label])
+  }, [
+    inputText,
+    ecLevel,
+    margin,
+    resolution,
+    labelFontSize,
+    fgColor,
+    bgColor,
+    logoUrl,
+    logoShape,
+    logoSizeRatio,
+    label,
+  ])
 
   // 生成：填入当前网页 URL
   async function fillCurrentPageUrl() {
@@ -137,18 +176,49 @@ export default function QrCodeTool() {
     }
   }
 
-  // 生成：上传 Logo
+  // 生成：选择并上传 Logo（自动唤起裁剪弹窗）
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (file) {
-      // 替换 Logo 时先 revoke 旧 object URL，避免连续上传泄漏
-      if (logoUrlRef.current) URL.revokeObjectURL(logoUrlRef.current)
+      if (cropSourceUrlRef.current) URL.revokeObjectURL(cropSourceUrlRef.current)
       const url = URL.createObjectURL(file)
-      logoUrlRef.current = url
-      setLogoUrl(url)
-      setEcLevel('H')
+      cropSourceUrlRef.current = url
+      setCropSourceUrl(url)
+      setShowCropModal(true)
     }
     e.target.value = ''
+  }
+
+  // 生成：重新裁剪已有 Logo
+  function handleRecrop() {
+    if (cropSourceUrl) {
+      setShowCropModal(true)
+    } else if (logoUrl) {
+      setCropSourceUrl(logoUrl)
+      setShowCropModal(true)
+    }
+  }
+
+  // 生成：确认裁剪完成
+  function handleCropConfirm(croppedDataUrl: string, selectedShape: QrLogoShape) {
+    if (logoUrlRef.current) URL.revokeObjectURL(logoUrlRef.current)
+    logoUrlRef.current = null
+    setLogoUrl(croppedDataUrl)
+    setLogoShape(selectedShape)
+    setEcLevel('H')
+    setShowCropModal(false)
+  }
+
+  // 生成：取消裁剪
+  function handleCropCancel() {
+    setShowCropModal(false)
+    if (!logoUrl) {
+      if (cropSourceUrlRef.current) {
+        URL.revokeObjectURL(cropSourceUrlRef.current)
+        cropSourceUrlRef.current = null
+      }
+      setCropSourceUrl(null)
+    }
   }
 
   function removeLogo() {
@@ -156,6 +226,11 @@ export default function QrCodeTool() {
       URL.revokeObjectURL(logoUrlRef.current)
       logoUrlRef.current = null
     }
+    if (cropSourceUrlRef.current) {
+      URL.revokeObjectURL(cropSourceUrlRef.current)
+      cropSourceUrlRef.current = null
+    }
+    setCropSourceUrl(null)
     setLogoUrl(null)
   }
 
@@ -166,10 +241,12 @@ export default function QrCodeTool() {
       const blob = await generateQrCodeBlob(inputText.trim(), {
         errorCorrectionLevel: ecLevel,
         margin,
-        targetWidth: 800,
+        targetWidth: resolution,
         foregroundColor: fgColor,
         backgroundColor: bgColor,
         logoUrl,
+        logoShape,
+        logoSizeRatio,
         label,
         labelFontSize,
       })
@@ -200,10 +277,12 @@ export default function QrCodeTool() {
       const blob = await generateQrCodeBlob(inputText.trim(), {
         errorCorrectionLevel: ecLevel,
         margin,
-        targetWidth: 800,
+        targetWidth: resolution,
         foregroundColor: fgColor,
         backgroundColor: bgColor,
         logoUrl,
+        logoShape,
+        logoSizeRatio,
         label,
         labelFontSize,
       })
@@ -217,6 +296,18 @@ export default function QrCodeTool() {
       }
     } catch {
       if (qrDataUrl) await copyText(qrDataUrl)
+    }
+  }
+
+  // 生成：在新标签页中查看高清原图
+  function openOriginalImage() {
+    if (!qrDataUrl) return
+    const win = window.open()
+    if (win) {
+      win.document.write(
+        `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${t('tool.qrcode.openOriginal')}</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#18181b;}img{max-width:92vw;max-height:92vh;object-fit:contain;box-shadow:0 12px 36px rgba(0,0,0,0.5);image-rendering:-webkit-optimize-contrast;}</style></head><body><img src="${qrDataUrl}" alt="QR" /></body></html>`,
+      )
+      win.document.close()
     }
   }
 
@@ -405,6 +496,24 @@ export default function QrCodeTool() {
                   <option value='H'>H (30%)</option>
                 </TkSelect>
               </div>
+
+              {/* 清晰度 */}
+              <div className='tw-qr__opt-group'>
+                <label className='tw-qr__opt-label' htmlFor='tw-qr-resolution'>
+                  {t('tool.qrcode.resolution')}:
+                </label>
+                <TkSelect
+                  id='tw-qr-resolution'
+                  value={resolution}
+                  onChange={(e) => setResolution(Number(e.target.value))}
+                >
+                  {RESOLUTION_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {t(o.labelKey)}
+                    </option>
+                  ))}
+                </TkSelect>
+              </div>
             </div>
 
             <button
@@ -513,7 +622,7 @@ export default function QrCodeTool() {
                 </div>
               </div>
 
-              {/* Logo 上传 */}
+              {/* Logo 上传与样式定制 */}
               <div className='tw-qr__custom-row'>
                 <div className='tw-qr__custom-col'>
                   <span className='tw-qr__custom-label'>{t('tool.qrcode.centerLogo')}:</span>
@@ -526,18 +635,77 @@ export default function QrCodeTool() {
                   />
                   <div className='tw-qr__logo-actions'>
                     {logoUrl ? (
-                      <div className='tw-qr__logo-badge'>
-                        <img src={logoUrl} alt='Logo' className='tw-qr__logo-thumb' />
-                        <button
-                          type='button'
-                          className='tk-btn tk-btn--sm'
-                          onClick={removeLogo}
-                          title={t('tool.qrcode.removeLogo')}
-                        >
-                          <Icon name='close' size={12} />
-                          {t('tool.qrcode.removeLogo')}
-                        </button>
-                      </div>
+                      <>
+                        <div className='tw-qr__logo-badge'>
+                          <img
+                            src={logoUrl}
+                            alt='Logo'
+                            className={`tw-qr__logo-thumb tw-qr__logo-thumb--${logoShape}`}
+                          />
+                          <button
+                            type='button'
+                            className='tk-btn tk-btn--sm'
+                            onClick={handleRecrop}
+                            title={t('tool.qrcode.recropLogo')}
+                          >
+                            <Icon name='code' size={12} />
+                            {t('tool.qrcode.recropLogo')}
+                          </button>
+                          <button
+                            type='button'
+                            className='tk-btn tk-btn--sm'
+                            onClick={() => logoInputRef.current?.click()}
+                            title={t('tool.qrcode.uploadLogo')}
+                          >
+                            <Icon name='upload' size={12} />
+                            {t('tool.qrcode.uploadLogo')}
+                          </button>
+                          <button
+                            type='button'
+                            className='tk-btn tk-btn--sm'
+                            onClick={removeLogo}
+                            title={t('tool.qrcode.removeLogo')}
+                          >
+                            <Icon name='close' size={12} />
+                            {t('tool.qrcode.removeLogo')}
+                          </button>
+                        </div>
+
+                        {/* Logo 形状与大小调节 */}
+                        <div className='tw-qr__logo-options'>
+                          <div className='tw-qr__opt-group'>
+                            <label className='tw-qr__opt-label' htmlFor='tw-qr-logo-shape'>
+                              {t('tool.qrcode.logoShape')}:
+                            </label>
+                            <TkSelect
+                              id='tw-qr-logo-shape'
+                              value={logoShape}
+                              onChange={(e) => setLogoShape(e.target.value as QrLogoShape)}
+                            >
+                              <option value='rounded'>{t('tool.qrcode.logoShapeRounded')}</option>
+                              <option value='circle'>{t('tool.qrcode.logoShapeCircle')}</option>
+                              <option value='square'>{t('tool.qrcode.logoShapeSquare')}</option>
+                            </TkSelect>
+                          </div>
+
+                          <div className='tw-qr__opt-group'>
+                            <label className='tw-qr__opt-label' htmlFor='tw-qr-logo-size'>
+                              {t('tool.qrcode.logoSize')}:
+                            </label>
+                            <TkSelect
+                              id='tw-qr-logo-size'
+                              value={logoSizeRatio}
+                              onChange={(e) => setLogoSizeRatio(Number(e.target.value))}
+                            >
+                              {LOGO_SIZE_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {t(o.labelKey)}
+                                </option>
+                              ))}
+                            </TkSelect>
+                          </div>
+                        </div>
+                      </>
                     ) : (
                       <button
                         type='button'
@@ -562,8 +730,6 @@ export default function QrCodeTool() {
                   className='tw-qr__img-wrapper'
                   style={{
                     backgroundColor: bgColor,
-                    // 所见即所得：padding 跟随边距档位，margin=0 时无白边，与导出 PNG 完全一致
-                    padding: margin === 0 ? 0 : margin === 1 ? 4 : margin === 2 ? 10 : 18,
                   }}
                 >
                   <img src={qrDataUrl} alt={t('tool.qrcode.previewAlt')} className='tw-qr__img' />
@@ -588,7 +754,23 @@ export default function QrCodeTool() {
                     <Icon name='download' size={13} />
                     {t('tool.qrcode.downloadPng')}
                   </button>
+                  <button
+                    type='button'
+                    className='tk-btn tk-btn--sm'
+                    onClick={openOriginalImage}
+                    title={t('tool.qrcode.openOriginal')}
+                  >
+                    <Icon name='external-link' size={13} />
+                    {t('tool.qrcode.openOriginal')}
+                  </button>
                 </div>
+                {qrDimensions && (
+                  <div className='tw-qr__meta'>
+                    <span className='tw-qr__dimension-badge'>
+                      {qrDimensions.width} × {qrDimensions.height} px
+                    </span>
+                  </div>
+                )}
               </div>
             ) : (
               <div className='tw-qr__placeholder'>
@@ -693,6 +875,16 @@ export default function QrCodeTool() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Logo 裁剪弹窗 */}
+      {showCropModal && cropSourceUrl && (
+        <QrLogoCropModal
+          imageSrc={cropSourceUrl}
+          initialShape={logoShape}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
       )}
     </div>
   )

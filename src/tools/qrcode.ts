@@ -6,13 +6,14 @@ import jsQR from 'jsqr'
 import QRCode from 'qrcode'
 
 export type QrErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H'
+export type QrLogoShape = 'circle' | 'rounded' | 'square'
 
 export interface GenerateQrOptions {
   /** 纠错等级：L (7%) / M (15%) / Q (25%) / H (30%)，默认 M */
   errorCorrectionLevel?: QrErrorCorrectionLevel
   /** 边距（留白格数），默认 2，支持 0 / 1 / 2 / 4 等 */
   margin?: number
-  /** 目标基准像素宽，默认 800（将自动对齐为整像素倍数） */
+  /** 目标基准像素宽，默认 1200（将自动对齐为整像素倍数，支持 800 / 1200 / 1600 / 2400） */
   targetWidth?: number
   /** 前景色（如 #000000） */
   foregroundColor?: string
@@ -20,6 +21,8 @@ export interface GenerateQrOptions {
   backgroundColor?: string
   /** 中心 Logo 图像数据（DataURL 或 ObjectURL） */
   logoUrl?: string | null
+  /** Logo 形状：circle (圆形) / rounded (平滑圆角) / square (直角)，默认 rounded */
+  logoShape?: QrLogoShape
   /** Logo 占二维码宽度的比例，默认 0.22 */
   logoSizeRatio?: number
   /** 底部说明文字 */
@@ -69,10 +72,11 @@ export async function generateQrCanvas(
 ): Promise<HTMLCanvasElement> {
   const {
     margin = 2,
-    targetWidth = 800,
+    targetWidth = 1200,
     foregroundColor = '#000000',
     backgroundColor = '#ffffff',
     logoUrl = null,
+    logoShape = 'rounded',
     logoSizeRatio = 0.22,
     label = null,
     labelFontSize = 18,
@@ -124,40 +128,73 @@ export async function generateQrCanvas(
     }
   }
 
-  // 6. 若配置了 Logo，在正中心合成并带防遮挡保护垫（开启高质量平滑缩放）
+  // 6. 若配置了 Logo，在正中心合成并带防遮挡保护垫（开启高质量平滑缩放与防拉伸处理）
   if (logoUrl) {
     try {
       const logoImg = await loadImage(logoUrl)
-      // Logo 大小取整
+      // Logo 绘制尺寸（依设定的比例取整）
       const logoSize = Math.round(qrSize * logoSizeRatio)
       const centerX = Math.round((qrSize - logoSize) / 2)
       const centerY = Math.round((qrSize - logoSize) / 2)
 
-      // 保护垫（背景色底框）
-      const pad = Math.max(4, Math.round(scale * 1.2))
+      // 保护垫（背景色衬底框，留白尺寸约 1 个 module 宽度）
+      const pad = Math.max(3, Math.round(scale * 0.9))
       const boxX = centerX - pad
       const boxY = centerY - pad
       const boxSize = logoSize + pad * 2
-      const radius = Math.round(boxSize * 0.16)
 
       ctx.save()
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = 'high'
       ctx.fillStyle = backgroundColor
+
+      // 绘制保护垫底框路径
       ctx.beginPath()
-      pathRoundRect(ctx, boxX, boxY, boxSize, boxSize, radius)
+      if (logoShape === 'circle') {
+        const cX = centerX + logoSize / 2
+        const cY = centerY + logoSize / 2
+        ctx.arc(cX, cY, boxSize / 2, 0, Math.PI * 2)
+      } else if (logoShape === 'square') {
+        ctx.rect(boxX, boxY, boxSize, boxSize)
+      } else {
+        // rounded 平滑圆角
+        const radius = Math.round(boxSize * 0.22)
+        pathRoundRect(ctx, boxX, boxY, boxSize, boxSize, radius)
+      }
       ctx.fill()
 
-      // 细微浅边框增强视觉融合感
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'
-      ctx.lineWidth = Math.max(1, Math.round(scale * 0.15))
+      // 细微轻柔边框增强层次，避免生硬突兀
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
+      ctx.lineWidth = Math.max(1, Math.round(scale * 0.08))
       ctx.stroke()
 
-      // 圆角裁切绘制 Logo
+      // 计算源图等比裁剪（cover），彻底杜绝拉伸畸变
+      const imgW = logoImg.naturalWidth || logoImg.width
+      const imgH = logoImg.naturalHeight || logoImg.height
+      let sx = 0
+      let sy = 0
+      const sSize = Math.min(imgW, imgH)
+      if (imgW > imgH) {
+        sx = Math.round((imgW - imgH) / 2)
+      } else if (imgH > imgW) {
+        sy = Math.round((imgH - imgW) / 2)
+      }
+
+      // 创建 Logo 形状的裁切蒙版并绘制图片
       ctx.beginPath()
-      pathRoundRect(ctx, centerX, centerY, logoSize, logoSize, Math.max(2, radius - 2))
+      if (logoShape === 'circle') {
+        const cX = centerX + logoSize / 2
+        const cY = centerY + logoSize / 2
+        ctx.arc(cX, cY, logoSize / 2, 0, Math.PI * 2)
+      } else if (logoShape === 'square') {
+        ctx.rect(centerX, centerY, logoSize, logoSize)
+      } else {
+        const innerRadius = Math.round(logoSize * 0.2)
+        pathRoundRect(ctx, centerX, centerY, logoSize, logoSize, innerRadius)
+      }
       ctx.clip()
-      ctx.drawImage(logoImg, centerX, centerY, logoSize, logoSize)
+
+      ctx.drawImage(logoImg, sx, sy, sSize, sSize, centerX, centerY, logoSize, logoSize)
       ctx.restore()
     } catch {
       // 容错：Logo 异常时不阻断二维码正常导出
@@ -183,12 +220,28 @@ export async function generateQrCanvas(
       textToDraw = `${textToDraw}…`
     }
 
-    const labelY = qrSize + labelHeight / 2 - Math.round(fontRatio)
+    // 二维码点阵实际结束的底边物理坐标
+    const qrModulesBottom = (moduleCount + margin) * scale
+    // 说明标签在二维码点阵底边与画布底边之间的整块空白区域内严格垂直居中
+    const labelY = Math.round((qrModulesBottom + totalHeight) / 2)
     ctx.fillText(textToDraw, totalWidth / 2, labelY)
     ctx.restore()
   }
 
   return outCanvas
+}
+
+/** 生成二维码 PNG 的超清 Data URL 及物理像素尺寸 */
+export async function generateQrCodeResult(
+  text: string,
+  options: GenerateQrOptions = {},
+): Promise<{ dataUrl: string; width: number; height: number }> {
+  const canvas = await generateQrCanvas(text, options)
+  return {
+    dataUrl: canvas.toDataURL('image/png'),
+    width: canvas.width,
+    height: canvas.height,
+  }
 }
 
 /** 生成二维码 PNG 的超清 Data URL */

@@ -74,6 +74,7 @@
   /* —— 控件尺寸（按钮 / 输入框统一规格，随 --tk-font-scale 缩放） —— */
   --tk-control-h: calc(32px * var(--tk-font-scale)); /* 标准控件高 */
   --tk-control-h-sm: calc(26px * var(--tk-font-scale)); /* 紧凑控件高（头部动作区） */
+  --tk-control-h-lg: calc(38px * var(--tk-font-scale)); /* 强调按钮高（主操作按钮） */
 }
 
 /* —— 深色（冷调中性色反转，主色提亮为近白、文字转深） —— */

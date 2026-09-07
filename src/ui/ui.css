@@ -71,6 +71,12 @@
   font-size: var(--tk-text-sm);
 }
 
+.tk-btn--lg {
+  height: var(--tk-control-h-lg);
+  padding: 0 16px;
+  font-size: var(--tk-text-md);
+}
+
 .tk-btn--block {
   width: 100%;
 }

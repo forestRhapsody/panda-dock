@@ -7,12 +7,7 @@ import { isDomainMatched, shouldShowFloatingBall } from '@/utils/domainMatch'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
 import { getCurrentPageUrl } from '@/utils/pageUrl'
-import {
-  FONT_SCALE_OPTIONS,
-  LOCALE_OPTIONS,
-  normalizeSettings,
-  THEME_OPTIONS,
-} from '@/utils/settings'
+import { LOCALE_OPTIONS, normalizeSettings, THEME_OPTIONS } from '@/utils/settings'
 import type { LocaleSetting, Settings, ThemeMode } from '@/utils/settings'
 
 const SETTINGS_KEY = 'settings'
@@ -236,30 +231,6 @@ export default function QuickSettings() {
             {LOCALE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.value === 'system' ? t('settings.localeSystem') : o.label}
-              </option>
-            ))}
-          </TkSelect>
-        </li>
-        <li className='pop__setting'>
-          <div className='pop__setting-text'>
-            <strong>{t('settings.fontScale')}</strong>
-            <p>{t('settings.fontScaleDesc')}</p>
-          </div>
-          <TkSelect
-            variant='sm'
-            value={settings.fontScale}
-            onChange={(e) => update({ fontScale: Number(e.target.value) })}
-            aria-label={t('settings.fontScale')}
-          >
-            {FONT_SCALE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {t(
-                  o.value === 1
-                    ? 'settings.fontStandard'
-                    : o.value === 1.1
-                      ? 'settings.fontLarge'
-                      : 'settings.fontMax',
-                )}
               </option>
             ))}
           </TkSelect>

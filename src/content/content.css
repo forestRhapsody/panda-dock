@@ -12,7 +12,7 @@
 .tek__dock {
   all: initial;
   position: fixed;
-  z-index: 2147483001;
+  z-index: 2147483020; /* 悬浮球始终最高，盖过抽屉(3010)/轻提示(3012)/识别面板(3013) */
   display: grid;
   place-items: center;
   line-height: 1;

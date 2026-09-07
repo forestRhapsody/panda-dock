@@ -10,8 +10,8 @@ export const DOCK_H = BALL_SIZE_PX.md // 默认（中）直径，供定位兜底
 const EDGE_MARGIN = 8
 /** 拖拽多少像素以上视为「拖动」，否则视为「点击」 */
 const DRAG_THRESHOLD = 6
-/** 自由模式/拖拽中的 z-index：高于抽屉(2147483010)，低于轻提示(2147483012) */
-const Z_ABOVE_DRAWER = 2147483011
+/** 悬浮球 z-index：无论吸边还是自由模式，始终最高，高于抽屉(2147483010)与轻提示(2147483012) */
+export const Z_BALL = 2147483020
 
 export interface BallPos {
   /** 球左上角（视口坐标） */
@@ -167,11 +167,9 @@ export default function FloatingBall({
 
   const visible = hovered || floatXY != null
   const side = pos.x + r <= window.innerWidth / 2 ? 'left' : 'right'
-  // 自由模式/拖拽中：球要盖在网页内抽屉之上，否则抽屉打开后会挡住球，而球是唯一触发器会点不到。
-  const aboveDrawer = floatXY != null || !snap
-
+  // 无论吸边、自由模式还是拖拽中：悬浮球层级始终最高，避免被网页内抽屉遮挡
   const geo = buildBallStyle(shape, d, displayImage)
-  let style: CSSProperties = aboveDrawer ? { zIndex: Z_ABOVE_DRAWER, ...geo } : { ...geo }
+  let style: CSSProperties = { zIndex: Z_BALL, ...geo }
   if (floatXY) {
     // 拖动：整圆跟随指针
     style = { ...style, left: floatXY.x, top: floatXY.y, transition: 'none' }

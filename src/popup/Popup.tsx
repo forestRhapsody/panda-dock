@@ -63,18 +63,18 @@ export default function Popup() {
           <div className='pop__actions'>
             <button
               type='button'
-              className='tk-btn tk-btn--primary tk-btn--block'
+              className='tk-btn tk-btn--primary tk-btn--lg tk-btn--block'
               onClick={() => void openPanel()}
             >
-              <Icon name='panel-right' size={14} />
+              <Icon name='panel-right' size={15} />
               {t('popup.openSidePanel')}
             </button>
             <button
               type='button'
-              className='tk-btn tk-btn--block'
+              className='tk-btn tk-btn--lg tk-btn--block'
               onClick={() => void openDrawer()}
             >
-              <Icon name='window' size={14} />
+              <Icon name='window' size={15} />
               {t('popup.openDrawer')}
             </button>
           </div>

@@ -328,6 +328,7 @@ export default function ToolkitOverlay() {
 
   return (
     <>
+      {drawerOpen && <Drawer onClose={() => setDrawerOpen(false)} />}
       {showBall && (
         <FloatingBall
           pos={pos}
@@ -340,7 +341,6 @@ export default function ToolkitOverlay() {
           onToggle={handleBallClick}
         />
       )}
-      {drawerOpen && <Drawer onClose={() => setDrawerOpen(false)} />}
       {selectionDetect && (
         <SelectionDetectPanel
           text={selectionDetect.text}
