@@ -20,6 +20,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useTranslation } from 'react-i18next'
 
 import AppLogo from '@/ui/AppLogo'
+import Toaster from '@/ui/Toaster'
 import { extVersion, isExtension, openOptionsPage, storageGet, storageSet } from '@/utils/env'
 import { normalizeSettings } from '@/utils/settings'
 import type { Settings } from '@/utils/settings'
@@ -267,6 +268,8 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
       <main className='tw__body' role='tabpanel'>
         {TOOL_COMPONENTS[active]()}
       </main>
+
+      <Toaster position='bottom' />
 
       <footer className='tw__footer'>
         <span>v{extVersion()}</span>

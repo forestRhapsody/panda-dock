@@ -430,6 +430,8 @@
       "minify": "Minify",
       "noMatch": "No matching entries.",
       "refresh": "Refresh",
+      "refreshed": "Refreshed",
+      "refreshing": "Refreshing…",
       "save": "Save",
       "statusFiltered": " ({{count}} matched)",
       "statusSessionNote": "Current session only",

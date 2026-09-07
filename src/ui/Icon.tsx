@@ -23,6 +23,7 @@ export type IconName =
   | 'chevron-down' // 下拉箭头
   | 'pin' // 图钉（钉住）
   | 'alert' // 警告 / 错误提示
+  | 'refresh' // 刷新 / 重新载入
 
 interface IconProps {
   name: IconName
@@ -135,6 +136,12 @@ const GLYPHS: Record<IconName, ReactNode> = {
       <circle cx='12' cy='12' r='10' />
       <line x1='12' y1='8' x2='12' y2='12' />
       <line x1='12' y1='16' x2='12.01' y2='16' />
+    </>
+  ),
+  refresh: (
+    <>
+      <path d='M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.24L21 8' />
+      <path d='M21 3v5h-5' />
     </>
   ),
 }

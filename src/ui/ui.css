@@ -64,6 +64,25 @@
   background: var(--tk-primary-active);
 }
 
+.tk-btn--danger,
+.tk-btn--danger:disabled:hover {
+  border-color: transparent;
+  background: var(--tk-destructive);
+  color: var(--tk-destructive-foreground);
+  box-shadow: var(--tk-shadow-sm);
+}
+
+.tk-btn--danger:hover {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--tk-destructive) 90%, transparent);
+  color: var(--tk-destructive-foreground);
+}
+
+.tk-btn--danger:active {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--tk-destructive) 80%, transparent);
+}
+
 .tk-btn--sm {
   height: var(--tk-control-h-sm);
   padding: 0 10px;
@@ -280,7 +299,7 @@
   white-space: nowrap;
 }
 
-/* —— 确认弹窗（替代 window.confirm，设置在 shadow/扩展页都能用） —— */
+/* —— 确认弹窗（严格对齐 shadcn/ui AlertDialog 规范） —— */
 
 .tk-modal {
   position: fixed;
@@ -289,12 +308,12 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: color-mix(in srgb, var(--tk-foreground) 38%, transparent);
+  background: rgb(0 0 0 / 0.7);
 }
 
 .tk-modal__card {
-  width: min(320px, 100%);
-  padding: 18px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
   border: 1px solid var(--tk-border);
   border-radius: var(--tk-radius-lg);
   background: var(--tk-card);
@@ -305,14 +324,16 @@
   margin: 0 0 8px;
   font-size: var(--tk-text-lg);
   font-weight: 600;
+  line-height: 1.25;
   color: var(--tk-foreground);
+  letter-spacing: -0.015em;
 }
 
 .tk-modal__msg {
-  margin: 0 0 16px;
+  margin: 0 0 24px;
   font-size: var(--tk-text-base);
-  line-height: 1.6;
-  color: var(--tk-secondary-foreground);
+  line-height: 1.5;
+  color: var(--tk-muted-foreground);
   word-break: break-all;
 }
 
@@ -320,4 +341,149 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* —— Sonner 风格极简轻提示（Toaster & Toast，严格对齐 shadcn/ui 规范） —— */
+
+.tk-toaster {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  align-items: center;
+  width: max-content;
+  max-width: min(340px, calc(100% - 32px));
+  pointer-events: none;
+}
+
+.tk-toaster--top {
+  top: 16px;
+  bottom: auto;
+  flex-direction: column;
+}
+
+.tk-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 220px;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-lg);
+  background: var(--tk-card);
+  color: var(--tk-foreground);
+  box-shadow:
+    0 10px 20px -5px rgb(0 0 0 / 0.12),
+    0 4px 6px -2px rgb(0 0 0 / 0.05);
+  font-family: var(--tk-font);
+  font-size: var(--tk-text-sm);
+  font-weight: 500;
+  line-height: 1.4;
+  user-select: none;
+  animation: tk-toast-slide-up 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+[data-theme='dark'] .tk-toast {
+  box-shadow:
+    0 14px 28px -4px rgb(0 0 0 / 0.45),
+    0 6px 12px -2px rgb(0 0 0 / 0.3);
+}
+
+.tk-toast__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--tk-muted);
+  color: var(--tk-muted-foreground);
+}
+
+.tk-toast--success .tk-toast__icon {
+  background: var(--tk-muted);
+  color: var(--tk-muted-foreground);
+}
+
+.tk-toast--err .tk-toast__icon {
+  background: color-mix(in srgb, var(--tk-destructive) 14%, transparent);
+  color: var(--tk-destructive);
+}
+
+.tk-toast--info .tk-toast__icon {
+  background: color-mix(in srgb, var(--tk-info) 14%, transparent);
+  color: var(--tk-info);
+}
+
+.tk-toast__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tk-toast__title {
+  color: var(--tk-foreground);
+  font-size: var(--tk-text-sm);
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.tk-toast__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 4px;
+  padding: 0;
+  border: none;
+  border-radius: var(--tk-radius-sm);
+  background: transparent;
+  color: var(--tk-muted-foreground);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
+}
+
+.tk-toast__close:hover {
+  background: var(--tk-accent);
+  color: var(--tk-foreground);
+}
+
+@keyframes tk-toast-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tk-toaster--top .tk-toast {
+  animation-name: tk-toast-slide-down;
+}
+
+@keyframes tk-toast-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

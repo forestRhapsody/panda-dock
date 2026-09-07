@@ -2,6 +2,7 @@
    配色走 src/theme.css 的设计令牌（shadcn 风格冷寂质感，无 Tailwind / shadcn 依赖）。 */
 
 .tw {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -11,6 +12,19 @@
   color: var(--tk-foreground);
   background: var(--tk-background);
   -webkit-font-smoothing: antialiased;
+}
+
+.tw-spin {
+  animation: tw-spin 0.8s linear infinite;
+}
+
+@keyframes tw-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .tw__header {

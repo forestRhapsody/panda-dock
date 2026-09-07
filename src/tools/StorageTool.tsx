@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 
 import i18n from '@/i18n'
 import ConfirmDialog from '@/ui/ConfirmDialog'
+import Icon from '@/ui/Icon'
+import { toast } from '@/ui/toast'
 
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
@@ -23,6 +25,8 @@ import ToolTabs from './ToolTabs'
 interface ConfirmState {
   title: string
   message: string
+  confirmLabel?: string
+  danger?: boolean
   onConfirm: () => void
 }
 
@@ -166,6 +170,7 @@ export default function StorageTool() {
   const [draftValue, setDraftValue] = useState('')
   const [editIsJson, setEditIsJson] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   /** 高优先级：自定义弹窗；仅极端情况（自定义弹窗无法渲染）下降级到 window.confirm */
   function requestConfirm(opts: ConfirmState): void {
@@ -188,6 +193,25 @@ export default function StorageTool() {
     setResult(res)
     if (!res.ok) setStatus({ kind: 'err', text: res.error })
   }, [area])
+
+  /** 手动点击刷新：带 loading 状态并弹出 Sonner 级轻提示 */
+  async function handleRefresh() {
+    if (refreshing) return
+    setRefreshing(true)
+    try {
+      const res = await listStorage(area)
+      setResult(res)
+      if (res.ok) {
+        setStatus(null)
+        toast.success(t('tool.storage.refreshed'))
+      } else {
+        setStatus({ kind: 'err', text: res.error })
+        toast.error(res.error)
+      }
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   useEffect(() => {
     void load()
@@ -219,6 +243,8 @@ export default function StorageTool() {
         key,
         area: area === 'local' ? 'localStorage' : 'sessionStorage',
       }),
+      confirmLabel: t('tool.storage.delete'),
+      danger: true,
       onConfirm: () => void doRemove(key),
     })
   }
@@ -243,6 +269,8 @@ export default function StorageTool() {
         area: area === 'local' ? 'localStorage' : 'sessionStorage',
         count: result.data.totalCount,
       }),
+      confirmLabel: t('tool.storage.clearAll'),
+      danger: true,
       onConfirm: () => void doClearAll(),
     })
   }
@@ -376,8 +404,15 @@ export default function StorageTool() {
       />
 
       <div className='tw-actions'>
-        <button type='button' className='tk-btn tk-btn--primary' onClick={() => void load()}>
-          {t('tool.storage.refresh')}
+        <button
+          type='button'
+          className='tk-btn tk-btn--primary'
+          onClick={() => void handleRefresh()}
+          disabled={refreshing}
+          title={t('tool.storage.refresh')}
+        >
+          <Icon name='refresh' size={14} className={refreshing ? 'tw-spin' : undefined} />
+          {refreshing ? t('tool.storage.refreshing') : t('tool.storage.refresh')}
         </button>
         <button type='button' className='tk-btn' onClick={startCreate} disabled={editorOpen}>
           {t('tool.storage.add')}
@@ -492,8 +527,9 @@ export default function StorageTool() {
         <ConfirmDialog
           title={confirm.title}
           message={confirm.message}
-          confirmLabel={t('tool.storage.confirm')}
+          confirmLabel={confirm.confirmLabel ?? t('tool.storage.confirm')}
           cancelLabel={t('tool.storage.cancel')}
+          danger={confirm.danger ?? false}
           onCancel={() => setConfirm(null)}
           onConfirm={() => {
             confirm.onConfirm()

@@ -430,6 +430,8 @@
       "minify": "压缩",
       "noMatch": "无匹配项。",
       "refresh": "刷新",
+      "refreshed": "已刷新",
+      "refreshing": "刷新中…",
       "save": "保存",
       "statusFiltered": "（筛选出 {{count}} 项）",
       "statusSessionNote": "仅当前会话有效",

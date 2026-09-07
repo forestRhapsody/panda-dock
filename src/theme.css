@@ -36,8 +36,9 @@
   --tk-primary-foreground: #ffffff;
   --tk-ring: #171717;
 
-  /* —— 功能色（低饱和） —— */
-  --tk-destructive: hsl(0 66% 48%);
+  /* —— 功能色（对齐 shadcn/ui） —— */
+  --tk-destructive: hsl(0 84.2% 60.2%);
+  --tk-destructive-foreground: hsl(0 0% 98%);
   --tk-success: hsl(149 46% 34%);
   --tk-warning: hsl(36 78% 38%);
   --tk-info: hsl(207 70% 42%);
@@ -98,7 +99,8 @@
   --tk-primary-foreground: hsl(240 10% 4%);
   --tk-ring: hsl(0 0% 83%);
 
-  --tk-destructive: hsl(0 62% 55%);
+  --tk-destructive: hsl(0 62.8% 30.6%);
+  --tk-destructive-foreground: hsl(0 0% 98%);
   --tk-success: hsl(149 50% 45%);
   --tk-warning: hsl(36 80% 50%);
   --tk-info: hsl(207 75% 55%);

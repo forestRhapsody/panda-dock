@@ -755,6 +755,8 @@ export default function OptionsPage() {
         <ConfirmDialog
           title={t('settings.restoreDefaultsConfirmTitle')}
           message={t('settings.restoreDefaultsConfirmMsg')}
+          confirmLabel={t('settings.restoreDefaults')}
+          danger
           onCancel={() => setShowGlobalConfirm(false)}
           onConfirm={doGlobalReset}
         />
