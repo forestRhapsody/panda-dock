@@ -20,7 +20,7 @@ export interface ToolMeta {
 }
 
 export const DEFAULT_TOOLS: ToolMeta[] = [
-  { id: 'detect', label: 'Detect' },
+  { id: 'detect', label: 'Smart Parse' },
   { id: 'storage', label: 'Local Storage' },
   { id: 'base64', label: 'Base64' },
   { id: 'timestamp', label: 'Timestamp' },

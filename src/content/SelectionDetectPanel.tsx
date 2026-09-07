@@ -20,7 +20,7 @@ interface SelectionDetectPanelProps {
 const PAD = 8
 
 /**
- * 右键「智能识别选中文字」后在网页内弹出的悬浮面板（沉浸式翻译风格）。
+ * 右键「智能解析选中文字」后在网页内弹出的悬浮面板（沉浸式翻译风格）。
  * - 点击 header（或抓手）任意拖动整卡；
  * - 图钉图标可钉住：钉住后点击页面其它区域不再自动关闭（Escape 仍可关）。
  * 渲染在 Content Script 的 Shadow DOM 里，样式与宿主隔离；贴近视口边缘自动回夹，下方不足翻到上方。

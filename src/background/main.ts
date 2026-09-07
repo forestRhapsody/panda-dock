@@ -8,7 +8,7 @@ import {
 const DETECT_MENU_ID = 'toolkit-detect-selection'
 
 /**
- * 右键菜单「智能识别选中文字」：安装/更新时注册。
+ * 右键菜单「智能解析选中文字」：安装/更新时注册。
  * 选中文字后点击 → 把选中文本与点击位置转给当前页 content script，在网页内弹出悬浮面板。
  */
 chrome.runtime.onInstalled.addListener(() => {
@@ -16,7 +16,7 @@ chrome.runtime.onInstalled.addListener(() => {
     const zh = chrome.i18n.getUILanguage().toLowerCase().startsWith('zh')
     chrome.contextMenus.create({
       id: DETECT_MENU_ID,
-      title: zh ? '智能识别选中文字' : 'Detect selected text',
+      title: zh ? '智能解析选中文字' : 'Smart parse selected text',
       contexts: ['selection'],
     })
   })

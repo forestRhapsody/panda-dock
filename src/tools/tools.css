@@ -575,7 +575,55 @@
   text-decoration: underline;
 }
 
-/* —— 智能识别 (tw-detect) —— */
+/* —— 智能解析 (tw-detect) —— */
+
+.tw-detect__formats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -2px;
+  margin-bottom: 2px;
+}
+
+.tw-detect__formats-label {
+  flex: none;
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+  user-select: none;
+}
+
+.tw-detect__formats-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tw-detect__format-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: var(--tk-text-xs);
+  font-family: var(--tk-font);
+  line-height: 1.5;
+  color: var(--tk-muted-foreground);
+  background: var(--tk-muted);
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-sm);
+  cursor: pointer;
+  outline: none;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.tw-detect__format-chip:hover {
+  color: var(--tk-foreground);
+  background: var(--tk-accent);
+  border-color: var(--tk-ring);
+}
 
 .tw-detect {
   display: flex;
