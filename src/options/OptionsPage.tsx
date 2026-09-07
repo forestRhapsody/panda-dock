@@ -84,8 +84,8 @@ function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
     id,
   })
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: CSS.Translate.toString(transform),
+    transition: isDragging ? undefined : transition,
   }
   return (
     <li

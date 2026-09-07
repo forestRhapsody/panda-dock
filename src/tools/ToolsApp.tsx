@@ -77,7 +77,10 @@ function SortableTab({ id, label, selected, onSelect }: SortableTabProps) {
       aria-selected={selected}
       data-tool={id}
       className={`tw-nav__btn${selected ? ' tw-nav__btn--on' : ''}${isDragging ? ' tw-nav__btn--drag' : ''}`}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      style={{
+        transform: CSS.Translate.toString(transform),
+        transition: isDragging ? undefined : transition,
+      }}
       {...listeners}
       onClick={() => {
         if (!isDragging) onSelect(id)
@@ -231,7 +234,6 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
               <AppLogo size={17} />
               {t('app.title')}
             </h1>
-            <p className='tw__subtitle'>{t('app.subtitle')}</p>
           </div>
           {headerActions && <div className='tw__header-actions'>{headerActions}</div>}
         </header>

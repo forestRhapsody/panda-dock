@@ -196,8 +196,12 @@
   scrollbar-color: var(--tk-border-strong) transparent;
 }
 
-.tk-select-popup::-webkit-scrollbar { width: 4px; }
-.tk-select-popup::-webkit-scrollbar-track { background: transparent; }
+.tk-select-popup::-webkit-scrollbar {
+  width: 4px;
+}
+.tk-select-popup::-webkit-scrollbar-track {
+  background: transparent;
+}
 .tk-select-popup::-webkit-scrollbar-thumb {
   background: var(--tk-border-strong);
   border-radius: 99px;
@@ -231,7 +235,9 @@
   color: var(--tk-foreground);
   cursor: pointer;
   outline: none;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
 .tk-select-item--focused,
@@ -309,5 +315,3 @@
   justify-content: flex-end;
   gap: 8px;
 }
-
-

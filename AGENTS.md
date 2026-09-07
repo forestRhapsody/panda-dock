@@ -18,6 +18,13 @@ Chrome 扩展（Manifest V3），React 19 + TypeScript + Vite。内置 9 个开�
 
 > 只能用 **pnpm**（npm/yarn 会被 `preinstall` 拦截）。
 
+## 权限与工作区边界（安全红线）
+
+- **权限仅限本项目**：AI 的一切读写、创建、修改、重命名及删除权限**仅严格限定在当前项目工作区根目录及其子目录内**。
+- **严禁修改外部文件**：绝对禁止以任何理由修改、创建、覆写或删除本项目目录之外的任何文件或路径（包括但不限于用户家目录 `~`、上层目录 `..`、其他工程项目、系统文件 `/etc`、`/tmp`、`/var`、系统级配置文件等）。
+- **命令执行边界限制**：所有终端命令的执行路径（Cwd）必须限定在本项目工作区内，严禁执行任何会对本项目外部环境产生副作用的命令（如跨目录 `rm`、`mv`、`cp`、向外部重定向写入 `>`、安装全局系统包等）。
+- **遇外部引用需确认**：若任务涉及跨目录或外部依赖需求，必须主动向用户说明情况并征求确认，绝不可擅自向项目外部进行写操作。
+
 ## 任务编排（TASKS.md）
 
 > 本仓库另有一份 `TASKS.md`，是 AI 编排任务的**唯一任务清单**。开始任何开发/排查前，先读 `TASKS.md`，并始终遵守其编排约定。
@@ -49,15 +56,16 @@ src/
 
 ## 核心硬约定（违反会导致扩展坏掉/被拒）
 
-1. **构建顺序不可乱**：content 先清空 `dist/`，background、页面随后追加；单跑任一 vite 配置会产出残缺产物。
-2. **content/background 必须 IIFE**（`format:'iife'` + `inlineDynamicImports:true`），manifest 不支持 ESM。
-3. **content 样式只走 Shadow DOM + `?inline` 内联**，直接 import CSS 会污染宿主页。
-4. **所有 `chrome.*` 访问经 `utils/env.ts` 降级**（`isExtension()`/`storageGet/Set()`/`openOptionsPage()`），禁止裸调。
-5. **新工具必须登记进 `tools/registry.ts`**（`ToolId` + `DEFAULT_TOOLS`），否则完全不可见。
-6. **跨端消息 `action` 必须引用 `utils/messages.ts` 常量**，禁手写字符串。
-7. **`settings` 读写经 `normalizeSettings`/`normalizeToolLayout` 兜底**，旧数据/残缺数据要兼容。
-8. **content 开扩展页/侧边栏经 background 中转**（`sidePanel.open` 依赖手势，失败回退抽屉）。
-9. **类型零错误**：`strict` + `noUnusedLocals/Parameters` 全开，构建前必须先过 `tsc`。
+1. **权限受限于当前项目**：AI 的写操作（新增/修改/删除文件等）严格受限于本项目工作区，绝对禁止修改项目外的任何文件与系统配置。
+2. **构建顺序不可乱**：content 先清空 `dist/`，background、页面随后追加；单跑任一 vite 配置会产出残缺产物。
+3. **content/background 必须 IIFE**（`format:'iife'` + `inlineDynamicImports:true`），manifest 不支持 ESM。
+4. **content 样式只走 Shadow DOM + `?inline` 内联**，直接 import CSS 会污染宿主页。
+5. **所有 `chrome.*` 访问经 `utils/env.ts` 降级**（`isExtension()`/`storageGet/Set()`/`openOptionsPage()`），禁止裸调。
+6. **新工具必须登记进 `tools/registry.ts`**（`ToolId` + `DEFAULT_TOOLS`），否则完全不可见。
+7. **跨端消息 `action` 必须引用 `utils/messages.ts` 常量**，禁手写字符串。
+8. **`settings` 读写经 `normalizeSettings`/`normalizeToolLayout` 兜底**，旧数据/残缺数据要兼容。
+9. **content 开扩展页/侧边栏经 background 中转**（`sidePanel.open` 依赖手势，失败回退抽屉）。
+10. **类型零错误**：`strict` + `noUnusedLocals/Parameters` 全开，构建前必须先过 `tsc`。
 
 ## UI 一致性硬约定（新增能力必须复用）
 

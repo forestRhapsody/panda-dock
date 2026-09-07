@@ -133,7 +133,6 @@ body {
   background: color-mix(in srgb, var(--tk-primary) 12%, var(--tk-card));
 }
 
-
 .opt__switch {
   position: relative;
   flex: none;
@@ -386,4 +385,3 @@ body {
   font-size: var(--tk-text-xs);
   color: var(--tk-muted-foreground);
 }
-
