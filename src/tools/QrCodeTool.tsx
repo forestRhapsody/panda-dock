@@ -83,6 +83,7 @@ export default function QrCodeTool() {
 
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [qrDimensions, setQrDimensions] = useState<{ width: number; height: number } | null>(null)
+  const [generateError, setGenerateError] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [copiedImage, setCopiedImage] = useState(false)
   const copyImageTimer = useRef<number | undefined>(undefined)
@@ -116,11 +117,13 @@ export default function QrCodeTool() {
     if (!text) {
       setQrDataUrl(null)
       setQrDimensions(null)
+      setGenerateError(null)
       return
     }
 
     let alive = true
     setGenerating(true)
+    setGenerateError(null)
     const timer = setTimeout(() => {
       generateQrCodeResult(text, {
         errorCorrectionLevel: ecLevel,
@@ -139,6 +142,7 @@ export default function QrCodeTool() {
             setQrDataUrl(res.dataUrl)
             setQrDimensions({ width: res.width, height: res.height })
             setGenerating(false)
+            setGenerateError(null)
           }
         })
         .catch(() => {
@@ -146,6 +150,7 @@ export default function QrCodeTool() {
             setQrDataUrl(null)
             setQrDimensions(null)
             setGenerating(false)
+            setGenerateError(t('tool.qrcode.generateFailed'))
           }
         })
     }, 80)
@@ -159,13 +164,14 @@ export default function QrCodeTool() {
     ecLevel,
     margin,
     resolution,
-    labelFontSize,
     fgColor,
     bgColor,
     logoUrl,
     logoShape,
     logoSizeRatio,
     label,
+    labelFontSize,
+    t,
   ])
 
   // 生成：填入当前网页 URL
@@ -771,6 +777,11 @@ export default function QrCodeTool() {
                     </span>
                   </div>
                 )}
+              </div>
+            ) : generateError ? (
+              <div className='tw-qr__placeholder'>
+                <Icon name='alert' size={32} className='tw-qr__ph-icon tw-qr__ph-icon--error' />
+                <p style={{ color: 'var(--tk-destructive, #ef4444)' }}>{generateError}</p>
               </div>
             ) : (
               <div className='tw-qr__placeholder'>

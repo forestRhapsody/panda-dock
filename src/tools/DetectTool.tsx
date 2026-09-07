@@ -29,8 +29,6 @@ export default function DetectTool() {
       {result && <DetectResultView result={result} />}
 
       {!result && input.trim() && <StatusText kind='info'>{t('tool.detect.none')}</StatusText>}
-
-      <p className='tw-note'>{t('tool.detect.note')}</p>
     </div>
   )
 }

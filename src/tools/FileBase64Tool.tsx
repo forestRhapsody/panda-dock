@@ -116,9 +116,19 @@ export default function FileBase64Tool() {
     let mime = 'application/octet-stream'
     if (raw.startsWith('data:')) {
       mime = raw.match(/^data:([^;]+);/)?.[1] ?? mime
+      const b64Part = (raw.split(',')[1] ?? '').replace(/\s+/g, '')
+      dUrl = `data:${mime};base64,${b64Part}`
     } else {
-      const clean = raw.replace(/\s+/g, '')
-      if (!/^[A-Za-z0-9+/]+={0,2}$/.test(clean) || clean.length % 4 !== 0) {
+      let clean = raw.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/')
+      if (clean.length % 4 === 1) {
+        setDecInfo(null)
+        setDecError(t('tool.fileB64.invalidBase64'))
+        return
+      }
+      if (clean.length % 4 !== 0) {
+        clean = clean + '='.repeat((4 - (clean.length % 4)) % 4)
+      }
+      if (!/^[A-Za-z0-9+/]+={0,2}$/.test(clean)) {
         setDecInfo(null)
         setDecError(t('tool.fileB64.invalidBase64'))
         return
@@ -127,7 +137,8 @@ export default function FileBase64Tool() {
       dUrl = `data:${mime};base64,${clean}`
     }
     try {
-      const bin = atob(dUrl.split(',')[1] ?? '')
+      const b64 = dUrl.split(',')[1] ?? ''
+      const bin = atob(b64)
       setDecInfo({ mime, dataUrl: dUrl, sizeBytes: bin.length })
       setDecError(null)
     } catch {
@@ -314,8 +325,6 @@ export default function FileBase64Tool() {
           {decError && <StatusText kind='err'>{decError}</StatusText>}
         </div>
       )}
-
-      <p className='tw-note'>{t('tool.fileB64.note')}</p>
     </div>
   )
 }

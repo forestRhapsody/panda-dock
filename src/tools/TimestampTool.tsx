@@ -22,7 +22,7 @@ export default function TimestampTool() {
     ? result.ok
       ? { kind: 'ok', text: t(SOURCE_KEY[result.source]) }
       : { kind: 'err', text: t('tool.timestamp.errorInvalid') }
-    : { kind: 'info', text: t('tool.timestamp.hint') }
+    : null
 
   function fillNow() {
     setInput(String(Date.now()))

@@ -140,8 +140,6 @@ export default function JwtTool() {
               </ul>
             </div>
           )}
-
-          <p className='tw-note'>{t('tool.jwt.noteLocal')}</p>
         </>
       )}
 

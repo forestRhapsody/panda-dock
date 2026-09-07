@@ -34,6 +34,7 @@ export default function QrLogoCropModal({
   const [zoom, setZoom] = useState(1)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [imgLoaded, setImgLoaded] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   const imgRef = useRef<HTMLImageElement | null>(null)
   const draggingRef = useRef(false)
@@ -64,9 +65,13 @@ export default function QrLogoCropModal({
 
   // 初始化图片与基础比例
   useEffect(() => {
+    let active = true
+    setLoadError(false)
+    setImgLoaded(false)
     const img = new Image()
     img.crossOrigin = 'anonymous'
     img.onload = () => {
+      if (!active) return
       imgRef.current = img
       // 基础比例：使图片短边等于 CROP_SIZE
       const bScale = Math.max(CROP_SIZE / img.naturalWidth, CROP_SIZE / img.naturalHeight)
@@ -80,7 +85,14 @@ export default function QrLogoCropModal({
       setZoom(1)
       setImgLoaded(true)
     }
+    img.onerror = () => {
+      if (!active) return
+      setLoadError(true)
+    }
     img.src = imageSrc
+    return () => {
+      active = false
+    }
   }, [imageSrc])
 
   // 键盘快捷键监听
@@ -214,37 +226,56 @@ export default function QrLogoCropModal({
           onPointerUp={handlePointerUp}
           onWheel={handleWheel}
         >
-          {imgLoaded && (
-            <img
-              src={imageSrc}
-              alt='Crop preview'
-              className='tw-crop-modal__img'
+          {loadError ? (
+            <div
               style={{
-                width: renderW,
-                height: renderH,
-                transform: `translate(${offset.x}px, ${offset.y}px)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                color: 'var(--tk-destructive, #ef4444)',
+                fontSize: 13,
+                padding: 16,
+                textAlign: 'center',
               }}
-              draggable={false}
-            />
-          )}
-
-          {/* 裁剪框与遮罩 */}
-          <div
-            className={`tw-crop-modal__overlay tw-crop-modal__overlay--${shape}`}
-            style={{
-              width: CROP_SIZE,
-              height: CROP_SIZE,
-              top: CROP_OFFSET,
-              left: CROP_OFFSET,
-            }}
-          >
-            <div className='tw-crop-modal__grid'>
-              <div className='tw-crop-modal__grid-line tw-crop-modal__grid-line--h1' />
-              <div className='tw-crop-modal__grid-line tw-crop-modal__grid-line--h2' />
-              <div className='tw-crop-modal__grid-line tw-crop-modal__grid-line--v1' />
-              <div className='tw-crop-modal__grid-line tw-crop-modal__grid-line--v2' />
+            >
+              <p>{t('tool.qrcode.cropLoadError')}</p>
             </div>
-          </div>
+          ) : (
+            <>
+              {imgLoaded && (
+                <img
+                  src={imageSrc}
+                  alt='Crop preview'
+                  className='tw-crop-modal__img'
+                  style={{
+                    width: renderW,
+                    height: renderH,
+                    transform: `translate(${offset.x}px, ${offset.y}px)`,
+                  }}
+                  draggable={false}
+                />
+              )}
+
+              {/* 裁剪框与遮罩 */}
+              <div
+                className={`tw-crop-modal__overlay tw-crop-modal__overlay--${shape}`}
+                style={{
+                  width: CROP_SIZE,
+                  height: CROP_SIZE,
+                  top: CROP_OFFSET,
+                  left: CROP_OFFSET,
+                }}
+              >
+                <div className='tw-crop-modal__grid'>
+                  <div className='tw-crop-modal__grid-line tw-crop-modal__grid-line--h1' />
+                  <div className='tw-crop-modal__grid-line tw-crop-modal__grid-line--h2' />
+                  <div className='tw-crop-modal__grid-line tw-crop-modal__grid-line--v1' />
+                  <div className='tw-crop-modal__grid-line tw-crop-modal__grid-line--v2' />
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* 控制条：形状选择与缩放控制 */}
@@ -293,7 +324,12 @@ export default function QrLogoCropModal({
           <button type='button' className='tk-btn' onClick={onCancel}>
             {t('common.cancel')}
           </button>
-          <button type='button' className='tk-btn tk-btn--primary' onClick={handleConfirm}>
+          <button
+            type='button'
+            className='tk-btn tk-btn--primary'
+            disabled={!imgLoaded || loadError}
+            onClick={handleConfirm}
+          >
             {t('tool.qrcode.cropConfirm')}
           </button>
         </div>

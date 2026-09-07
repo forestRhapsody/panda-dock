@@ -212,7 +212,18 @@ function detectUuid(s: string): DetectResult | null {
   }
 }
 
+function hasControlChars(str: string): boolean {
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i)
+    // 允许制表符(9)、换行(10)、回车(13)，其余 0~31 均为不可见控制字符
+    if (code < 32 && code !== 9 && code !== 10 && code !== 13) return true
+  }
+  return false
+}
+
 function detectBase64(s: string): DetectResult | null {
+  // 含有水平空格/制表符说明是普通分词文本，不是 Base64
+  if (/[ \t]/.test(s)) return null
   const clean = s.replace(/\s+/g, '')
   if (clean.length < 8 || clean.length % 4 !== 0 || !B64_RE.test(clean)) return null
   try {
@@ -220,6 +231,8 @@ function detectBase64(s: string): DetectResult | null {
     if (!canonical) return null
     const decoded = decodeBase64(clean)
     if (decoded.isText) {
+      // 若解码出的文本含有不可见控制字符（除了制表符/换行/回车），说明并非有意义的文本 Base64
+      if (hasControlChars(decoded.text)) return null
       return {
         kind: 'base64',
         fields: [],
@@ -227,22 +240,14 @@ function detectBase64(s: string): DetectResult | null {
         copy: decoded.text,
       }
     }
-    // 非 UTF-8 文本 = 二进制文件：按魔数识别类型并支持还原下载；图片直接预览
+    // 非 UTF-8 文本：必须能通过魔数识别出明确的文件类型（图片/文档/压缩包等），避免将随机字母串误识别为二进制文件
+    const mime = detectMimeFromBytes(clean)
+    if (!mime) return null
     const sizeBytes = atob(clean).length
-    const mime = detectMimeFromBytes(clean) ?? 'application/octet-stream'
     const dataUrl = base64ToDataUrl(clean, mime)
     const blocks: DetectBlock[] = []
     if (mime.startsWith('image/')) {
       blocks.push({ key: 'image', value: dataUrl, image: true })
-    } else {
-      // 非图片二进制：按原始字节转十六进制展示（供查看）
-      const binary = atob(clean)
-      const bytes = new Uint8Array(binary.length)
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-      const hex = Array.from(bytes)
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join(' ')
-      blocks.push({ key: 'decoded', value: hex })
     }
     return {
       kind: 'base64',
@@ -257,8 +262,9 @@ function detectBase64(s: string): DetectResult | null {
 }
 
 function detectHex(s: string): DetectResult | null {
-  if (s.length < 8 || s.length % 2 !== 0 || !HEX_RE.test(s)) return null
-  const groups = s.match(/.{2}/g)
+  const clean = s.replace(/^0x/i, '').replace(/\s+/g, '')
+  if (clean.length < 8 || clean.length % 2 !== 0 || !HEX_RE.test(clean)) return null
+  const groups = clean.match(/.{2}/g)
   if (!groups) return null
   const bytes = new Uint8Array(groups.map((g) => parseInt(g, 16)))
   let ascii = ''

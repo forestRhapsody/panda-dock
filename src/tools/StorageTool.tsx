@@ -407,8 +407,6 @@ export default function StorageTool() {
         </StatusText>
       )}
 
-      {data && data.entries.length > 0 && <p className='tw-note'>{t('tool.storage.editHint')}</p>}
-
       {creating && <EditorForm {...editorProps} />}
 
       {empty && <p className='tw-note'>{t('tool.storage.empty')}</p>}

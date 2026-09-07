@@ -119,8 +119,6 @@ export default function JsonTool() {
       <div hidden={tab !== 'minify'}>
         <JsonPanel mode='minify' />
       </div>
-
-      <p className='tw-note'>{t('tool.json.note')}</p>
     </div>
   )
 }

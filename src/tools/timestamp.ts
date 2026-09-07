@@ -61,7 +61,8 @@ export function parseStamp(input: string): StampResult {
 
   if (/^-?\d+$/.test(raw)) {
     const num = Number(raw)
-    if (raw.length <= 10) {
+    const digits = raw.replace(/^-/, '')
+    if (digits.length <= 10) {
       date = new Date(num * 1000)
       source = 'secs'
     } else {
@@ -75,6 +76,27 @@ export function parseStamp(input: string): StampResult {
 
   if (Number.isNaN(date.getTime())) return { ok: false }
 
+  let iso = ''
+  try {
+    iso = date.toISOString()
+  } catch {
+    iso = '-'
+  }
+
+  let localReadable = ''
+  try {
+    localReadable = date.toLocaleString()
+  } catch {
+    localReadable = '-'
+  }
+
+  let utc = ''
+  try {
+    utc = date.toUTCString()
+  } catch {
+    utc = '-'
+  }
+
   const secs = Math.floor(date.getTime() / 1000)
   return {
     ok: true,
@@ -82,10 +104,10 @@ export function parseStamp(input: string): StampResult {
     rows: [
       { label: i18n.t('tool.timestamp.unixSeconds'), value: String(secs) },
       { label: i18n.t('tool.timestamp.unixMilliseconds'), value: String(date.getTime()) },
-      { label: 'ISO 8601', value: date.toISOString() },
+      { label: 'ISO 8601', value: iso },
       { label: i18n.t('tool.timestamp.localTime'), value: toLocalText(date) },
-      { label: i18n.t('tool.timestamp.localTimeReadable'), value: date.toLocaleString() },
-      { label: i18n.t('tool.timestamp.utcTime'), value: date.toUTCString() },
+      { label: i18n.t('tool.timestamp.localTimeReadable'), value: localReadable },
+      { label: i18n.t('tool.timestamp.utcTime'), value: utc },
       { label: i18n.t('tool.timestamp.relativeNow'), value: toRelative(date) },
     ],
   }

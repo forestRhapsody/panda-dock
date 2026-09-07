@@ -126,7 +126,6 @@ export default function Base64Tool() {
       </div>
 
       {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
-      <p className='tw-note'>{t('tool.base64.note')}</p>
     </div>
   )
 }
