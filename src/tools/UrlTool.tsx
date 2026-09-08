@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import TkSelect from '@/ui/TkSelect'
+import { useToolDraft } from '@/utils/draft'
 import { getCurrentPageUrl } from '@/utils/pageUrl'
 
 import AutoArea from './AutoArea'
@@ -28,7 +29,7 @@ function UrlField({ label, value }: { label: string; value: string }) {
 /** 网址解析面板：抽取网址各组成部分与 Query 参数 */
 function UrlParserPanel() {
   const { t } = useTranslation()
-  const [input, setInput] = useState('')
+  const [input, setInput, clearInput] = useToolDraft<string>('url.parse.input', '')
   const [parsed, setParsed] = useState<ParsedUrl | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [fetching, setFetching] = useState(false)
@@ -76,7 +77,7 @@ function UrlParserPanel() {
   }
 
   function clear() {
-    setInput('')
+    clearInput()
     setError(null)
     setParsed(null)
   }
@@ -153,29 +154,46 @@ function UrlParserPanel() {
   )
 }
 
+interface CodecDraft {
+  scope: CodecScope
+  input: string
+  output: string
+}
+
 /** 网址编解码面板：URL Encode / Decode，直接提供编码网址与解码网址操作按钮 */
 function UrlCodecPanel() {
   const { t } = useTranslation()
-  const [scope, setScope] = useState<CodecScope>('component')
-  const [input, setInput] = useState('')
-  const [output, setOutput] = useState('')
+  const [draft, setDraft, clearDraft] = useToolDraft<CodecDraft>('url.codec', {
+    scope: 'component',
+    input: '',
+    output: '',
+  })
+  const { scope, input, output } = draft
   const [status, setStatus] = useState<ToolStatus | null>(null)
   const [fetching, setFetching] = useState(false)
   const [lastAction, setLastAction] = useState<'encode' | 'decode' | null>(null)
 
+  function setScope(nextScope: CodecScope) {
+    setDraft((prev) => ({ ...prev, scope: nextScope }))
+  }
+
+  function setInput(val: string) {
+    setDraft((prev) => ({ ...prev, input: val }))
+  }
+
   function runEncode(rawText: string = input, currentScope: CodecScope = scope) {
     if (!rawText.trim()) {
       setStatus({ kind: 'info', text: t('tool.url.codec.statusNeedInput') })
-      setOutput('')
+      setDraft((prev) => ({ ...prev, output: '' }))
       return
     }
     setLastAction('encode')
     const res = encodeUrl(rawText, currentScope)
     if (res.ok) {
-      setOutput(res.text)
+      setDraft((prev) => ({ ...prev, output: res.text }))
       setStatus(null)
     } else {
-      setOutput('')
+      setDraft((prev) => ({ ...prev, output: '' }))
       setStatus({
         kind: 'err',
         text: t('tool.url.codec.statusError', { error: res.error }),
@@ -186,16 +204,16 @@ function UrlCodecPanel() {
   function runDecode(rawText: string = input, currentScope: CodecScope = scope) {
     if (!rawText.trim()) {
       setStatus({ kind: 'info', text: t('tool.url.codec.statusNeedInput') })
-      setOutput('')
+      setDraft((prev) => ({ ...prev, output: '' }))
       return
     }
     setLastAction('decode')
     const res = decodeUrl(rawText, currentScope)
     if (res.ok) {
-      setOutput(res.text)
+      setDraft((prev) => ({ ...prev, output: res.text }))
       setStatus(null)
     } else {
-      setOutput('')
+      setDraft((prev) => ({ ...prev, output: '' }))
       setStatus({
         kind: 'err',
         text: res.isMalformed
@@ -218,8 +236,7 @@ function UrlCodecPanel() {
   }
 
   function clear() {
-    setInput('')
-    setOutput('')
+    clearDraft()
     setStatus(null)
     setLastAction(null)
   }
@@ -303,7 +320,7 @@ function UrlCodecPanel() {
 /** 网址工具卡片：顶部切换「网址解析」与「网址编解码」 */
 export default function UrlTool() {
   const { t } = useTranslation()
-  const [tab, setTab] = useState<MainTab>('parse')
+  const [tab, setTab] = useToolDraft<MainTab>('url.tab', 'parse')
 
   return (
     <div className='tw-card'>

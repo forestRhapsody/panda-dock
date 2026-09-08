@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { useTranslation } from 'react-i18next'
+
+import { useToolDraft } from '@/utils/draft'
 
 import AutoArea from './AutoArea'
 import { detect } from './detect'
@@ -50,13 +52,20 @@ Search Engine: https://www.google.com`,
 /** 智能解析：粘贴一段内容，自动判定类型并就地给出可操作的解码/解析结果（不跳转、纯本地） */
 export default function DetectTool() {
   const { t } = useTranslation()
-  const [input, setInput] = useState('')
+  const [input, setInput, clearInput] = useToolDraft<string>('detect.input', '')
   const result = useMemo(() => detect(input), [input])
 
   return (
     <div className='tw-card'>
       <label className='tw-field'>
-        <span className='tw-field__label'>{t('tool.detect.inputLabel')}</span>
+        <span className='tw-field__label'>
+          {t('tool.detect.inputLabel')}
+          {input && (
+            <button type='button' className='tw-link' onClick={clearInput}>
+              {t('common.clear')}
+            </button>
+          )}
+        </span>
         <AutoArea
           className='tw-area'
           value={input}

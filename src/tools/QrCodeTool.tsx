@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import Icon from '@/ui/Icon'
 import TkSelect from '@/ui/TkSelect'
 import { copyText } from '@/utils/clipboard'
+import { useToolDraft } from '@/utils/draft'
 import { getCurrentPageUrl } from '@/utils/pageUrl'
 
 import AutoArea from './AutoArea'
@@ -66,7 +67,7 @@ export default function QrCodeTool() {
   const [mode, setMode] = useState<QrMode>('generate')
 
   // —— 生成模式状态 ——
-  const [inputText, setInputText] = useState('')
+  const [inputText, setInputText, clearInputText] = useToolDraft<string>('qrcode.input', '')
   const [ecLevel, setEcLevel] = useState<QrErrorCorrectionLevel>('M')
   const [margin, setMargin] = useState(2)
   const [resolution, setResolution] = useState(1200)
@@ -456,7 +457,7 @@ export default function QrCodeTool() {
               {t('tool.qrcode.fillCurrentUrl')}
             </button>
             {inputText && (
-              <button type='button' className='tk-btn' onClick={() => setInputText('')}>
+              <button type='button' className='tk-btn' onClick={clearInputText}>
                 <Icon name='close' size={13} />
                 {t('tool.json.clear')}
               </button>

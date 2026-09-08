@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 
 import AppLogo from '@/ui/AppLogo'
 import Toaster from '@/ui/Toaster'
+import { useToolDraft } from '@/utils/draft'
 import { extVersion, isExtension, openOptionsPage, storageGet, storageSet } from '@/utils/env'
 import { normalizeSettings } from '@/utils/settings'
 import type { Settings } from '@/utils/settings'
@@ -131,7 +132,7 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
   const inExt = isExtension()
   const [order, setOrder] = useState<ToolId[]>(() => defaultToolLayout().order)
   const [enabled, setEnabled] = useState<Record<string, boolean>>(() => defaultToolLayout().enabled)
-  const [active, setActive] = useState<ToolId>('base64')
+  const [active, setActive] = useToolDraft<ToolId>('activeTab', 'base64')
   const navRef = useRef<HTMLElement>(null)
   const initializedRef = useRef(false)
   const tools = useMemo<ToolMeta[]>(() => visibleTools({ order, enabled }), [order, enabled])
@@ -149,10 +150,13 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
       const layout = normalizeToolLayout(settings?.toolOrder, settings?.toolEnabled)
       setOrder(layout.order)
       setEnabled(layout.enabled)
-      // 打开时激活「配置顺序」里的第一个可见工具（而非硬编码 base64）；仅首次生效
+      // 若当前激活工具不在可见配置中，激活第一个可见工具；仅首次生效
       if (!initializedRef.current) {
-        setActive(visibleTools(layout)[0]?.id ?? 'base64')
         initializedRef.current = true
+        const visible = visibleTools(layout)
+        setActive((cur) =>
+          visible.some((tool) => tool.id === cur) ? cur : (visible[0]?.id ?? 'base64'),
+        )
       }
     }
     void storageGet<{ toolOrder?: unknown; toolEnabled?: unknown }>('sync', 'settings').then(
@@ -169,13 +173,13 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
       alive = false
       chrome.storage.onChanged.removeListener(onChange)
     }
-  }, [inExt])
+  }, [inExt, setActive])
 
   // 当前激活项被隐藏时回退到第一个可见工具
   const activeVisible = tools.some((tool) => tool.id === active)
   useEffect(() => {
     if (!activeVisible) setActive(tools[0]?.id ?? 'base64')
-  }, [activeVisible, tools])
+  }, [activeVisible, tools, setActive])
 
   // 拖拽排序结束：更新顺序并持久化到 settings.toolOrder
   const handleDragEnd = useCallback(

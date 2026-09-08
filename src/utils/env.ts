@@ -54,28 +54,71 @@ export async function openOptionsPage(): Promise<void> {
   }
 }
 
-/** 读取扩展本地/同步存储，非扩展环境返回 null */
-export async function storageGet<T>(area: 'local' | 'sync', key: string): Promise<T | null> {
-  if (typeof chrome === 'undefined') return null
-  try {
-    const result = await chrome.storage[area].get(key)
-    return (result[key] as T | undefined) ?? null
-  } catch {
-    return null
+export type StorageAreaName = 'local' | 'sync' | 'session'
+
+/** 读取扩展本地/同步/会话存储，非扩展环境优雅降级为 sessionStorage 或 null */
+export async function storageGet<T>(area: StorageAreaName, key: string): Promise<T | null> {
+  if (typeof chrome !== 'undefined' && chrome.storage?.[area]) {
+    try {
+      const result = await chrome.storage[area].get(key)
+      return (result[key] as T | undefined) ?? null
+    } catch {
+      // 降级尝试 sessionStorage
+    }
   }
+  if (area === 'session' && typeof window !== 'undefined' && window.sessionStorage) {
+    try {
+      const item = window.sessionStorage.getItem(key)
+      return item ? (JSON.parse(item) as T) : null
+    } catch {
+      return null
+    }
+  }
+  return null
 }
 
-/** 写入扩展本地/同步存储，返回是否成功 */
+/** 写入扩展本地/同步/会话存储，返回是否成功 */
 export async function storageSet(
-  area: 'local' | 'sync',
+  area: StorageAreaName,
   key: string,
   value: unknown,
 ): Promise<boolean> {
-  if (typeof chrome === 'undefined') return false
-  try {
-    await chrome.storage[area].set({ [key]: value })
-    return true
-  } catch {
-    return false
+  if (typeof chrome !== 'undefined' && chrome.storage?.[area]) {
+    try {
+      await chrome.storage[area].set({ [key]: value })
+      return true
+    } catch {
+      // 降级尝试 sessionStorage
+    }
   }
+  if (area === 'session' && typeof window !== 'undefined' && window.sessionStorage) {
+    try {
+      window.sessionStorage.setItem(key, JSON.stringify(value))
+      return true
+    } catch {
+      return false
+    }
+  }
+  return false
+}
+
+/** 移除扩展存储中的某个 key */
+export async function storageRemove(area: StorageAreaName, key: string): Promise<boolean> {
+  if (typeof chrome !== 'undefined' && chrome.storage?.[area]) {
+    try {
+      await chrome.storage[area].remove(key)
+      return true
+    } catch {
+      // 降级尝试 sessionStorage
+    }
+  }
+  if (area === 'session' && typeof window !== 'undefined' && window.sessionStorage) {
+    try {
+      window.sessionStorage.removeItem(key)
+      return true
+    } catch {
+      return false
+    }
+  }
+  return false
 }

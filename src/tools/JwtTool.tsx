@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
+
+import { useToolDraft } from '@/utils/draft'
 
 import CopyButton from './CopyButton'
 import JsonHighlight from './JsonHighlight'
@@ -21,9 +23,23 @@ function headerAlg(decoded: JwtDecoded, unknownLabel: string): string {
 /** JWT 解码工具：解码 header / payload，展示标准声明；不校验签名 */
 export default function JwtTool() {
   const { t } = useTranslation()
-  const [token, setToken] = useState('')
+  const [token, setToken, clearToken] = useToolDraft<string>('jwt.token', '')
   const [decoded, setDecoded] = useState<JwtDecoded | null>(null)
   const [status, setStatus] = useState<ToolStatus | null>(null)
+
+  useEffect(() => {
+    const raw = token.trim()
+    if (!raw) {
+      setDecoded(null)
+      return
+    }
+    const result = decodeJwt(raw)
+    if (result.ok) {
+      setDecoded(result.data)
+    } else {
+      setDecoded(null)
+    }
+  }, [token])
 
   function run() {
     const raw = token.trim()
@@ -49,14 +65,13 @@ export default function JwtTool() {
   }
 
   function clear() {
-    setToken('')
+    clearToken()
     setDecoded(null)
     setStatus(null)
   }
 
   function fillSample() {
     setToken(SAMPLE_JWT)
-    setDecoded(null)
     setStatus({ kind: 'info', text: t('tool.jwt.statusSample') })
   }
 

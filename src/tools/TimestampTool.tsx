@@ -1,6 +1,6 @@
-import { useState } from 'react'
-
 import { useTranslation } from 'react-i18next'
+
+import { useToolDraft } from '@/utils/draft'
 
 import CopyButton from './CopyButton'
 import { StatusText } from './StatusText'
@@ -16,7 +16,7 @@ const SOURCE_KEY: Record<string, string> = {
 /** 时间戳转换工具：输入秒/毫秒/日期文本，实时输出多格式 */
 export default function TimestampTool() {
   const { t } = useTranslation()
-  const [input, setInput] = useState('')
+  const [input, setInput, clearInput] = useToolDraft<string>('timestamp.input', '')
   const result = parseStamp(input)
   const status: ToolStatus | null = input.trim()
     ? result.ok
@@ -46,7 +46,7 @@ export default function TimestampTool() {
         <button type='button' className='tk-btn tk-btn--primary' onClick={fillNow}>
           {t('tool.timestamp.now')}
         </button>
-        <button type='button' className='tk-btn' onClick={() => setInput('')}>
+        <button type='button' className='tk-btn' onClick={clearInput}>
           {t('tool.timestamp.clear')}
         </button>
       </div>

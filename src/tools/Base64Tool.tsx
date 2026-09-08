@@ -2,6 +2,8 @@ import { useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import { useToolDraft } from '@/utils/draft'
+
 import AutoArea from './AutoArea'
 import { decodeBase64, encodeBase64, isLikelyBase64 } from './base64'
 import CopyButton from './CopyButton'
@@ -11,48 +13,59 @@ import ToolTabs from './ToolTabs'
 
 type Mode = 'encode' | 'decode'
 
+interface Base64Draft {
+  mode: Mode
+  input: string
+  output: string
+}
+
 /** Base64 编解码工具卡片 */
 export default function Base64Tool() {
   const { t } = useTranslation()
-  const [mode, setMode] = useState<Mode>('decode')
-  const [input, setInput] = useState('')
-  const [output, setOutput] = useState('')
+  const [draft, setDraft, clearDraft] = useToolDraft<Base64Draft>('base64', {
+    mode: 'decode',
+    input: '',
+    output: '',
+  })
+  const { mode, input, output } = draft
   const [status, setStatus] = useState<ToolStatus | null>(null)
 
   function switchMode(next: Mode) {
-    setMode(next)
-    setInput('')
-    setOutput('')
+    setDraft({ mode: next, input: '', output: '' })
     setStatus(null)
+  }
+
+  function setInput(val: string) {
+    setDraft((prev) => ({ ...prev, input: val }))
   }
 
   function run() {
     const text = input.trim()
     if (!text) {
       setStatus({ kind: 'info', text: t('tool.base64.statusEmpty') })
-      setOutput('')
+      setDraft((prev) => ({ ...prev, output: '' }))
       return
     }
     try {
       if (mode === 'encode') {
         const result = encodeBase64(text)
-        setOutput(result)
+        setDraft((prev) => ({ ...prev, output: result }))
         setStatus({ kind: 'ok', text: t('tool.base64.statusEncoded', { count: result.length }) })
       } else {
         if (!isLikelyBase64(text)) {
           setStatus({ kind: 'err', text: t('tool.base64.statusNotBase64') })
-          setOutput('')
+          setDraft((prev) => ({ ...prev, output: '' }))
           return
         }
         const { text: decoded, isText } = decodeBase64(text)
-        setOutput(decoded)
+        setDraft((prev) => ({ ...prev, output: decoded }))
         setStatus({
           kind: 'ok',
           text: isText ? t('tool.base64.statusDecodedText') : t('tool.base64.statusDecodedBytes'),
         })
       }
     } catch (e) {
-      setOutput('')
+      setDraft((prev) => ({ ...prev, output: '' }))
       setStatus({
         kind: 'err',
         text: e instanceof Error ? e.message : t('tool.base64.statusFailed'),
@@ -61,8 +74,7 @@ export default function Base64Tool() {
   }
 
   function clear() {
-    setInput('')
-    setOutput('')
+    clearDraft()
     setStatus(null)
   }
 

@@ -2,6 +2,8 @@ import { useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import { useToolDraft } from '@/utils/draft'
+
 import CopyButton from './CopyButton'
 import { formatJson, minifyJson } from './json'
 import JsonHighlight from './JsonHighlight'
@@ -11,36 +13,43 @@ import ToolTabs from './ToolTabs'
 
 type Mode = 'format' | 'minify'
 
+interface JsonDraft {
+  input: string
+  output: string
+}
+
 /** 单个 JSON 处理面板：独立维护输入/结果/状态 */
 function JsonPanel({ mode }: { mode: Mode }) {
   const { t } = useTranslation()
-  const [input, setInput] = useState('')
-  const [output, setOutput] = useState('')
+  const [draft, setDraft, clearDraft] = useToolDraft<JsonDraft>(`json.${mode}`, {
+    input: '',
+    output: '',
+  })
+  const { input, output } = draft
   const [status, setStatus] = useState<ToolStatus | null>(null)
 
   function run() {
     const raw = input.trim()
     if (!raw) {
-      setOutput('')
+      setDraft((prev) => ({ ...prev, output: '' }))
       setStatus({ kind: 'info', text: t('tool.json.pasteFirst') })
       return
     }
     const result = mode === 'format' ? formatJson(raw) : minifyJson(raw)
     if (result.ok) {
-      setOutput(result.text ?? '')
+      setDraft((prev) => ({ ...prev, output: result.text ?? '' }))
       setStatus({
         kind: 'ok',
         text: mode === 'format' ? t('tool.json.formatOk') : t('tool.json.minifyOk'),
       })
     } else {
-      setOutput('')
+      setDraft((prev) => ({ ...prev, output: '' }))
       setStatus({ kind: 'err', text: result.error ?? t('tool.json.failed') })
     }
   }
 
   function clear() {
-    setInput('')
-    setOutput('')
+    clearDraft()
     setStatus(null)
   }
 
@@ -52,7 +61,7 @@ function JsonPanel({ mode }: { mode: Mode }) {
           className='tw-area tw-area--tall'
           value={input}
           placeholder={t('tool.json.inputPlaceholder')}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => setDraft((prev) => ({ ...prev, input: e.target.value }))}
           spellCheck={false}
         />
       </label>
@@ -89,7 +98,7 @@ function JsonPanel({ mode }: { mode: Mode }) {
 /** JSON 工具：格式化 / 压缩 tab 切换，各自独立输入与结果（切 tab 时各自保留） */
 export default function JsonTool() {
   const { t } = useTranslation()
-  const [tab, setTab] = useState<Mode>('format')
+  const [tab, setTab] = useToolDraft<Mode>('json.tab', 'format')
 
   return (
     <div className='tw-card'>

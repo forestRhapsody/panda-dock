@@ -43,6 +43,14 @@ async function resolveTargetUrl(explicitUrl?: string): Promise<string | null> {
 
 const DETECT_MENU_ID = 'toolkit-detect-selection'
 
+// 开放 chrome.storage.session 访问级别，允许 Content Script（网页内抽屉）读写会话草稿
+const sessionArea = chrome.storage?.session as unknown as
+  | { setAccessLevel?: (opts: { accessLevel: string }) => Promise<void> }
+  | undefined
+if (typeof sessionArea?.setAccessLevel === 'function') {
+  void sessionArea.setAccessLevel({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' }).catch(() => {})
+}
+
 /**
  * 右键菜单「智能解析选中文字」：安装/更新时注册。
  * 选中文字后点击 → 把选中文本与点击位置转给当前页 content script，在网页内弹出悬浮面板。
