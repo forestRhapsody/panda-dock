@@ -1,12 +1,13 @@
-import { useMemo } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
 import { useToolDraft } from '@/utils/draft'
 
-import AutoArea from './AutoArea'
 import { detect } from './detect'
+import type { DetectResult } from './detect'
 import DetectResultView from './DetectResultView'
+import HighlightArea from './HighlightArea'
 import { StatusText } from './StatusText'
 
 interface FormatPreset {
@@ -53,7 +54,49 @@ Search Engine: https://www.google.com`,
 export default function DetectTool() {
   const { t } = useTranslation()
   const [input, setInput, clearInput] = useToolDraft<string>('detect.input', '')
-  const result = useMemo(() => detect(input), [input])
+  const deferredInput = useDeferredValue(input)
+  const result = useMemo(() => detect(deferredInput), [deferredInput])
+
+  const [activeMatchIndex, setActiveMatchIndex] = useState(0)
+
+  // 当草稿文本变化时（例如从划选弹窗带入侧边栏），重置激活匹配项为第 1 项
+  const prevInputRef = useRef(input)
+  useEffect(() => {
+    if (prevInputRef.current !== input) {
+      prevInputRef.current = input
+      setActiveMatchIndex(0)
+    }
+  }, [input])
+
+  // 当 items 存在且数量 > 1 时，按当前索引切换解析结果与高亮焦点
+  const items = result?.items
+  const totalMatches = items?.length ?? 1
+  const safeActiveIndex = activeMatchIndex >= totalMatches ? 0 : activeMatchIndex
+
+  const currentResult = useMemo<DetectResult | null>(() => {
+    if (!result) return null
+    if (!items || items.length <= 1) return result
+    const item = items[safeActiveIndex]
+    return {
+      kind: item.kind,
+      fields: item.fields,
+      blocks: item.blocks,
+      copy: item.copy,
+      download: item.download,
+      sourceMatches: items.flatMap((it, idx) =>
+        (it.sourceMatches ?? (it.sourceMatch ? [it.sourceMatch] : [])).map((m) => ({
+          ...m,
+          active: idx === safeActiveIndex,
+        })),
+      ),
+      items,
+    }
+  }, [result, items, safeActiveIndex])
+
+  const handleClear = useCallback(() => {
+    clearInput()
+    setActiveMatchIndex(0)
+  }, [clearInput])
 
   return (
     <div className='tw-card'>
@@ -61,15 +104,18 @@ export default function DetectTool() {
         <span className='tw-field__label'>
           {t('tool.detect.inputLabel')}
           {input && (
-            <button type='button' className='tw-link' onClick={clearInput}>
+            <button type='button' className='tw-link' onClick={handleClear}>
               {t('common.clear')}
             </button>
           )}
         </span>
-        <AutoArea
-          className='tw-area'
+        <HighlightArea
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          matches={currentResult?.sourceMatches}
+          onChange={(e) => {
+            setInput(e.target.value)
+            setActiveMatchIndex(0)
+          }}
           placeholder={t('tool.detect.inputPlaceholder')}
           spellCheck={false}
         />
@@ -84,7 +130,10 @@ export default function DetectTool() {
               type='button'
               className='tw-detect__format-chip'
               title={t('tool.detect.clickToFillSample')}
-              onClick={() => setInput(p.sample)}
+              onClick={() => {
+                setInput(p.sample)
+                setActiveMatchIndex(0)
+              }}
             >
               {t(`tool.detect.format.${p.key}`)}
             </button>
@@ -92,7 +141,14 @@ export default function DetectTool() {
         </div>
       </div>
 
-      {result && <DetectResultView result={result} />}
+      {currentResult && (
+        <DetectResultView
+          result={currentResult}
+          items={items}
+          activeMatchIndex={safeActiveIndex}
+          onSelectMatch={setActiveMatchIndex}
+        />
+      )}
 
       {!result && input.trim() && <StatusText kind='info'>{t('tool.detect.none')}</StatusText>}
     </div>

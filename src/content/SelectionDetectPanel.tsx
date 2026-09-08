@@ -1,13 +1,21 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
-import AutoArea from '@/tools/AutoArea'
 import CopyButton from '@/tools/CopyButton'
 import { detect } from '@/tools/detect'
 import type { DetectResult } from '@/tools/detect'
 import DetectResultView from '@/tools/DetectResultView'
+import HighlightArea from '@/tools/HighlightArea'
 import { StatusText } from '@/tools/StatusText'
 import Icon from '@/ui/Icon'
 
@@ -30,6 +38,8 @@ export interface SelectionDetectPanelProps {
   /** 定位策略：未选中文字时固定在右上角；选中文字时居中跟随选区 */
   position?: 'selection' | 'top-right'
   onClose: () => void
+  /** 一键将当前文本带入原生侧边栏并打开智能解析 */
+  onOpenInSidePanel?: (text: string) => void
 }
 
 const PAD = 10
@@ -48,6 +58,7 @@ export default function SelectionDetectPanel({
   targetRect,
   position = 'selection',
   onClose,
+  onOpenInSidePanel,
 }: SelectionDetectPanelProps) {
   const { t } = useTranslation()
   const ref = useRef<HTMLDivElement>(null)
@@ -69,10 +80,39 @@ export default function SelectionDetectPanel({
   // 并误清空已定位标记，导致钉住后第二次解析仍被错误触发重定位。
   useEffect(() => {
     setInput(text)
+    setActiveMatchIndex(0)
   }, [text, x, y, targetRect])
 
-  // 动态响应式识别：用户编辑或修正输入时即时重新解析
-  const result = useMemo<DetectResult | null>(() => detect(input), [input])
+  // 动态响应式识别：结合并发 deferredValue，在连续打字时优先保证输入 0 延迟
+  const deferredInput = useDeferredValue(input)
+  const result = useMemo<DetectResult | null>(() => detect(deferredInput), [deferredInput])
+
+  const [activeMatchIndex, setActiveMatchIndex] = useState(0)
+
+  // 当 items 存在且数量 > 1 时，按当前索引切换解析结果与高亮焦点
+  const items = result?.items
+  const totalMatches = items?.length ?? 1
+  const safeActiveIndex = activeMatchIndex >= totalMatches ? 0 : activeMatchIndex
+
+  const currentResult = useMemo<DetectResult | null>(() => {
+    if (!result) return null
+    if (!items || items.length <= 1) return result
+    const item = items[safeActiveIndex]
+    return {
+      kind: item.kind,
+      fields: item.fields,
+      blocks: item.blocks,
+      copy: item.copy,
+      download: item.download,
+      sourceMatches: items.flatMap((it, idx) =>
+        (it.sourceMatches ?? (it.sourceMatch ? [it.sourceMatch] : [])).map((m) => ({
+          ...m,
+          active: idx === safeActiveIndex,
+        })),
+      ),
+      items,
+    }
+  }, [result, items, safeActiveIndex])
 
   const clampPos = useCallback((left: number, top: number) => {
     const el = ref.current
@@ -210,6 +250,10 @@ export default function SelectionDetectPanel({
     }
   }, [text])
 
+  const handleOpenInSidePanel = useCallback(() => {
+    onOpenInSidePanel?.(input)
+  }, [input, onOpenInSidePanel])
+
   return (
     <div
       ref={ref}
@@ -229,6 +273,17 @@ export default function SelectionDetectPanel({
           <Icon name='grip' size={14} />
         </span>
         <strong className='tek-detect-panel__title'>{t('tool.detect.title')}</strong>
+        {onOpenInSidePanel && (
+          <button
+            type='button'
+            className='tk-icon-btn'
+            title={t('tool.detect.openInSidePanel')}
+            aria-label={t('tool.detect.openInSidePanel')}
+            onClick={handleOpenInSidePanel}
+          >
+            <Icon name='panel-right' size={14} />
+          </button>
+        )}
         <button
           type='button'
           className={`tk-icon-btn tek-detect-panel__pin${pinned ? ' tek-detect-panel__pin--on' : ''}`}
@@ -260,6 +315,7 @@ export default function SelectionDetectPanel({
                 disabled={!input}
                 onClick={() => {
                   setInput('')
+                  setActiveMatchIndex(0)
                   inputRef.current?.focus()
                 }}
               >
@@ -267,20 +323,29 @@ export default function SelectionDetectPanel({
               </button>
             </div>
           </div>
-          <AutoArea
+          <HighlightArea
             areaRef={inputRef}
-            className='tw-area'
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            matches={currentResult?.sourceMatches}
+            onChange={(e) => {
+              setInput(e.target.value)
+              setActiveMatchIndex(0)
+            }}
             placeholder={t('tool.detect.inputPlaceholder')}
-            maxHeight={result ? 110 : 160}
+            maxHeight={currentResult ? 220 : 320}
             spellCheck={false}
-            autoFocus={!result}
+            autoFocus={!currentResult}
           />
         </div>
 
-        {result ? (
-          <DetectResultView result={result} blockMaxHeight={260} />
+        {currentResult ? (
+          <DetectResultView
+            result={currentResult}
+            blockMaxHeight={260}
+            items={items}
+            activeMatchIndex={safeActiveIndex}
+            onSelectMatch={setActiveMatchIndex}
+          />
         ) : input.trim() ? (
           <StatusText kind='info'>{t('tool.detect.none')}</StatusText>
         ) : null}

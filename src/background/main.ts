@@ -445,9 +445,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return undefined
   }
 
-  // 若当前窗口原生侧边栏已开，点击悬浮球也执行收回（Toggle）
+  const forceOpen = Boolean((message as { forceOpen?: boolean })?.forceOpen)
+
+  // 若当前窗口原生侧边栏已开：未指定 forceOpen 时执行收回（Toggle），指定 forceOpen 时保持打开
   if (isSidePanelOpen(windowId)) {
-    closeSidePanel(windowId)
+    if (!forceOpen) {
+      closeSidePanel(windowId)
+    }
     sendResponse(true)
     return undefined
   }

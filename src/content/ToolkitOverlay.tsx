@@ -88,9 +88,12 @@ function resolvePos(saved: SavedPos | null, snap: boolean, d: number): BallPos {
 }
 
 /** 请 background 尽力唤起浏览器原生侧边栏（受用户手势限制，可能失败） */
-async function requestNativeSidePanel(): Promise<boolean> {
+async function requestNativeSidePanel(forceOpen = false): Promise<boolean> {
   try {
-    const result = await chrome.runtime.sendMessage({ action: MSG_OPEN_NATIVE_SIDE_PANEL })
+    const result = await chrome.runtime.sendMessage({
+      action: MSG_OPEN_NATIVE_SIDE_PANEL,
+      forceOpen,
+    })
     return result === true
   } catch {
     return false
@@ -462,6 +465,43 @@ export default function ToolkitOverlay() {
     setDrawerOpen(true)
   }, [ballAction, drawerOpen, inExt, showNotice, t])
 
+  // 划选弹窗点击「带入侧边栏并解析」
+  const handleOpenInSidePanel = useCallback(
+    async (text: string) => {
+      // 1. 设置会话草稿与激活 tab 为 detect（无论侧边栏还是抽屉都会通过 onChanged 或首屏恢复）
+      await storageSet('session', 'toolkit.draft.detect.input', text)
+      await storageSet('session', 'toolkit.draft.activeToolTab', 'detect')
+
+      // 2. 保证 detect 工具处于启用状态（若用户曾禁用则自动恢复）
+      void storageGet<{ toolEnabled?: Record<string, boolean> }>('sync', 'settings').then((cur) => {
+        if (cur?.toolEnabled && cur.toolEnabled.detect === false) {
+          void storageSet('sync', 'settings', {
+            ...cur,
+            toolEnabled: { ...cur.toolEnabled, detect: true },
+          })
+        }
+      })
+
+      // 3. 尝试唤起原生侧边栏（forceOpen: true 避免意外收起已开的侧边栏）
+      if (inExt) {
+        const ok = await requestNativeSidePanel(true)
+        if (ok) {
+          setDrawerOpen(false)
+        } else {
+          // 若浏览器不支持原生侧边栏或唤起受限，友好回退打开网页内抽屉
+          showNotice(t('toast.nativeSidePanelFallback'))
+          setDrawerOpen(true)
+        }
+      } else {
+        setDrawerOpen(true)
+      }
+
+      // 4. 关闭网页内悬浮选区面板
+      setSelectionDetect(null)
+    },
+    [inExt, showNotice, t],
+  )
+
   // 判定当前网页是否按黑白名单规则显示悬浮球
   const showBall = inExt
     ? shouldShowFloatingBall(
@@ -501,6 +541,7 @@ export default function ToolkitOverlay() {
           targetRect={selectionDetect.targetRect}
           position={selectionDetect.position}
           onClose={() => setSelectionDetect(null)}
+          onOpenInSidePanel={handleOpenInSidePanel}
         />
       )}
       {notice && inExt && (

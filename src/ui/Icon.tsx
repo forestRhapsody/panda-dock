@@ -21,6 +21,8 @@ export type IconName =
   | 'external-link' // 外部链接
   | 'image' // 图片
   | 'chevron-down' // 下拉箭头
+  | 'chevron-right' // 右箭头
+  | 'chevron-left' // 左箭头
   | 'pin' // 图钉（钉住）
   | 'alert' // 警告 / 错误提示
   | 'refresh' // 刷新 / 重新载入
@@ -131,6 +133,8 @@ const GLYPHS: Record<IconName, ReactNode> = {
     </>
   ),
   'chevron-down': <path d='m6 9 6 6 6-6' />,
+  'chevron-right': <path d='m9 18 6-6-6-6' />,
+  'chevron-left': <path d='m15 18-6-6 6-6' />,
   pin: (
     <>
       <path d='M12 17v5' />
