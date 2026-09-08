@@ -132,10 +132,20 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
   const inExt = isExtension()
   const [order, setOrder] = useState<ToolId[]>(() => defaultToolLayout().order)
   const [enabled, setEnabled] = useState<Record<string, boolean>>(() => defaultToolLayout().enabled)
-  const [active, setActive] = useToolDraft<ToolId>('activeTab', 'base64')
+  // 会话级草稿：仅记录用户「主动点击切换」的 Tab；未主动选择时为 null，动态呈现首个可见工具
+  const [savedActive, setSavedActive] = useToolDraft<ToolId | null>('activeToolTab', null)
   const navRef = useRef<HTMLElement>(null)
-  const initializedRef = useRef(false)
   const tools = useMemo<ToolMeta[]>(() => visibleTools({ order, enabled }), [order, enabled])
+
+  // 计算当前实际激活的工具：
+  // 1. 若用户在当前会话中主动切换过且该工具仍处于可见状态，优先恢复用户选择；
+  // 2. 否则默认激活当前排在第一位的可见工具（自动与用户排序联动，不再硬编码 Base64）
+  const active: ToolId = useMemo(() => {
+    if (savedActive && tools.some((t) => t.id === savedActive)) {
+      return savedActive
+    }
+    return tools[0]?.id ?? 'detect'
+  }, [savedActive, tools])
 
   const sensors = useSensors(
     // 指针移动超过 6px 才视为拖拽，避免误触（保证点击选项卡仍能正常激活）
@@ -150,14 +160,6 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
       const layout = normalizeToolLayout(settings?.toolOrder, settings?.toolEnabled)
       setOrder(layout.order)
       setEnabled(layout.enabled)
-      // 若当前激活工具不在可见配置中，激活第一个可见工具；仅首次生效
-      if (!initializedRef.current) {
-        initializedRef.current = true
-        const visible = visibleTools(layout)
-        setActive((cur) =>
-          visible.some((tool) => tool.id === cur) ? cur : (visible[0]?.id ?? 'base64'),
-        )
-      }
     }
     void storageGet<{ toolOrder?: unknown; toolEnabled?: unknown }>('sync', 'settings').then(
       (s) => {
@@ -173,21 +175,23 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
       alive = false
       chrome.storage.onChanged.removeListener(onChange)
     }
-  }, [inExt, setActive])
+  }, [inExt])
 
-  // 当前激活项被隐藏时回退到第一个可见工具
-  const activeVisible = tools.some((tool) => tool.id === active)
-  useEffect(() => {
-    if (!activeVisible) setActive(tools[0]?.id ?? 'base64')
-  }, [activeVisible, tools, setActive])
+  // 用户主动点击切换选项卡
+  const handleSelectTab = useCallback(
+    (id: ToolId) => {
+      setSavedActive(id)
+    },
+    [setSavedActive],
+  )
 
   // 拖拽排序结束：更新顺序并持久化到 settings.toolOrder
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
-      const { active, over } = event
-      if (!over || active.id === over.id) return
+      const { active: dragActive, over } = event
+      if (!over || dragActive.id === over.id) return
       const curVisibleIds = visibleTools({ order, enabled }).map((tool) => tool.id)
-      const from = curVisibleIds.indexOf(active.id as ToolId)
+      const from = curVisibleIds.indexOf(dragActive.id as ToolId)
       const to = curVisibleIds.indexOf(over.id as ToolId)
       if (from < 0 || to < 0) return
       const nextVisibleIds = arrayMove(curVisibleIds, from, to)
@@ -218,17 +222,17 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
 
   // 激活项变化时自动滚动到可视位置
   useEffect(() => {
-    if (activeVisible) revealActiveTab(active)
-  }, [active, activeVisible, revealActiveTab])
+    revealActiveTab(active)
+  }, [active, revealActiveTab])
 
   // 容器尺寸变化后仍保证激活项可见
   useEffect(() => {
     const onResize = () => {
-      if (activeVisible) revealActiveTab(active)
+      revealActiveTab(active)
     }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [active, activeVisible, revealActiveTab])
+  }, [active, revealActiveTab])
 
   return (
     <div className='tw'>
@@ -262,7 +266,7 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
                 id={tool.id}
                 label={t(`tool.registry.${tool.id}`)}
                 selected={active === tool.id}
-                onSelect={setActive}
+                onSelect={handleSelectTab}
               />
             ))}
           </SortableContext>
@@ -270,7 +274,7 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
       </nav>
 
       <main className='tw__body' role='tabpanel'>
-        {TOOL_COMPONENTS[active]()}
+        {TOOL_COMPONENTS[active]?.() ?? null}
       </main>
 
       <Toaster position='bottom' />
