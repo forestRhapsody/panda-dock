@@ -833,56 +833,53 @@ export default function QrCodeTool() {
             )}
           </div>
 
-          <div className='tw-qr__decode-actions'>
-            <button
-              type='button'
-              className='tk-btn tk-btn--sm'
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Icon name='upload' size={13} />
+          <div className='tw-actions'>
+            <button type='button' className='tk-btn' onClick={() => fileInputRef.current?.click()}>
+              <Icon name='upload' size={14} />
               {t('tool.qrcode.chooseFile')}
             </button>
-            <button
-              type='button'
-              className='tk-btn tk-btn--sm'
-              onClick={() => void readClipboardImage()}
-            >
-              <Icon name='copy' size={13} />
+            <button type='button' className='tk-btn' onClick={() => void readClipboardImage()}>
+              <Icon name='copy' size={14} />
               {t('tool.qrcode.pasteClipboard')}
             </button>
             {(decodedResult || decodeError || imagePreviewUrl) && (
-              <button type='button' className='tk-btn tk-btn--sm' onClick={clearDecode}>
-                <Icon name='close' size={12} />
+              <button type='button' className='tk-btn' onClick={clearDecode}>
+                <Icon name='close' size={13} />
                 {t('common.cancel')}
               </button>
             )}
           </div>
 
-          {decodeLoading && <div className='tw-qr__loading-msg'>{t('tool.qrcode.decoding')}</div>}
+          {decodeLoading && <StatusText kind='info'>{t('tool.qrcode.decoding')}</StatusText>}
 
           {decodeError && <StatusText kind='err'>{decodeError}</StatusText>}
 
           {decodedResult && (
-            <div className='tw-qr__result-box'>
-              <div className='tw-qr__result-head'>
-                <span className='tw-qr__result-title'>{t('tool.qrcode.decodedResult')}:</span>
-                <div className='tw-qr__result-actions'>
+            <div className='tw-field'>
+              <span className='tw-field__label'>
+                <span>{t('tool.qrcode.decodedResult')}</span>
+                <span className='tw-field__actions'>
                   {isDecodedUrl && (
                     <a
                       href={decodedResult}
                       target='_blank'
                       rel='noreferrer'
-                      className='tk-btn tk-btn--sm'
+                      className='tw-link'
                       title={t('tool.qrcode.openUrl')}
                     >
                       <Icon name='external-link' size={13} />
                       {t('tool.qrcode.openUrl')}
                     </a>
                   )}
-                  <CopyButton text={decodedResult} className='tk-btn tk-btn--sm' />
-                </div>
-              </div>
-              <div className='tw-qr__result-content'>{decodedResult}</div>
+                  <CopyButton text={decodedResult} className='tw-link' />
+                </span>
+              </span>
+              <AutoArea
+                className='tw-area tw-area--result'
+                value={decodedResult}
+                readOnly
+                maxHeight={240}
+              />
             </div>
           )}
         </div>

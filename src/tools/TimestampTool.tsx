@@ -43,7 +43,7 @@ export default function TimestampTool() {
       </label>
 
       <div className='tw-actions'>
-        <button type='button' className='tk-btn' onClick={fillNow}>
+        <button type='button' className='tk-btn tk-btn--primary' onClick={fillNow}>
           {t('tool.timestamp.now')}
         </button>
         <button type='button' className='tk-btn' onClick={() => setInput('')}>
@@ -52,15 +52,17 @@ export default function TimestampTool() {
       </div>
 
       {result.ok && (
-        <ul className='tw-stamp'>
+        <div className='tw-detect__fields'>
           {result.rows.map((row) => (
-            <li key={row.label} className='tw-stamp__row'>
-              <span className='tw-stamp__label'>{row.label}</span>
-              <code className='tw-stamp__value'>{row.value}</code>
-              <CopyButton text={row.value} className='tw-link' />
-            </li>
+            <div key={row.label} className='tw-detect__field'>
+              <span className='tw-detect__field-label'>{row.label}</span>
+              <code className='tw-detect__field-value tw-detect__field-value--mono'>
+                {row.value}
+              </code>
+              <CopyButton text={row.value} icon className='tw-detect__copy' />
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       {status && <StatusText kind={status.kind}>{status.text}</StatusText>}

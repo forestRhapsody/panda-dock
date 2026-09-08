@@ -2,7 +2,6 @@ import { useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
-import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import { formatJson, minifyJson } from './json'
 import JsonHighlight from './JsonHighlight'
@@ -79,16 +78,7 @@ function JsonPanel({ mode }: { mode: Mode }) {
             }}
           />
         </span>
-        {mode === 'format' ? (
-          <JsonHighlight text={output} />
-        ) : (
-          <AutoArea
-            className='tw-area tw-area--result'
-            value={output}
-            readOnly
-            placeholder={t('tool.json.resultPlaceholder')}
-          />
-        )}
+        <JsonHighlight text={output} placeholder={t('tool.json.resultPlaceholder')} />
       </div>
 
       {status && <StatusText kind={status.kind}>{status.text}</StatusText>}

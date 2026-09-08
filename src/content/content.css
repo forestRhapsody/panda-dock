@@ -160,6 +160,7 @@
   box-shadow: var(--tk-shadow-lg);
   font-family: var(--tk-font);
   color: var(--tk-foreground);
+  line-height: 1.5;
   /* 定位好后再显示，避免首帧越界闪烁 */
   opacity: 0;
   transition: opacity 0.15s ease;
@@ -171,6 +172,7 @@
   gap: 6px;
   margin-bottom: 10px;
   font-size: var(--tk-text-md);
+  line-height: 1.4;
   font-weight: 600;
   cursor: move;
   user-select: none;

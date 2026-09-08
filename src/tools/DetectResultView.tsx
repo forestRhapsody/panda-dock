@@ -82,7 +82,7 @@ export default function DetectResultView({
         <div key={block.key} className='tw-detect__block'>
           <span className='tw-field__label'>
             {t(`tool.detect.row.${block.key}`)}
-            <CopyButton text={block.value} icon className='tw-link' />
+            <CopyButton text={block.value} className='tw-link' />
           </span>
           {block.image ? (
             <img src={block.value} alt={t('tool.detect.previewAlt')} className='tw-detect__image' />

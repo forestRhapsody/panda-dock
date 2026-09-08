@@ -1,6 +1,8 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import type { ReactNode } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 /** JSON 语法着色：把合法 JSON 文本切分成带颜色类名的 span */
 export function highlightJson(text: string): ReactNode[] {
   const nodes: ReactNode[] = []
@@ -79,12 +81,22 @@ interface JsonHighlightProps {
   text: string
   /** 最大高度(px)，超出后内部滚动。默认 360 */
   maxHeight?: number
+  /** 占位提示文案，缺省走 i18n */
+  placeholder?: string
+  className?: string
 }
 
 /** 带语法着色的只读 JSON 展示（自适应高度 + 封顶滚动） */
-export default function JsonHighlight({ text, maxHeight = 360 }: JsonHighlightProps) {
+export default function JsonHighlight({
+  text,
+  maxHeight = 360,
+  placeholder,
+  className,
+}: JsonHighlightProps) {
+  const { t } = useTranslation()
   const ref = useRef<HTMLPreElement>(null)
   const nodes = useMemo(() => highlightJson(text), [text])
+  const emptyText = placeholder ?? t('tool.json.resultPlaceholder')
 
   // 用 useLayoutEffect：paint 前撑开高度，父级（悬浮面板）测量面板高度时能拿到正确块高
   useLayoutEffect(() => {
@@ -97,8 +109,8 @@ export default function JsonHighlight({ text, maxHeight = 360 }: JsonHighlightPr
   }, [text, maxHeight])
 
   return (
-    <pre ref={ref} className='tw-json-hl'>
-      <code>{text ? nodes : <span className='tw-json-hl__empty'>结果会显示在这里…</span>}</code>
+    <pre ref={ref} className={`tw-json-hl${className ? ` ${className}` : ''}`}>
+      <code>{text ? nodes : <span className='tw-json-hl__empty'>{emptyText}</span>}</code>
     </pre>
   )
 }

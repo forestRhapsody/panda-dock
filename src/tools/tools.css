@@ -150,16 +150,28 @@
   justify-content: space-between;
   margin-bottom: 6px;
   font-size: var(--tk-text-sm);
+  line-height: 1.5;
   font-weight: 600;
   color: var(--tk-secondary-foreground);
 }
 
+.tw-field__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .tw-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 0;
   border: none;
   background: none;
   color: var(--tk-primary);
   font-size: var(--tk-text-sm);
+  line-height: 1.5;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -205,6 +217,11 @@
   /* 只读输出自动增高，禁止手动拉伸（否则会超出外层容器导致多余滚动条）；长串强制换行 */
   resize: none;
   word-break: break-all;
+}
+
+.tw-area--result:focus {
+  border-color: var(--tk-input);
+  box-shadow: none;
 }
 
 .tw-actions {
@@ -254,19 +271,23 @@
 /* —— JSON 语法高亮（只读展示） —— */
 .tw-json-hl {
   box-sizing: border-box;
+  width: 100%;
   margin: 0;
   min-height: 88px;
   padding: 10px 12px;
   border: 1px solid var(--tk-input);
   border-radius: var(--tk-radius);
-  background: var(--tk-card);
+  background: var(--tk-muted);
   font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-sm);
+  font-size: var(--tk-text-base);
   line-height: 1.6;
   color: var(--tk-foreground);
   white-space: pre-wrap;
-  word-break: break-word;
+  word-break: break-all;
   overflow: hidden;
+  user-select: text;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tk-border-strong) transparent;
 }
 
 .tw-json-hl code {
@@ -275,22 +296,73 @@
 
 .tw-json-hl__empty {
   color: var(--tk-muted-foreground);
+  user-select: none;
 }
 
-.tw-json-hl .jhl-key {
+/* 高亮 token 颜色（通用：JsonHighlight 与 JsonTextarea 共享） */
+.tw-json-hl .jhl-key,
+.json-editor__hl .jhl-key {
   color: hsl(220 70% 45%);
 }
-.tw-json-hl .jhl-str {
+.tw-json-hl .jhl-str,
+.json-editor__hl .jhl-str {
   color: hsl(150 52% 36%);
 }
-.tw-json-hl .jhl-num {
+.tw-json-hl .jhl-num,
+.json-editor__hl .jhl-num {
   color: hsl(32 88% 42%);
 }
-.tw-json-hl .jhl-kw {
+.tw-json-hl .jhl-kw,
+.json-editor__hl .jhl-kw {
   color: hsl(268 52% 50%);
 }
-.tw-json-hl .jhl-punc {
+.tw-json-hl .jhl-punc,
+.json-editor__hl .jhl-punc {
   color: var(--tk-muted-foreground);
+}
+
+:root[data-theme='dark'] .tw-json-hl .jhl-key,
+:host[data-theme='dark'] .tw-json-hl .jhl-key,
+:host([data-theme='dark']) .tw-json-hl .jhl-key,
+[data-theme='dark'] .tw-json-hl .jhl-key,
+:root[data-theme='dark'] .json-editor__hl .jhl-key,
+:host[data-theme='dark'] .json-editor__hl .jhl-key,
+:host([data-theme='dark']) .json-editor__hl .jhl-key,
+[data-theme='dark'] .json-editor__hl .jhl-key {
+  color: hsl(210 100% 72%);
+}
+
+:root[data-theme='dark'] .tw-json-hl .jhl-str,
+:host[data-theme='dark'] .tw-json-hl .jhl-str,
+:host([data-theme='dark']) .tw-json-hl .jhl-str,
+[data-theme='dark'] .tw-json-hl .jhl-str,
+:root[data-theme='dark'] .json-editor__hl .jhl-str,
+:host[data-theme='dark'] .json-editor__hl .jhl-str,
+:host([data-theme='dark']) .json-editor__hl .jhl-str,
+[data-theme='dark'] .json-editor__hl .jhl-str {
+  color: hsl(142 70% 65%);
+}
+
+:root[data-theme='dark'] .tw-json-hl .jhl-num,
+:host[data-theme='dark'] .tw-json-hl .jhl-num,
+:host([data-theme='dark']) .tw-json-hl .jhl-num,
+[data-theme='dark'] .tw-json-hl .jhl-num,
+:root[data-theme='dark'] .json-editor__hl .jhl-num,
+:host[data-theme='dark'] .json-editor__hl .jhl-num,
+:host([data-theme='dark']) .json-editor__hl .jhl-num,
+[data-theme='dark'] .json-editor__hl .jhl-num {
+  color: hsl(35 100% 70%);
+}
+
+:root[data-theme='dark'] .tw-json-hl .jhl-kw,
+:host[data-theme='dark'] .tw-json-hl .jhl-kw,
+:host([data-theme='dark']) .tw-json-hl .jhl-kw,
+[data-theme='dark'] .tw-json-hl .jhl-kw,
+:root[data-theme='dark'] .json-editor__hl .jhl-kw,
+:host[data-theme='dark'] .json-editor__hl .jhl-kw,
+:host([data-theme='dark']) .json-editor__hl .jhl-kw,
+[data-theme='dark'] .json-editor__hl .jhl-kw {
+  color: hsl(270 90% 78%);
 }
 
 /* —— 可编辑的 JSON 高亮输入框（高亮层 + 透明 textarea） —— */
@@ -348,23 +420,6 @@
 .json-editor__input:focus {
   border-color: var(--tk-ring);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
-}
-
-/* 高亮 token 颜色 */
-.json-editor__hl .jhl-key {
-  color: hsl(220 70% 45%);
-}
-.json-editor__hl .jhl-str {
-  color: hsl(150 52% 36%);
-}
-.json-editor__hl .jhl-num {
-  color: hsl(32 88% 42%);
-}
-.json-editor__hl .jhl-kw {
-  color: hsl(268 52% 50%);
-}
-.json-editor__hl .jhl-punc {
-  color: var(--tk-muted-foreground);
 }
 
 /* —— 工具箱选项卡导航 —— */
@@ -427,163 +482,11 @@
   cursor: grabbing;
 }
 
-/* —— JWT 标准声明列表 —— */
-
-.tw-kv {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* —— 网址解析结果行（it-tools 风格：label | 只读输入框 + 复制） —— */
-
-.url-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.url-list__title {
-  font-size: var(--tk-text-sm);
-  font-weight: 600;
-  color: var(--tk-muted-foreground);
-}
-
-.url-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.url-row__label {
-  flex: 0 0 84px;
-  font-size: var(--tk-text-sm);
-  color: var(--tk-muted-foreground);
-  word-break: break-all;
-}
-
-.url-row__value {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.url-row__input {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: var(--tk-control-h);
-  padding: 0 10px;
-  border: 1px solid var(--tk-border-strong);
-  border-radius: var(--tk-radius);
-  background: var(--tk-muted);
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-sm);
-  color: var(--tk-foreground);
-}
-
-.url-row__input:focus {
-  outline: 2px solid var(--tk-ring);
-  outline-offset: 1px;
-}
-
-.url-row__copy {
-  flex: none;
-  display: inline-grid;
-  place-items: center;
-  width: var(--tk-control-h);
-  height: var(--tk-control-h);
-  padding: 0;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-card);
-  color: var(--tk-muted-foreground);
-  cursor: pointer;
-  transition:
-    color 0.15s,
-    border-color 0.15s,
-    background 0.15s;
-}
-
-.url-row__copy:hover {
-  color: var(--tk-foreground);
-  border-color: var(--tk-border-strong);
-  background: var(--tk-accent);
-}
+/* —— 网址编解码范围选择 —— */
 
 .url-codec__select {
   font-weight: normal;
   min-width: 175px;
-}
-
-.tw-kv__row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 6px 10px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-card);
-  font-size: var(--tk-text-sm);
-}
-
-.tw-kv__k {
-  flex: none;
-  font-family: var(--tk-font-mono);
-  color: var(--tk-primary);
-  font-weight: 600;
-}
-
-.tw-kv__v {
-  min-width: 0;
-  word-break: break-all;
-  text-align: right;
-  color: var(--tk-foreground);
-}
-
-/* —— 时间戳结果行 —— */
-
-.tw-stamp {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.tw-stamp__row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-card);
-}
-
-.tw-stamp__label {
-  flex: none;
-  width: 108px;
-  font-size: var(--tk-text-sm);
-  color: var(--tk-muted-foreground);
-}
-
-.tw-stamp__value {
-  flex: 1;
-  min-width: 0;
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-sm);
-  color: var(--tk-foreground);
-  word-break: break-all;
-  user-select: all;
 }
 
 .tw-link--danger {
@@ -609,6 +512,7 @@
 .tw-detect__formats-label {
   flex: none;
   font-size: var(--tk-text-xs);
+  line-height: 1;
   color: var(--tk-muted-foreground);
   user-select: none;
 }
@@ -623,10 +527,13 @@
 .tw-detect__format-chip {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 22px;
+  padding: 0 8px;
   font-size: var(--tk-text-xs);
   font-family: var(--tk-font);
-  line-height: 1.5;
+  line-height: 1;
   color: var(--tk-muted-foreground);
   background: var(--tk-muted);
   border: 1px solid var(--tk-border);
@@ -656,6 +563,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  line-height: 1.5;
 }
 
 .tw-detect__fields {
@@ -666,18 +574,23 @@
 
 .tw-detect__field {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   padding: 6px 10px;
+  min-height: 34px;
+  box-sizing: border-box;
   border: 1px solid var(--tk-border);
   border-radius: var(--tk-radius-sm);
   background: var(--tk-card);
   font-size: var(--tk-text-sm);
+  line-height: 1.5;
 }
 
 .tw-detect__field-label {
   flex: none;
   font-family: var(--tk-font-mono);
+  font-size: var(--tk-text-sm);
+  line-height: 1.5;
   color: var(--tk-primary);
   font-weight: 600;
   word-break: keep-all;
@@ -689,6 +602,8 @@
   word-break: break-all;
   color: var(--tk-foreground);
   font-family: var(--tk-font);
+  font-size: var(--tk-text-sm);
+  line-height: 1.5;
 }
 
 .tw-detect__field-value--mono {
@@ -1454,61 +1369,6 @@
   color: var(--tk-muted-foreground);
 }
 
-.tw-qr__decode-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.tw-qr__loading-msg {
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
-}
-
-.tw-qr__result-box {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px 14px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius);
-  background: var(--tk-card);
-}
-
-.tw-qr__result-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.tw-qr__result-title {
-  font-size: var(--tk-text-sm);
-  font-weight: 600;
-  color: var(--tk-foreground);
-}
-
-.tw-qr__result-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.tw-qr__result-content {
-  padding: 8px 10px;
-  border: 1px solid var(--tk-input);
-  border-radius: var(--tk-radius-sm);
-  background: color-mix(in srgb, var(--tk-muted) 35%, var(--tk-card));
-  font-family: var(--tk-font);
-  font-size: var(--tk-text-sm);
-  line-height: 1.5;
-  color: var(--tk-foreground);
-  white-space: pre-wrap;
-  word-break: break-all;
-  max-height: 200px;
-  overflow-y: auto;
-  user-select: text;
-}
 
 /* —— Logo 裁剪弹窗 (tw-crop-modal) —— */
 

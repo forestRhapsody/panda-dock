@@ -284,11 +284,7 @@ export default function FileBase64Tool() {
           </label>
 
           <div className='tw-actions'>
-            <button
-              type='button'
-              className='tk-btn tk-btn--sm'
-              onClick={() => void pasteClipboardText()}
-            >
+            <button type='button' className='tk-btn' onClick={() => void pasteClipboardText()}>
               {t('tool.fileB64.pasteFromClipboard')}
             </button>
           </div>
@@ -302,14 +298,20 @@ export default function FileBase64Tool() {
                   className='tw-fileb64__thumb'
                 />
               )}
-              <div className='tw-kv'>
-                <div className='tw-kv__row'>
-                  <span className='tw-kv__k'>MIME</span>
-                  <span className='tw-kv__v'>{decInfo.mime}</span>
+              <div className='tw-detect__fields'>
+                <div className='tw-detect__field'>
+                  <span className='tw-detect__field-label'>MIME</span>
+                  <code className='tw-detect__field-value tw-detect__field-value--mono'>
+                    {decInfo.mime}
+                  </code>
+                  <CopyButton text={decInfo.mime} icon className='tw-detect__copy' />
                 </div>
-                <div className='tw-kv__row'>
-                  <span className='tw-kv__k'>{t('tool.fileB64.fileSize')}</span>
-                  <span className='tw-kv__v'>{fmtSize(decInfo.sizeBytes)}</span>
+                <div className='tw-detect__field'>
+                  <span className='tw-detect__field-label'>{t('tool.fileB64.fileSize')}</span>
+                  <code className='tw-detect__field-value tw-detect__field-value--mono'>
+                    {fmtSize(decInfo.sizeBytes)}
+                  </code>
+                  <CopyButton text={fmtSize(decInfo.sizeBytes)} icon className='tw-detect__copy' />
                 </div>
               </div>
               <div className='tw-actions'>

@@ -2,8 +2,8 @@ import { useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
-import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
+import JsonHighlight from './JsonHighlight'
 import { decodeJwt, SAMPLE_JWT } from './jwt'
 import type { JwtDecoded } from './jwt'
 import { StatusText } from './StatusText'
@@ -100,12 +100,7 @@ export default function JwtTool() {
                 }}
               />
             </span>
-            <AutoArea
-              className='tw-area tw-area--result'
-              value={decoded.headerText}
-              readOnly
-              spellCheck={false}
-            />
+            <JsonHighlight text={decoded.headerText} maxHeight={180} />
           </div>
 
           <div className='tw-field'>
@@ -119,25 +114,23 @@ export default function JwtTool() {
                 }}
               />
             </span>
-            <AutoArea
-              className='tw-area tw-area--result'
-              value={decoded.payloadText}
-              readOnly
-              spellCheck={false}
-            />
+            <JsonHighlight text={decoded.payloadText} maxHeight={300} />
           </div>
 
           {decoded.claims.length > 0 && (
             <div className='tw-field'>
               <span className='tw-field__label'>{t('tool.jwt.claimsLabel')}</span>
-              <ul className='tw-kv'>
+              <div className='tw-detect__fields'>
                 {decoded.claims.map((c) => (
-                  <li key={c.key} className='tw-kv__row'>
-                    <span className='tw-kv__k'>{c.key}</span>
-                    <span className='tw-kv__v'>{c.display}</span>
-                  </li>
+                  <div key={c.key} className='tw-detect__field'>
+                    <span className='tw-detect__field-label'>{c.key}</span>
+                    <code className='tw-detect__field-value tw-detect__field-value--mono'>
+                      {c.display}
+                    </code>
+                    <CopyButton text={c.display} icon className='tw-detect__copy' />
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
           )}
         </>

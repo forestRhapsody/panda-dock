@@ -14,15 +14,13 @@ import { decodeUrl, encodeUrl, parseUrl, type CodecScope, type ParsedUrl } from 
 
 type MainTab = 'parse' | 'codec'
 
-/** 一行：左侧 label，右侧只读输入框 + 复制按钮（it-tools 风格） */
+/** 网址组成部分/参数行：对齐智能解析样式（卡片式行、左侧高亮标签、等宽值、右侧复制按钮） */
 function UrlField({ label, value }: { label: string; value: string }) {
   return (
-    <div className='url-row'>
-      <span className='url-row__label'>{label}</span>
-      <div className='url-row__value'>
-        <input className='url-row__input' readOnly value={value} />
-        <CopyButton text={value} icon className='url-row__copy' />
-      </div>
+    <div className='tw-detect__field'>
+      <span className='tw-detect__field-label'>{label}</span>
+      <code className='tw-detect__field-value tw-detect__field-value--mono'>{value}</code>
+      <CopyButton text={value} icon className='tw-detect__copy' />
     </div>
   )
 }
@@ -115,9 +113,9 @@ function UrlParserPanel() {
       {error && <StatusText kind='err'>{error}</StatusText>}
 
       {parsed && (
-        <>
+        <div className='tw-detect'>
           {parsed.parts.length > 0 && (
-            <div className='url-list'>
+            <div className='tw-detect__fields'>
               {parsed.parts.map((part) => (
                 <UrlField
                   key={part.key}
@@ -129,18 +127,27 @@ function UrlParserPanel() {
           )}
 
           {hasParams && (
-            <div className='url-list'>
-              <div className='url-list__title'>{t('tool.url.queryParams')}</div>
-              {parsed.params.map((param, index) => (
-                <UrlField key={`${param.key}-${index}`} label={param.key} value={param.value} />
-              ))}
+            <div className='tw-detect__block'>
+              <span className='tw-field__label'>
+                {t('tool.url.queryParams')}
+                <CopyButton
+                  text={parsed.params.map((p) => `${p.key}=${p.value}`).join('&')}
+                  label={t('common.copy')}
+                  className='tw-link'
+                />
+              </span>
+              <div className='tw-detect__fields'>
+                {parsed.params.map((param, index) => (
+                  <UrlField key={`${param.key}-${index}`} label={param.key} value={param.value} />
+                ))}
+              </div>
             </div>
           )}
 
           {!hasParams && parsed.parts.length === 0 && (
             <StatusText kind='info'>{t('tool.url.noData')}</StatusText>
           )}
-        </>
+        </div>
       )}
     </div>
   )
