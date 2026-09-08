@@ -90,9 +90,14 @@ export async function generateQrCanvas(
   const moduleCount = qr.modules.size
   const totalModules = moduleCount + margin * 2
 
-  // 2. 计算精准整数倍点阵缩放尺度（Scale），杜绝任何浮点缩放导致的模糊与灰阶锯齿
-  const scale = Math.max(1, Math.ceil(targetWidth / totalModules))
-  const qrSize = totalModules * scale
+  // 2. 保持画布主体尺寸严格等于用户所选的分辨率 targetWidth（如 800 / 1200 / 1600 / 2400）
+  // 边距选项仅控制点阵所占比例与内部留白，与画布整体导出尺寸完全解耦独立
+  const qrSize = targetWidth
+  const scale = Math.max(1, Math.floor(qrSize / totalModules))
+  const qrContentSize = moduleCount * scale
+  // 水平与垂直方向居中对齐点阵（多余像素均匀对称分布至两侧留白，整像素对齐杜绝亚像素锯齿）
+  const offsetX = Math.round((qrSize - qrContentSize) / 2)
+  const offsetY = Math.round((qrSize - qrContentSize) / 2)
 
   // 3. 计算底部标签高度
   const cleanLabel = label?.trim() ?? ''
@@ -121,8 +126,8 @@ export async function generateQrCanvas(
   for (let row = 0; row < moduleCount; row++) {
     for (let col = 0; col < moduleCount; col++) {
       if (qr.modules.get(row, col)) {
-        const x = (col + margin) * scale
-        const y = (row + margin) * scale
+        const x = offsetX + col * scale
+        const y = offsetY + row * scale
         ctx.fillRect(x, y, scale, scale)
       }
     }
@@ -221,7 +226,7 @@ export async function generateQrCanvas(
     }
 
     // 二维码点阵实际结束的底边物理坐标
-    const qrModulesBottom = (moduleCount + margin) * scale
+    const qrModulesBottom = offsetY + qrContentSize
     // 说明标签在二维码点阵底边与画布底边之间的整块空白区域内严格垂直居中
     const labelY = Math.round((qrModulesBottom + totalHeight) / 2)
     ctx.fillText(textToDraw, totalWidth / 2, labelY)
