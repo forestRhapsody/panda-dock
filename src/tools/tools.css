@@ -583,6 +583,18 @@
   background: var(--tk-card);
   font-size: var(--tk-text-sm);
   line-height: 1.5;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.tw-detect__field:hover:not(:focus-within) {
+  border-color: var(--tk-border-strong);
+}
+
+.tw-detect__field:focus-within {
+  border-color: var(--tk-ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tk-ring) 25%, transparent);
 }
 
 .tw-detect__field-label {
@@ -593,6 +605,23 @@
   color: var(--tk-primary);
   font-weight: 600;
   word-break: keep-all;
+}
+
+.tw-detect__field-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0 4px;
+  color: var(--tk-foreground);
+  font-family: var(--tk-font);
+  font-size: var(--tk-text-sm);
+  line-height: 1.5;
+  outline: none;
+}
+
+.tw-detect__field-input--mono {
+  font-family: var(--tk-font-mono);
 }
 
 .tw-detect__field-value {
