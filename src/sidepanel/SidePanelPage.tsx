@@ -19,13 +19,55 @@ export default function SidePanelPage() {
   useTheme()
 
   useEffect(() => {
-    const onMessage = (msg: unknown) => {
+    let port: chrome.runtime.Port | null = null
+    try {
+      if (typeof chrome !== 'undefined' && chrome.runtime?.connect) {
+        port = chrome.runtime.connect({ name: 'toolkit-sidepanel' })
+        // 向 background 上报当前所在的 windowId，使 background 能精确定位该窗口的侧边栏状态
+        chrome.windows?.getCurrent?.((win) => {
+          if (win?.id != null && port) {
+            port.postMessage({ type: 'SIDE_PANEL_INIT', windowId: win.id })
+          }
+        })
+        port.onMessage.addListener((msg: unknown) => {
+          if ((msg as { action?: string })?.action === MSG_CLOSE_NATIVE_SIDE_PANEL) {
+            window.close()
+          }
+        })
+      }
+    } catch {
+      // 忽略
+    }
+
+    const onRuntimeMessage = (msg: unknown) => {
       if ((msg as { action?: string })?.action === MSG_CLOSE_NATIVE_SIDE_PANEL) {
         window.close()
       }
     }
-    chrome.runtime?.onMessage?.addListener(onMessage)
-    return () => chrome.runtime?.onMessage?.removeListener(onMessage)
+    chrome.runtime?.onMessage?.addListener(onRuntimeMessage)
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      // 侧边栏获得焦点时：按 Escape 或 Alt+Shift+D 均可立即关闭收回
+      if (e.key === 'Escape') {
+        window.close()
+        return
+      }
+      if ((e.altKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        e.preventDefault()
+        window.close()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      chrome.runtime?.onMessage?.removeListener(onRuntimeMessage)
+      window.removeEventListener('keydown', onKeyDown)
+      try {
+        port?.disconnect()
+      } catch {
+        // 忽略
+      }
+    }
   }, [])
 
   return (

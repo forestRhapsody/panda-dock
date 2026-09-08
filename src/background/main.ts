@@ -80,54 +80,131 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 })
 
 /**
- * Background Service Worker：
- * - content script（悬浮球）请求唤起浏览器原生侧边栏时的中转。
- *   注意：sidePanel.open 需要用户手势，content→SW 的消息会丢失手势，
- *   因此在部分 Chrome 版本上可能被拒绝 —— 失败时 content 会自动回退到网页内抽屉。
- * - content script 请求打开扩展设置页（content script 没有 chrome.tabs，无法直接用
- *   chrome.tabs.create，且 window.open 打开扩展页会被 Chrome 以 ERR_BLOCKED_BY_CLIENT 拦截）
- *   → 改由 background 用 chrome.tabs.create 打开 options.html。
+ * 侧边栏长连接与开闭状态内存表（支持纯同步即时查询与关闭通知）
  */
-async function closeSidePanel(targetWindowId?: number): Promise<boolean> {
-  try {
-    const sp = chrome.sidePanel as unknown as {
-      close?: (opts: { windowId: number }) => Promise<void>
+const sidePanelPorts = new Map<number, chrome.runtime.Port>() // windowId -> port
+const activeSidePanelPorts = new Set<chrome.runtime.Port>()
+const openSidePanelWindows = new Set<number>()
+
+/**
+ * 用户当前配置的悬浮球/快捷键动作（内存快照，保证快捷键在同步首帧内零延迟获取）
+ */
+let cachedBallAction: 'drawer' | 'native' = 'drawer'
+
+/** 最近活跃的 windowId 缓存 */
+let lastActiveWindowId: number | undefined
+if (typeof chrome !== 'undefined') {
+  chrome.windows?.onFocusChanged?.addListener((winId) => {
+    if (typeof winId === 'number' && winId > 0) {
+      lastActiveWindowId = winId
     }
-    if (typeof sp?.close === 'function') {
-      let winId = targetWindowId
-      if (winId == null) {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-        winId = tab?.windowId
-      }
-      if (winId != null) {
-        try {
-          await sp.close({ windowId: winId })
-        } catch {
-          // 忽略
-        }
-      }
+  })
+  chrome.tabs?.onActivated?.addListener((activeInfo) => {
+    if (typeof activeInfo?.windowId === 'number') {
+      lastActiveWindowId = activeInfo.windowId
     }
-    // 广播通知 sidepanel 窗口执行 window.close()
-    await chrome.runtime.sendMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
-    return true
-  } catch {
-    return false
-  }
+  })
 }
 
-async function isSidePanelOpen(): Promise<boolean> {
-  try {
-    const runtime = chrome.runtime as unknown as {
-      getContexts?: (filter: { contextTypes?: string[] }) => Promise<unknown[]>
+// 初始化加载 ballAction 并在 storage.onChanged 中即时同步
+void chrome.storage?.sync
+  ?.get('settings')
+  .then((data) => {
+    const settings = data?.settings as { ballAction?: 'drawer' | 'native' } | undefined
+    if (settings?.ballAction === 'drawer' || settings?.ballAction === 'native') {
+      cachedBallAction = settings.ballAction
     }
-    if (typeof runtime?.getContexts === 'function') {
-      const contexts = await runtime.getContexts({ contextTypes: ['SIDE_PANEL'] })
-      return Array.isArray(contexts) && contexts.length > 0
+  })
+  .catch(() => {})
+
+chrome.storage?.onChanged?.addListener((changes, areaName) => {
+  if (areaName === 'sync' && changes.settings?.newValue) {
+    const s = changes.settings.newValue as { ballAction?: 'drawer' | 'native' }
+    if (s.ballAction === 'drawer' || s.ballAction === 'native') {
+      cachedBallAction = s.ballAction
     }
-  } catch {
-    // 忽略
   }
-  return false
+})
+
+// 监听侧边栏长连接，建立窗口级侧边栏存活态追踪
+chrome.runtime?.onConnect?.addListener((port) => {
+  if (port.name !== 'toolkit-sidepanel') return
+  activeSidePanelPorts.add(port)
+  let boundWindowId: number | undefined
+
+  port.onMessage.addListener((msg: unknown) => {
+    const winId = (msg as { windowId?: number })?.windowId
+    if (typeof winId === 'number') {
+      boundWindowId = winId
+      openSidePanelWindows.add(winId)
+      sidePanelPorts.set(winId, port)
+    }
+  })
+
+  port.onDisconnect.addListener(() => {
+    activeSidePanelPorts.delete(port)
+    if (boundWindowId != null) {
+      openSidePanelWindows.delete(boundWindowId)
+      sidePanelPorts.delete(boundWindowId)
+    }
+  })
+})
+
+function isSidePanelOpen(targetWindowId?: number): boolean {
+  if (targetWindowId != null && openSidePanelWindows.has(targetWindowId)) {
+    return true
+  }
+  return activeSidePanelPorts.size > 0
+}
+
+function closeSidePanel(targetWindowId?: number): boolean {
+  let closed = false
+  // 1. 若有特定窗口的长连接，优先通知该窗口侧边栏关闭
+  if (targetWindowId != null && sidePanelPorts.has(targetWindowId)) {
+    try {
+      sidePanelPorts.get(targetWindowId)?.postMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
+      closed = true
+    } catch {
+      // 忽略
+    }
+    openSidePanelWindows.delete(targetWindowId)
+    sidePanelPorts.delete(targetWindowId)
+  }
+
+  // 2. 同时通知所有已连接的侧边栏窗口关闭
+  for (const port of activeSidePanelPorts) {
+    try {
+      port.postMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
+      closed = true
+    } catch {
+      // 忽略
+    }
+  }
+
+  // 3. 广播运行时消息兜底
+  void chrome.runtime?.sendMessage?.({ action: MSG_CLOSE_NATIVE_SIDE_PANEL }).catch(() => {})
+
+  // 4. 调用原生 API chrome.sidePanel.close（若浏览器版本支持）
+  const sp = chrome.sidePanel as unknown as
+    | {
+        close?: (opts: { windowId: number }) => Promise<void>
+      }
+    | undefined
+  if (typeof sp?.close === 'function') {
+    const winId = targetWindowId ?? lastActiveWindowId
+    if (winId != null) {
+      void sp.close({ windowId: winId }).catch(() => {})
+      closed = true
+    }
+  }
+
+  if (targetWindowId != null) {
+    openSidePanelWindows.delete(targetWindowId)
+  }
+  if (activeSidePanelPorts.size === 0) {
+    openSidePanelWindows.clear()
+  }
+  return closed
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -144,11 +221,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // 关闭原生侧边栏（content 开抽屉前先把侧边栏关掉，保证两种工具箱不同时显示）
   if (action === MSG_CLOSE_NATIVE_SIDE_PANEL) {
     const windowId = sender?.tab?.windowId
-    void closeSidePanel(windowId).then(
-      () => sendResponse(true),
-      () => sendResponse(false),
-    )
-    return true // 保持消息通道以异步 sendResponse
+    const ok = closeSidePanel(windowId)
+    sendResponse(ok)
+    return undefined
   }
 
   if (action === MSG_OPEN_SHORTCUTS) {
@@ -363,14 +438,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return undefined
   }
 
-  const windowId = sender?.tab?.windowId
+  const windowId = sender?.tab?.windowId ?? lastActiveWindowId
   if (windowId == null) {
     sendResponse(false)
     return undefined
   }
 
+  // 若当前窗口原生侧边栏已开，点击悬浮球也执行收回（Toggle）
+  if (isSidePanelOpen(windowId)) {
+    closeSidePanel(windowId)
+    sendResponse(true)
+    return undefined
+  }
+
   void chrome.sidePanel.open({ windowId }).then(
-    () => sendResponse(true),
+    () => {
+      openSidePanelWindows.add(windowId)
+      sendResponse(true)
+    },
     () => sendResponse(false),
   )
   return true // 保持消息通道以异步 sendResponse
@@ -379,91 +464,70 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 /**
  * 监听全局快捷键：根据用户在设置里的预设动作（ballAction: drawer / native）智能分发唤起。
  * 并保持侧边栏与网页内抽屉的严格互斥。
+ * 支持再次按下快捷键收回（Toggle）。
  */
-chrome.commands.onCommand.addListener(async (command) => {
+chrome.commands.onCommand.addListener((command, tab) => {
   if (command !== 'toggle-toolkit') return
 
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    let windowId: number | undefined = tab?.windowId
-    if (windowId == null) {
-      try {
-        const win = await chrome.windows.getCurrent()
-        windowId = win?.id
-      } catch {
-        // 忽略
-      }
+  const windowId = tab?.windowId ?? lastActiveWindowId
+  const tabId = tab?.id
+
+  if (cachedBallAction === 'drawer') {
+    // 抽屉模式：
+    // 1. 关闭原生侧边栏（保持互斥）
+    if (isSidePanelOpen(windowId)) {
+      closeSidePanel(windowId)
     }
 
-    // 读取当前配置中的 ballAction
-    const data = await chrome.storage.sync.get('settings')
-    const settings = data?.settings as { ballAction?: 'drawer' | 'native' } | undefined
-    const ballAction = settings?.ballAction || 'drawer'
-
-    if (ballAction === 'drawer') {
-      // 抽屉模式：
-      // 1. 关闭原生侧边栏（保持互斥）
-      await closeSidePanel(windowId)
-
-      // 2. 尝试向当前标签页发送 TOGGLE_DRAWER 切换抽屉开合
-      let toggled = false
-      if (tab?.id != null) {
-        try {
-          await chrome.tabs.sendMessage(tab.id, { action: MSG_TOGGLE_DRAWER })
-          toggled = true
-        } catch {
-          toggled = false
+    // 2. 尝试向当前标签页发送 TOGGLE_DRAWER 切换抽屉开合
+    if (tabId != null) {
+      chrome.tabs.sendMessage(tabId, { action: MSG_TOGGLE_DRAWER }).catch(() => {
+        // 当前标签页无法注入/响应抽屉（如 chrome://、chrome-extension:// 等特权页），自动降级打开原生侧边栏
+        if (windowId != null && typeof chrome.sidePanel?.open === 'function') {
+          void chrome.sidePanel.open({ windowId }).then(
+            () => openSidePanelWindows.add(windowId),
+            () => {},
+          )
         }
-      }
-
-      // 3. 若当前标签页无法注入/响应抽屉（如 chrome://、chrome-extension:// 等特权页），自动降级打开原生侧边栏
-      if (!toggled && windowId != null && typeof chrome.sidePanel?.open === 'function') {
-        try {
-          await chrome.sidePanel.open({ windowId })
-        } catch {
-          // 忽略
-        }
-      }
-    } else {
-      // 原生侧边栏模式：
-      // 1. 先关闭当前网页里的抽屉（保持互斥）
-      if (tab?.id != null) {
-        try {
-          await chrome.tabs.sendMessage(tab.id, { action: MSG_CLOSE_DRAWER })
-        } catch {
-          // 忽略
-        }
-      }
-
-      // 2. 检查侧边栏是否已处于打开状态
-      const sidePanelOpen = await isSidePanelOpen()
-      if (sidePanelOpen) {
-        // 若已打开，快捷键起到 toggle 关闭作用
-        await closeSidePanel(windowId)
-        return
-      }
-
-      // 3. 若未打开，唤起原生侧边栏
-      let opened = false
-      if (windowId != null && typeof chrome.sidePanel?.open === 'function') {
-        try {
-          await chrome.sidePanel.open({ windowId })
-          opened = true
-        } catch {
-          opened = false
-        }
-      }
-
-      // 4. 若唤起原生侧边栏失败（如环境限制），降级切换当前网页的抽屉
-      if (!opened && tab?.id != null) {
-        try {
-          await chrome.tabs.sendMessage(tab.id, { action: MSG_TOGGLE_DRAWER })
-        } catch {
-          // 忽略
-        }
-      }
+      })
+    } else if (windowId != null && typeof chrome.sidePanel?.open === 'function') {
+      void chrome.sidePanel.open({ windowId }).then(
+        () => openSidePanelWindows.add(windowId),
+        () => {},
+      )
     }
-  } catch {
-    // 忽略异常
+    return
+  }
+
+  // 原生侧边栏模式：
+  // 1. 检查侧边栏是否已处于打开状态（纯内存同步判断，0 耗时）
+  if (isSidePanelOpen(windowId)) {
+    // 若已打开，再次按下快捷键起到收回（Toggle 关闭）作用
+    closeSidePanel(windowId)
+    return
+  }
+
+  // 2. 若未打开，在首帧立即同步调用 chrome.sidePanel.open，100% 保留快捷键的用户手势令牌！
+  const openTarget = windowId != null ? { windowId } : tabId != null ? { tabId } : null
+  if (openTarget && typeof chrome.sidePanel?.open === 'function') {
+    void chrome.sidePanel
+      .open(openTarget)
+      .then(() => {
+        if (windowId != null) openSidePanelWindows.add(windowId)
+        // 唤起侧边栏后，确保当前网页内的抽屉关闭（保持互斥）
+        if (tabId != null) {
+          void chrome.tabs.sendMessage(tabId, { action: MSG_CLOSE_DRAWER }).catch(() => {})
+        }
+      })
+      .catch((err) => {
+        console.warn('[PandaDock] Failed to open native sidePanel:', err)
+        // 若唤起原生侧边栏失败（如某些环境限制），降级切换当前网页的抽屉
+        if (tabId != null) {
+          void chrome.tabs.sendMessage(tabId, { action: MSG_TOGGLE_DRAWER }).catch(() => {})
+        }
+      })
+  } else if (tabId != null) {
+    // 浏览器环境不支持 sidePanel.open，降级切换当前网页抽屉
+    void chrome.tabs.sendMessage(tabId, { action: MSG_TOGGLE_DRAWER }).catch(() => {})
   }
 })
