@@ -1,9 +1,41 @@
 import {
   MSG_CLOSE_NATIVE_SIDE_PANEL,
+  MSG_COOKIE_CLEAR_ALL,
+  MSG_COOKIE_GET_ALL,
+  MSG_COOKIE_REMOVE,
   MSG_DETECT_SELECTION,
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_OPEN_OPTIONS,
 } from '@/utils/messages'
+
+function getCookieUrl(
+  cookie: { domain: string; path: string; secure: boolean },
+  fallbackUrl?: string,
+): string {
+  let domain = cookie.domain
+  if (domain.startsWith('.')) domain = domain.slice(1)
+  if (!domain && fallbackUrl) {
+    try {
+      domain = new URL(fallbackUrl).hostname
+    } catch {
+      // 忽略
+    }
+  }
+  const protocol = cookie.secure ? 'https:' : fallbackUrl?.startsWith('https:') ? 'https:' : 'http:'
+  const path = cookie.path.startsWith('/') ? cookie.path : `/${cookie.path}`
+  return `${protocol}//${domain}${path}`
+}
+
+async function resolveTargetUrl(explicitUrl?: string): Promise<string | null> {
+  if (explicitUrl && /^https?:/.test(explicitUrl)) return explicitUrl
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (tab?.url && /^https?:/.test(tab.url)) return tab.url
+  } catch {
+    // 忽略
+  }
+  return null
+}
 
 const DETECT_MENU_ID = 'toolkit-detect-selection'
 
@@ -67,6 +99,93 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       () => sendResponse(false),
     )
     return true // 保持消息通道以异步 sendResponse
+  }
+
+  if (action === MSG_COOKIE_GET_ALL) {
+    void (async () => {
+      try {
+        const url = await resolveTargetUrl((message as { url?: string }).url)
+        if (!url) {
+          sendResponse({
+            ok: false,
+            error: '无法读取当前页面的 Cookie：当前标签页不是 http(s) 网页',
+          })
+          return
+        }
+        const cookies = await chrome.cookies.getAll({ url })
+        const origin = new URL(url).origin
+        sendResponse({
+          ok: true,
+          data: {
+            url,
+            origin,
+            cookies: cookies.map((c) => ({
+              name: c.name,
+              value: c.value,
+              domain: c.domain,
+              path: c.path,
+              secure: c.secure,
+              httpOnly: c.httpOnly,
+              sameSite: c.sameSite,
+              session: c.session,
+              expirationDate: c.expirationDate,
+              storeId: c.storeId,
+            })),
+            totalCount: cookies.length,
+          },
+        })
+      } catch (e) {
+        sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })
+      }
+    })()
+    return true
+  }
+
+  if (action === MSG_COOKIE_REMOVE) {
+    void (async () => {
+      try {
+        const { url, name, storeId } = message as { url?: string; name?: string; storeId?: string }
+        if (!url || !name) {
+          sendResponse({ ok: false, error: '缺少 Cookie url 或 name' })
+          return
+        }
+        const removed = await chrome.cookies.remove({ url, name, storeId })
+        if (removed) {
+          sendResponse({ ok: true })
+        } else {
+          sendResponse({ ok: false, error: '删除 Cookie 失败' })
+        }
+      } catch (e) {
+        sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })
+      }
+    })()
+    return true
+  }
+
+  if (action === MSG_COOKIE_CLEAR_ALL) {
+    void (async () => {
+      try {
+        const url = await resolveTargetUrl((message as { url?: string }).url)
+        if (!url) {
+          sendResponse({ ok: false, error: '无法获取目标网页 URL' })
+          return
+        }
+        const cookies = await chrome.cookies.getAll({ url })
+        await Promise.all(
+          cookies.map((c) =>
+            chrome.cookies.remove({
+              url: getCookieUrl(c, url),
+              name: c.name,
+              storeId: c.storeId,
+            }),
+          ),
+        )
+        sendResponse({ ok: true })
+      } catch (e) {
+        sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })
+      }
+    })()
+    return true
   }
 
   if (action !== MSG_OPEN_NATIVE_SIDE_PANEL) {

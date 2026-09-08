@@ -95,8 +95,11 @@ export function ballAssetUrl(path: string): string {
 /** 自定义悬浮球图片（base64 data URL）存于 chrome.storage.local 的 key */
 export const BALL_IMAGE_KEY = 'ballImage'
 
-/** 自定义图片 base64 data URL 的最大长度（128KB），超出拒绝 */
+/** 自定义悬浮球图片文件大小上限（128KB），超出拒绝 */
 export const BALL_IMAGE_MAX_BYTES = 128 * 1024
+
+/** base64 data URL 最大允许字符长度（对应 128KB 二进制原始文件编码后体积约 175KB + 头部冗余） */
+export const BALL_IMAGE_MAX_DATA_URL_LENGTH = Math.ceil((BALL_IMAGE_MAX_BYTES * 4) / 3) + 512
 
 function normalizeBallShape(value: unknown): BallShape {
   return value === 'rounded' ? 'rounded' : 'circle'
@@ -115,10 +118,10 @@ export async function getBallImage(): Promise<string | null> {
   return storageGet<string>('local', BALL_IMAGE_KEY)
 }
 
-/** 保存（或置空）自定义悬浮球图片。dataUrl 超过 128KB 抛错；传 null 清除。 */
+/** 保存（或置空）自定义悬浮球图片。文件大小超过 128KB 抛错；传 null 清除。 */
 export async function setBallImage(dataUrl: string | null): Promise<void> {
-  if (dataUrl && dataUrl.length > BALL_IMAGE_MAX_BYTES) {
-    throw new Error('图片过大，base64 后不能超过 128KB')
+  if (dataUrl && dataUrl.length > BALL_IMAGE_MAX_DATA_URL_LENGTH) {
+    throw new Error('图片过大，文件大小不能超过 128KB')
   }
   await storageSet('local', BALL_IMAGE_KEY, dataUrl)
 }

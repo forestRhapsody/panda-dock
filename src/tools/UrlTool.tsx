@@ -1,121 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 
-import qs from 'qs'
 import { useTranslation } from 'react-i18next'
 
+import TkSelect from '@/ui/TkSelect'
 import { getCurrentPageUrl } from '@/utils/pageUrl'
 
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import { StatusText } from './StatusText'
+import type { ToolStatus } from './StatusText'
+import ToolTabs from './ToolTabs'
+import { decodeUrl, encodeUrl, parseUrl, type CodecScope, type ParsedUrl } from './url'
 
-interface UrlPart {
-  key: string
-  value: string
-}
-
-interface ParsedUrl {
-  url: URL
-  parts: UrlPart[]
-  /** 查询参数：qs 解析出结构化对象后扁平化为 kv 列表（嵌套/数组用括号记法） */
-  params: UrlPart[]
-}
-
-/** 认可的网络协议白名单（仅 http/https 等，非法 scheme 如 httpas:// 一律判无效） */
-const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'ftp:', 'ws:', 'wss:', 'file:'])
-
-/** 当前页 origin，用作相对路径的解析基准 */
-function currentBase(): string {
-  return (typeof window !== 'undefined' && window.location.href) || 'http://localhost/'
-}
-
-/** 从文本中抽取已认可协议的网址（去除前后的干扰文字与尾部标点） */
-function extractUrlFromText(text: string): string | null {
-  const m = text.match(/(?:https?|ftp|ws|wss|file):\/\/[^\s<>"'()]+/i)
-  if (!m) return null
-  return m[0].replace(/[.,;:!?'")\]}]+$/, '')
-}
-
-/** 把候选字符串解析为 URL：绝对 → 无协议域名(补 https) → 相对路径(按当前页 origin)；校验协议合法性 */
-function buildUrl(source: string): URL {
-  const candidates: (() => URL)[] = [
-    () => new URL(source),
-    // 无协议但像完整域名：补 https
-    () => {
-      if (/^[a-z0-9.-]+\.[a-z]{2,}([/?#].*)?$/i.test(source)) {
-        return new URL(`https://${source}`)
-      }
-      throw new Error('invalid')
-    },
-    // 相对路径（以 / ./ ../ 开头）：按当前页 origin 解析
-    () => {
-      if (/^[./]/.test(source)) return new URL(source, currentBase())
-      throw new Error('invalid')
-    },
-  ]
-  for (const make of candidates) {
-    try {
-      const url = make()
-      if (ALLOWED_PROTOCOLS.has(url.protocol)) return url
-    } catch {
-      // 继续尝试下一种
-    }
-  }
-  throw new Error('invalid')
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/** 把 qs 解析出的结构化对象扁平化为 kv 列表（对象/数组用括号记法，如 filter[name]、ids[0]） */
-function flattenParams(query: Record<string, unknown>): UrlPart[] {
-  const out: UrlPart[] = []
-  const walk = (value: unknown, prefix: string) => {
-    if (Array.isArray(value)) {
-      value.forEach((item, index) => {
-        if (isPlainObject(item) || Array.isArray(item)) walk(item, `${prefix}[${index}]`)
-        else out.push({ key: `${prefix}[${index}]`, value: String(item) })
-      })
-      return
-    }
-    if (isPlainObject(value)) {
-      for (const [k, v] of Object.entries(value)) {
-        const key = prefix ? `${prefix}[${k}]` : k
-        if (isPlainObject(v) || Array.isArray(v)) walk(v, key)
-        else out.push({ key, value: String(v) })
-      }
-      return
-    }
-    out.push({ key: prefix, value: String(value) })
-  }
-  walk(query, '')
-  return out
-}
-
-/** 只保留「有实际值」的组成部分，避免展示无用空列 */
-function collectParts(url: URL): UrlPart[] {
-  const parts: UrlPart[] = []
-  if (url.protocol) parts.push({ key: 'protocol', value: url.protocol })
-  if (url.host) parts.push({ key: 'host', value: url.host })
-  if (url.pathname && url.pathname !== '/') parts.push({ key: 'path', value: url.pathname })
-  if (url.search) parts.push({ key: 'search', value: url.search })
-  if (url.hash) parts.push({ key: 'hash', value: url.hash })
-  if (url.username) parts.push({ key: 'username', value: url.username })
-  if (url.password) parts.push({ key: 'password', value: '••••' })
-  return parts
-}
-
-/** 解析 URL：先从文本抽取网址，再交给 buildUrl（校验协议）；查询参数用 qs 解析后扁平化 */
-function parseUrl(input: string): ParsedUrl {
-  const text = input.trim()
-  const extracted = extractUrlFromText(text) ?? text
-  const url = buildUrl(extracted)
-  const parts = collectParts(url)
-  const query = qs.parse(url.search.replace(/^\?/, '')) as Record<string, unknown>
-  const params = flattenParams(query)
-  return { url, parts, params }
-}
+type MainTab = 'parse' | 'codec'
 
 /** 一行：左侧 label，右侧只读输入框 + 复制按钮（it-tools 风格） */
 function UrlField({ label, value }: { label: string; value: string }) {
@@ -130,8 +27,8 @@ function UrlField({ label, value }: { label: string; value: string }) {
   )
 }
 
-/** 网址解析工具：输入实时校验并解析，或一键取当前网页 URL；非法协议（如 httpas://）判无效 */
-export default function UrlTool() {
+/** 网址解析面板：抽取网址各组成部分与 Query 参数 */
+function UrlParserPanel() {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
   const [parsed, setParsed] = useState<ParsedUrl | null>(null)
@@ -189,7 +86,7 @@ export default function UrlTool() {
   const hasParams = parsed ? parsed.params.length > 0 : false
 
   return (
-    <div className='tw-card'>
+    <div className='tw-sec'>
       <label className='tw-field'>
         <span className='tw-field__label'>{t('tool.url.inputLabel')}</span>
         <AutoArea
@@ -245,6 +142,180 @@ export default function UrlTool() {
           )}
         </>
       )}
+    </div>
+  )
+}
+
+/** 网址编解码面板：URL Encode / Decode，直接提供编码网址与解码网址操作按钮 */
+function UrlCodecPanel() {
+  const { t } = useTranslation()
+  const [scope, setScope] = useState<CodecScope>('component')
+  const [input, setInput] = useState('')
+  const [output, setOutput] = useState('')
+  const [status, setStatus] = useState<ToolStatus | null>(null)
+  const [fetching, setFetching] = useState(false)
+  const [lastAction, setLastAction] = useState<'encode' | 'decode' | null>(null)
+
+  function runEncode(rawText: string = input, currentScope: CodecScope = scope) {
+    if (!rawText.trim()) {
+      setStatus({ kind: 'info', text: t('tool.url.codec.statusNeedInput') })
+      setOutput('')
+      return
+    }
+    setLastAction('encode')
+    const res = encodeUrl(rawText, currentScope)
+    if (res.ok) {
+      setOutput(res.text)
+      setStatus(null)
+    } else {
+      setOutput('')
+      setStatus({
+        kind: 'err',
+        text: t('tool.url.codec.statusError', { error: res.error }),
+      })
+    }
+  }
+
+  function runDecode(rawText: string = input, currentScope: CodecScope = scope) {
+    if (!rawText.trim()) {
+      setStatus({ kind: 'info', text: t('tool.url.codec.statusNeedInput') })
+      setOutput('')
+      return
+    }
+    setLastAction('decode')
+    const res = decodeUrl(rawText, currentScope)
+    if (res.ok) {
+      setOutput(res.text)
+      setStatus(null)
+    } else {
+      setOutput('')
+      setStatus({
+        kind: 'err',
+        text: res.isMalformed
+          ? t('tool.url.codec.statusMalformed')
+          : t('tool.url.codec.statusError', { error: res.error }),
+      })
+    }
+  }
+
+  async function fetchCurrent() {
+    setFetching(true)
+    try {
+      const url = await getCurrentPageUrl()
+      if (url) {
+        setInput(url)
+      }
+    } finally {
+      setFetching(false)
+    }
+  }
+
+  function clear() {
+    setInput('')
+    setOutput('')
+    setStatus(null)
+    setLastAction(null)
+  }
+
+  return (
+    <div className='tw-sec'>
+      <div className='tw-field'>
+        <div className='tw-field__label'>
+          <span>{t('tool.url.inputLabel')}</span>
+          <div className='url-codec__select'>
+            <TkSelect
+              variant='sm'
+              value={scope}
+              onChange={(e) => {
+                const nextScope = e.target.value as CodecScope
+                setScope(nextScope)
+                if (lastAction === 'encode') runEncode(input, nextScope)
+                else if (lastAction === 'decode') runDecode(input, nextScope)
+              }}
+              title={t('tool.url.codec.scope')}
+            >
+              <option value='component'>{t('tool.url.codec.scopeComponent')}</option>
+              <option value='full'>{t('tool.url.codec.scopeFull')}</option>
+            </TkSelect>
+          </div>
+        </div>
+        <AutoArea
+          className='tw-area'
+          value={input}
+          placeholder={t('tool.url.codec.inputPlaceholder')}
+          onChange={(e) => setInput(e.target.value)}
+          spellCheck={false}
+        />
+      </div>
+
+      <div className='tw-actions'>
+        <button type='button' className='tk-btn tk-btn--primary' onClick={() => runEncode()}>
+          {t('tool.url.codec.btnEncode')}
+        </button>
+        <button type='button' className='tk-btn tk-btn--primary' onClick={() => runDecode()}>
+          {t('tool.url.codec.btnDecode')}
+        </button>
+        <button
+          type='button'
+          className='tk-btn'
+          disabled={fetching}
+          onClick={() => void fetchCurrent()}
+        >
+          {t('tool.url.fetchCurrent')}
+        </button>
+        <button type='button' className='tk-btn' onClick={clear}>
+          {t('tool.url.clear')}
+        </button>
+      </div>
+
+      <div className='tw-field'>
+        <span className='tw-field__label'>
+          {t('tool.url.codec.result')}
+          <CopyButton
+            text={output}
+            disabled={!output}
+            className='tw-link'
+            onResult={(ok) => {
+              if (!ok) setStatus({ kind: 'err', text: t('tool.url.codec.copyFailed') })
+            }}
+          />
+        </span>
+        <AutoArea
+          className='tw-area tw-area--result'
+          value={output}
+          readOnly
+          placeholder={t('tool.url.codec.statusNeedInput')}
+        />
+      </div>
+
+      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
+    </div>
+  )
+}
+
+/** 网址工具卡片：顶部切换「网址解析」与「网址编解码」 */
+export default function UrlTool() {
+  const { t } = useTranslation()
+  const [tab, setTab] = useState<MainTab>('parse')
+
+  return (
+    <div className='tw-card'>
+      <ToolTabs<MainTab>
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: 'parse', label: t('tool.url.tabParse') },
+          { id: 'codec', label: t('tool.url.tabCodec') },
+        ]}
+      />
+
+      {/* 两个面板都挂载，仅按 tab 显隐，各自独立保留输入草稿与状态 */}
+      <div hidden={tab !== 'parse'}>
+        <UrlParserPanel />
+      </div>
+      <div hidden={tab !== 'codec'}>
+        <UrlCodecPanel />
+      </div>
     </div>
   )
 }

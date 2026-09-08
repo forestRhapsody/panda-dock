@@ -13,14 +13,31 @@ import JsonTextarea from './JsonTextarea'
 import { StatusText } from './StatusText'
 import type { ToolStatus } from './StatusText'
 import {
+  clearAllCookies,
   clearStorageArea,
   isPageContext,
+  listCookies,
   listStorage,
+  removeCookie,
   removeStorageKey,
   setStorageValue,
 } from './storage'
-import type { StorageArea, StorageEntry, StorageResult } from './storage'
+import type {
+  CookieEntry,
+  CookieResult,
+  StorageArea,
+  StorageEntry,
+  StorageResult,
+  WebStorageArea,
+} from './storage'
 import ToolTabs from './ToolTabs'
+
+function formatSameSite(sameSite: string): string {
+  if (sameSite === 'no_restriction') return 'None'
+  if (sameSite === 'lax') return 'Lax'
+  if (sameSite === 'strict') return 'Strict'
+  return sameSite
+}
 
 interface ConfirmState {
   title: string
@@ -161,6 +178,8 @@ export default function StorageTool() {
   const { t } = useTranslation()
   const [area, setArea] = useState<StorageArea>('local')
   const [result, setResult] = useState<StorageResult | null>(null)
+  const [cookieResult, setCookieResult] = useState<CookieResult | null>(null)
+  const [expandedCookies, setExpandedCookies] = useState<Set<string>>(new Set())
   const [status, setStatus] = useState<ToolStatus | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
   const [filter, setFilter] = useState('')
@@ -189,24 +208,42 @@ export default function StorageTool() {
 
   const load = useCallback(async () => {
     setStatus(null)
-    const res = await listStorage(area)
-    setResult(res)
-    if (!res.ok) setStatus({ kind: 'err', text: res.error })
+    if (area === 'cookie') {
+      const res = await listCookies()
+      setCookieResult(res)
+      if (!res.ok) setStatus({ kind: 'err', text: res.error })
+    } else {
+      const res = await listStorage(area)
+      setResult(res)
+      if (!res.ok) setStatus({ kind: 'err', text: res.error })
+    }
   }, [area])
 
-  /** 手动点击刷新：带 loading 状态并弹出 Sonner 级轻提示 */
+  /** 手动点击刷新：图标旋转平滑过渡，杜绝闪烁 */
   async function handleRefresh() {
     if (refreshing) return
     setRefreshing(true)
+    const MIN_REFRESH_DURATION_MS = 500
+    const timerPromise = new Promise((resolve) => setTimeout(resolve, MIN_REFRESH_DURATION_MS))
     try {
-      const res = await listStorage(area)
-      setResult(res)
-      if (res.ok) {
-        setStatus(null)
-        toast.success(t('tool.storage.refreshed'))
+      if (area === 'cookie') {
+        const [res] = await Promise.all([listCookies(), timerPromise])
+        setCookieResult(res)
+        if (res.ok) {
+          setStatus(null)
+        } else {
+          setStatus({ kind: 'err', text: res.error })
+          toast.error(res.error)
+        }
       } else {
-        setStatus({ kind: 'err', text: res.error })
-        toast.error(res.error)
+        const [res] = await Promise.all([listStorage(area), timerPromise])
+        setResult(res)
+        if (res.ok) {
+          setStatus(null)
+        } else {
+          setStatus({ kind: 'err', text: res.error })
+          toast.error(res.error)
+        }
       }
     } finally {
       setRefreshing(false)
@@ -227,7 +264,8 @@ export default function StorageTool() {
 
   // 删除单个 key（先弹自定义确认框，避免误删）
   async function doRemove(key: string) {
-    const res = await removeStorageKey(area, key)
+    if (area === 'cookie') return
+    const res = await removeStorageKey(area as WebStorageArea, key)
     if (!res.ok) {
       setStatus({ kind: 'err', text: res.error })
       return
@@ -251,7 +289,8 @@ export default function StorageTool() {
 
   // 清空整区（先弹自定义确认框）
   async function doClearAll() {
-    const res = await clearStorageArea(area)
+    if (area === 'cookie') return
+    const res = await clearStorageArea(area as WebStorageArea)
     if (!res.ok) {
       setStatus({ kind: 'err', text: res.error })
       return
@@ -272,6 +311,63 @@ export default function StorageTool() {
       confirmLabel: t('tool.storage.clearAll'),
       danger: true,
       onConfirm: () => void doClearAll(),
+    })
+  }
+
+  // 删除单个 Cookie（弹自定义确认框）
+  async function doRemoveCookie(cookie: CookieEntry) {
+    if (!cookieResult?.ok) return
+    const res = await removeCookie(cookie, cookieResult.data.url)
+    if (!res.ok) {
+      setStatus({ kind: 'err', text: res.error })
+      return
+    }
+    setStatus({ kind: 'ok', text: t('tool.storage.cookieDeleted', { name: cookie.name }) })
+    void load()
+  }
+
+  function askRemoveCookie(cookie: CookieEntry) {
+    requestConfirm({
+      title: t('tool.storage.cookieDeleteTitle'),
+      message: t('tool.storage.cookieDeleteMessage', { name: cookie.name }),
+      confirmLabel: t('tool.storage.delete'),
+      danger: true,
+      onConfirm: () => void doRemoveCookie(cookie),
+    })
+  }
+
+  // 清空当前网页所有 Cookie（弹自定义确认框）
+  async function doClearAllCookies() {
+    if (!cookieResult?.ok) return
+    const res = await clearAllCookies(cookieResult.data.url)
+    if (!res.ok) {
+      setStatus({ kind: 'err', text: res.error })
+      return
+    }
+    setStatus({ kind: 'ok', text: t('tool.storage.cookieCleared') })
+    void load()
+  }
+
+  function askClearAllCookies() {
+    if (!cookieResult?.ok || cookieResult.data.cookies.length === 0) return
+    requestConfirm({
+      title: t('tool.storage.cookieClearTitle'),
+      message: t('tool.storage.cookieClearMessage', {
+        origin: cookieResult.data.origin,
+        count: cookieResult.data.totalCount,
+      }),
+      confirmLabel: t('tool.storage.clearAll'),
+      danger: true,
+      onConfirm: () => void doClearAllCookies(),
+    })
+  }
+
+  function toggleCookieExpand(key: string) {
+    setExpandedCookies((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
     })
   }
 
@@ -310,7 +406,8 @@ export default function StorageTool() {
   }
 
   async function persist(key: string, value: string): Promise<boolean> {
-    const res = await setStorageValue(area, key, value)
+    if (area === 'cookie') return false
+    const res = await setStorageValue(area as WebStorageArea, key, value)
     if (!res.ok) {
       setStatus({ kind: 'err', text: res.error })
       return false
@@ -320,13 +417,14 @@ export default function StorageTool() {
 
   // 保存：编辑（含改名）/ 新增
   async function commitEntry(key: string, value: string) {
+    if (area === 'cookie') return
     if (editingKey != null) {
       if (key === editingKey) {
         if (!(await persist(editingKey, value))) return
       } else {
         // 重命名：写新 key + 删旧 key
         if (!(await persist(key, value))) return
-        const rm = await removeStorageKey(area, editingKey)
+        const rm = await removeStorageKey(area as WebStorageArea, editingKey)
         if (!rm.ok) {
           setStatus({ kind: 'err', text: rm.error })
           return
@@ -364,7 +462,7 @@ export default function StorageTool() {
     void commitEntry(key, draftValue)
   }
 
-  const data = result?.ok ? result.data : null
+  const data = area !== 'cookie' && result?.ok ? result.data : null
   const empty = data != null && data.entries.length === 0
   const q = filter.trim().toLowerCase()
   const entries = data
@@ -373,6 +471,20 @@ export default function StorageTool() {
       )
     : []
   const noMatch = data != null && data.entries.length > 0 && entries.length === 0
+
+  const cookieData = area === 'cookie' && cookieResult?.ok ? cookieResult.data : null
+  const cookieEmpty = cookieData != null && cookieData.cookies.length === 0
+  const cookieEntries = cookieData
+    ? cookieData.cookies.filter(
+        (c) =>
+          !q ||
+          c.name.toLowerCase().includes(q) ||
+          c.value.toLowerCase().includes(q) ||
+          c.domain.toLowerCase().includes(q),
+      )
+    : []
+  const cookieNoMatch =
+    cookieData != null && cookieData.cookies.length > 0 && cookieEntries.length === 0
 
   const editorOpen = creating || editingKey != null
   const editorProps = {
@@ -396,10 +508,15 @@ export default function StorageTool() {
     <div className='tw-card'>
       <ToolTabs<StorageArea>
         value={area}
-        onChange={setArea}
+        onChange={(a) => {
+          setArea(a)
+          setEditingKey(null)
+          setCreating(false)
+        }}
         items={[
           { id: 'local', label: 'localStorage' },
           { id: 'session', label: 'sessionStorage' },
+          { id: 'cookie', label: 'Cookie' },
         ]}
       />
 
@@ -412,28 +529,56 @@ export default function StorageTool() {
           title={t('tool.storage.refresh')}
         >
           <Icon name='refresh' size={14} className={refreshing ? 'tw-spin' : undefined} />
-          {refreshing ? t('tool.storage.refreshing') : t('tool.storage.refresh')}
+          {t('tool.storage.refresh')}
         </button>
-        <button type='button' className='tk-btn' onClick={startCreate} disabled={editorOpen}>
-          {t('tool.storage.add')}
-        </button>
-        <button type='button' className='tk-btn' onClick={askClearAll} disabled={empty}>
+        {area !== 'cookie' && (
+          <button type='button' className='tk-btn' onClick={startCreate} disabled={editorOpen}>
+            {t('tool.storage.add')}
+          </button>
+        )}
+        <button
+          type='button'
+          className='tk-btn'
+          onClick={area === 'cookie' ? askClearAllCookies : askClearAll}
+          disabled={area === 'cookie' ? cookieEmpty : empty}
+        >
           {t('tool.storage.clearAll')}
         </button>
       </div>
 
-      {data && (
-        <input
-          type='search'
-          className='tw-input'
-          placeholder={t('tool.storage.filter')}
-          aria-label={t('tool.storage.filterAriaLabel')}
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
+      {((area !== 'cookie' && data && (data.entries.length > 0 || filter)) ||
+        (area === 'cookie' && cookieData && (cookieData.cookies.length > 0 || filter))) && (
+        <div className='tw-store__search'>
+          <Icon name='search' size={14} className='tw-store__search-icon' />
+          <input
+            type='text'
+            className='tw-input tw-store__search-input'
+            placeholder={t('tool.storage.filter')}
+            aria-label={t('tool.storage.filterAriaLabel')}
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                setFilter('')
+              }
+            }}
+          />
+          {filter && (
+            <button
+              type='button'
+              className='tw-store__search-clear'
+              onClick={() => setFilter('')}
+              title={t('tool.storage.clearFilter')}
+              aria-label={t('tool.storage.clearFilter')}
+            >
+              <Icon name='close' size={12} />
+            </button>
+          )}
+        </div>
       )}
 
-      {data && (
+      {area !== 'cookie' && data && (
         <StatusText kind='info'>
           {t('tool.storage.statusSummary', { origin: data.origin, count: data.totalCount })}
           {q ? t('tool.storage.statusFiltered', { count: entries.length }) : ''}
@@ -442,12 +587,32 @@ export default function StorageTool() {
         </StatusText>
       )}
 
-      {creating && <EditorForm {...editorProps} />}
+      {area === 'cookie' && cookieData && (
+        <StatusText kind='info'>
+          {t('tool.storage.statusSummary', {
+            origin: cookieData.origin,
+            count: cookieData.totalCount,
+          })}
+          {q ? t('tool.storage.statusFiltered', { count: cookieEntries.length }) : ''}
+        </StatusText>
+      )}
 
-      {empty && <p className='tw-note'>{t('tool.storage.empty')}</p>}
-      {noMatch && <p className='tw-note'>{t('tool.storage.noMatch')}</p>}
+      {creating && area !== 'cookie' && <EditorForm {...editorProps} />}
 
-      {data && entries.length > 0 && (
+      {area !== 'cookie' && empty && <p className='tw-note'>{t('tool.storage.empty')}</p>}
+      {area === 'cookie' && cookieEmpty && (
+        <p className='tw-note'>{t('tool.storage.cookieEmpty')}</p>
+      )}
+      {((area !== 'cookie' && noMatch) || (area === 'cookie' && cookieNoMatch)) && (
+        <div className='tw-store__nomatch'>
+          <p className='tw-note'>{t('tool.storage.noMatch')}</p>
+          <button type='button' className='tw-link' onClick={() => setFilter('')}>
+            {t('tool.storage.clearFilter')}
+          </button>
+        </div>
+      )}
+
+      {area !== 'cookie' && data && entries.length > 0 && (
         <ul className='tw-store'>
           {entries.map((entry) => (
             <li
@@ -516,6 +681,108 @@ export default function StorageTool() {
               )}
             </li>
           ))}
+        </ul>
+      )}
+
+      {area === 'cookie' && cookieData && cookieEntries.length > 0 && (
+        <ul className='tw-store'>
+          {cookieEntries.map((cookie) => {
+            const cookieId = `${cookie.domain}:${cookie.path}:${cookie.name}`
+            const isExpanded = expandedCookies.has(cookieId)
+            return (
+              <li key={cookieId} className='tw-store__row'>
+                <div className='tw-store__head'>
+                  <div className='tw-cookie__meta-head'>
+                    <span className='tw-store__key' title={cookie.name}>
+                      {cookie.name}
+                    </span>
+                    <div className='tw-cookie__badges'>
+                      {cookie.httpOnly && <span className='tw-cookie__badge'>HttpOnly</span>}
+                      {cookie.secure && <span className='tw-cookie__badge'>Secure</span>}
+                      {cookie.sameSite && cookie.sameSite !== 'unspecified' && (
+                        <span className='tw-cookie__badge'>{formatSameSite(cookie.sameSite)}</span>
+                      )}
+                      {cookie.session && (
+                        <span className='tw-cookie__badge'>{t('tool.storage.cookieSession')}</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className='tw-store__size'>{fmtSize(cookie.size)}</span>
+                </div>
+                <code className='tw-store__value' title={cookie.value}>
+                  {cookie.value || t('tool.storage.emptyString')}
+                </code>
+                {isExpanded && (
+                  <div className='tw-cookie__details'>
+                    <div className='tw-cookie__detail-row'>
+                      <span className='tw-cookie__detail-label'>
+                        {t('tool.storage.cookieDomain')}
+                      </span>
+                      <span className='tw-cookie__detail-value'>{cookie.domain}</span>
+                    </div>
+                    <div className='tw-cookie__detail-row'>
+                      <span className='tw-cookie__detail-label'>
+                        {t('tool.storage.cookiePath')}
+                      </span>
+                      <span className='tw-cookie__detail-value'>{cookie.path}</span>
+                    </div>
+                    <div className='tw-cookie__detail-row'>
+                      <span className='tw-cookie__detail-label'>
+                        {t('tool.storage.cookieExpires')}
+                      </span>
+                      <span className='tw-cookie__detail-value'>
+                        {cookie.session || !cookie.expirationDate
+                          ? t('tool.storage.cookieSession')
+                          : new Date(cookie.expirationDate * 1000).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className='tw-cookie__detail-row'>
+                      <span className='tw-cookie__detail-label'>HttpOnly</span>
+                      <span className='tw-cookie__detail-value'>
+                        {cookie.httpOnly ? t('tool.storage.yes') : t('tool.storage.no')}
+                      </span>
+                    </div>
+                    <div className='tw-cookie__detail-row'>
+                      <span className='tw-cookie__detail-label'>Secure</span>
+                      <span className='tw-cookie__detail-value'>
+                        {cookie.secure ? t('tool.storage.yes') : t('tool.storage.no')}
+                      </span>
+                    </div>
+                    <div className='tw-cookie__detail-row'>
+                      <span className='tw-cookie__detail-label'>SameSite</span>
+                      <span className='tw-cookie__detail-value'>{cookie.sameSite}</span>
+                    </div>
+                  </div>
+                )}
+                <div className='tw-store__actions'>
+                  <button
+                    type='button'
+                    className='tw-link'
+                    onClick={() => toggleCookieExpand(cookieId)}
+                  >
+                    {isExpanded
+                      ? t('tool.storage.cookieCollapse')
+                      : t('tool.storage.cookieDetails')}
+                  </button>
+                  <CopyButton
+                    text={cookie.value}
+                    className='tw-link'
+                    title={t('tool.storage.copyFullValue')}
+                    onResult={(ok) => {
+                      if (!ok) setStatus({ kind: 'err', text: t('tool.storage.copyFailed') })
+                    }}
+                  />
+                  <button
+                    type='button'
+                    className='tw-link tw-link--danger'
+                    onClick={() => askRemoveCookie(cookie)}
+                  >
+                    {t('tool.storage.delete')}
+                  </button>
+                </div>
+              </li>
+            )
+          })}
         </ul>
       )}
 

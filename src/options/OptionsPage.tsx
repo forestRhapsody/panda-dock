@@ -209,7 +209,7 @@ export default function OptionsPage() {
     persist({ ...settings, ballSize })
   }
 
-  /** 选择自定义图片：读为 base64 data URL，校验体积（≤128KB）后存 local */
+  /** 选择自定义图片：校验上传文件体积（≤128KB），读为 base64 data URL 后存 local */
   function onPickImage(file: File | undefined) {
     setBallImageError(null)
     if (!file) return
@@ -217,13 +217,13 @@ export default function OptionsPage() {
       setBallImageError(t('settings.ballImageTypeError'))
       return
     }
+    if (file.size > BALL_IMAGE_MAX_BYTES) {
+      setBallImageError(t('settings.ballImageTooLarge'))
+      return
+    }
     const reader = new FileReader()
     reader.onload = () => {
       const dataUrl = String(reader.result ?? '')
-      if (dataUrl.length > BALL_IMAGE_MAX_BYTES) {
-        setBallImageError(t('settings.ballImageTooLarge'))
-        return
-      }
       setBallImageState(dataUrl)
       if (inExt) void setBallImage(dataUrl)
     }

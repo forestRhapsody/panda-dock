@@ -239,6 +239,7 @@
 }
 
 /* —— JSON 工具：格式化 / 压缩（tab 切换，各自独立） —— */
+.tw-sec,
 .tw-json-sec {
   display: flex;
   flex-direction: column;
@@ -514,6 +515,11 @@
   color: var(--tk-foreground);
   border-color: var(--tk-border-strong);
   background: var(--tk-accent);
+}
+
+.url-codec__select {
+  font-weight: normal;
+  min-width: 175px;
 }
 
 .tw-kv__row {
@@ -920,6 +926,64 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
 }
 
+/* —— 本地存储搜索输入框与无匹配状态 —— */
+.tw-store__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.tw-store__search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--tk-muted-foreground);
+  pointer-events: none;
+  flex: none;
+}
+
+.tw-store__search-input {
+  padding-left: 32px;
+  padding-right: 32px;
+}
+
+.tw-store__search-input::-webkit-search-cancel-button,
+.tw-store__search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.tw-store__search-clear {
+  position: absolute;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: var(--tk-radius-sm);
+  background: transparent;
+  color: var(--tk-muted-foreground);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
+}
+
+.tw-store__search-clear:hover {
+  color: var(--tk-foreground);
+  background: var(--tk-muted);
+}
+
+.tw-store__nomatch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* 正在编辑的行 */
 .tw-store__row--editing {
   border-color: var(--tk-ring);
@@ -966,6 +1030,67 @@
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+/* —— Cookie 徽章与详情展开 —— */
+.tw-cookie__meta-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.tw-cookie__badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tw-cookie__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: var(--tk-radius-sm);
+  font-size: 10px;
+  font-weight: 500;
+  font-family: var(--tk-font-mono);
+  line-height: 1.2;
+  background: var(--tk-muted);
+  color: var(--tk-muted-foreground);
+  border: 1px solid var(--tk-border);
+}
+
+.tw-cookie__details {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-muted);
+  font-size: var(--tk-text-xs);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 6px 12px;
+}
+
+.tw-cookie__detail-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tw-cookie__detail-label {
+  color: var(--tk-muted-foreground);
+  flex: none;
+  font-size: 11px;
+}
+
+.tw-cookie__detail-value {
+  color: var(--tk-foreground);
+  font-family: var(--tk-font-mono);
+  font-size: 11px;
+  word-break: break-all;
 }
 
 /* 确认弹窗改用 src/ui/ui.css 的 .tk-modal（抽屉/侧边栏/设置页通用） */

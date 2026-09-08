@@ -24,6 +24,8 @@ export type IconName =
   | 'pin' // 图钉（钉住）
   | 'alert' // 警告 / 错误提示
   | 'refresh' // 刷新 / 重新载入
+  | 'swap' // 交换 / 双向转换
+  | 'search' // 搜索放大镜
 
 interface IconProps {
   name: IconName
@@ -142,6 +144,20 @@ const GLYPHS: Record<IconName, ReactNode> = {
     <>
       <path d='M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.24L21 8' />
       <path d='M21 3v5h-5' />
+    </>
+  ),
+  swap: (
+    <>
+      <path d='m16 3 4 4-4 4' />
+      <path d='M20 7H4' />
+      <path d='m8 21-4-4 4-4' />
+      <path d='M4 17h16' />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx='11' cy='11' r='7' />
+      <path d='m21 21-4.35-4.35' />
     </>
   ),
 }

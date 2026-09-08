@@ -151,13 +151,21 @@ function detectUrl(s: string): DetectResult | null {
   try {
     url = new URL(s)
   } catch {
-    // 无协议但像完整域名：补 https
-    if (/^[a-z0-9.-]+\.[a-z]{2,}([/?#].*)?$/i.test(s)) {
-      try {
+    // 忽略
+  }
+  if (!url || !ALLOWED_PROTOCOLS.has(url.protocol)) {
+    try {
+      if (/^localhost(?::\d+)?([/?#].*)?$/i.test(s)) {
+        url = new URL(`http://${s}`)
+      } else if (/^(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?([/?#].*)?$/.test(s)) {
+        url = new URL(`http://${s}`)
+      } else if (/^[a-z0-9.-]+\.[a-z]{2,}(?::\d+)?([/?#].*)?$/i.test(s)) {
         url = new URL(`https://${s}`)
-      } catch {
+      } else {
         url = null
       }
+    } catch {
+      url = null
     }
   }
   if (!url || !ALLOWED_PROTOCOLS.has(url.protocol)) return null

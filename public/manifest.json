@@ -24,6 +24,22 @@
   "side_panel": {
     "default_path": "sidepanel.html"
   },
+  "commands": {
+    "open-sidepanel": {
+      "suggested_key": {
+        "default": "Alt+Shift+D",
+        "mac": "Alt+Shift+D"
+      },
+      "description": "打开侧边栏工具箱"
+    },
+    "open-drawer": {
+      "suggested_key": {
+        "default": "Alt+Shift+T",
+        "mac": "Alt+Shift+T"
+      },
+      "description": "打开或收起网页内工具箱抽屉"
+    }
+  },
   "background": {
     "service_worker": "background.js"
   },
@@ -40,5 +56,6 @@
       "matches": ["http://*/*", "https://*/*"]
     }
   ],
-  "permissions": ["storage", "sidePanel", "contextMenus"]
+  "permissions": ["storage", "sidePanel", "contextMenus", "cookies"],
+  "host_permissions": ["http://*/*", "https://*/*"]
 }

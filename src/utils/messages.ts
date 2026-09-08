@@ -36,5 +36,17 @@ export const MSG_STORAGE_CLEAR = 'TOOLKIT_STORAGE_CLEAR'
 /** background → content：右键菜单「智能识别选中文字」→ 显示悬浮面板（携带选中文本与位置） */
 export const MSG_DETECT_SELECTION = 'TOOLKIT_DETECT_SELECTION'
 
+/** 扩展页面/content → background：获取当前网页的 Cookies */
+export const MSG_COOKIE_GET_ALL = 'TOOLKIT_COOKIE_GET_ALL'
+
+/** 扩展页面/content → background：删除指定 Cookie */
+export const MSG_COOKIE_REMOVE = 'TOOLKIT_COOKIE_REMOVE'
+
+/** 扩展页面/content → background：清空当前网页的全部 Cookies */
+export const MSG_COOKIE_CLEAR_ALL = 'TOOLKIT_COOKIE_CLEAR_ALL'
+
+/** 扩展页面/content → background：打开扩展快捷键设置页（chrome://extensions/shortcuts） */
+export const MSG_OPEN_SHORTCUTS = 'OPEN_SHORTCUTS_PAGE'
+
 /** 悬浮球点击行为配置 */
 export type BallAction = 'drawer' | 'native'
