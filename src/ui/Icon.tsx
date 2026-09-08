@@ -26,6 +26,9 @@ export type IconName =
   | 'refresh' // 刷新 / 重新载入
   | 'swap' // 交换 / 双向转换
   | 'search' // 搜索放大镜
+  | 'maximize' // 全屏 / 最大化
+  | 'minimize' // 还原 / 退出全屏
+  | 'plus' // 新增加号
 
 interface IconProps {
   name: IconName
@@ -158,6 +161,28 @@ const GLYPHS: Record<IconName, ReactNode> = {
     <>
       <circle cx='11' cy='11' r='7' />
       <path d='m21 21-4.35-4.35' />
+    </>
+  ),
+  maximize: (
+    <>
+      <path d='M15 3h6v6' />
+      <path d='M9 21H3v-6' />
+      <path d='M21 3l-7 7' />
+      <path d='M3 21l7-7' />
+    </>
+  ),
+  minimize: (
+    <>
+      <path d='M4 14h6v6' />
+      <path d='M20 10h-6V4' />
+      <path d='M14 10l7-7' />
+      <path d='M10 14l-7 7' />
+    </>
+  ),
+  plus: (
+    <>
+      <path d='M12 5v14' />
+      <path d='M5 12h14' />
     </>
   ),
 }

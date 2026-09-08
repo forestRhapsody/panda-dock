@@ -9,6 +9,16 @@ export interface ToolStatus {
 }
 
 /** 工具区的状态提示行：统一 .tw-status / .tw-status--{kind} 外观 */
-export function StatusText({ kind, children }: { kind: ToolStatusKind; children: ReactNode }) {
-  return <p className={`tw-status tw-status--${kind}`}>{children}</p>
+export function StatusText({
+  kind,
+  className,
+  children,
+}: {
+  kind: ToolStatusKind
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <p className={`tw-status tw-status--${kind}${className ? ` ${className}` : ''}`}>{children}</p>
+  )
 }

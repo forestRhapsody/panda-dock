@@ -206,6 +206,10 @@
     box-shadow 0.15s;
 }
 
+.tw-area:hover:not(:focus) {
+  border-color: var(--tk-border-strong);
+}
+
 .tw-area:focus {
   border-color: var(--tk-ring);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
@@ -217,11 +221,6 @@
   /* 只读输出自动增高，禁止手动拉伸（否则会超出外层容器导致多余滚动条）；长串强制换行 */
   resize: none;
   word-break: break-all;
-}
-
-.tw-area--result:focus {
-  border-color: var(--tk-input);
-  box-shadow: none;
 }
 
 .tw-actions {
@@ -836,6 +835,10 @@
   color: var(--tk-muted-foreground);
 }
 
+.tw-input:hover:not(:focus) {
+  border-color: var(--tk-border-strong);
+}
+
 .tw-input:focus {
   border-color: var(--tk-ring);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
@@ -1369,7 +1372,6 @@
   color: var(--tk-muted-foreground);
 }
 
-
 /* —— Logo 裁剪弹窗 (tw-crop-modal) —— */
 
 .tw-crop-modal {
@@ -1532,4 +1534,169 @@
   justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
+}
+
+/* —— Cookie 新增与编辑弹窗 (tw-cookie-modal) —— */
+
+.tw-cookie-modal {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(720px, calc(100vh - 40px));
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-lg);
+  background: var(--tk-card);
+  box-shadow: var(--tk-shadow-lg);
+  box-sizing: border-box;
+  transition:
+    width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    max-height 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tw-cookie-modal--maximized {
+  width: calc(100vw - 24px);
+  height: calc(100vh - 24px);
+  max-height: none;
+}
+
+.tw-cookie-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+}
+
+.tw-cookie-modal__title {
+  margin: 0;
+  font-size: var(--tk-text-md);
+  font-weight: 600;
+  color: var(--tk-foreground);
+  line-height: 1.25;
+}
+
+.tw-cookie-modal__tabs {
+  display: flex;
+  align-items: center;
+}
+
+.tw-cookie-modal__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.tw-cookie-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: -4px -6px;
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tw-cookie-modal__form,
+.tw-cookie-modal__raw {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tw-cookie-modal--maximized .tw-cookie-modal__raw {
+  flex: 1;
+}
+
+.tw-cookie-modal__val-area {
+  min-height: 72px;
+}
+
+.tw-cookie-modal__raw-area {
+  min-height: 160px;
+  font-family: var(--tk-font-mono);
+}
+
+.tw-cookie-modal--maximized .tw-cookie-modal__raw-area {
+  flex: 1;
+  max-height: none;
+}
+
+.tw-cookie-modal__adv-toggle {
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.tw-cookie-modal__adv-icon--open {
+  transform: rotate(180deg);
+}
+
+.tw-cookie-modal__adv-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: color-mix(in srgb, var(--tk-muted) 35%, var(--tk-card));
+}
+
+.tw-cookie-modal__row {
+  display: flex;
+  gap: 10px;
+}
+
+.tw-cookie-modal__col {
+  flex: 1;
+  min-width: 0;
+}
+
+.tw-cookie-modal__checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.tw-cookie-modal__check-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--tk-text-xs);
+  color: var(--tk-foreground);
+  cursor: pointer;
+  user-select: none;
+}
+
+.tw-cookie-modal__raw-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tw-cookie-modal__raw-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tw-cookie-modal__foot {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: none;
+}
+
+.tw-cookie-modal__err {
+  margin-right: auto;
+  font-size: var(--tk-text-xs);
 }

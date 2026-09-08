@@ -42,6 +42,9 @@ export const MSG_COOKIE_GET_ALL = 'TOOLKIT_COOKIE_GET_ALL'
 /** 扩展页面/content → background：删除指定 Cookie */
 export const MSG_COOKIE_REMOVE = 'TOOLKIT_COOKIE_REMOVE'
 
+/** 扩展页面/content → background：设置/写入 Cookie（单条或多条） */
+export const MSG_COOKIE_SET = 'TOOLKIT_COOKIE_SET'
+
 /** 扩展页面/content → background：清空当前网页的全部 Cookies */
 export const MSG_COOKIE_CLEAR_ALL = 'TOOLKIT_COOKIE_CLEAR_ALL'
 

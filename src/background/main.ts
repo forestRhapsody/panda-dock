@@ -3,6 +3,7 @@ import {
   MSG_COOKIE_CLEAR_ALL,
   MSG_COOKIE_GET_ALL,
   MSG_COOKIE_REMOVE,
+  MSG_COOKIE_SET,
   MSG_DETECT_SELECTION,
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_OPEN_OPTIONS,
@@ -155,6 +156,119 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
           sendResponse({ ok: false, error: '删除 Cookie 失败' })
         }
+      } catch (e) {
+        sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })
+      }
+    })()
+    return true
+  }
+
+  if (action === MSG_COOKIE_SET) {
+    void (async () => {
+      try {
+        const payload = message as {
+          url?: string
+          cookie?: {
+            name: string
+            value: string
+            domain?: string
+            path?: string
+            secure?: boolean
+            httpOnly?: boolean
+            sameSite?: 'no_restriction' | 'lax' | 'strict' | 'unspecified'
+            expirationDate?: number
+            storeId?: string
+          }
+          cookies?: Array<{
+            name: string
+            value: string
+            domain?: string
+            path?: string
+            secure?: boolean
+            httpOnly?: boolean
+            sameSite?: 'no_restriction' | 'lax' | 'strict' | 'unspecified'
+            expirationDate?: number
+            storeId?: string
+          }>
+          oldCookie?: {
+            name: string
+            domain: string
+            path: string
+            secure: boolean
+            storeId?: string
+          }
+        }
+
+        const targetUrl = await resolveTargetUrl(payload.url)
+        if (!targetUrl) {
+          sendResponse({ ok: false, error: '无法获取目标网页 URL' })
+          return
+        }
+
+        // 若是编辑且提供了 oldCookie，先移除旧 Cookie 以实现替换
+        if (payload.oldCookie) {
+          const oldUrl = getCookieUrl(payload.oldCookie, targetUrl)
+          await chrome.cookies.remove({
+            url: oldUrl,
+            name: payload.oldCookie.name,
+            storeId: payload.oldCookie.storeId,
+          })
+        }
+
+        const list = Array.isArray(payload.cookies)
+          ? payload.cookies
+          : payload.cookie
+            ? [payload.cookie]
+            : []
+
+        if (list.length === 0) {
+          sendResponse({ ok: false, error: '未提供待保存的 Cookie 数据' })
+          return
+        }
+
+        for (const item of list) {
+          const cookieUrl = getCookieUrl(
+            {
+              domain: item.domain || new URL(targetUrl).hostname,
+              path: item.path || '/',
+              secure: Boolean(item.secure),
+            },
+            targetUrl,
+          )
+
+          const setDetails: chrome.cookies.SetDetails = {
+            url: cookieUrl,
+            name: item.name,
+            value: item.value ?? '',
+            path: item.path || '/',
+            secure: Boolean(item.secure),
+            httpOnly: Boolean(item.httpOnly),
+            storeId: item.storeId,
+          }
+
+          if (item.domain) {
+            setDetails.domain = item.domain
+          }
+          if (item.expirationDate != null && !Number.isNaN(item.expirationDate)) {
+            setDetails.expirationDate = item.expirationDate
+          }
+          if (item.sameSite) {
+            setDetails.sameSite = item.sameSite
+          }
+          if (setDetails.sameSite === 'no_restriction') {
+            setDetails.secure = true
+          }
+
+          const result = await chrome.cookies.set(setDetails)
+          if (!result) {
+            const err = chrome.runtime.lastError?.message
+            throw new Error(
+              err || `写入 Cookie [${item.name}] 失败，请检查作用域 Domain 或 Secure 属性`,
+            )
+          }
+        }
+
+        sendResponse({ ok: true, count: list.length })
       } catch (e) {
         sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })
       }

@@ -4,12 +4,15 @@ import {
   MSG_COOKIE_CLEAR_ALL,
   MSG_COOKIE_GET_ALL,
   MSG_COOKIE_REMOVE,
+  MSG_COOKIE_SET,
   MSG_GET_PAGE_URL,
   MSG_STORAGE_CLEAR,
   MSG_STORAGE_READ,
   MSG_STORAGE_REMOVE,
   MSG_STORAGE_SET,
 } from '@/utils/messages'
+
+import type { CookieSetDetails } from './cookieRaw'
 
 export type WebStorageArea = 'local' | 'session'
 export type StorageArea = WebStorageArea | 'cookie'
@@ -271,6 +274,36 @@ export async function clearAllCookies(pageUrl: string): Promise<SimpleResult> {
     })
     if (res?.ok) return { ok: true }
     return { ok: false, error: res?.error ?? i18n.t('tool.storage.errorCookieClear') }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
+/** 写入或批量更新 Cookie */
+export async function saveCookies(
+  cookies: CookieSetDetails | CookieSetDetails[],
+  pageUrl?: string,
+  oldCookie?: CookieEntry,
+): Promise<SimpleResult> {
+  if (!isExtension()) return { ok: true }
+  try {
+    const list = Array.isArray(cookies) ? cookies : [cookies]
+    const res = await chrome.runtime.sendMessage({
+      action: MSG_COOKIE_SET,
+      url: pageUrl,
+      cookies: list,
+      oldCookie: oldCookie
+        ? {
+            name: oldCookie.name,
+            domain: oldCookie.domain,
+            path: oldCookie.path,
+            secure: oldCookie.secure,
+            storeId: oldCookie.storeId,
+          }
+        : undefined,
+    })
+    if (res?.ok) return { ok: true }
+    return { ok: false, error: res?.error ?? i18n.t('tool.storage.errorCookieSave') }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }

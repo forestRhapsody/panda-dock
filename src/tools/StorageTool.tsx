@@ -8,6 +8,7 @@ import Icon from '@/ui/Icon'
 import { toast } from '@/ui/toast'
 
 import AutoArea from './AutoArea'
+import CookieEditModal from './CookieEditModal'
 import CopyButton from './CopyButton'
 import JsonTextarea from './JsonTextarea'
 import { StatusText } from './StatusText'
@@ -180,6 +181,8 @@ export default function StorageTool() {
   const [result, setResult] = useState<StorageResult | null>(null)
   const [cookieResult, setCookieResult] = useState<CookieResult | null>(null)
   const [expandedCookies, setExpandedCookies] = useState<Set<string>>(new Set())
+  const [cookieModalOpen, setCookieModalOpen] = useState(false)
+  const [editingCookie, setEditingCookie] = useState<CookieEntry | null>(null)
   const [status, setStatus] = useState<ToolStatus | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
   const [filter, setFilter] = useState('')
@@ -362,6 +365,13 @@ export default function StorageTool() {
     })
   }
 
+  function handleCookieSaved(count: number) {
+    toast.success(
+      count > 1 ? t('tool.storage.cookieSavedBatch', { count }) : t('tool.storage.cookieSaved'),
+    )
+    void load()
+  }
+
   function toggleCookieExpand(key: string) {
     setExpandedCookies((prev) => {
       const next = new Set(prev)
@@ -531,9 +541,21 @@ export default function StorageTool() {
           <Icon name='refresh' size={14} className={refreshing ? 'tw-spin' : undefined} />
           {t('tool.storage.refresh')}
         </button>
-        {area !== 'cookie' && (
+        {area !== 'cookie' ? (
           <button type='button' className='tk-btn' onClick={startCreate} disabled={editorOpen}>
             {t('tool.storage.add')}
+          </button>
+        ) : (
+          <button
+            type='button'
+            className='tk-btn'
+            onClick={() => {
+              setEditingCookie(null)
+              setCookieModalOpen(true)
+            }}
+          >
+            <Icon name='plus' size={13} />
+            {t('tool.storage.addCookie')}
           </button>
         )}
         <button
@@ -709,7 +731,14 @@ export default function StorageTool() {
                   </div>
                   <span className='tw-store__size'>{fmtSize(cookie.size)}</span>
                 </div>
-                <code className='tw-store__value' title={cookie.value}>
+                <code
+                  className='tw-store__value'
+                  title={t('tool.storage.dblClickEdit')}
+                  onDoubleClick={() => {
+                    setEditingCookie(cookie)
+                    setCookieModalOpen(true)
+                  }}
+                >
                   {cookie.value || t('tool.storage.emptyString')}
                 </code>
                 {isExpanded && (
@@ -758,6 +787,16 @@ export default function StorageTool() {
                   <button
                     type='button'
                     className='tw-link'
+                    onClick={() => {
+                      setEditingCookie(cookie)
+                      setCookieModalOpen(true)
+                    }}
+                  >
+                    {t('tool.storage.edit')}
+                  </button>
+                  <button
+                    type='button'
+                    className='tw-link'
                     onClick={() => toggleCookieExpand(cookieId)}
                   >
                     {isExpanded
@@ -789,6 +828,22 @@ export default function StorageTool() {
       {!isPageContext() && <p className='tw-note'>{t('tool.storage.extPageNote')}</p>}
 
       {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
+
+      {cookieModalOpen && (
+        <CookieEditModal
+          open={cookieModalOpen}
+          cookie={editingCookie}
+          pageUrl={
+            cookieResult?.ok
+              ? cookieResult.data.url
+              : isPageContext()
+                ? window.location.href
+                : 'https://example.com'
+          }
+          onClose={() => setCookieModalOpen(false)}
+          onSaved={handleCookieSaved}
+        />
+      )}
 
       {confirm && (
         <ConfirmDialog
