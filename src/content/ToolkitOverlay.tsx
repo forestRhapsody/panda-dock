@@ -13,6 +13,7 @@ import {
   MSG_DETECT_SELECTION,
   MSG_OPEN_DRAWER,
   MSG_OPEN_NATIVE_SIDE_PANEL,
+  MSG_TOGGLE_DETECT,
   MSG_TOGGLE_DRAWER,
 } from '@/utils/messages'
 import type { BallPreset, BallShape, BallSize, DomainMatchMode } from '@/utils/settings'
@@ -130,6 +131,7 @@ export default function ToolkitOverlay() {
     x?: number
     y?: number
     targetRect?: SelectionRect
+    position?: 'selection' | 'top-right'
   } | null>(null)
   const noticeTimer = useRef<number | undefined>(undefined)
   // 记录最后一次右键位置与选区坐标，供「智能解析选中文字」悬浮面板定位
@@ -289,19 +291,90 @@ export default function ToolkitOverlay() {
     return () => chrome.storage.onChanged.removeListener(onLocal)
   }, [inExt])
 
-  // 接收来自扩展页的抽屉消息：切换 / 强制打开。
-  // 强制打开只把抽屉这一帧设为开，不改 ballAction —— 即不影响点击悬浮球的默认行为。
+  const lastDetectTriggerRef = useRef(0)
+
+  // 触发智能解析（扩展全局快捷键与页面内快捷键共用逻辑）
+  const triggerDetect = useCallback(() => {
+    const now = Date.now()
+    if (now - lastDetectTriggerRef.current < 300) return
+    lastDetectTriggerRef.current = now
+
+    // 1. 检查当前网页是否有选中文本
+    let selText = ''
+    let rect: SelectionRect | undefined
+    try {
+      const sel = window.getSelection()
+      if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+        const raw = sel.toString().trim()
+        if (raw) {
+          selText = raw
+          const r = sel.getRangeAt(0).getBoundingClientRect()
+          if (r.width > 0 || r.height > 0) {
+            rect = {
+              left: r.left,
+              top: r.top,
+              right: r.right,
+              bottom: r.bottom,
+              width: r.width,
+              height: r.height,
+            }
+          }
+        }
+      }
+    } catch {
+      // 忽略
+    }
+
+    if (selText) {
+      // 选中文字的情况下：出现的位置和之前一样（正下方/上方居中跟随）
+      setSelectionDetect({
+        text: selText,
+        x: rect ? rect.left + rect.width / 2 : window.innerWidth / 2,
+        y: rect ? rect.bottom : window.innerHeight / 2,
+        targetRect: rect,
+        position: 'selection',
+      })
+      return
+    }
+
+    // 未选中文字的情况下：
+    // 若当前面板已处于打开状态，再次按下快捷键执行收回（Toggle）！
+    setSelectionDetect((prev) => {
+      if (prev) {
+        return null
+      }
+      return {
+        text: '',
+        position: 'top-right',
+      }
+    })
+  }, [])
+
+  // 页面内直接监听 Alt+Shift+S（或 Option+Shift+S）作为双保险，
+  // 确保在任何网页中开箱即用，即使 Chrome 快捷键注册尚未同步也能即时生效
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.altKey || e.metaKey) && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+        e.preventDefault()
+        triggerDetect()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [triggerDetect])
+
+  // 监听来自其他页面或扩展后台的消息
   useEffect(() => {
     if (!inExt) return
     const listener = (
       message: unknown,
       _sender: chrome.runtime.MessageSender,
-      sendResponse: (response?: unknown) => void,
+      sendResponse: (res?: unknown) => void,
     ) => {
-      const action = (message as { action?: string })?.action
+      const action = (message as { action?: string } | undefined)?.action
       if (action === MSG_TOGGLE_DRAWER) {
-        setDrawerOpen((open) => {
-          const next = !open
+        setDrawerOpen((prev) => {
+          const next = !prev
           if (next && inExt) {
             void chrome.runtime.sendMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
           }
@@ -344,13 +417,17 @@ export default function ToolkitOverlay() {
             x: lastCtxPos.current.x,
             y: lastCtxPos.current.y,
             targetRect: rect,
+            position: 'selection',
           })
         }
+      } else if (action === MSG_TOGGLE_DETECT) {
+        triggerDetect()
+        sendResponse({ ok: true })
       }
     }
     chrome.runtime.onMessage.addListener(listener)
     return () => chrome.runtime.onMessage.removeListener(listener)
-  }, [inExt])
+  }, [inExt, triggerDetect])
 
   // 拖拽结束后落点：更新状态 + 持久化（存绝对坐标）
   const handleDrop = useCallback(
@@ -422,6 +499,7 @@ export default function ToolkitOverlay() {
           x={selectionDetect.x}
           y={selectionDetect.y}
           targetRect={selectionDetect.targetRect}
+          position={selectionDetect.position}
           onClose={() => setSelectionDetect(null)}
         />
       )}

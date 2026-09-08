@@ -9,6 +9,7 @@ import {
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_OPEN_OPTIONS,
   MSG_OPEN_SHORTCUTS,
+  MSG_TOGGLE_DETECT,
   MSG_TOGGLE_DRAWER,
 } from '@/utils/messages'
 
@@ -467,6 +468,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * 支持再次按下快捷键收回（Toggle）。
  */
 chrome.commands.onCommand.addListener((command, tab) => {
+  if (command === 'toggle-detect') {
+    const tabId = tab?.id
+    if (tabId != null) {
+      chrome.tabs.sendMessage(tabId, { action: MSG_TOGGLE_DETECT }).catch(() => {
+        // 当前页若无法注入 content script（如 chrome:// 特权页），降级尝试在原生侧边栏打开
+        const windowId = tab?.windowId ?? lastActiveWindowId
+        if (windowId != null && typeof chrome.sidePanel?.open === 'function') {
+          void chrome.sidePanel.open({ windowId }).then(
+            () => openSidePanelWindows.add(windowId),
+            () => {},
+          )
+        }
+      })
+    }
+    return
+  }
+
   if (command !== 'toggle-toolkit') return
 
   const windowId = tab?.windowId ?? lastActiveWindowId

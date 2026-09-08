@@ -31,6 +31,13 @@
         "mac": "Alt+Shift+D"
       },
       "description": "打开/收起工具箱（按设置打开侧边栏或网页抽屉）"
+    },
+    "toggle-detect": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "智能解析（选中文本就地解析 / 未选中右上角弹出）"
     }
   },
   "background": {

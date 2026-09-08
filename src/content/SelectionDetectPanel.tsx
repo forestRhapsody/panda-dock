@@ -20,13 +20,15 @@ export interface SelectionRect {
   height: number
 }
 
-interface SelectionDetectPanelProps {
+export interface SelectionDetectPanelProps {
   text: string
   /** 触发点（视口坐标），默认屏幕左上角 */
   x?: number
   y?: number
   /** 选中文本在视口中的包围盒矩形（用于精确定位在文本下方） */
   targetRect?: SelectionRect
+  /** 定位策略：未选中文字时固定在右上角；选中文字时居中跟随选区 */
+  position?: 'selection' | 'top-right'
   onClose: () => void
 }
 
@@ -34,9 +36,9 @@ const PAD = 10
 const GAP = 8
 
 /**
- * 右键「智能解析选中文字」后在网页内弹出的悬浮面板。
- * - 默认优先精准出现在选中文本正下方（高度足够时）；下方不足时自动翻转至文本上方；
- * - 即使未识别出已知类型，也提供编辑输入框将选中文本放入供用户查看、修改与再次识别；
+ * 右键「智能解析选中文字」或快捷键触发在网页内弹出的悬浮面板。
+ * - 选中文字时默认优先精准出现在选中文本正下方（空间不足翻转上方）；
+ * - 未选中文字时直接定位在浏览器右上角，输入框自动聚焦方便直接粘贴；
  * - 点击 header 任意拖动整卡；图钉可钉住面板（点击页面外部不关闭）。
  */
 export default function SelectionDetectPanel({
@@ -44,6 +46,7 @@ export default function SelectionDetectPanel({
   x = PAD,
   y = PAD,
   targetRect,
+  position = 'selection',
   onClose,
 }: SelectionDetectPanelProps) {
   const { t } = useTranslation()
@@ -94,6 +97,18 @@ export default function SelectionDetectPanel({
     const vw = window.innerWidth
     const vh = window.innerHeight
 
+    if (position === 'top-right') {
+      // 未选中文字时：直接出现在浏览器右上角（距右侧与顶部各 24px）
+      const rightPad = 24
+      const topPad = 24
+      const left = Math.max(PAD, vw - w - rightPad)
+      const top = Math.min(topPad, vh - h - PAD)
+      setPos({ left, top })
+      positionedRef.current = true
+      setShown(true)
+      return
+    }
+
     // 锚点基准坐标：优先取选区包围矩形，降级取点击坐标点
     const anchorTop = targetRect ? targetRect.top : y
     const anchorBottom = targetRect ? targetRect.bottom : y
@@ -129,7 +144,7 @@ export default function SelectionDetectPanel({
     setPos({ left, top })
     positionedRef.current = true
     setShown(true)
-  }, [x, y, targetRect])
+  }, [x, y, targetRect, position])
 
   // 拖动：按住 header（非按钮部分）移动整卡
   const startDrag = useCallback(
@@ -167,14 +182,33 @@ export default function SelectionDetectPanel({
     return () => document.removeEventListener('pointerdown', onDown, true)
   }, [onClose, pinned])
 
-  // Escape 始终关闭
+  // Escape 始终关闭；按下快捷键 Alt+Shift+S 也能收回
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (
+        (e.altKey || e.metaKey) &&
+        e.shiftKey &&
+        (e.key === 'S' || e.key === 's' || e.key === 'P' || e.key === 'p')
+      ) {
+        e.preventDefault()
+        e.stopPropagation()
+        onClose()
+      }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  // 当以空文本打开时（如右上角快捷弹出），自动聚焦输入编辑框方便直接粘贴
+  useEffect(() => {
+    if (!text && inputRef.current) {
+      inputRef.current.focus()
+    }
+  }, [text])
 
   return (
     <div

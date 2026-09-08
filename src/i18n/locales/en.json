@@ -41,6 +41,8 @@
     "actionNative": "Browser native side panel",
     "shortcutTitle": "Global Shortcut",
     "shortcutDesc": "Toggle Panda Dock with a unified shortcut (opens side panel or drawer based on settings).",
+    "detectShortcutTitle": "Smart Parse Shortcut",
+    "detectShortcutDesc": "Parse selected text in place; or pop up empty parse panel in the top-right corner if nothing is selected (press again to close).",
     "configureShortcut": "Configure",
     "ballStyleSection": "Floating Ball Style",
     "ballShape": "Shape",

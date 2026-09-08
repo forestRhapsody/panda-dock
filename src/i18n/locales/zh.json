@@ -41,6 +41,8 @@
     "actionNative": "浏览器原生侧边栏",
     "shortcutTitle": "全局唤起快捷键",
     "shortcutDesc": "使用统一快捷键快速唤起工具箱（按设置自动打开侧边栏或网页抽屉）。",
+    "detectShortcutTitle": "智能解析快捷键",
+    "detectShortcutDesc": "选中文字就地解析；未选中文字时在浏览器右上角弹出空白解析面板（再次按下收回）。",
     "configureShortcut": "前往修改",
     "ballStyleSection": "悬浮球样式",
     "ballShape": "形状",

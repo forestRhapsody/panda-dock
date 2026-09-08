@@ -45,7 +45,7 @@ import type {
   Settings,
   ThemeMode,
 } from '@/utils/settings'
-import { getToolkitShortcut, openShortcutsPage } from '@/utils/shortcuts'
+import { getDetectShortcut, getToolkitShortcut, openShortcutsPage } from '@/utils/shortcuts'
 import { useTheme } from '@/utils/theme'
 
 import './index.css'
@@ -173,10 +173,14 @@ export default function OptionsPage() {
 
   // 加载当前全局快捷键配置
   const [shortcut, setShortcut] = useState('Alt+Shift+D')
+  const [detectShortcut, setDetectShortcut] = useState('Alt+Shift+S')
   useEffect(() => {
     let alive = true
     void getToolkitShortcut().then((sc) => {
       if (alive) setShortcut(sc)
+    })
+    void getDetectShortcut().then((sc) => {
+      if (alive) setDetectShortcut(sc)
     })
     return () => {
       alive = false
@@ -402,6 +406,26 @@ export default function OptionsPage() {
               </div>
               <div className='opt__shortcut-group'>
                 <kbd className='opt__kbd'>{shortcut}</kbd>
+                {inExt && (
+                  <button
+                    type='button'
+                    className='tk-btn tk-btn--sm'
+                    onClick={() => void openShortcutsPage()}
+                    title={t('settings.configureShortcut')}
+                  >
+                    <Icon name='external-link' size={14} />
+                    {t('settings.configureShortcut')}
+                  </button>
+                )}
+              </div>
+            </li>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.detectShortcutTitle')}</strong>
+                <p>{t('settings.detectShortcutDesc')}</p>
+              </div>
+              <div className='opt__shortcut-group'>
+                <kbd className='opt__kbd'>{detectShortcut}</kbd>
                 {inExt && (
                   <button
                     type='button'
