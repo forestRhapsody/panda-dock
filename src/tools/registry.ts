@@ -11,7 +11,6 @@ export type ToolId =
   | 'url'
   | 'qrcode'
   | 'detect'
-  | 'file-b64'
 
 export interface ToolMeta {
   id: ToolId
@@ -26,13 +25,12 @@ export const DEFAULT_TOOLS: ToolMeta[] = [
   { id: 'timestamp', label: 'Timestamp' },
   { id: 'qrcode', label: 'QR Code Tool' },
   { id: 'json', label: 'JSON' },
-  { id: 'file-b64', label: 'File → Base64' },
   { id: 'url', label: 'URL' },
   { id: 'jwt', label: 'JWT' },
 ]
 
 /** 默认隐藏（不启用）的工具：用户截图里关闭的那几个 */
-const DEFAULT_HIDDEN_TOOLS: ToolId[] = ['file-b64', 'url', 'jwt']
+const DEFAULT_HIDDEN_TOOLS: ToolId[] = ['url', 'jwt']
 
 export function isToolId(value: unknown): value is ToolId {
   return DEFAULT_TOOLS.some((t) => t.id === value)

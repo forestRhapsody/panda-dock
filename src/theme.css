@@ -121,3 +121,8 @@
 :host {
   --tk-font-scale: 1;
 }
+
+/* 确保 HTML 原生 [hidden] 属性具有最高优先级，防止被各类具有 display: flex/grid/block 等类名意外覆盖 */
+[hidden] {
+  display: none !important;
+}

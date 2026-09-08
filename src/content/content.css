@@ -7,6 +7,11 @@
   all: initial;
 }
 
+/* 确保 HTML 原生 [hidden] 属性生效 */
+[hidden] {
+  display: none !important;
+}
+
 /* —— 悬浮触发器（圆形悬浮球：移开只露一半 / 悬停完整滑出） —— */
 
 .tek__dock {

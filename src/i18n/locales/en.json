@@ -133,6 +133,10 @@
   },
   "tool": {
     "base64": {
+      "tabTextDecode": "Decode Text",
+      "tabTextEncode": "Encode Text",
+      "tabFileEncode": "File to Base64",
+      "tabFileDecode": "Base64 to File",
       "decode": "Decode",
       "encode": "Encode",
       "labelInputEncode": "Input",

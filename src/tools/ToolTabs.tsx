@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 
 interface ToolTabsProps<T extends string> {
@@ -6,6 +7,8 @@ interface ToolTabsProps<T extends string> {
   onChange: (id: T) => void
   /** 供无障碍读屏（可选，同 role=tablist 的 aria-label） */
   'aria-label'?: string
+  /** 附加 CSS 类名 */
+  className?: string
 }
 
 /**
@@ -18,9 +21,20 @@ export default function ToolTabs<T extends string>({
   value,
   onChange,
   'aria-label': ariaLabel,
+  className = '',
 }: ToolTabsProps<T>) {
+  const navRef = useRef<HTMLDivElement>(null)
+  const classes = ['tw-tabs', className].filter(Boolean).join(' ')
+
+  useEffect(() => {
+    const activeBtn = navRef.current?.querySelector<HTMLButtonElement>('.tw-tabs__btn--on')
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+    }
+  }, [value])
+
   return (
-    <div className='tw-tabs' role='tablist' aria-label={ariaLabel}>
+    <div ref={navRef} className={classes} role='tablist' aria-label={ariaLabel}>
       {items.map((item) => (
         <button
           key={item.id}
