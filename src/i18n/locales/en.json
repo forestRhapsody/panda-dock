@@ -8,7 +8,8 @@
     "retry": "Retry",
     "collapse": "Collapse",
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "clear": "Clear"
   },
   "popup": {
     "quickSettings": "Quick settings",
@@ -161,6 +162,9 @@
       "title": "Smart Parse",
       "pin": "Pin (keep open when clicking outside)",
       "unpin": "Unpin (close when clicking outside)",
+      "sourceLabel": "Selected Text",
+      "editSource": "Edit selected text",
+      "hideSource": "Hide editor",
       "inputLabel": "Paste or type something",
       "inputPlaceholder": "Paste any text to automatically parse and extract results…",
       "supportedFormats": "Supported:",

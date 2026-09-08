@@ -8,7 +8,8 @@
     "retry": "重试",
     "collapse": "收起",
     "copy": "复制",
-    "copied": "已复制"
+    "copied": "已复制",
+    "clear": "清空"
   },
   "popup": {
     "quickSettings": "快捷设置",
@@ -161,6 +162,9 @@
       "title": "智能解析",
       "pin": "钉住（点击页面其它区域不关闭）",
       "unpin": "取消钉住（点击页面其它区域可关闭）",
+      "sourceLabel": "选中文本",
+      "editSource": "编辑选中文本",
+      "hideSource": "收起编辑框",
       "inputLabel": "粘贴或输入内容",
       "inputPlaceholder": "粘贴任意文本，自动解析并提取结果…",
       "supportedFormats": "支持格式：",

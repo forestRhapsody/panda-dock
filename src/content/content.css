@@ -195,7 +195,8 @@
   white-space: nowrap;
 }
 
-.tek-detect-panel__pin--on {
+.tek-detect-panel__pin--on,
+.tek-detect-panel__btn--active {
   background: var(--tk-accent);
   color: var(--tk-primary);
 }
@@ -207,5 +208,24 @@
   padding: 4px 6px;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.tek-detect__editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tek-detect__editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tek-detect__editor-actions {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }

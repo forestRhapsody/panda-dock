@@ -29,6 +29,7 @@ export type IconName =
   | 'maximize' // 全屏 / 最大化
   | 'minimize' // 还原 / 退出全屏
   | 'plus' // 新增加号
+  | 'edit' // 编辑（铅笔）
 
 interface IconProps {
   name: IconName
@@ -183,6 +184,12 @@ const GLYPHS: Record<IconName, ReactNode> = {
     <>
       <path d='M12 5v14' />
       <path d='M5 12h14' />
+    </>
+  ),
+  edit: (
+    <>
+      <path d='M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' />
+      <path d='m15 5 4 4' />
     </>
   ),
 }

@@ -22,7 +22,7 @@ import { useTheme } from '@/utils/theme'
 import Drawer from './Drawer'
 import FloatingBall, { clampBallPos, snapToEdge } from './FloatingBall'
 import type { BallPos } from './FloatingBall'
-import SelectionDetectPanel from './SelectionDetectPanel'
+import SelectionDetectPanel, { type SelectionRect } from './SelectionDetectPanel'
 
 const POS_KEY = 'toolkit.ballPos'
 const SETTINGS_KEY = 'settings'
@@ -129,10 +129,15 @@ export default function ToolkitOverlay() {
     text: string
     x?: number
     y?: number
+    targetRect?: SelectionRect
   } | null>(null)
   const noticeTimer = useRef<number | undefined>(undefined)
-  // 记录最后一次右键位置：Chrome 右键菜单回调不提供坐标，面板靠它跟随点击点
-  const lastCtxPos = useRef({ x: 8, y: 8 })
+  // 记录最后一次右键位置与选区坐标，供「智能解析选中文字」悬浮面板定位
+  const lastCtxPos = useRef<{
+    x: number
+    y: number
+    targetRect?: SelectionRect
+  }>({ x: 8, y: 8 })
 
   const showNotice = useCallback((text: string) => {
     setNotice(text)
@@ -142,10 +147,50 @@ export default function ToolkitOverlay() {
 
   useEffect(() => () => window.clearTimeout(noticeTimer.current), [])
 
-  // 记录最后一次右键位置，供「智能识别选中文字」悬浮面板跟随
+  // 记录最后一次右键位置与选区坐标，供「智能解析选中文字」悬浮面板跟随
   useEffect(() => {
     const onCtx = (e: MouseEvent) => {
-      lastCtxPos.current = { x: e.clientX, y: e.clientY }
+      let rect: SelectionRect | undefined
+      try {
+        const sel = window.getSelection()
+        if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+          const r = sel.getRangeAt(0).getBoundingClientRect()
+          if (r.width > 0 || r.height > 0) {
+            rect = {
+              left: r.left,
+              top: r.top,
+              right: r.right,
+              bottom: r.bottom,
+              width: r.width,
+              height: r.height,
+            }
+          }
+        }
+      } catch {
+        // 忽略跨域 iframe 或特殊选区异常
+      }
+
+      if (!rect && e.target instanceof HTMLElement) {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          const r = e.target.getBoundingClientRect()
+          if (r.width > 0 && r.height > 0) {
+            rect = {
+              left: r.left,
+              top: r.top,
+              right: r.right,
+              bottom: r.bottom,
+              width: r.width,
+              height: r.height,
+            }
+          }
+        }
+      }
+
+      lastCtxPos.current = {
+        x: e.clientX,
+        y: e.clientY,
+        targetRect: rect,
+      }
     }
     window.addEventListener('contextmenu', onCtx, true)
     return () => window.removeEventListener('contextmenu', onCtx, true)
@@ -262,13 +307,35 @@ export default function ToolkitOverlay() {
       } else if (action === MSG_CLOSE_DRAWER) {
         setDrawerOpen(false)
       } else if (action === MSG_DETECT_SELECTION) {
-        // 右键菜单「智能识别选中文字」→ 弹出悬浮面板（位置取 content 记录的右键点）
+        // 右键菜单「智能解析选中文字」→ 弹出悬浮面板（位置优先取选区矩形，否则取右键点）
         const { text } = message as { text?: string }
         if (text) {
+          let rect = lastCtxPos.current.targetRect
+          if (!rect) {
+            try {
+              const sel = window.getSelection()
+              if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+                const r = sel.getRangeAt(0).getBoundingClientRect()
+                if (r.width > 0 || r.height > 0) {
+                  rect = {
+                    left: r.left,
+                    top: r.top,
+                    right: r.right,
+                    bottom: r.bottom,
+                    width: r.width,
+                    height: r.height,
+                  }
+                }
+              }
+            } catch {
+              // 忽略
+            }
+          }
           setSelectionDetect({
             text,
             x: lastCtxPos.current.x,
             y: lastCtxPos.current.y,
+            targetRect: rect,
           })
         }
       }
@@ -346,6 +413,7 @@ export default function ToolkitOverlay() {
           text={selectionDetect.text}
           x={selectionDetect.x}
           y={selectionDetect.y}
+          targetRect={selectionDetect.targetRect}
           onClose={() => setSelectionDetect(null)}
         />
       )}

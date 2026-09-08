@@ -3,32 +3,47 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import AutoArea from '@/tools/AutoArea'
+import CopyButton from '@/tools/CopyButton'
 import { detect } from '@/tools/detect'
 import type { DetectResult } from '@/tools/detect'
 import DetectResultView from '@/tools/DetectResultView'
 import { StatusText } from '@/tools/StatusText'
 import Icon from '@/ui/Icon'
 
+export interface SelectionRect {
+  left: number
+  top: number
+  right: number
+  bottom: number
+  width: number
+  height: number
+}
+
 interface SelectionDetectPanelProps {
   text: string
   /** 触发点（视口坐标），默认屏幕左上角 */
   x?: number
   y?: number
+  /** 选中文本在视口中的包围盒矩形（用于精确定位在文本下方） */
+  targetRect?: SelectionRect
   onClose: () => void
 }
 
-const PAD = 8
+const PAD = 10
+const GAP = 8
 
 /**
- * 右键「智能解析选中文字」后在网页内弹出的悬浮面板（沉浸式翻译风格）。
- * - 点击 header（或抓手）任意拖动整卡；
- * - 图钉图标可钉住：钉住后点击页面其它区域不再自动关闭（Escape 仍可关）。
- * 渲染在 Content Script 的 Shadow DOM 里，样式与宿主隔离；贴近视口边缘自动回夹，下方不足翻到上方。
+ * 右键「智能解析选中文字」后在网页内弹出的悬浮面板。
+ * - 默认优先精准出现在选中文本正下方（高度足够时）；下方不足时自动翻转至文本上方；
+ * - 即使未识别出已知类型，也提供编辑输入框将选中文本放入供用户查看、修改与再次识别；
+ * - 点击 header 任意拖动整卡；图钉可钉住面板（点击页面外部不关闭）。
  */
 export default function SelectionDetectPanel({
   text,
   x = PAD,
   y = PAD,
+  targetRect,
   onClose,
 }: SelectionDetectPanelProps) {
   const { t } = useTranslation()
@@ -36,37 +51,87 @@ export default function SelectionDetectPanel({
   const dragRef = useRef<{ dx: number; dy: number } | null>(null)
   const [pos, setPos] = useState({ left: x, top: y })
   const [pinned, setPinned] = useState(false)
-  // 定位好之前先隐藏，避免首帧越界/位置跳动后再回夹的闪烁
   const [shown, setShown] = useState(false)
-  // 面板是否已定位过一次；已钉住 + 已定位后，重新识别不再移动位置
   const positionedRef = useRef(false)
   const pinnedRef = useRef(false)
   pinnedRef.current = pinned
-  const result = useMemo<DetectResult | null>(() => detect(text), [text])
+
+  // 维护可编辑的文本状态（初始为选中文本）
+  const [input, setInput] = useState(text)
+  // 当识别成功时，是否手动展开原文编辑框
+  const [editingSource, setEditingSource] = useState(false)
+
+  // 当外部选中文本更新时（未钉住状态下）同步重置
+  useEffect(() => {
+    setInput(text)
+    setEditingSource(false)
+    if (!pinnedRef.current) {
+      positionedRef.current = false
+    }
+  }, [text])
+
+  // 动态响应式识别：用户编辑或修正输入时即时重新解析
+  const result = useMemo<DetectResult | null>(() => detect(input), [input])
 
   const clampPos = useCallback((left: number, top: number) => {
     const el = ref.current
     const w = el?.offsetWidth ?? 480
-    const h = el?.offsetHeight ?? 320
+    const h = el?.offsetHeight ?? 260
     return {
       left: Math.min(Math.max(left, PAD), Math.max(PAD, window.innerWidth - w - PAD)),
       top: Math.min(Math.max(top, PAD), Math.max(PAD, window.innerHeight - h - PAD)),
     }
   }, [])
 
-  // 挂载后按实际尺寸回夹到视口内，避免溢出。
-  // 策略：把面板**居中**在右键点上再回夹 —— 面板始终贴近点击处，
-  // 不再因面板较高而"翻到上方/夹到顶部远离点击点"。
-  // 面板已定位过且已钉住时，重新识别（x/y 变化）不再移动位置（只更新内容）。
+  // 挂载与选区变化时定位：
+  // 核心预期：在高度足够的情况下，精准出现在选中文本正下方（GAP = 8px）
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
     if (positionedRef.current && pinnedRef.current) return
+
     const r = el.getBoundingClientRect()
-    setPos(clampPos(x - r.width / 2, y - r.height / 2))
+    const w = r.width || 480
+    const h = r.height || 260
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+
+    // 锚点基准坐标：优先取选区包围矩形，降级取点击坐标点
+    const anchorTop = targetRect ? targetRect.top : y
+    const anchorBottom = targetRect ? targetRect.bottom : y
+    const anchorCenterX = targetRect
+      ? targetRect.left + (targetRect.width || targetRect.right - targetRect.left) / 2
+      : x
+
+    // 垂直方向逻辑：优先位于下方；下方不足且上方足够时翻转至上方
+    const topBelow = anchorBottom + GAP
+    const spaceBelow = vh - topBelow - PAD
+    const topAbove = anchorTop - h - GAP
+    const spaceAbove = anchorTop - GAP - PAD
+
+    let top: number
+    if (spaceBelow >= h) {
+      // 下方高度充足
+      top = topBelow
+    } else if (spaceAbove >= h) {
+      // 下方空间不足，但上方高度充足
+      top = topAbove
+    } else {
+      // 上下高度均受限：选择空间更大的一侧，并回夹在视口安全范围内
+      top =
+        spaceBelow >= spaceAbove
+          ? Math.max(PAD, Math.min(topBelow, vh - h - PAD))
+          : Math.max(PAD, Math.min(topAbove, vh - h - PAD))
+    }
+
+    // 水平方向逻辑：以选中文本的水平中心（如 "123" 的 "2" 处）为基准居中显示，并夹在视口安全范围内
+    const idealLeft = anchorCenterX - w / 2
+    const left = Math.max(PAD, Math.min(idealLeft, vw - w - PAD))
+
+    setPos({ left, top })
     positionedRef.current = true
     setShown(true)
-  }, [x, y, clampPos])
+  }, [x, y, targetRect])
 
   // 拖动：按住 header（非按钮部分）移动整卡
   const startDrag = useCallback(
@@ -134,6 +199,17 @@ export default function SelectionDetectPanel({
         <strong className='tek-detect-panel__title'>{t('tool.detect.title')}</strong>
         <button
           type='button'
+          className={`tk-icon-btn tek-detect-panel__btn${editingSource || !result ? ' tek-detect-panel__btn--active' : ''}`}
+          title={
+            editingSource || !result ? t('tool.detect.hideSource') : t('tool.detect.editSource')
+          }
+          aria-pressed={editingSource || !result}
+          onClick={() => setEditingSource((p) => !p)}
+        >
+          <Icon name='edit' size={14} />
+        </button>
+        <button
+          type='button'
           className={`tk-icon-btn tek-detect-panel__pin${pinned ? ' tek-detect-panel__pin--on' : ''}`}
           title={pinned ? t('tool.detect.unpin') : t('tool.detect.pin')}
           aria-pressed={pinned}
@@ -152,8 +228,33 @@ export default function SelectionDetectPanel({
         </button>
       </div>
       <div className='tek-detect-panel__body'>
+        {(editingSource || !result) && (
+          <div className='tek-detect__editor'>
+            <div className='tek-detect__editor-head'>
+              <span className='tw-field__label'>{t('tool.detect.sourceLabel')}</span>
+              <div className='tek-detect__editor-actions'>
+                <CopyButton text={input} label={t('common.copy')} className='tw-link' />
+                {input && (
+                  <button type='button' className='tw-link' onClick={() => setInput('')}>
+                    {t('common.clear')}
+                  </button>
+                )}
+              </div>
+            </div>
+            <AutoArea
+              className='tw-area'
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t('tool.detect.inputPlaceholder')}
+              maxHeight={result ? 120 : 180}
+              spellCheck={false}
+              autoFocus={!result}
+            />
+          </div>
+        )}
+
         {result ? (
-          <DetectResultView result={result} blockMaxHeight={300} />
+          <DetectResultView result={result} blockMaxHeight={editingSource ? 220 : 300} />
         ) : (
           <StatusText kind='info'>{t('tool.detect.none')}</StatusText>
         )}
