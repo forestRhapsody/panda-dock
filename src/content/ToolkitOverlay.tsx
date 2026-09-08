@@ -300,12 +300,20 @@ export default function ToolkitOverlay() {
     ) => {
       const action = (message as { action?: string })?.action
       if (action === MSG_TOGGLE_DRAWER) {
-        setDrawerOpen((open) => !open)
+        setDrawerOpen((open) => {
+          const next = !open
+          if (next && inExt) {
+            void chrome.runtime.sendMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
+          }
+          return next
+        })
+        sendResponse({ ok: true })
       } else if (action === MSG_OPEN_DRAWER) {
         setDrawerOpen(true)
         sendResponse({ ok: true })
       } else if (action === MSG_CLOSE_DRAWER) {
         setDrawerOpen(false)
+        sendResponse({ ok: true })
       } else if (action === MSG_DETECT_SELECTION) {
         // 右键菜单「智能解析选中文字」→ 弹出悬浮面板（位置优先取选区矩形，否则取右键点）
         const { text } = message as { text?: string }

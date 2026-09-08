@@ -86,6 +86,26 @@ body {
   color: var(--tk-muted-foreground);
 }
 
+.opt__shortcut-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.opt__kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-muted);
+  color: var(--tk-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: var(--tk-text-sm);
+  font-weight: 600;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+}
+
 /* 悬浮球预设样式：3 个 logo 选项（先以 emoji 占位，后续替换为元素） */
 .opt-ball-presets {
   display: flex;

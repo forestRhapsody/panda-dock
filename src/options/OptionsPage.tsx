@@ -45,6 +45,7 @@ import type {
   Settings,
   ThemeMode,
 } from '@/utils/settings'
+import { getToolkitShortcut, openShortcutsPage } from '@/utils/shortcuts'
 import { useTheme } from '@/utils/theme'
 
 import './index.css'
@@ -164,6 +165,18 @@ export default function OptionsPage() {
     let alive = true
     void getBallImage().then((img) => {
       if (alive) setBallImageState(img)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  // 加载当前全局快捷键配置
+  const [shortcut, setShortcut] = useState('Alt+Shift+D')
+  useEffect(() => {
+    let alive = true
+    void getToolkitShortcut().then((sc) => {
+      if (alive) setShortcut(sc)
     })
     return () => {
       alive = false
@@ -381,6 +394,26 @@ export default function OptionsPage() {
                 <option value='drawer'>{t('settings.actionDrawer')}</option>
                 <option value='native'>{t('settings.actionNative')}</option>
               </TkSelect>
+            </li>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.shortcutTitle')}</strong>
+                <p>{t('settings.shortcutDesc')}</p>
+              </div>
+              <div className='opt__shortcut-group'>
+                <kbd className='opt__kbd'>{shortcut}</kbd>
+                {inExt && (
+                  <button
+                    type='button'
+                    className='tk-btn tk-btn--sm'
+                    onClick={() => void openShortcutsPage()}
+                    title={t('settings.configureShortcut')}
+                  >
+                    <Icon name='external-link' size={14} />
+                    {t('settings.configureShortcut')}
+                  </button>
+                )}
+              </div>
             </li>
           </ul>
         </div>

@@ -25,19 +25,12 @@
     "default_path": "sidepanel.html"
   },
   "commands": {
-    "open-sidepanel": {
+    "toggle-toolkit": {
       "suggested_key": {
         "default": "Alt+Shift+D",
         "mac": "Alt+Shift+D"
       },
-      "description": "打开侧边栏工具箱"
-    },
-    "open-drawer": {
-      "suggested_key": {
-        "default": "Alt+Shift+T",
-        "mac": "Alt+Shift+T"
-      },
-      "description": "打开或收起网页内工具箱抽屉"
+      "description": "打开/收起工具箱（按设置打开侧边栏或网页抽屉）"
     }
   },
   "background": {

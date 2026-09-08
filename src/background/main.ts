@@ -1,4 +1,5 @@
 import {
+  MSG_CLOSE_DRAWER,
   MSG_CLOSE_NATIVE_SIDE_PANEL,
   MSG_COOKIE_CLEAR_ALL,
   MSG_COOKIE_GET_ALL,
@@ -7,6 +8,8 @@ import {
   MSG_DETECT_SELECTION,
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_OPEN_OPTIONS,
+  MSG_OPEN_SHORTCUTS,
+  MSG_TOGGLE_DRAWER,
 } from '@/utils/messages'
 
 function getCookieUrl(
@@ -77,6 +80,48 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
  *   chrome.tabs.create，且 window.open 打开扩展页会被 Chrome 以 ERR_BLOCKED_BY_CLIENT 拦截）
  *   → 改由 background 用 chrome.tabs.create 打开 options.html。
  */
+async function closeSidePanel(targetWindowId?: number): Promise<boolean> {
+  try {
+    const sp = chrome.sidePanel as unknown as {
+      close?: (opts: { windowId: number }) => Promise<void>
+    }
+    if (typeof sp?.close === 'function') {
+      let winId = targetWindowId
+      if (winId == null) {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+        winId = tab?.windowId
+      }
+      if (winId != null) {
+        try {
+          await sp.close({ windowId: winId })
+        } catch {
+          // 忽略
+        }
+      }
+    }
+    // 广播通知 sidepanel 窗口执行 window.close()
+    await chrome.runtime.sendMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function isSidePanelOpen(): Promise<boolean> {
+  try {
+    const runtime = chrome.runtime as unknown as {
+      getContexts?: (filter: { contextTypes?: string[] }) => Promise<unknown[]>
+    }
+    if (typeof runtime?.getContexts === 'function') {
+      const contexts = await runtime.getContexts({ contextTypes: ['SIDE_PANEL'] })
+      return Array.isArray(contexts) && contexts.length > 0
+    }
+  } catch {
+    // 忽略
+  }
+  return false
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const action = (message as { action?: string } | undefined)?.action
 
@@ -91,15 +136,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // 关闭原生侧边栏（content 开抽屉前先把侧边栏关掉，保证两种工具箱不同时显示）
   if (action === MSG_CLOSE_NATIVE_SIDE_PANEL) {
     const windowId = sender?.tab?.windowId
-    if (windowId == null || typeof chrome.sidePanel.close !== 'function') {
-      sendResponse(false)
-      return undefined
-    }
-    void chrome.sidePanel.close({ windowId }).then(
+    void closeSidePanel(windowId).then(
       () => sendResponse(true),
       () => sendResponse(false),
     )
     return true // 保持消息通道以异步 sendResponse
+  }
+
+  if (action === MSG_OPEN_SHORTCUTS) {
+    void chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }).then(
+      () => sendResponse(true),
+      () => sendResponse(false),
+    )
+    return true
   }
 
   if (action === MSG_COOKIE_GET_ALL) {
@@ -317,4 +366,96 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     () => sendResponse(false),
   )
   return true // 保持消息通道以异步 sendResponse
+})
+
+/**
+ * 监听全局快捷键：根据用户在设置里的预设动作（ballAction: drawer / native）智能分发唤起。
+ * 并保持侧边栏与网页内抽屉的严格互斥。
+ */
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== 'toggle-toolkit') return
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    let windowId: number | undefined = tab?.windowId
+    if (windowId == null) {
+      try {
+        const win = await chrome.windows.getCurrent()
+        windowId = win?.id
+      } catch {
+        // 忽略
+      }
+    }
+
+    // 读取当前配置中的 ballAction
+    const data = await chrome.storage.sync.get('settings')
+    const settings = data?.settings as { ballAction?: 'drawer' | 'native' } | undefined
+    const ballAction = settings?.ballAction || 'drawer'
+
+    if (ballAction === 'drawer') {
+      // 抽屉模式：
+      // 1. 关闭原生侧边栏（保持互斥）
+      await closeSidePanel(windowId)
+
+      // 2. 尝试向当前标签页发送 TOGGLE_DRAWER 切换抽屉开合
+      let toggled = false
+      if (tab?.id != null) {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { action: MSG_TOGGLE_DRAWER })
+          toggled = true
+        } catch {
+          toggled = false
+        }
+      }
+
+      // 3. 若当前标签页无法注入/响应抽屉（如 chrome://、chrome-extension:// 等特权页），自动降级打开原生侧边栏
+      if (!toggled && windowId != null && typeof chrome.sidePanel?.open === 'function') {
+        try {
+          await chrome.sidePanel.open({ windowId })
+        } catch {
+          // 忽略
+        }
+      }
+    } else {
+      // 原生侧边栏模式：
+      // 1. 先关闭当前网页里的抽屉（保持互斥）
+      if (tab?.id != null) {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { action: MSG_CLOSE_DRAWER })
+        } catch {
+          // 忽略
+        }
+      }
+
+      // 2. 检查侧边栏是否已处于打开状态
+      const sidePanelOpen = await isSidePanelOpen()
+      if (sidePanelOpen) {
+        // 若已打开，快捷键起到 toggle 关闭作用
+        await closeSidePanel(windowId)
+        return
+      }
+
+      // 3. 若未打开，唤起原生侧边栏
+      let opened = false
+      if (windowId != null && typeof chrome.sidePanel?.open === 'function') {
+        try {
+          await chrome.sidePanel.open({ windowId })
+          opened = true
+        } catch {
+          opened = false
+        }
+      }
+
+      // 4. 若唤起原生侧边栏失败（如环境限制），降级切换当前网页的抽屉
+      if (!opened && tab?.id != null) {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { action: MSG_TOGGLE_DRAWER })
+        } catch {
+          // 忽略
+        }
+      }
+    }
+  } catch {
+    // 忽略异常
+  }
 })

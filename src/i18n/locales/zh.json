@@ -23,7 +23,8 @@
     "siteBallHidden": "悬浮球已隐藏",
     "disableOnSite": "在此网站禁用",
     "enableOnSite": "在此网站启用",
-    "notApplicable": "非可注入网页"
+    "notApplicable": "非可注入网页",
+    "quickShortcut": "快捷键唤起"
   },
   "settings": {
     "title": "Panda Dock 设置",
@@ -38,6 +39,9 @@
     "ballActionDesc": "点击悬浮球时打开网页内抽屉，或呼出浏览器原生侧边栏。",
     "actionDrawer": "网页内抽屉",
     "actionNative": "浏览器原生侧边栏",
+    "shortcutTitle": "全局唤起快捷键",
+    "shortcutDesc": "使用统一快捷键快速唤起工具箱（按设置自动打开侧边栏或网页抽屉）。",
+    "configureShortcut": "前往修改",
     "ballStyleSection": "悬浮球样式",
     "ballShape": "形状",
     "ballShapeDesc": "选择悬浮球的几何外形。",

@@ -23,7 +23,8 @@
     "siteBallHidden": "Floating ball hidden",
     "disableOnSite": "Disable on this site",
     "enableOnSite": "Enable on this site",
-    "notApplicable": "Non-injectable page"
+    "notApplicable": "Non-injectable page",
+    "quickShortcut": "Global Shortcut"
   },
   "settings": {
     "title": "Panda Dock Settings",
@@ -38,6 +39,9 @@
     "ballActionDesc": "Open in-page drawer or browser side panel on floating ball click.",
     "actionDrawer": "In-page drawer",
     "actionNative": "Browser native side panel",
+    "shortcutTitle": "Global Shortcut",
+    "shortcutDesc": "Toggle Panda Dock with a unified shortcut (opens side panel or drawer based on settings).",
+    "configureShortcut": "Configure",
     "ballStyleSection": "Floating Ball Style",
     "ballShape": "Shape",
     "ballShapeDesc": "Choose floating ball shape.",

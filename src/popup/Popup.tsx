@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -8,6 +8,7 @@ import Icon from '@/ui/Icon'
 import { closeDrawerInActiveTab, openDrawerInActiveTab } from '@/utils/drawer'
 import { isExtension, openOptionsPage } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
+import { getToolkitShortcut, openShortcutsPage } from '@/utils/shortcuts'
 import { closeNativeSidePanel, openNativeSidePanel } from '@/utils/sidePanel'
 import { useTheme } from '@/utils/theme'
 
@@ -24,6 +25,11 @@ export default function Popup() {
   useTheme()
   const [nativeFailed, setNativeFailed] = useState(false)
   const [drawerFailed, setDrawerFailed] = useState(false)
+  const [shortcut, setShortcut] = useState('')
+
+  useEffect(() => {
+    void getToolkitShortcut().then(setShortcut)
+  }, [])
 
   async function openPanel() {
     // 互斥：先关掉当前页的网页内抽屉，再唤起侧边栏；打开成功后自动关闭本 popup 面板
@@ -76,6 +82,18 @@ export default function Popup() {
             >
               <Icon name='window' size={15} />
               {t('popup.openDrawer')}
+            </button>
+          </div>
+          <div className='pop__shortcut-bar'>
+            <span className='pop__shortcut-label'>{t('popup.quickShortcut')}</span>
+            <button
+              type='button'
+              className='pop__shortcut-btn'
+              title={t('settings.configureShortcut')}
+              onClick={() => void openShortcutsPage()}
+            >
+              <kbd className='pop__kbd'>{shortcut || 'Alt+Shift+D'}</kbd>
+              <Icon name='external-link' size={12} />
             </button>
           </div>
           {nativeFailed && <p className='pop__native-hint'>{t('popup.sidePanelFail')}</p>}
