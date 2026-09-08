@@ -67,7 +67,6 @@ export default function DetectResultView({
         <StatusText kind='ok'>
           {t('tool.detect.detected')}：{KIND_LABEL[result.kind]}
         </StatusText>
-        <CopyButton text={result.copy} label={t('common.copy')} className='tw-link' />
       </div>
 
       {result.fields.length > 0 && (

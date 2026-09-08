@@ -56,19 +56,17 @@ export default function SelectionDetectPanel({
   const pinnedRef = useRef(false)
   pinnedRef.current = pinned
 
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+
   // 维护可编辑的文本状态（初始为选中文本）
   const [input, setInput] = useState(text)
-  // 当识别成功时，是否手动展开原文编辑框
-  const [editingSource, setEditingSource] = useState(false)
 
-  // 当外部选中文本更新时（未钉住状态下）同步重置
+  // 当外部发起新一次智能解析时同步重置输入框
+  // 注意：切勿在此重置 positionedRef，否则首挂载时 useEffect 会在 useLayoutEffect 之后执行
+  // 并误清空已定位标记，导致钉住后第二次解析仍被错误触发重定位。
   useEffect(() => {
     setInput(text)
-    setEditingSource(false)
-    if (!pinnedRef.current) {
-      positionedRef.current = false
-    }
-  }, [text])
+  }, [text, x, y, targetRect])
 
   // 动态响应式识别：用户编辑或修正输入时即时重新解析
   const result = useMemo<DetectResult | null>(() => detect(input), [input])
@@ -76,7 +74,7 @@ export default function SelectionDetectPanel({
   const clampPos = useCallback((left: number, top: number) => {
     const el = ref.current
     const w = el?.offsetWidth ?? 480
-    const h = el?.offsetHeight ?? 260
+    const h = el?.offsetHeight ?? 300
     return {
       left: Math.min(Math.max(left, PAD), Math.max(PAD, window.innerWidth - w - PAD)),
       top: Math.min(Math.max(top, PAD), Math.max(PAD, window.innerHeight - h - PAD)),
@@ -92,7 +90,7 @@ export default function SelectionDetectPanel({
 
     const r = el.getBoundingClientRect()
     const w = r.width || 480
-    const h = r.height || 260
+    const h = r.height || 300
     const vw = window.innerWidth
     const vh = window.innerHeight
 
@@ -199,17 +197,6 @@ export default function SelectionDetectPanel({
         <strong className='tek-detect-panel__title'>{t('tool.detect.title')}</strong>
         <button
           type='button'
-          className={`tk-icon-btn tek-detect-panel__btn${editingSource || !result ? ' tek-detect-panel__btn--active' : ''}`}
-          title={
-            editingSource || !result ? t('tool.detect.hideSource') : t('tool.detect.editSource')
-          }
-          aria-pressed={editingSource || !result}
-          onClick={() => setEditingSource((p) => !p)}
-        >
-          <Icon name='edit' size={14} />
-        </button>
-        <button
-          type='button'
           className={`tk-icon-btn tek-detect-panel__pin${pinned ? ' tek-detect-panel__pin--on' : ''}`}
           title={pinned ? t('tool.detect.unpin') : t('tool.detect.pin')}
           aria-pressed={pinned}
@@ -228,36 +215,41 @@ export default function SelectionDetectPanel({
         </button>
       </div>
       <div className='tek-detect-panel__body'>
-        {(editingSource || !result) && (
-          <div className='tek-detect__editor'>
-            <div className='tek-detect__editor-head'>
-              <span className='tw-field__label'>{t('tool.detect.sourceLabel')}</span>
-              <div className='tek-detect__editor-actions'>
-                <CopyButton text={input} label={t('common.copy')} className='tw-link' />
-                {input && (
-                  <button type='button' className='tw-link' onClick={() => setInput('')}>
-                    {t('common.clear')}
-                  </button>
-                )}
-              </div>
+        <div className='tek-detect__editor'>
+          <div className='tek-detect__editor-head'>
+            <span className='tw-field__label'>{t('tool.detect.sourceLabel')}</span>
+            <div className='tek-detect__editor-actions'>
+              <CopyButton text={input} label={t('common.copy')} className='tw-link' />
+              <button
+                type='button'
+                className='tw-link'
+                disabled={!input}
+                onClick={() => {
+                  setInput('')
+                  inputRef.current?.focus()
+                }}
+              >
+                {t('common.clear')}
+              </button>
             </div>
-            <AutoArea
-              className='tw-area'
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={t('tool.detect.inputPlaceholder')}
-              maxHeight={result ? 120 : 180}
-              spellCheck={false}
-              autoFocus={!result}
-            />
           </div>
-        )}
+          <AutoArea
+            areaRef={inputRef}
+            className='tw-area'
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={t('tool.detect.inputPlaceholder')}
+            maxHeight={result ? 110 : 160}
+            spellCheck={false}
+            autoFocus={!result}
+          />
+        </div>
 
         {result ? (
-          <DetectResultView result={result} blockMaxHeight={editingSource ? 220 : 300} />
-        ) : (
+          <DetectResultView result={result} blockMaxHeight={260} />
+        ) : input.trim() ? (
           <StatusText kind='info'>{t('tool.detect.none')}</StatusText>
-        )}
+        ) : null}
       </div>
     </div>
   )
