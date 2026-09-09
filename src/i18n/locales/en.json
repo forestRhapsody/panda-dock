@@ -426,7 +426,6 @@
       "algUnknown": "Unknown",
       "statusEmpty": "Please paste a JWT",
       "statusSuccess": "Decoded: alg={{alg}} · signature length {{len}} chars",
-      "statusSample": "Sample JWT filled in — click \"Decode →\" to see the result",
       "fillSample": "Fill sample",
       "placeholder": "Paste a JWT, e.g. eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.SflKxwRJSM…",
       "decode": "Decode →",

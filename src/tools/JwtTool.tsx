@@ -41,8 +41,8 @@ export default function JwtTool() {
     }
   }, [token])
 
-  function run() {
-    const raw = token.trim()
+  function run(text = token) {
+    const raw = text.trim()
     if (!raw) {
       setDecoded(null)
       setStatus({ kind: 'info', text: t('tool.jwt.statusEmpty') })
@@ -72,7 +72,7 @@ export default function JwtTool() {
 
   function fillSample() {
     setToken(SAMPLE_JWT)
-    setStatus({ kind: 'info', text: t('tool.jwt.statusSample') })
+    run(SAMPLE_JWT)
   }
 
   return (
@@ -94,13 +94,15 @@ export default function JwtTool() {
       </label>
 
       <div className='tw-actions'>
-        <button type='button' className='tk-btn tk-btn--primary' onClick={run}>
+        <button type='button' className='tk-btn tk-btn--primary' onClick={() => run()}>
           {t('tool.jwt.decode')}
         </button>
         <button type='button' className='tk-btn' onClick={clear}>
           {t('tool.jwt.clear')}
         </button>
       </div>
+
+      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
 
       {decoded && (
         <>
@@ -150,8 +152,6 @@ export default function JwtTool() {
           )}
         </>
       )}
-
-      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
     </div>
   )
 }

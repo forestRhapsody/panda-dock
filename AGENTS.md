@@ -75,6 +75,8 @@ src/
 - **文案必须 i18n**：`t()` + 同步补 `zh.json`/`en.json`，禁硬编码；key 语义化（`tool.registry.<id>`、`settings.*`、`common.*` 等）。
 - **入口统一挂三 hook**：`useLocale()` / `useFontScale()` / `useTheme()`。
 - **路径别名**：用 `@/` 导入 `src/*`，不用深层相对路径（import 排序由 prettier 自动处理，提交前跑 `format`）。
+- **全局滚动条严格统一**：全扩展所有滚动容器（宿主页面、侧边栏、抽屉 Shadow DOM、各类弹窗、下拉、表格、代码高亮区及多行输入框）统一复用 `theme.css` 根级定义的 6px 极简悬浮圆角滚动条（`scrollbar-width: thin; scrollbar-color: var(--tk-border-strong) transparent;` + 6px WebKit 胶囊滑块与透明轨道），严禁使用系统原生粗滚动条或各组件自造样式；横向药丸标签栏（`.tw-tabs`、`.tw-nav`、`.tw-detect__tabs`）强制隐藏滚动条（`scrollbar-width: none`）。
+- **统一自上而下交互流与就近反馈**：所有工具必须遵循统一心智流：`输入源 ➔ 触发操作栏 ➔ 状态/错误反馈 ➔ 输出结果与视图配置`。报错或状态提示必须紧随操作按钮下方就近按需展示，严禁被空结果框隔开；全扩展保持纯净统一体验，无状态时不保留空白占位。
 
 ## 新增一个工具（标准流程）
 

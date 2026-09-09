@@ -353,6 +353,8 @@ export default function Base64Tool() {
           </button>
         </div>
 
+        {decodeStatus && <StatusText kind={decodeStatus.kind}>{decodeStatus.text}</StatusText>}
+
         <div className='tw-field'>
           <span className='tw-field__label'>
             {t('tool.base64.result')}
@@ -372,8 +374,6 @@ export default function Base64Tool() {
             placeholder={t('tool.base64.resultPlaceholder')}
           />
         </div>
-
-        {decodeStatus && <StatusText kind={decodeStatus.kind}>{decodeStatus.text}</StatusText>}
       </div>
 
       {/* 2. 文本编码面板：独立维护 encodeInput / encodeOutput */}
@@ -401,6 +401,8 @@ export default function Base64Tool() {
           </button>
         </div>
 
+        {encodeStatus && <StatusText kind={encodeStatus.kind}>{encodeStatus.text}</StatusText>}
+
         <div className='tw-field'>
           <span className='tw-field__label'>
             {t('tool.base64.result')}
@@ -420,8 +422,6 @@ export default function Base64Tool() {
             placeholder={t('tool.base64.resultPlaceholder')}
           />
         </div>
-
-        {encodeStatus && <StatusText kind={encodeStatus.kind}>{encodeStatus.text}</StatusText>}
       </div>
 
       {/* 3. 文件转 Base64 面板 */}

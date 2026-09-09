@@ -252,20 +252,6 @@
   animation: tk-select-in 0.12s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: top center;
   user-select: none;
-  /* 细滚动条 */
-  scrollbar-width: thin;
-  scrollbar-color: var(--tk-border-strong) transparent;
-}
-
-.tk-select-popup::-webkit-scrollbar {
-  width: 4px;
-}
-.tk-select-popup::-webkit-scrollbar-track {
-  background: transparent;
-}
-.tk-select-popup::-webkit-scrollbar-thumb {
-  background: var(--tk-border-strong);
-  border-radius: 99px;
 }
 
 @keyframes tk-select-in {

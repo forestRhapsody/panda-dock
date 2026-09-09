@@ -56,15 +56,17 @@ export default function JsonTool() {
   const { input, output, indent, sortKeys, autoUnescape, lastAction } = draft
   const [status, setStatus] = useState<ToolStatus | null>(null)
 
-  // 分屏高度比例（上方面板占比百分比，范围 15~85，默认 50）
-  const [splitRatio, setSplitRatio] = useState<number>(draft.splitRatio ?? 50)
+  // 分屏高度比例（上方面板占比百分比，范围 25~75，默认 50）
+  const [splitRatio, setSplitRatio] = useState<number>(
+    Math.max(25, Math.min(75, draft.splitRatio ?? 50)),
+  )
   const [isDragging, setIsDragging] = useState(false)
   const workspaceRef = useRef<HTMLDivElement>(null)
 
   // 当外部 draft.splitRatio 改变（如切换标签还原）且不在拖拽中时同步
   useEffect(() => {
     if (!isDragging && draft.splitRatio !== undefined && draft.splitRatio !== splitRatio) {
-      setSplitRatio(draft.splitRatio)
+      setSplitRatio(Math.max(25, Math.min(75, draft.splitRatio)))
     }
   }, [draft.splitRatio, isDragging, splitRatio])
 
@@ -90,9 +92,15 @@ export default function JsonTool() {
     const rect = workspace.getBoundingClientRect()
     if (rect.height <= 0) return
 
+    // 保障上方面板输入框(108px + 头部/按钮/状态~80px = ~188px) 与 下方面板结果区(108px + 头部/配置~54px = ~162px)
+    const minTopPx = 188
+    const minBottomPx = 162
+    const minPct = Math.min(45, Math.max(20, (minTopPx / rect.height) * 100))
+    const maxPct = Math.max(55, Math.min(80, 100 - (minBottomPx / rect.height) * 100))
+
     const offsetY = e.clientY - rect.top
     let pct = (offsetY / rect.height) * 100
-    pct = Math.max(15, Math.min(85, pct))
+    pct = Math.max(minPct, Math.min(maxPct, pct))
     setSplitRatio(Math.round(pct * 10) / 10)
   }
 
@@ -127,12 +135,12 @@ export default function JsonTool() {
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'ArrowUp') {
       e.preventDefault()
-      const next = Math.max(15, splitRatio - 5)
+      const next = Math.max(25, splitRatio - 5)
       setSplitRatio(next)
       setDraft((prev) => ({ ...prev, splitRatio: next }))
     } else if (e.key === 'ArrowDown') {
       e.preventDefault()
-      const next = Math.min(85, splitRatio + 5)
+      const next = Math.min(75, splitRatio + 5)
       setSplitRatio(next)
       setDraft((prev) => ({ ...prev, splitRatio: next }))
     } else if (e.key === 'Home') {
@@ -309,63 +317,6 @@ export default function JsonTool() {
 
   return (
     <div className={`tw-json-split${isDragging ? ' tw-json-split--dragging' : ''}`}>
-      <div className='tw-json__toolbar'>
-        <div className='tw-json__actions'>
-          <button type='button' className='tk-btn tk-btn--primary' onClick={() => runFormat()}>
-            {t('tool.json.formatBtn')}
-          </button>
-          <button type='button' className='tk-btn' onClick={() => runMinify()}>
-            {t('tool.json.minifyBtn')}
-          </button>
-          <button type='button' className='tk-btn' onClick={() => runEscape()}>
-            {t('tool.json.escapeBtn')}
-          </button>
-          <button type='button' className='tk-btn' onClick={() => runUnescape()}>
-            {t('tool.json.unescapeBtn')}
-          </button>
-          <button type='button' className='tk-btn' onClick={clear}>
-            {t('tool.json.clear')}
-          </button>
-        </div>
-
-        <div className='tw-json__options'>
-          <Tooltip content={t('tool.json.sortKeysDesc')}>
-            <label className='tk-checkbox'>
-              <input
-                type='checkbox'
-                checked={sortKeys}
-                onChange={(e) => onSortKeysChange(e.target.checked)}
-              />
-              <span>{t('tool.json.sortKeysOption')}</span>
-            </label>
-          </Tooltip>
-
-          <Tooltip content={t('tool.json.autoUnescapeDesc')}>
-            <label className='tk-checkbox'>
-              <input
-                type='checkbox'
-                checked={autoUnescape}
-                onChange={(e) => onAutoUnescapeChange(e.target.checked)}
-              />
-              <span>{t('tool.json.autoUnescapeOption')}</span>
-            </label>
-          </Tooltip>
-
-          <div className='tw-json__indent'>
-            <TkSelect
-              variant='sm'
-              value={indent}
-              onChange={(e) => onIndentChange(e.target.value)}
-              title={t('tool.json.indent')}
-            >
-              <option value={2}>{t('tool.json.indent2')}</option>
-              <option value={4}>{t('tool.json.indent4')}</option>
-              <option value='tab'>{t('tool.json.indentTab')}</option>
-            </TkSelect>
-          </div>
-        </div>
-      </div>
-
       <div ref={workspaceRef} className='tw-json__workspace'>
         {/* 上方面板：输入区 */}
         <section
@@ -385,6 +336,28 @@ export default function JsonTool() {
             onChange={(e) => setInput(e.target.value)}
             spellCheck={false}
           />
+          <div className='tw-json__actions'>
+            <button type='button' className='tk-btn tk-btn--primary' onClick={() => runFormat()}>
+              {t('tool.json.formatBtn')}
+            </button>
+            <button type='button' className='tk-btn' onClick={() => runMinify()}>
+              {t('tool.json.minifyBtn')}
+            </button>
+            <button type='button' className='tk-btn' onClick={() => runEscape()}>
+              {t('tool.json.escapeBtn')}
+            </button>
+            <button type='button' className='tk-btn' onClick={() => runUnescape()}>
+              {t('tool.json.unescapeBtn')}
+            </button>
+            <button type='button' className='tk-btn' onClick={clear}>
+              {t('tool.json.clear')}
+            </button>
+          </div>
+          {status && (
+            <div className='tw-json__input-status' aria-live='polite'>
+              <StatusText kind={status.kind}>{status.text}</StatusText>
+            </div>
+          )}
         </section>
 
         {/* 可拖拽分屏控制条 (Splitter) */}
@@ -394,8 +367,8 @@ export default function JsonTool() {
             aria-orientation='horizontal'
             aria-label={t('tool.json.splitterLabel')}
             aria-valuenow={Math.round(splitRatio)}
-            aria-valuemin={15}
-            aria-valuemax={85}
+            aria-valuemin={25}
+            aria-valuemax={75}
             tabIndex={0}
             className={`tw-json__splitter${isDragging ? ' tw-json__splitter--active' : ''}`}
             onPointerDown={handlePointerDown}
@@ -453,14 +426,46 @@ export default function JsonTool() {
             placeholder={t('tool.json.resultPlaceholder')}
             className='tw-json__viewer'
           />
+          <div className='tw-json__options'>
+            <div className='tw-json__options-group'>
+              <Tooltip content={t('tool.json.sortKeysDesc')}>
+                <label className='tk-checkbox'>
+                  <input
+                    type='checkbox'
+                    checked={sortKeys}
+                    onChange={(e) => onSortKeysChange(e.target.checked)}
+                  />
+                  <span>{t('tool.json.sortKeysOption')}</span>
+                </label>
+              </Tooltip>
+
+              <Tooltip content={t('tool.json.autoUnescapeDesc')}>
+                <label className='tk-checkbox'>
+                  <input
+                    type='checkbox'
+                    checked={autoUnescape}
+                    onChange={(e) => onAutoUnescapeChange(e.target.checked)}
+                  />
+                  <span>{t('tool.json.autoUnescapeOption')}</span>
+                </label>
+              </Tooltip>
+            </div>
+
+            <div className='tw-json__indent'>
+              <TkSelect
+                variant='sm'
+                value={indent}
+                onChange={(e) => onIndentChange(e.target.value)}
+                title={t('tool.json.indent')}
+              >
+                <option value={2}>{t('tool.json.indent2')}</option>
+                <option value={4}>{t('tool.json.indent4')}</option>
+                <option value='tab'>{t('tool.json.indentTab')}</option>
+              </TkSelect>
+            </div>
+          </div>
         </section>
       </div>
-
-      {status && (
-        <div className='tw-json__status-bar'>
-          <StatusText kind={status.kind}>{status.text}</StatusText>
-        </div>
-      )}
     </div>
   )
 }

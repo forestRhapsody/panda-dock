@@ -292,6 +292,8 @@ function UrlCodecPanel() {
         </button>
       </div>
 
+      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
+
       <div className='tw-field'>
         <span className='tw-field__label'>
           {t('tool.url.codec.result')}
@@ -311,8 +313,6 @@ function UrlCodecPanel() {
           placeholder={t('tool.url.codec.statusNeedInput')}
         />
       </div>
-
-      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
     </div>
   )
 }

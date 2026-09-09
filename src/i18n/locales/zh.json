@@ -426,7 +426,6 @@
       "algUnknown": "未知",
       "statusEmpty": "请粘贴 JWT",
       "statusSuccess": "解码成功：alg={{alg}} · 签名长度 {{len}} 字符",
-      "statusSample": "已填入示例 JWT，点击「解码 →」查看效果",
       "fillSample": "填入示例",
       "placeholder": "粘贴 JWT，例如 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.SflKxwRJSM…",
       "decode": "解码 →",

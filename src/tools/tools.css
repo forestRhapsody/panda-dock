@@ -413,15 +413,6 @@
   cursor: row-resize !important;
 }
 
-.tw-json__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  flex: none;
-}
-
 .tw-json__actions {
   display: flex;
   align-items: center;
@@ -429,11 +420,31 @@
   gap: 8px;
 }
 
+.tw-json__pane--top .tw-json__actions {
+  flex: none;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
 .tw-json__options {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.tw-json__options-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tw-json__pane--bottom .tw-json__options {
+  justify-content: space-between;
+  margin-top: 6px;
+  margin-bottom: 2px;
+  flex: none;
 }
 
 .tw-json__indent {
@@ -478,7 +489,7 @@
 /* 上方面板输入框：弹性自适应剩余高度（禁用 height: 100% 避免撑出容器），内部滚动 */
 .tw-json__editor {
   flex: 1 1 0;
-  min-height: 0;
+  min-height: 108px;
   max-height: none;
   height: auto;
   resize: none;
@@ -571,12 +582,24 @@
   gap: 4px;
 }
 
-.tw-json__status-bar {
+.tw-json__input-status {
   flex: none;
+  margin-top: 6px;
+  margin-bottom: 2px;
 }
 
-.tw-json__status-bar .tw-status {
+.tw-json__input-status .tw-status {
   margin: 0;
+  animation: tw-status-fade-in 0.15s ease-out;
+}
+
+@keyframes tw-status-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* 输入框默认高度更高 */
@@ -602,14 +625,12 @@
   word-break: break-all;
   overflow: hidden;
   user-select: text;
-  scrollbar-width: thin;
-  scrollbar-color: var(--tk-border-strong) transparent;
 }
 
 .tw-json-hl--fill,
 .tw-json__viewer {
   flex: 1 1 0;
-  min-height: 0;
+  min-height: 108px;
   max-height: none;
   height: auto;
   overflow: auto;
