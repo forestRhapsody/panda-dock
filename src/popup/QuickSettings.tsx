@@ -142,10 +142,10 @@ export default function QuickSettings() {
               type='button'
               role='switch'
               aria-checked={item.value}
-              className={`pop__switch${item.value ? ' pop__switch--on' : ''}`}
+              className={`tk-switch${item.value ? ' tk-switch--on' : ''}`}
               onClick={() => item.set(!item.value)}
             >
-              <span className='pop__switch-knob' />
+              <span className='tk-switch__knob' />
             </button>
           </li>
         ))}
@@ -167,12 +167,12 @@ export default function QuickSettings() {
               type='button'
               role='switch'
               aria-checked={siteAllowed}
-              className={`pop__switch${siteAllowed ? ' pop__switch--on' : ''}`}
+              className={`tk-switch${siteAllowed ? ' tk-switch--on' : ''}`}
               onClick={toggleSiteBall}
               title={siteAllowed ? t('popup.disableOnSite') : t('popup.enableOnSite')}
               aria-label={siteAllowed ? t('popup.disableOnSite') : t('popup.enableOnSite')}
             >
-              <span className='pop__switch-knob' />
+              <span className='tk-switch__knob' />
             </button>
           </li>
         )}

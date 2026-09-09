@@ -54,9 +54,14 @@
   --tk-radius-lg: 0.75rem;
 
   /* —— 阴影（柔和、低存在感） —— */
+  --tk-shadow-xs: 0 1px 1px 0 rgb(24 24 27 / 0.06);
   --tk-shadow-sm: 0 1px 2px 0 rgb(24 24 27 / 0.05), 0 1px 3px 0 rgb(24 24 27 / 0.05);
   --tk-shadow-md: 0 4px 12px -2px rgb(24 24 27 / 0.08), 0 2px 6px -2px rgb(24 24 27 / 0.05);
   --tk-shadow-lg: 0 12px 26px -6px rgb(24 24 27 / 0.18);
+
+  /* —— 功能色：荧光高亮（智能识别输入框高亮标记） —— */
+  --tk-highlight: #fef9c3;
+  --tk-highlight-border: color-mix(in srgb, #fef9c3 60%, #ca8a04);
 
   /* —— 字体 —— */
   --tk-font:
@@ -109,9 +114,13 @@
   --tk-border-strong: hsl(240 4% 28%);
   --tk-input: hsl(240 4% 18%);
 
+  --tk-shadow-xs: 0 1px 1px 0 rgb(0 0 0 / 0.3);
   --tk-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
   --tk-shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
   --tk-shadow-lg: 0 12px 26px -6px rgb(0 0 0 / 0.6);
+
+  --tk-highlight: color-mix(in srgb, #fef9c3 30%, transparent);
+  --tk-highlight-border: color-mix(in srgb, #fef9c3 50%, transparent);
 }
 
 /* 字体缩放默认值只设在 :root 与 :host（两者是各场景的令牌宿主，页面取 :root、Shadow DOM 取

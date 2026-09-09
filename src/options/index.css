@@ -103,16 +103,16 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: var(--tk-text-sm);
   font-weight: 600;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--tk-shadow-xs);
 }
 
 /* 悬浮球预设样式：3 个 logo 选项（先以 emoji 占位，后续替换为元素） */
-.opt-ball-presets {
+.opt__ball-presets {
   display: flex;
   gap: 10px;
 }
 
-.opt-ball-preset {
+.opt__ball-preset {
   display: grid;
   place-items: center;
   width: 56px;
@@ -128,63 +128,32 @@ body {
     background 0.15s;
 }
 
-.opt-ball-preset:focus-visible {
+.opt__ball-preset:focus-visible {
   outline: none;
   border-color: var(--tk-ring);
 }
 
-.opt-ball-preset__logo {
-  font-size: 26px;
+.opt__ball-preset__logo {
+  font-size: calc(26px * var(--tk-font-scale));
   line-height: 1;
 }
 
-.opt-ball-preset__img {
+.opt__ball-preset__img {
   width: 44px;
   height: 44px;
   object-fit: contain;
 }
 
-.opt-ball-preset:hover {
+.opt__ball-preset:hover {
   border-color: var(--tk-ring);
 }
 
-.opt-ball-preset--on {
+.opt__ball-preset--on {
   border-color: var(--tk-primary);
   background: color-mix(in srgb, var(--tk-primary) 12%, var(--tk-card));
 }
 
-.opt__switch {
-  position: relative;
-  flex: none;
-  width: 44px;
-  height: 24px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--tk-muted-foreground) 28%, var(--tk-muted));
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.opt__switch--on {
-  background: var(--tk-primary);
-}
-
-.opt__switch-knob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--tk-card);
-  box-shadow: var(--tk-shadow-sm);
-  transition: left 0.2s;
-}
-
-.opt__switch--on .opt__switch-knob {
-  left: 22px;
-}
+/* Toggle Switch —— 改用 src/ui/ui.css 的 .tk-switch 共享组件 */
 
 .opt__saved {
   display: flex;

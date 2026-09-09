@@ -109,10 +109,10 @@ function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
         aria-checked={on}
         aria-label={label}
         title={on ? t('settings.toolHide') : t('settings.toolShow')}
-        className={`opt__switch${on ? ' opt__switch--on' : ''}`}
+        className={`tk-switch${on ? ' tk-switch--on' : ''}`}
         onClick={() => onToggle(id)}
       >
-        <span className='opt__switch-knob' />
+        <span className='tk-switch__knob' />
       </button>
     </li>
   )
@@ -378,10 +378,10 @@ export default function OptionsPage() {
                   type='button'
                   role='switch'
                   aria-checked={settings[f.key]}
-                  className={`opt__switch${settings[f.key] ? ' opt__switch--on' : ''}`}
+                  className={`tk-switch${settings[f.key] ? ' tk-switch--on' : ''}`}
                   onClick={() => toggle(f.key)}
                 >
-                  <span className='opt__switch-knob' />
+                  <span className='tk-switch__knob' />
                 </button>
               </li>
             ))}
@@ -478,7 +478,7 @@ export default function OptionsPage() {
                 <p>{t('settings.ballPresetDesc')}</p>
               </div>
               <div
-                className='opt-ball-presets'
+                className='opt__ball-presets'
                 role='radiogroup'
                 aria-label={t('settings.ballPreset')}
               >
@@ -489,7 +489,7 @@ export default function OptionsPage() {
                     role='radio'
                     aria-checked={settings.ballPreset === o.value}
                     title={t(o.labelKey)}
-                    className={`opt-ball-preset${settings.ballPreset === o.value ? ' opt-ball-preset--on' : ''}`}
+                    className={`opt__ball-preset${settings.ballPreset === o.value ? ' opt__ball-preset--on' : ''}`}
                     onClick={() => setBallPreset(o.value)}
                   >
                     {o.image ? (
@@ -498,10 +498,10 @@ export default function OptionsPage() {
                         alt=''
                         aria-hidden='true'
                         draggable={false}
-                        className='opt-ball-preset__img'
+                        className='opt__ball-preset__img'
                       />
                     ) : (
-                      <span className='opt-ball-preset__logo'>{o.icon}</span>
+                      <span className='opt__ball-preset__logo'>{o.icon}</span>
                     )}
                   </button>
                 ))}

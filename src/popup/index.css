@@ -88,7 +88,7 @@ body {
 
 .pop__kbd {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
+  font-size: var(--tk-text-xs);
   font-weight: 600;
 }
 
@@ -150,35 +150,4 @@ body {
   color: var(--tk-secondary-foreground);
 }
 
-.pop__switch {
-  position: relative;
-  flex: none;
-  width: 44px;
-  height: 24px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--tk-muted-foreground) 28%, var(--tk-muted));
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.pop__switch--on {
-  background: var(--tk-primary);
-}
-
-.pop__switch-knob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--tk-card);
-  box-shadow: var(--tk-shadow-sm);
-  transition: left 0.2s;
-}
-
-.pop__switch--on .pop__switch-knob {
-  left: 22px;
-}
+/* Toggle Switch —— 改用 src/ui/ui.css 的 .tk-switch 共享组件 */

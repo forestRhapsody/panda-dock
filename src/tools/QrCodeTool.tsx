@@ -782,7 +782,7 @@ export default function QrCodeTool() {
             ) : generateError ? (
               <div className='tw-qr__placeholder'>
                 <Icon name='alert' size={32} className='tw-qr__ph-icon tw-qr__ph-icon--error' />
-                <p style={{ color: 'var(--tk-destructive, #ef4444)' }}>{generateError}</p>
+                <StatusText kind='err'>{generateError}</StatusText>
               </div>
             ) : (
               <div className='tw-qr__placeholder'>

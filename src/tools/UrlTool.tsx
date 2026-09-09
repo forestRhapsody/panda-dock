@@ -246,7 +246,7 @@ function UrlCodecPanel() {
       <div className='tw-field'>
         <div className='tw-field__label'>
           <span>{t('tool.url.inputLabel')}</span>
-          <div className='url-codec__select'>
+          <div className='tw-url-codec__select'>
             <TkSelect
               variant='sm'
               value={scope}

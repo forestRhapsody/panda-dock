@@ -333,24 +333,16 @@
 /* 荧光标记涂抹层：紧密跟随字符自然流动，换行独立克隆，仅对当前项精准着色 */
 .tw-area-mark {
   color: transparent;
-  background: #fef9c3;
+  background: var(--tk-highlight);
   border-radius: 3px;
   padding: 1px 2px;
   margin: 0 -1px;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
-  box-shadow: 0 0 0 1px color-mix(in srgb, #fef9c3 60%, #ca8a04);
+  box-shadow: 0 0 0 1px var(--tk-highlight-border);
   transition:
     background-color 0.15s ease,
     box-shadow 0.15s ease;
-}
-
-:root[data-theme='dark'] .tw-area-mark,
-:host[data-theme='dark'] .tw-area-mark,
-:host([data-theme='dark']) .tw-area-mark,
-[data-theme='dark'] .tw-area-mark {
-  background: color-mix(in srgb, #fef9c3 30%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, #fef9c3 50%, transparent);
 }
 
 .tw-actions {
@@ -613,7 +605,7 @@
 
 /* —— 网址编解码范围选择 —— */
 
-.url-codec__select {
+.tw-url-codec__select {
   font-weight: normal;
   min-width: 175px;
 }
@@ -759,7 +751,7 @@
   background: var(--tk-primary);
   border-color: var(--tk-primary);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--tk-shadow-xs);
 }
 
 .tw-detect__tab--active:hover {
@@ -1217,7 +1209,7 @@
   align-items: center;
   padding: 1px 5px;
   border-radius: var(--tk-radius-sm);
-  font-size: 10px;
+  font-size: calc(10px * var(--tk-font-scale));
   font-weight: 500;
   font-family: var(--tk-font-mono);
   line-height: 1.2;
@@ -1247,13 +1239,13 @@
 .tw-cookie__detail-label {
   color: var(--tk-muted-foreground);
   flex: none;
-  font-size: 11px;
+  font-size: var(--tk-text-xs);
 }
 
 .tw-cookie__detail-value {
   color: var(--tk-foreground);
   font-family: var(--tk-font-mono);
-  font-size: 11px;
+  font-size: var(--tk-text-xs);
   word-break: break-all;
 }
 
@@ -1458,6 +1450,7 @@
   min-height: 240px;
   padding: 16px;
   border: 1px solid var(--tk-border);
+  /* 设计意图：QR 码图像本身为正方形，预览区刻意不圆角以保持像素精准对齐 */
   border-radius: 0;
   background: color-mix(in srgb, var(--tk-muted) 40%, var(--tk-card));
 }
@@ -1652,6 +1645,7 @@
   overflow: hidden;
   margin: 0 auto;
   border-radius: var(--tk-radius);
+  /* 设计意图：裁剪预览区需要深色背景以突出裁剪边框与图片边缘，亮/暗主题下均固定为暗色 */
   background: #18181b;
   cursor: grab;
   touch-action: none;
