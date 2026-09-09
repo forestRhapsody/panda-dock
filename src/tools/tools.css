@@ -2317,3 +2317,19 @@
   box-shadow: 0 0 0 1px var(--tk-ring);
   background: color-mix(in srgb, var(--tk-accent) 60%, var(--tk-card));
 }
+
+/* —— 哈希工具：工具栏与选项复选框 —— */
+.tw-hash__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tw-hash__options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}

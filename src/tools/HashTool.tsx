@@ -4,7 +4,6 @@ import type { ChangeEvent, DragEvent, KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
-import Tooltip from '@/ui/Tooltip'
 import { useToolDraft } from '@/utils/draft'
 
 import AutoArea from './AutoArea'
@@ -68,50 +67,47 @@ export default function HashTool() {
   const fileInputId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // —— 1. 文本哈希计算 ——
-  const runComputeText = useCallback(
-    async (rawInput?: string) => {
-      const content = rawInput ?? textInput
-      if (!content.trim()) {
-        setTextResult(null)
-        return
-      }
+  const uppercaseRef = useRef(uppercase)
+  uppercaseRef.current = uppercase
 
+  // —— 1. 文本哈希计算（防抖实时自动计算） ——
+  useEffect(() => {
+    const trimmed = textInput.trim()
+    if (!trimmed) {
+      setTextResult(null)
+      setTextLoading(false)
+      return
+    }
+
+    let active = true
+    const timer = setTimeout(async () => {
       setTextLoading(true)
       try {
-        const res = await computeTextHash(content, {
+        const res = await computeTextHash(textInput, {
           hmacKey: showHmac && hmacKey.trim() ? hmacKey.trim() : undefined,
-          uppercase,
+          uppercase: uppercaseRef.current,
         })
-        setTextResult(res)
+        if (active) {
+          setTextResult(res)
+        }
       } catch (err) {
         console.error('[HashTool] text hash error:', err)
       } finally {
-        setTextLoading(false)
+        if (active) {
+          setTextLoading(false)
+        }
       }
-    },
-    [textInput, showHmac, hmacKey, uppercase],
-  )
+    }, 60)
 
-  // 若草稿中已有文本，首次挂载时自动填充计算一次结果
-  const hasAutoRunRef = useRef(false)
-  useEffect(() => {
-    if (!hasAutoRunRef.current && textInput.trim()) {
-      hasAutoRunRef.current = true
-      runComputeText(textInput)
+    return () => {
+      active = false
+      clearTimeout(timer)
     }
-  }, [textInput, runComputeText])
+  }, [textInput, showHmac, hmacKey])
 
-  // 当文本被清空时，同步清空散列结果
-  useEffect(() => {
-    if (!textInput.trim()) {
-      setTextResult(null)
-    }
-  }, [textInput])
-
-  // 大写 / 小写 HEX 切换（纯同步就地转换，零重算、零闪烁）
-  const toggleCase = () => {
-    const nextUpper = !uppercase
+  // 小写 / 大写 HEX 切换（勾选表示小写，取消勾选表示大写）
+  const onLowercaseChange = (checked: boolean) => {
+    const nextUpper = !checked
     setDraft((d) => ({ ...d, uppercase: nextUpper }))
     if (textResult) {
       setTextResult({
@@ -121,6 +117,11 @@ export default function HashTool() {
         sha512: nextUpper ? textResult.sha512.toUpperCase() : textResult.sha512.toLowerCase(),
       })
     }
+  }
+
+  // HMAC 开关切换（勾选展开 HMAC 密钥输入框，取消勾选收起）
+  const onHmacChange = (checked: boolean) => {
+    setDraft((d) => ({ ...d, showHmac: checked }))
   }
 
   // 文件大写 / 小写 HEX 切换（纯同步就地转换，避免大文件重复读取）
@@ -134,16 +135,6 @@ export default function HashTool() {
         sha256: nextUpper ? fileResult.sha256.toUpperCase() : fileResult.sha256.toLowerCase(),
         sha512: nextUpper ? fileResult.sha512.toUpperCase() : fileResult.sha512.toLowerCase(),
       })
-    }
-  }
-
-  // 快捷键监听：Ctrl+Enter / Cmd+Enter 触发文本计算
-  const onTextKeyDown = (e: KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault()
-      if (textInput.trim() && !textLoading) {
-        runComputeText()
-      }
     }
   }
 
@@ -165,9 +156,6 @@ export default function HashTool() {
     },
     [t],
   )
-
-  const uppercaseRef = useRef(uppercase)
-  uppercaseRef.current = uppercase
 
   useEffect(() => {
     if (file) {
@@ -264,25 +252,11 @@ export default function HashTool() {
           ========================================================================= */}
       <div hidden={tab !== 'text'} className='tw-sec'>
         <label className='tw-field'>
-          <span className='tw-field__label'>
-            {t('tool.hash.textLabel')}
-            <span className='tw-field__actions'>
-              <Tooltip content={t('tool.hash.hmacTooltip')}>
-                <button
-                  type='button'
-                  className='tw-link'
-                  onClick={() => setDraft((d) => ({ ...d, showHmac: !d.showHmac }))}
-                >
-                  HMAC{showHmac && hmacKey.trim() ? ' •' : ''}
-                </button>
-              </Tooltip>
-            </span>
-          </span>
+          <span className='tw-field__label'>{t('tool.hash.textLabel')}</span>
           <AutoArea
             className='tw-area'
             value={textInput}
             onChange={(e) => setDraft((d) => ({ ...d, textInput: e.target.value }))}
-            onKeyDown={onTextKeyDown}
             placeholder={t('tool.hash.textPlaceholder')}
             maxHeight={200}
             spellCheck={false}
@@ -308,29 +282,38 @@ export default function HashTool() {
               className='tw-input'
               value={hmacKey}
               onChange={(e) => setDraft((d) => ({ ...d, hmacKey: e.target.value }))}
-              onKeyDown={onTextKeyDown}
               placeholder={t('tool.hash.hmacPlaceholder')}
               spellCheck={false}
             />
           </label>
         )}
 
-        <div className='tw-actions'>
-          <button
-            type='button'
-            className='tk-btn tk-btn--primary'
-            disabled={!textInput.trim() || textLoading}
-            onClick={() => runComputeText()}
-          >
-            {textLoading && <Icon name='refresh' className='tw-spin' size={14} />}
-            {t('tool.hash.computeBtn')}
-          </button>
-          <button type='button' className='tk-btn' onClick={toggleCase}>
-            {uppercase ? t('tool.hash.upper') : t('tool.hash.lower')}
-          </button>
-          <button type='button' className='tk-btn' onClick={clearText}>
-            {t('common.clear')}
-          </button>
+        <div className='tw-hash__toolbar'>
+          <div className='tw-hash__options'>
+            <label className='tk-checkbox'>
+              <input
+                type='checkbox'
+                checked={!uppercase}
+                onChange={(e) => onLowercaseChange(e.target.checked)}
+              />
+              <span>{t('tool.hash.lower')}</span>
+            </label>
+
+            <label className='tk-checkbox'>
+              <input
+                type='checkbox'
+                checked={showHmac}
+                onChange={(e) => onHmacChange(e.target.checked)}
+              />
+              <span>HMAC</span>
+            </label>
+          </div>
+
+          <div className='tw-actions'>
+            <button type='button' className='tk-btn' onClick={clearText}>
+              {t('common.clear')}
+            </button>
+          </div>
         </div>
 
         {!textResult && textLoading && (
