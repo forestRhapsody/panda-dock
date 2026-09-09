@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
 import TkSelect from '@/ui/TkSelect'
+import Tooltip from '@/ui/Tooltip'
 
 import AutoArea from './AutoArea'
 import { parseRawCookie, serializeCookieToRaw, type CookieSetDetails } from './cookieRaw'
@@ -306,24 +307,29 @@ export default function CookieEditModal({
           </div>
 
           <div className='tw-cookie-modal__head-actions'>
-            <button
-              type='button'
-              className='tk-icon-btn'
-              onClick={() => setMaximized((v) => !v)}
-              title={maximized ? t('tool.storage.minimize') : t('tool.storage.maximize')}
-              aria-label={maximized ? t('tool.storage.minimize') : t('tool.storage.maximize')}
+            <Tooltip
+              content={maximized ? t('tool.storage.minimize') : t('tool.storage.maximize')}
+              side='bottom'
             >
-              <Icon name={maximized ? 'minimize' : 'maximize'} size={15} />
-            </button>
-            <button
-              type='button'
-              className='tk-icon-btn'
-              onClick={handleClose}
-              title={t('common.cancel')}
-              aria-label={t('common.cancel')}
-            >
-              <Icon name='close' size={15} />
-            </button>
+              <button
+                type='button'
+                className='tk-icon-btn'
+                onClick={() => setMaximized((v) => !v)}
+                aria-label={maximized ? t('tool.storage.minimize') : t('tool.storage.maximize')}
+              >
+                <Icon name={maximized ? 'minimize' : 'maximize'} size={15} />
+              </button>
+            </Tooltip>
+            <Tooltip content={t('common.cancel')} side='bottom'>
+              <button
+                type='button'
+                className='tk-icon-btn'
+                onClick={handleClose}
+                aria-label={t('common.cancel')}
+              >
+                <Icon name='close' size={15} />
+              </button>
+            </Tooltip>
           </div>
         </div>
 
@@ -522,38 +528,40 @@ export default function CookieEditModal({
                   <span>{t('tool.storage.cookieRawInput')}</span>
                 </span>
                 <div className='tw-cookie-modal__raw-actions'>
-                  <button
-                    type='button'
-                    className='tw-link'
-                    onClick={() => {
-                      const p = parseRawCookie(rawText, defaultDomain, '/')
-                      if (p.ok && p.cookies[0]) {
-                        setRawText(serializeCookieToRaw(p.cookies[0], 'set-cookie'))
-                      }
-                    }}
-                    title='转换为规范 Set-Cookie 语法'
-                  >
-                    Set-Cookie
-                  </button>
-                  <button
-                    type='button'
-                    className='tw-link'
-                    onClick={() => {
-                      const p = parseRawCookie(rawText, defaultDomain, '/')
-                      if (p.ok) {
-                        setRawText(
-                          JSON.stringify(
-                            p.cookies.length === 1 ? p.cookies[0] : p.cookies,
-                            null,
-                            2,
-                          ),
-                        )
-                      }
-                    }}
-                    title='转换为 JSON 格式'
-                  >
-                    JSON
-                  </button>
+                  <Tooltip content={t('tool.storage.convertToSetCookie')}>
+                    <button
+                      type='button'
+                      className='tw-link'
+                      onClick={() => {
+                        const p = parseRawCookie(rawText, defaultDomain, '/')
+                        if (p.ok && p.cookies[0]) {
+                          setRawText(serializeCookieToRaw(p.cookies[0], 'set-cookie'))
+                        }
+                      }}
+                    >
+                      Set-Cookie
+                    </button>
+                  </Tooltip>
+                  <Tooltip content={t('tool.storage.convertToJson')}>
+                    <button
+                      type='button'
+                      className='tw-link'
+                      onClick={() => {
+                        const p = parseRawCookie(rawText, defaultDomain, '/')
+                        if (p.ok) {
+                          setRawText(
+                            JSON.stringify(
+                              p.cookies.length === 1 ? p.cookies[0] : p.cookies,
+                              null,
+                              2,
+                            ),
+                          )
+                        }
+                      }}
+                    >
+                      JSON
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
 

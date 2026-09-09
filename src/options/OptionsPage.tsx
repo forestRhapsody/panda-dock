@@ -18,6 +18,7 @@ import AppLogo from '@/ui/AppLogo'
 import ConfirmDialog from '@/ui/ConfirmDialog'
 import Icon from '@/ui/Icon'
 import TkSelect from '@/ui/TkSelect'
+import Tooltip from '@/ui/Tooltip'
 import { parseDomainPatterns } from '@/utils/domainMatch'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
@@ -94,26 +95,29 @@ function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
       className={`opt-tools__row${isDragging ? ' opt-tools__row--drag' : ''}`}
       style={style}
     >
-      <span
-        className='opt-tools__grip'
-        {...attributes}
-        {...listeners}
-        title={t('settings.dragToReorder')}
-      >
-        <Icon name='grip' size={14} />
-      </span>
+      <Tooltip content={t('settings.dragToReorder')}>
+        <span
+          className='opt-tools__grip'
+          {...attributes}
+          {...listeners}
+          aria-label={t('settings.dragToReorder')}
+        >
+          <Icon name='grip' size={14} />
+        </span>
+      </Tooltip>
       <span className='opt-tools__name'>{label}</span>
-      <button
-        type='button'
-        role='switch'
-        aria-checked={on}
-        aria-label={label}
-        title={on ? t('settings.toolHide') : t('settings.toolShow')}
-        className={`tk-switch${on ? ' tk-switch--on' : ''}`}
-        onClick={() => onToggle(id)}
-      >
-        <span className='tk-switch__knob' />
-      </button>
+      <Tooltip content={on ? t('settings.toolHide') : t('settings.toolShow')}>
+        <button
+          type='button'
+          role='switch'
+          aria-checked={on}
+          aria-label={label}
+          className={`tk-switch${on ? ' tk-switch--on' : ''}`}
+          onClick={() => onToggle(id)}
+        >
+          <span className='tk-switch__knob' />
+        </button>
+      </Tooltip>
     </li>
   )
 }
@@ -358,12 +362,7 @@ export default function OptionsPage() {
         <div className='opt__card'>
           <div className='opt__card-head'>
             <h2>{t('settings.ballSection')}</h2>
-            <button
-              type='button'
-              className='opt__reset'
-              onClick={resetBallSection}
-              title={t('settings.resetDefault')}
-            >
+            <button type='button' className='opt__reset' onClick={resetBallSection}>
               {t('settings.resetDefault')}
             </button>
           </div>
@@ -411,7 +410,6 @@ export default function OptionsPage() {
                     type='button'
                     className='tk-btn tk-btn--sm'
                     onClick={() => void openShortcutsPage()}
-                    title={t('settings.configureShortcut')}
                   >
                     <Icon name='external-link' size={14} />
                     {t('settings.configureShortcut')}
@@ -431,7 +429,6 @@ export default function OptionsPage() {
                     type='button'
                     className='tk-btn tk-btn--sm'
                     onClick={() => void openShortcutsPage()}
-                    title={t('settings.configureShortcut')}
                   >
                     <Icon name='external-link' size={14} />
                     {t('settings.configureShortcut')}
@@ -445,12 +442,7 @@ export default function OptionsPage() {
         <div className='opt__card'>
           <div className='opt__card-head'>
             <h2>{t('settings.ballStyleSection')}</h2>
-            <button
-              type='button'
-              className='opt__reset'
-              onClick={resetBallStyle}
-              title={t('settings.resetDefault')}
-            >
+            <button type='button' className='opt__reset' onClick={resetBallStyle}>
               {t('settings.resetDefault')}
             </button>
           </div>
@@ -483,27 +475,28 @@ export default function OptionsPage() {
                 aria-label={t('settings.ballPreset')}
               >
                 {BALL_PRESET_OPTIONS.map((o) => (
-                  <button
-                    key={o.value}
-                    type='button'
-                    role='radio'
-                    aria-checked={settings.ballPreset === o.value}
-                    title={t(o.labelKey)}
-                    className={`opt__ball-preset${settings.ballPreset === o.value ? ' opt__ball-preset--on' : ''}`}
-                    onClick={() => setBallPreset(o.value)}
-                  >
-                    {o.image ? (
-                      <img
-                        src={ballAssetUrl(o.image)}
-                        alt=''
-                        aria-hidden='true'
-                        draggable={false}
-                        className='opt__ball-preset__img'
-                      />
-                    ) : (
-                      <span className='opt__ball-preset__logo'>{o.icon}</span>
-                    )}
-                  </button>
+                  <Tooltip key={o.value} content={t(o.labelKey)}>
+                    <button
+                      type='button'
+                      role='radio'
+                      aria-checked={settings.ballPreset === o.value}
+                      aria-label={t(o.labelKey)}
+                      className={`opt__ball-preset${settings.ballPreset === o.value ? ' opt__ball-preset--on' : ''}`}
+                      onClick={() => setBallPreset(o.value)}
+                    >
+                      {o.image ? (
+                        <img
+                          src={ballAssetUrl(o.image)}
+                          alt=''
+                          aria-hidden='true'
+                          draggable={false}
+                          className='opt__ball-preset__img'
+                        />
+                      ) : (
+                        <span className='opt__ball-preset__logo'>{o.icon}</span>
+                      )}
+                    </button>
+                  </Tooltip>
                 ))}
               </div>
             </li>
@@ -609,12 +602,7 @@ export default function OptionsPage() {
         <div className='opt__card'>
           <div className='opt__card-head'>
             <h2>{t('settings.domainSection')}</h2>
-            <button
-              type='button'
-              className='opt__reset'
-              onClick={resetDomainRules}
-              title={t('settings.resetDefault')}
-            >
+            <button type='button' className='opt__reset' onClick={resetDomainRules}>
               {t('settings.resetDefault')}
             </button>
           </div>
@@ -721,12 +709,7 @@ export default function OptionsPage() {
         <div className='opt__card'>
           <div className='opt__card-head'>
             <h2>{t('settings.appearanceDisplay')}</h2>
-            <button
-              type='button'
-              className='opt__reset'
-              onClick={resetAppearance}
-              title={t('settings.resetDefault')}
-            >
+            <button type='button' className='opt__reset' onClick={resetAppearance}>
               {t('settings.resetDefault')}
             </button>
           </div>

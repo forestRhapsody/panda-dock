@@ -47,7 +47,6 @@ export default function Toaster({ position = 'bottom' }: ToasterProps) {
             type='button'
             className='tk-toast__close'
             aria-label='Close'
-            title='Close'
             onClick={() => toast.dismiss(item.id)}
           >
             <Icon name='close' size={12} />

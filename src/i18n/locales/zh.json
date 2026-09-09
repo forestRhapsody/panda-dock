@@ -485,6 +485,8 @@
       "cookieRawInput": "Raw 文本",
       "cookieRawNote": "支持输入 Set-Cookie 语法、标准键值串（如 a=1; b=2）或 JSON 格式；解析多条时将批量导入写入。",
       "cookieRawPlaceholder": "支持粘贴 Set-Cookie 语句、Cookie 请求头（如 a=1; b=2）或 JSON 数组/对象…",
+      "convertToSetCookie": "转换为规范 Set-Cookie 语法",
+      "convertToJson": "转换为 JSON 格式",
       "cookieSaveBatch": "批量保存 ({{count}}条)",
       "cookieSaved": "Cookie 已保存",
       "cookieSavedBatch": "已成功保存 {{count}} 条 Cookie",

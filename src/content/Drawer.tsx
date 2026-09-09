@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 import ToolsApp from '@/tools/ToolsApp'
 import Icon from '@/ui/Icon'
+import Tooltip from '@/ui/Tooltip'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 
 const WIDTH_KEY = 'toolkit.drawerWidth'
@@ -101,33 +102,35 @@ export default function Drawer({ onClose }: DrawerProps) {
       role='dialog'
       aria-label={t('drawer.ariaLabel')}
     >
-      <div
-        role='separator'
-        aria-orientation='vertical'
-        aria-label={t('drawer.ariaResize')}
-        aria-valuemin={MIN_WIDTH}
-        aria-valuemax={maxDrawerWidth()}
-        aria-valuenow={Math.round(width)}
-        title={t('drawer.resizeTitle')}
-        tabIndex={0}
-        className='tek__drawer-handle'
-        onPointerDown={onResizeStart}
-        onPointerMove={onResizeMove}
-        onPointerUp={onResizeEnd}
-        onPointerCancel={onResizeEnd}
-        onKeyDown={onResizeKey}
-      />
+      <Tooltip content={t('drawer.resizeTitle')} side='left'>
+        <div
+          role='separator'
+          aria-orientation='vertical'
+          aria-label={t('drawer.ariaResize')}
+          aria-valuemin={MIN_WIDTH}
+          aria-valuemax={maxDrawerWidth()}
+          aria-valuenow={Math.round(width)}
+          tabIndex={0}
+          className='tek__drawer-handle'
+          onPointerDown={onResizeStart}
+          onPointerMove={onResizeMove}
+          onPointerUp={onResizeEnd}
+          onPointerCancel={onResizeEnd}
+          onKeyDown={onResizeKey}
+        />
+      </Tooltip>
       <ToolsApp
         headerActions={
-          <button
-            type='button'
-            className='tk-icon-btn'
-            aria-label={t('drawer.ariaClose')}
-            title={t('drawer.ariaClose')}
-            onClick={onClose}
-          >
-            <Icon name='close' size={14} />
-          </button>
+          <Tooltip content={t('drawer.ariaClose')} side='bottom'>
+            <button
+              type='button'
+              className='tk-icon-btn'
+              aria-label={t('drawer.ariaClose')}
+              onClick={onClose}
+            >
+              <Icon name='close' size={14} />
+            </button>
+          </Tooltip>
         }
       />
     </div>

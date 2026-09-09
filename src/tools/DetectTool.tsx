@@ -2,6 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 
 import { useTranslation } from 'react-i18next'
 
+import Tooltip from '@/ui/Tooltip'
 import { useToolDraft } from '@/utils/draft'
 
 import { detect } from './detect'
@@ -125,18 +126,18 @@ export default function DetectTool() {
         <span className='tw-detect__formats-label'>{t('tool.detect.supportedFormats')}</span>
         <div className='tw-detect__formats-list'>
           {FORMAT_PRESETS.map((p) => (
-            <button
-              key={p.key}
-              type='button'
-              className='tw-detect__format-chip'
-              title={t('tool.detect.clickToFillSample')}
-              onClick={() => {
-                setInput(p.sample)
-                setActiveMatchIndex(0)
-              }}
-            >
-              {t(`tool.detect.format.${p.key}`)}
-            </button>
+            <Tooltip key={p.key} content={t('tool.detect.clickToFillSample')}>
+              <button
+                type='button'
+                className='tw-detect__format-chip'
+                onClick={() => {
+                  setInput(p.sample)
+                  setActiveMatchIndex(0)
+                }}
+              >
+                {t(`tool.detect.format.${p.key}`)}
+              </button>
+            </Tooltip>
           ))}
         </div>
       </div>

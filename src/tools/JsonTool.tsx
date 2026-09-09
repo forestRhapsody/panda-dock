@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
 import TkSelect from '@/ui/TkSelect'
+import Tooltip from '@/ui/Tooltip'
 import { useToolDraft } from '@/utils/draft'
 
 import CopyButton from './CopyButton'
@@ -328,23 +329,27 @@ export default function JsonTool() {
         </div>
 
         <div className='tw-json__options'>
-          <label className='tk-checkbox' title={t('tool.json.sortKeysDesc')}>
-            <input
-              type='checkbox'
-              checked={sortKeys}
-              onChange={(e) => onSortKeysChange(e.target.checked)}
-            />
-            <span>{t('tool.json.sortKeysOption')}</span>
-          </label>
+          <Tooltip content={t('tool.json.sortKeysDesc')}>
+            <label className='tk-checkbox'>
+              <input
+                type='checkbox'
+                checked={sortKeys}
+                onChange={(e) => onSortKeysChange(e.target.checked)}
+              />
+              <span>{t('tool.json.sortKeysOption')}</span>
+            </label>
+          </Tooltip>
 
-          <label className='tk-checkbox' title={t('tool.json.autoUnescapeDesc')}>
-            <input
-              type='checkbox'
-              checked={autoUnescape}
-              onChange={(e) => onAutoUnescapeChange(e.target.checked)}
-            />
-            <span>{t('tool.json.autoUnescapeOption')}</span>
-          </label>
+          <Tooltip content={t('tool.json.autoUnescapeDesc')}>
+            <label className='tk-checkbox'>
+              <input
+                type='checkbox'
+                checked={autoUnescape}
+                onChange={(e) => onAutoUnescapeChange(e.target.checked)}
+              />
+              <span>{t('tool.json.autoUnescapeOption')}</span>
+            </label>
+          </Tooltip>
 
           <div className='tw-json__indent'>
             <TkSelect
@@ -383,25 +388,26 @@ export default function JsonTool() {
         </section>
 
         {/* 可拖拽分屏控制条 (Splitter) */}
-        <div
-          role='separator'
-          aria-orientation='horizontal'
-          aria-label={t('tool.json.splitterLabel')}
-          aria-valuenow={Math.round(splitRatio)}
-          aria-valuemin={15}
-          aria-valuemax={85}
-          tabIndex={0}
-          title={t('tool.json.splitterTip')}
-          className={`tw-json__splitter${isDragging ? ' tw-json__splitter--active' : ''}`}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          onDoubleClick={handleDoubleClick}
-          onKeyDown={handleKeyDown}
-        >
-          <div className='tw-json__splitter-handle' />
-        </div>
+        <Tooltip content={t('tool.json.splitterTip')}>
+          <div
+            role='separator'
+            aria-orientation='horizontal'
+            aria-label={t('tool.json.splitterLabel')}
+            aria-valuenow={Math.round(splitRatio)}
+            aria-valuemin={15}
+            aria-valuemax={85}
+            tabIndex={0}
+            className={`tw-json__splitter${isDragging ? ' tw-json__splitter--active' : ''}`}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onDoubleClick={handleDoubleClick}
+            onKeyDown={handleKeyDown}
+          >
+            <div className='tw-json__splitter-handle' />
+          </div>
+        </Tooltip>
 
         {/* 下方面板：结果展示区 */}
         <section
@@ -434,7 +440,6 @@ export default function JsonTool() {
                   type='button'
                   className='tw-link tw-json__download-link'
                   onClick={() => downloadText(output, 'data.json')}
-                  title={t('tool.json.download')}
                 >
                   <Icon name='download' size={12} />
                   {t('tool.json.download')}

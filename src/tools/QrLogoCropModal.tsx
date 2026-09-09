@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
 import TkSelect from '@/ui/TkSelect'
+import Tooltip from '@/ui/Tooltip'
 
 import type { QrLogoShape } from './qrcode'
 
@@ -205,14 +206,16 @@ export default function QrLogoCropModal({
         {/* 弹窗头部 */}
         <div className='tw-crop-modal__header'>
           <h3 className='tk-modal__title tw-crop-modal__title'>{t('tool.qrcode.cropTitle')}</h3>
-          <button
-            type='button'
-            className='tk-icon-btn'
-            onClick={onCancel}
-            title={t('common.cancel')}
-          >
-            <Icon name='close' size={14} />
-          </button>
+          <Tooltip content={t('common.cancel')} side='bottom'>
+            <button
+              type='button'
+              className='tk-icon-btn'
+              onClick={onCancel}
+              aria-label={t('common.cancel')}
+            >
+              <Icon name='close' size={14} />
+            </button>
+          </Tooltip>
         </div>
 
         <p className='tw-crop-modal__hint'>{t('tool.qrcode.cropHint')}</p>
@@ -298,7 +301,6 @@ export default function QrLogoCropModal({
               type='button'
               className='tk-btn tk-btn--sm tw-crop-modal__reset-btn'
               onClick={handleReset}
-              title={t('tool.qrcode.cropReset')}
             >
               {t('tool.qrcode.cropReset')}
             </button>

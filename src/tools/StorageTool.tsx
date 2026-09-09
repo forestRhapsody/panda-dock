@@ -6,6 +6,7 @@ import i18n from '@/i18n'
 import ConfirmDialog from '@/ui/ConfirmDialog'
 import Icon from '@/ui/Icon'
 import { toast } from '@/ui/toast'
+import Tooltip from '@/ui/Tooltip'
 
 import AutoArea from './AutoArea'
 import CookieEditModal from './CookieEditModal'
@@ -574,7 +575,6 @@ export default function StorageTool() {
           className='tk-btn tk-btn--primary'
           onClick={() => void handleRefresh()}
           disabled={refreshing}
-          title={t('tool.storage.refresh')}
         >
           <Icon name='refresh' size={14} className={refreshing ? 'tw-spin' : undefined} />
           {t('tool.storage.refresh')}
@@ -626,15 +626,16 @@ export default function StorageTool() {
             }}
           />
           {filter && (
-            <button
-              type='button'
-              className='tw-store__search-clear'
-              onClick={() => setFilter('')}
-              title={t('tool.storage.clearFilter')}
-              aria-label={t('tool.storage.clearFilter')}
-            >
-              <Icon name='close' size={12} />
-            </button>
+            <Tooltip content={t('tool.storage.clearFilter')}>
+              <button
+                type='button'
+                className='tw-store__search-clear'
+                onClick={() => setFilter('')}
+                aria-label={t('tool.storage.clearFilter')}
+              >
+                <Icon name='close' size={12} />
+              </button>
+            </Tooltip>
           )}
         </div>
       )}
@@ -689,38 +690,41 @@ export default function StorageTool() {
               ) : (
                 <>
                   <div className='tw-store__head'>
-                    <span className='tw-store__key' title={entry.key}>
-                      {entry.key}
-                    </span>
+                    <Tooltip content={entry.key}>
+                      <span className='tw-store__key'>{entry.key}</span>
+                    </Tooltip>
                     <span className='tw-store__size'>{fmtSize(entry.size)}</span>
                   </div>
-                  <code
-                    className='tw-store__value'
-                    onDoubleClick={() => startEdit(entry)}
-                    title={
+                  <Tooltip
+                    content={
                       entry.truncated
                         ? t('tool.storage.truncatedShort')
                         : t('tool.storage.dblClickEdit')
                     }
                   >
-                    {entry.truncated
-                      ? t('tool.storage.truncatedPreview', { value: entry.value })
-                      : entry.value || t('tool.storage.emptyString')}
-                  </code>
+                    <code className='tw-store__value' onDoubleClick={() => startEdit(entry)}>
+                      {entry.truncated
+                        ? t('tool.storage.truncatedPreview', { value: entry.value })
+                        : entry.value || t('tool.storage.emptyString')}
+                    </code>
+                  </Tooltip>
                   <div className='tw-store__actions'>
-                    <button
-                      type='button'
-                      className='tw-link'
-                      disabled={entry.truncated}
-                      title={
+                    <Tooltip
+                      content={
                         entry.truncated
                           ? t('tool.storage.truncatedShort')
                           : t('tool.storage.editValue')
                       }
-                      onClick={() => startEdit(entry)}
                     >
-                      {t('tool.storage.edit')}
-                    </button>
+                      <button
+                        type='button'
+                        className='tw-link'
+                        disabled={entry.truncated}
+                        onClick={() => startEdit(entry)}
+                      >
+                        {t('tool.storage.edit')}
+                      </button>
+                    </Tooltip>
                     <CopyButton
                       text={entry.value}
                       className='tw-link'
@@ -761,9 +765,9 @@ export default function StorageTool() {
               <li key={cookieId} className='tw-store__row'>
                 <div className='tw-store__head'>
                   <div className='tw-cookie__meta-head'>
-                    <span className='tw-store__key' title={cookie.name}>
-                      {cookie.name}
-                    </span>
+                    <Tooltip content={cookie.name}>
+                      <span className='tw-store__key'>{cookie.name}</span>
+                    </Tooltip>
                     <div className='tw-cookie__badges'>
                       {cookie.httpOnly && <span className='tw-cookie__badge'>HttpOnly</span>}
                       {cookie.secure && <span className='tw-cookie__badge'>Secure</span>}
@@ -777,16 +781,17 @@ export default function StorageTool() {
                   </div>
                   <span className='tw-store__size'>{fmtSize(cookie.size)}</span>
                 </div>
-                <code
-                  className='tw-store__value'
-                  title={t('tool.storage.dblClickEdit')}
-                  onDoubleClick={() => {
-                    setEditingCookie(cookie)
-                    setCookieModalOpen(true)
-                  }}
-                >
-                  {cookie.value || t('tool.storage.emptyString')}
-                </code>
+                <Tooltip content={t('tool.storage.dblClickEdit')}>
+                  <code
+                    className='tw-store__value'
+                    onDoubleClick={() => {
+                      setEditingCookie(cookie)
+                      setCookieModalOpen(true)
+                    }}
+                  >
+                    {cookie.value || t('tool.storage.emptyString')}
+                  </code>
+                </Tooltip>
                 {isExpanded && (
                   <div className='tw-cookie__details'>
                     <div className='tw-cookie__detail-row'>

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
+import Tooltip from '@/ui/Tooltip'
 
 import { defaultFileName, downloadDataUrl } from './file'
 
@@ -19,14 +20,16 @@ export default function DownloadButton({ mime, dataUrl, label, className }: Down
   const { t } = useTranslation()
   const filename = defaultFileName(mime)
   return (
-    <button
-      type='button'
-      className={`tk-btn${className ? ` ${className}` : ''}`}
-      title={filename}
-      onClick={() => downloadDataUrl(dataUrl, filename)}
-    >
-      <Icon name='download' size={13} />
-      {label ?? t('tool.detect.download')}
-    </button>
+    <Tooltip content={filename}>
+      <button
+        type='button'
+        className={`tk-btn${className ? ` ${className}` : ''}`}
+        aria-label={filename}
+        onClick={() => downloadDataUrl(dataUrl, filename)}
+      >
+        <Icon name='download' size={13} />
+        {label ?? t('tool.detect.download')}
+      </button>
+    </Tooltip>
   )
 }

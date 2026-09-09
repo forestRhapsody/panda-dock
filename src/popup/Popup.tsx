@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useLocale } from '@/i18n/useLocale'
 import AppLogo from '@/ui/AppLogo'
 import Icon from '@/ui/Icon'
+import Tooltip from '@/ui/Tooltip'
 import { closeDrawerInActiveTab, openDrawerInActiveTab } from '@/utils/drawer'
 import { isExtension, openOptionsPage } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
@@ -54,15 +55,16 @@ export default function Popup() {
           <AppLogo size={15} />
           Panda Dock
         </span>
-        <button
-          type='button'
-          className='tk-icon-btn'
-          title={t('popup.openOptions')}
-          aria-label={t('popup.openOptions')}
-          onClick={openOptionsPage}
-        >
-          <Icon name='settings' size={15} />
-        </button>
+        <Tooltip content={t('popup.openOptions')} side='bottom'>
+          <button
+            type='button'
+            className='tk-icon-btn'
+            aria-label={t('popup.openOptions')}
+            onClick={openOptionsPage}
+          >
+            <Icon name='settings' size={15} />
+          </button>
+        </Tooltip>
       </header>
       {inExt && (
         <div className='pop__native'>
@@ -86,15 +88,16 @@ export default function Popup() {
           </div>
           <div className='pop__shortcut-bar'>
             <span className='pop__shortcut-label'>{t('popup.quickShortcut')}</span>
-            <button
-              type='button'
-              className='pop__shortcut-btn'
-              title={t('settings.configureShortcut')}
-              onClick={() => void openShortcutsPage()}
-            >
-              <kbd className='pop__kbd'>{shortcut || 'Alt+Shift+D'}</kbd>
-              <Icon name='external-link' size={12} />
-            </button>
+            <Tooltip content={t('settings.configureShortcut')}>
+              <button
+                type='button'
+                className='pop__shortcut-btn'
+                onClick={() => void openShortcutsPage()}
+              >
+                <kbd className='pop__kbd'>{shortcut || 'Alt+Shift+D'}</kbd>
+                <Icon name='external-link' size={12} />
+              </button>
+            </Tooltip>
           </div>
           {nativeFailed && <p className='pop__native-hint'>{t('popup.sidePanelFail')}</p>}
           {drawerFailed && <p className='pop__native-hint'>{t('popup.drawerFail')}</p>}

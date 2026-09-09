@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import Tooltip from '@/ui/Tooltip'
+
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import type { DetectBlock, DetectField, DetectItem, DetectResult } from './detect'
@@ -185,27 +187,29 @@ export default function DetectResultView({
         <div ref={tabsRef} className='tw-detect__tabs' role='tablist'>
           {items!.map((it, idx) => {
             const isActive = idx === activeMatchIndex
+            const tip = t('tool.detect.selectMatchTip', {
+              num: idx + 1,
+              kind: KIND_LABEL[it.kind],
+            })
             return (
-              <button
-                key={idx}
-                type='button'
-                role='tab'
-                data-index={idx}
-                aria-selected={isActive}
-                className={`tw-detect__tab${isActive ? ' tw-detect__tab--active' : ''}`}
-                onClick={() => {
-                  onSelectMatch!(idx)
-                  revealActiveTab(idx)
-                }}
-                title={t('tool.detect.selectMatchTip', {
-                  num: idx + 1,
-                  kind: KIND_LABEL[it.kind],
-                })}
-              >
-                <span className='tw-detect__tab-num'>{idx + 1}</span>
-                <span className='tw-detect__tab-sep'>·</span>
-                <span className='tw-detect__tab-kind'>{KIND_LABEL[it.kind]}</span>
-              </button>
+              <Tooltip key={idx} content={tip}>
+                <button
+                  type='button'
+                  role='tab'
+                  data-index={idx}
+                  aria-selected={isActive}
+                  aria-label={tip}
+                  className={`tw-detect__tab${isActive ? ' tw-detect__tab--active' : ''}`}
+                  onClick={() => {
+                    onSelectMatch!(idx)
+                    revealActiveTab(idx)
+                  }}
+                >
+                  <span className='tw-detect__tab-num'>{idx + 1}</span>
+                  <span className='tw-detect__tab-sep'>·</span>
+                  <span className='tw-detect__tab-kind'>{KIND_LABEL[it.kind]}</span>
+                </button>
+              </Tooltip>
             )
           })}
         </div>

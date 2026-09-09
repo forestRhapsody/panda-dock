@@ -485,6 +485,8 @@
       "cookieRawInput": "Raw Text",
       "cookieRawNote": "Supports Set-Cookie directives, standard key-value strings (e.g. a=1; b=2), or JSON. Multiple cookies will be imported in batch.",
       "cookieRawPlaceholder": "Paste Set-Cookie directives, Cookie header (a=1; b=2) or JSON...",
+      "convertToSetCookie": "Convert to standard Set-Cookie syntax",
+      "convertToJson": "Convert to JSON format",
       "cookieSaveBatch": "Save All ({{count}})",
       "cookieSaved": "Cookie saved successfully",
       "cookieSavedBatch": "Successfully saved {{count}} cookies",

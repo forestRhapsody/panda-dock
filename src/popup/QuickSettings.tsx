@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import TkSelect from '@/ui/TkSelect'
+import Tooltip from '@/ui/Tooltip'
 import { isDomainMatched, shouldShowFloatingBall } from '@/utils/domainMatch'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
@@ -163,17 +164,18 @@ export default function QuickSettings() {
                 </span>
               </p>
             </div>
-            <button
-              type='button'
-              role='switch'
-              aria-checked={siteAllowed}
-              className={`tk-switch${siteAllowed ? ' tk-switch--on' : ''}`}
-              onClick={toggleSiteBall}
-              title={siteAllowed ? t('popup.disableOnSite') : t('popup.enableOnSite')}
-              aria-label={siteAllowed ? t('popup.disableOnSite') : t('popup.enableOnSite')}
-            >
-              <span className='tk-switch__knob' />
-            </button>
+            <Tooltip content={siteAllowed ? t('popup.disableOnSite') : t('popup.enableOnSite')}>
+              <button
+                type='button'
+                role='switch'
+                aria-checked={siteAllowed}
+                className={`tk-switch${siteAllowed ? ' tk-switch--on' : ''}`}
+                onClick={toggleSiteBall}
+                aria-label={siteAllowed ? t('popup.disableOnSite') : t('popup.enableOnSite')}
+              >
+                <span className='tk-switch__knob' />
+              </button>
+            </Tooltip>
           </li>
         )}
         <li className='pop__setting'>

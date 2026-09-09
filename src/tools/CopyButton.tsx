@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
+import Tooltip from '@/ui/Tooltip'
 import { copyText } from '@/utils/clipboard'
 
 interface CopyButtonProps {
@@ -20,7 +21,7 @@ interface CopyButtonProps {
   onResult?: (ok: boolean) => void
 }
 
-/** 复制按钮：点击后短暂显示「已复制」，过一会儿变回原文案（icon 模式显示图标）。 */
+/** 复制按钮：点击后短暂显示「已复制」，过一会儿变回原文案（icon 模式显示图标并配现代化 Tooltip）。 */
 export default function CopyButton({
   text,
   disabled,
@@ -48,11 +49,12 @@ export default function CopyButton({
     timer.current = window.setTimeout(() => setCopied(false), 1500)
   }
 
-  return (
+  const tooltipText = copied ? copiedText : (title ?? (icon ? labelText : undefined))
+
+  const buttonElement = (
     <button
       type='button'
       className={className}
-      title={title ?? labelText}
       aria-label={labelText}
       aria-live='polite'
       disabled={disabled}
@@ -61,4 +63,14 @@ export default function CopyButton({
       {icon ? <Icon name={copied ? 'check' : 'copy'} size={14} /> : copied ? copiedText : labelText}
     </button>
   )
+
+  if (tooltipText) {
+    return (
+      <Tooltip content={tooltipText} disabled={disabled}>
+        {buttonElement}
+      </Tooltip>
+    )
+  }
+
+  return buttonElement
 }

@@ -18,6 +18,7 @@ import DetectResultView from '@/tools/DetectResultView'
 import HighlightArea from '@/tools/HighlightArea'
 import { StatusText } from '@/tools/StatusText'
 import Icon from '@/ui/Icon'
+import Tooltip from '@/ui/Tooltip'
 
 export interface SelectionRect {
   left: number
@@ -274,34 +275,38 @@ export default function SelectionDetectPanel({
         </span>
         <strong className='tek-detect-panel__title'>{t('tool.detect.title')}</strong>
         {onOpenInSidePanel && (
+          <Tooltip content={t('tool.detect.openInSidePanel')} side='bottom'>
+            <button
+              type='button'
+              className='tk-icon-btn'
+              aria-label={t('tool.detect.openInSidePanel')}
+              onClick={handleOpenInSidePanel}
+            >
+              <Icon name='panel-right' size={14} />
+            </button>
+          </Tooltip>
+        )}
+        <Tooltip content={pinned ? t('tool.detect.unpin') : t('tool.detect.pin')} side='bottom'>
+          <button
+            type='button'
+            className={`tk-icon-btn tek-detect-panel__pin${pinned ? ' tek-detect-panel__pin--on' : ''}`}
+            aria-label={pinned ? t('tool.detect.unpin') : t('tool.detect.pin')}
+            aria-pressed={pinned}
+            onClick={() => setPinned((p) => !p)}
+          >
+            <Icon name='pin' size={14} />
+          </button>
+        </Tooltip>
+        <Tooltip content={t('common.cancel')} side='bottom'>
           <button
             type='button'
             className='tk-icon-btn'
-            title={t('tool.detect.openInSidePanel')}
-            aria-label={t('tool.detect.openInSidePanel')}
-            onClick={handleOpenInSidePanel}
+            aria-label={t('common.cancel')}
+            onClick={onClose}
           >
-            <Icon name='panel-right' size={14} />
+            <Icon name='close' size={14} />
           </button>
-        )}
-        <button
-          type='button'
-          className={`tk-icon-btn tek-detect-panel__pin${pinned ? ' tek-detect-panel__pin--on' : ''}`}
-          title={pinned ? t('tool.detect.unpin') : t('tool.detect.pin')}
-          aria-pressed={pinned}
-          onClick={() => setPinned((p) => !p)}
-        >
-          <Icon name='pin' size={14} />
-        </button>
-        <button
-          type='button'
-          className='tk-icon-btn'
-          title={t('common.cancel')}
-          aria-label={t('common.cancel')}
-          onClick={onClose}
-        >
-          <Icon name='close' size={14} />
-        </button>
+        </Tooltip>
       </div>
       <div className='tek-detect-panel__body'>
         <div className='tek-detect__editor'>

@@ -4,6 +4,7 @@ import type { ChangeEvent, DragEvent, KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
+import Tooltip from '@/ui/Tooltip'
 import { useToolDraft } from '@/utils/draft'
 
 import AutoArea from './AutoArea'
@@ -266,14 +267,15 @@ export default function HashTool() {
           <span className='tw-field__label'>
             {t('tool.hash.textLabel')}
             <span className='tw-field__actions'>
-              <button
-                type='button'
-                className='tw-link'
-                onClick={() => setDraft((d) => ({ ...d, showHmac: !d.showHmac }))}
-                title={t('tool.hash.hmacTooltip')}
-              >
-                HMAC{showHmac && hmacKey.trim() ? ' •' : ''}
-              </button>
+              <Tooltip content={t('tool.hash.hmacTooltip')}>
+                <button
+                  type='button'
+                  className='tw-link'
+                  onClick={() => setDraft((d) => ({ ...d, showHmac: !d.showHmac }))}
+                >
+                  HMAC{showHmac && hmacKey.trim() ? ' •' : ''}
+                </button>
+              </Tooltip>
             </span>
           </span>
           <AutoArea

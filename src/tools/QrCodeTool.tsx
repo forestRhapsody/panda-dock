@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
 import TkSelect from '@/ui/TkSelect'
+import Tooltip from '@/ui/Tooltip'
 import { copyText } from '@/utils/clipboard'
 import { useToolDraft } from '@/utils/draft'
 import { getCurrentPageUrl } from '@/utils/pageUrl'
@@ -447,12 +448,7 @@ export default function QrCodeTool() {
             />
           </label>
           <div className='tw-actions'>
-            <button
-              type='button'
-              className='tk-btn'
-              onClick={() => void fillCurrentPageUrl()}
-              title={t('tool.qrcode.fillCurrentUrl')}
-            >
+            <button type='button' className='tk-btn' onClick={() => void fillCurrentPageUrl()}>
               <Icon name='window' size={13} />
               {t('tool.qrcode.fillCurrentUrl')}
             </button>
@@ -527,7 +523,6 @@ export default function QrCodeTool() {
               type='button'
               className={`tk-btn tk-btn--sm${showCustomize ? ' tk-btn--primary' : ''}`}
               onClick={() => setShowCustomize((prev) => !prev)}
-              title={t('tool.qrcode.customizeToggle')}
             >
               <Icon name='settings' size={13} />
               {t('tool.qrcode.customizeToggle')}
@@ -550,14 +545,15 @@ export default function QrCodeTool() {
                     />
                     <div className='tw-qr__color-swatches'>
                       {PRESET_FG_COLORS.map((p) => (
-                        <button
-                          key={p.color}
-                          type='button'
-                          className={`tw-qr__swatch${fgColor === p.color ? ' tw-qr__swatch--active' : ''}`}
-                          style={{ backgroundColor: p.color }}
-                          title={p.label}
-                          onClick={() => setFgColor(p.color)}
-                        />
+                        <Tooltip key={p.color} content={p.label}>
+                          <button
+                            type='button'
+                            className={`tw-qr__swatch${fgColor === p.color ? ' tw-qr__swatch--active' : ''}`}
+                            style={{ backgroundColor: p.color }}
+                            aria-label={p.label}
+                            onClick={() => setFgColor(p.color)}
+                          />
+                        </Tooltip>
                       ))}
                     </div>
                   </div>
@@ -574,14 +570,15 @@ export default function QrCodeTool() {
                     />
                     <div className='tw-qr__color-swatches'>
                       {PRESET_BG_COLORS.map((p) => (
-                        <button
-                          key={p.color}
-                          type='button'
-                          className={`tw-qr__swatch${bgColor === p.color ? ' tw-qr__swatch--active' : ''}`}
-                          style={{ backgroundColor: p.color }}
-                          title={p.label}
-                          onClick={() => setBgColor(p.color)}
-                        />
+                        <Tooltip key={p.color} content={p.label}>
+                          <button
+                            type='button'
+                            className={`tw-qr__swatch${bgColor === p.color ? ' tw-qr__swatch--active' : ''}`}
+                            style={{ backgroundColor: p.color }}
+                            aria-label={p.label}
+                            onClick={() => setBgColor(p.color)}
+                          />
+                        </Tooltip>
                       ))}
                     </div>
                   </div>
@@ -602,14 +599,16 @@ export default function QrCodeTool() {
                       maxLength={32}
                     />
                     {label && (
-                      <button
-                        type='button'
-                        className='tk-icon-btn'
-                        onClick={() => setLabel('')}
-                        title={t('common.cancel')}
-                      >
-                        <Icon name='close' size={12} />
-                      </button>
+                      <Tooltip content={t('common.cancel')}>
+                        <button
+                          type='button'
+                          className='tk-icon-btn'
+                          onClick={() => setLabel('')}
+                          aria-label={t('common.cancel')}
+                        >
+                          <Icon name='close' size={12} />
+                        </button>
+                      </Tooltip>
                     )}
                   </div>
                 </div>
@@ -653,7 +652,6 @@ export default function QrCodeTool() {
                             type='button'
                             className='tk-btn tk-btn--sm'
                             onClick={handleRecrop}
-                            title={t('tool.qrcode.recropLogo')}
                           >
                             <Icon name='code' size={12} />
                             {t('tool.qrcode.recropLogo')}
@@ -662,17 +660,11 @@ export default function QrCodeTool() {
                             type='button'
                             className='tk-btn tk-btn--sm'
                             onClick={() => logoInputRef.current?.click()}
-                            title={t('tool.qrcode.uploadLogo')}
                           >
                             <Icon name='upload' size={12} />
                             {t('tool.qrcode.uploadLogo')}
                           </button>
-                          <button
-                            type='button'
-                            className='tk-btn tk-btn--sm'
-                            onClick={removeLogo}
-                            title={t('tool.qrcode.removeLogo')}
-                          >
+                          <button type='button' className='tk-btn tk-btn--sm' onClick={removeLogo}>
                             <Icon name='close' size={12} />
                             {t('tool.qrcode.removeLogo')}
                           </button>
@@ -747,7 +739,6 @@ export default function QrCodeTool() {
                     type='button'
                     className='tk-btn tk-btn--sm'
                     onClick={() => void copyQrImage()}
-                    title={t('tool.qrcode.copyImage')}
                   >
                     <Icon name={copiedImage ? 'check' : 'copy'} size={13} />
                     {copiedImage ? t('tool.qrcode.imageCopied') : t('tool.qrcode.copyImage')}
@@ -756,17 +747,11 @@ export default function QrCodeTool() {
                     type='button'
                     className='tk-btn tk-btn--sm'
                     onClick={() => void downloadQrImage()}
-                    title={t('tool.qrcode.downloadPng')}
                   >
                     <Icon name='download' size={13} />
                     {t('tool.qrcode.downloadPng')}
                   </button>
-                  <button
-                    type='button'
-                    className='tk-btn tk-btn--sm'
-                    onClick={openOriginalImage}
-                    title={t('tool.qrcode.openOriginal')}
-                  >
+                  <button type='button' className='tk-btn tk-btn--sm' onClick={openOriginalImage}>
                     <Icon name='external-link' size={13} />
                     {t('tool.qrcode.openOriginal')}
                   </button>
@@ -861,13 +846,7 @@ export default function QrCodeTool() {
                 <span>{t('tool.qrcode.decodedResult')}</span>
                 <span className='tw-field__actions'>
                   {isDecodedUrl && (
-                    <a
-                      href={decodedResult}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='tw-link'
-                      title={t('tool.qrcode.openUrl')}
-                    >
+                    <a href={decodedResult} target='_blank' rel='noreferrer' className='tw-link'>
                       <Icon name='external-link' size={13} />
                       {t('tool.qrcode.openUrl')}
                     </a>

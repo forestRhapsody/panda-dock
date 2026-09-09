@@ -23,6 +23,7 @@ import {
 import { createPortal } from 'react-dom'
 
 import Icon from './Icon'
+import Tooltip from './Tooltip'
 
 // —— 类型 ——
 
@@ -357,29 +358,38 @@ export default function TkSelect({
         )
       : null
 
+  const triggerBtn = (
+    <button
+      ref={triggerRef}
+      id={id}
+      type='button'
+      role='combobox'
+      aria-expanded={open}
+      aria-haspopup='listbox'
+      aria-label={ariaLabel ?? selectedLabel}
+      disabled={disabled}
+      className={triggerCls}
+      onClick={() => (open ? closeDropdown() : openDropdown())}
+      onKeyDown={handleKeyDown}
+    >
+      <span className='tk-select__value'>
+        {selectedLabel || <span className='tk-select__placeholder'>—</span>}
+      </span>
+      <span className='tk-select__arrow' aria-hidden>
+        <Icon name='chevron-down' size={variant === 'sm' ? 12 : 14} />
+      </span>
+    </button>
+  )
+
   return (
     <>
-      <button
-        ref={triggerRef}
-        id={id}
-        type='button'
-        role='combobox'
-        aria-expanded={open}
-        aria-haspopup='listbox'
-        aria-label={ariaLabel ?? selectedLabel}
-        disabled={disabled}
-        title={title}
-        className={triggerCls}
-        onClick={() => (open ? closeDropdown() : openDropdown())}
-        onKeyDown={handleKeyDown}
-      >
-        <span className='tk-select__value'>
-          {selectedLabel || <span className='tk-select__placeholder'>—</span>}
-        </span>
-        <span className='tk-select__arrow' aria-hidden>
-          <Icon name='chevron-down' size={variant === 'sm' ? 12 : 14} />
-        </span>
-      </button>
+      {title ? (
+        <Tooltip content={title} disabled={open || disabled}>
+          {triggerBtn}
+        </Tooltip>
+      ) : (
+        triggerBtn
+      )}
       {dropdown}
     </>
   )
