@@ -579,24 +579,22 @@ export default function StorageTool() {
           <Icon name='refresh' size={14} className={refreshing ? 'tw-spin' : undefined} />
           {t('tool.storage.refresh')}
         </button>
-        {area !== 'cookie' ? (
-          <button type='button' className='tk-btn' onClick={startCreate} disabled={editorOpen}>
-            <Icon name='plus' size={13} />
-            {t('tool.storage.add')}
-          </button>
-        ) : (
-          <button
-            type='button'
-            className='tk-btn'
-            onClick={() => {
-              setEditingCookie(null)
-              setCookieModalOpen(true)
-            }}
-          >
-            <Icon name='plus' size={13} />
-            {t('tool.storage.addCookie')}
-          </button>
-        )}
+        <button
+          type='button'
+          className='tk-btn'
+          onClick={
+            area === 'cookie'
+              ? () => {
+                  setEditingCookie(null)
+                  setCookieModalOpen(true)
+                }
+              : startCreate
+          }
+          disabled={area !== 'cookie' && editorOpen}
+        >
+          <Icon name='plus' size={13} />
+          {t('tool.storage.add')}
+        </button>
         <button
           type='button'
           className='tk-btn'

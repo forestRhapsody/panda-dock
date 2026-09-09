@@ -102,23 +102,21 @@ export default function Drawer({ onClose }: DrawerProps) {
       role='dialog'
       aria-label={t('drawer.ariaLabel')}
     >
-      <Tooltip content={t('drawer.resizeTitle')} side='left'>
-        <div
-          role='separator'
-          aria-orientation='vertical'
-          aria-label={t('drawer.ariaResize')}
-          aria-valuemin={MIN_WIDTH}
-          aria-valuemax={maxDrawerWidth()}
-          aria-valuenow={Math.round(width)}
-          tabIndex={0}
-          className='tek__drawer-handle'
-          onPointerDown={onResizeStart}
-          onPointerMove={onResizeMove}
-          onPointerUp={onResizeEnd}
-          onPointerCancel={onResizeEnd}
-          onKeyDown={onResizeKey}
-        />
-      </Tooltip>
+      <div
+        role='separator'
+        aria-orientation='vertical'
+        aria-label={t('drawer.ariaResize')}
+        aria-valuemin={MIN_WIDTH}
+        aria-valuemax={maxDrawerWidth()}
+        aria-valuenow={Math.round(width)}
+        tabIndex={0}
+        className='tek__drawer-handle'
+        onPointerDown={onResizeStart}
+        onPointerMove={onResizeMove}
+        onPointerUp={onResizeEnd}
+        onPointerCancel={onResizeEnd}
+        onKeyDown={onResizeKey}
+      />
       <ToolsApp
         headerActions={
           <Tooltip content={t('drawer.ariaClose')} side='bottom'>

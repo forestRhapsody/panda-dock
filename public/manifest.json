@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Panda Dock",
-  "description": "Panda Dock：基于 React + Vite 的 Chrome 开发者工具箱（Popup / Options / 侧边栏 / Content Script 悬浮球与抽屉）",
+  "description": "Panda Dock：现代、高效的 Chrome 开发者日常工具箱，内置 Base64、JSON、JWT、时间戳、网页存储与智能解析等常用工具。",
   "version": "0.2.0",
   "icons": {
     "16": "icons/icon16.png",
@@ -30,14 +30,14 @@
         "default": "Alt+Shift+D",
         "mac": "Alt+Shift+D"
       },
-      "description": "打开/收起工具箱（按设置打开侧边栏或网页抽屉）"
+      "description": "打开/收起工具箱"
     },
     "toggle-detect": {
       "suggested_key": {
         "default": "Alt+Shift+S",
         "mac": "Alt+Shift+S"
       },
-      "description": "智能解析（选中文本就地解析 / 未选中右上角弹出）"
+      "description": "快速唤起智能解析"
     }
   },
   "background": {

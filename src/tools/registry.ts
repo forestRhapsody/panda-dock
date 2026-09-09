@@ -21,7 +21,7 @@ export interface ToolMeta {
 
 export const DEFAULT_TOOLS: ToolMeta[] = [
   { id: 'detect', label: 'Smart Parse' },
-  { id: 'storage', label: 'Local Storage' },
+  { id: 'storage', label: 'Web Storage' },
   { id: 'base64', label: 'Base64' },
   { id: 'timestamp', label: 'Timestamp' },
   { id: 'qrcode', label: 'QR Code Tool' },

@@ -36,7 +36,7 @@ export const MSG_STORAGE_CLEAR = 'TOOLKIT_STORAGE_CLEAR'
 /** background → content：右键菜单「智能识别选中文字」→ 显示悬浮面板（携带选中文本与位置） */
 export const MSG_DETECT_SELECTION = 'TOOLKIT_DETECT_SELECTION'
 
-/** background → content：全局快捷键触发智能解析（选中文本就地解析 / 未选中右上角弹出，若已打开则收回） */
+/** background → content：全局快捷键触发智能解析（解析选中文本或唤起解析面板） */
 export const MSG_TOGGLE_DETECT = 'TOOLKIT_TOGGLE_DETECT'
 
 /** 扩展页面/content → background：获取当前网页的 Cookies */
