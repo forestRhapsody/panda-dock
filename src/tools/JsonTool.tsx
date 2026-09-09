@@ -280,7 +280,8 @@ export default function JsonTool() {
     }
   }
 
-  function onIndentChange(nextIndent: JsonIndent) {
+  function onIndentChange(val: string | number) {
+    const nextIndent: JsonIndent = val === 'tab' ? 'tab' : (Number(val) as 2 | 4)
     setDraft((prev) => ({ ...prev, indent: nextIndent }))
     if (output && (lastAction === 'format' || lastAction === 'unescape')) {
       reprocess({ indent: nextIndent })
@@ -349,7 +350,7 @@ export default function JsonTool() {
             <TkSelect
               variant='sm'
               value={indent}
-              onChange={(e) => onIndentChange(e.target.value as unknown as JsonIndent)}
+              onChange={(e) => onIndentChange(e.target.value)}
               title={t('tool.json.indent')}
             >
               <option value={2}>{t('tool.json.indent2')}</option>

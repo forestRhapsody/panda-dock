@@ -48,7 +48,8 @@ interface TkSelectProps {
 interface PopupPosition {
   top?: number
   bottom?: number
-  left: number
+  left?: number
+  right?: number
   minWidth: number
 }
 
@@ -104,23 +105,46 @@ export default function TkSelect({
     if (!triggerRef.current) return
     const rect = triggerRef.current.getBoundingClientRect()
     const GAP = 4
+    const VIEWPORT_PAD = 8
     const spaceBelow = window.innerHeight - rect.bottom
     const estimatedH = Math.min(options.length * 34 + 8, 300)
 
+    // 垂直方向：下方空间不足且上方空间更大时向上展开
+    let top: number | undefined = undefined
+    let bottom: number | undefined = undefined
     if (spaceBelow < estimatedH && rect.top > spaceBelow) {
-      setPopupPos({
-        bottom: window.innerHeight - rect.top + GAP,
-        left: rect.left,
-        minWidth: rect.width,
-      })
+      bottom = window.innerHeight - rect.top + GAP
     } else {
-      setPopupPos({
-        top: rect.bottom + GAP,
-        left: rect.left,
-        minWidth: rect.width,
-      })
+      top = rect.bottom + GAP
     }
-  }, [options.length])
+
+    // 预估面板宽度：取触发按钮宽度与预估最小宽度（sm 104px，md 128px）的较大值
+    const defaultMinW = variant === 'sm' ? 104 : 128
+    const estimatedW = popupRef.current
+      ? popupRef.current.getBoundingClientRect().width
+      : Math.max(rect.width, defaultMinW)
+
+    // 水平方向：检测右侧是否会溢出视口边界
+    let left: number | undefined = rect.left
+    let right: number | undefined = undefined
+
+    if (rect.left + estimatedW > window.innerWidth - VIEWPORT_PAD) {
+      // 若左对齐会超出右边界，改为右对齐到触发按钮右侧
+      left = undefined
+      right = Math.max(VIEWPORT_PAD, window.innerWidth - rect.right)
+    } else {
+      left = Math.max(VIEWPORT_PAD, rect.left)
+      right = undefined
+    }
+
+    setPopupPos({
+      top,
+      bottom,
+      left,
+      right,
+      minWidth: rect.width,
+    })
+  }, [options.length, variant])
 
   // —— 打开 ——
 
@@ -173,13 +197,31 @@ export default function TkSelect({
     }
   }, [open, calcPosition])
 
-  // —— 焦点项滚入视口 ——
+  // —— 焦点项滚入视口 & 视口边界纠偏 ——
 
   useLayoutEffect(() => {
     if (!open || !popupRef.current) return
     const items = popupRef.current.querySelectorAll<HTMLElement>('[data-tks-item]')
     items[focusedIdx]?.scrollIntoView({ block: 'nearest' })
-  }, [focusedIdx, open])
+
+    // 真实 DOM 渲染后兜底校验：若仍超出视口右边界，立即修正贴边
+    const popupEl = popupRef.current
+    const triggerEl = triggerRef.current
+    if (popupEl && triggerEl) {
+      const popupRect = popupEl.getBoundingClientRect()
+      const triggerRect = triggerEl.getBoundingClientRect()
+      const VIEWPORT_PAD = 8
+
+      if (popupRect.right > window.innerWidth - VIEWPORT_PAD) {
+        const rightOffset = Math.max(VIEWPORT_PAD, window.innerWidth - triggerRect.right)
+        popupEl.style.left = 'auto'
+        popupEl.style.right = `${rightOffset}px`
+      } else if (popupRect.left < VIEWPORT_PAD) {
+        popupEl.style.left = `${VIEWPORT_PAD}px`
+        popupEl.style.right = 'auto'
+      }
+    }
+  }, [focusedIdx, open, popupPos.top])
 
   // —— 键盘 ——
 
@@ -249,10 +291,16 @@ export default function TkSelect({
     .filter(Boolean)
     .join(' ')
 
+  const isRightAligned = popupPos.right !== undefined
+  const isBottomAligned = popupPos.bottom !== undefined
+
   const popupStyle: React.CSSProperties = {
-    left: popupPos.left,
     minWidth: popupPos.minWidth,
-    ...(popupPos.top !== undefined ? { top: popupPos.top } : { bottom: popupPos.bottom }),
+    ...(popupPos.left !== undefined ? { left: popupPos.left } : {}),
+    ...(popupPos.right !== undefined ? { right: popupPos.right } : {}),
+    ...(popupPos.top !== undefined ? { top: popupPos.top } : {}),
+    ...(popupPos.bottom !== undefined ? { bottom: popupPos.bottom } : {}),
+    transformOrigin: `${isBottomAligned ? 'bottom' : 'top'} ${isRightAligned ? 'right' : 'left'}`,
   }
 
   // 选择渲染挂载点：

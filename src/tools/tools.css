@@ -442,6 +442,10 @@
   gap: 6px;
 }
 
+.tw-json__indent .tk-select {
+  min-width: 76px;
+}
+
 /* 分屏工作区容器：填满剩余纵向空间，预留安全间隙供输入框 3px 聚焦光晕完整舒展 */
 .tw-json__workspace {
   display: flex;

@@ -279,7 +279,11 @@
   }
 }
 
-/* sm 面板：item 更紧凑 */
+/* sm 面板：item 更紧凑，最小宽度适配工具栏 */
+.tk-select-popup--sm {
+  min-width: 6.5rem;
+}
+
 .tk-select-popup--sm .tk-select-item {
   padding: 4px 8px;
   font-size: var(--tk-text-sm);
