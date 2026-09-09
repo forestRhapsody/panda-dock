@@ -106,7 +106,7 @@ export default function JsonHighlight({
     const el = ref.current
     if (!el) return
     if (fill) {
-      el.style.height = '100%'
+      el.style.height = ''
       el.style.overflowY = 'auto'
       return
     }

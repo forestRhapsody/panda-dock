@@ -442,7 +442,7 @@
   gap: 6px;
 }
 
-/* 分屏工作区容器：填满剩余纵向空间 */
+/* 分屏工作区容器：填满剩余纵向空间，预留安全间隙供输入框 3px 聚焦光晕完整舒展 */
 .tw-json__workspace {
   display: flex;
   flex-direction: column;
@@ -450,14 +450,20 @@
   min-height: 0;
   height: 100%;
   position: relative;
+  box-sizing: border-box;
+  padding: 1px 3px 3px 3px;
 }
 
-/* 上下分屏面板 */
+/* 上下分屏面板：不隐藏溢出光晕，内部聚焦时提升层级防遮挡 */
 .tw-json__pane {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  position: relative;
+}
+
+.tw-json__pane:focus-within {
+  z-index: 2;
 }
 
 .tw-json__pane .tw-field__label {
@@ -465,20 +471,25 @@
   margin-bottom: 4px;
 }
 
-/* 上方面板输入框：满高自适应，无多余外层高度，内部滚动 */
+/* 上方面板输入框：弹性自适应剩余高度（禁用 height: 100% 避免撑出容器），内部滚动 */
 .tw-json__editor {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   max-height: none;
-  height: 100%;
+  height: auto;
   resize: none;
   overflow: auto;
+}
+
+.tw-json__editor:focus {
+  position: relative;
+  z-index: 2;
 }
 
 /* 可拖拽分屏控制条 (Splitter) */
 .tw-json__splitter {
   position: relative;
-  flex: 0 0 10px;
+  flex: 0 0 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -488,7 +499,7 @@
   -webkit-user-select: none;
   outline: none;
   box-sizing: border-box;
-  margin: 2px 0;
+  margin: 3px 0;
 }
 
 .tw-json__splitter::before {
@@ -593,10 +604,10 @@
 
 .tw-json-hl--fill,
 .tw-json__viewer {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   max-height: none;
-  height: 100%;
+  height: auto;
   overflow: auto;
 }
 
