@@ -28,6 +28,7 @@ import type { Settings } from '@/utils/settings'
 
 import Base64Tool from './Base64Tool'
 import DetectTool from './DetectTool'
+import HashTool from './HashTool'
 import JsonTool from './JsonTool'
 import JwtTool from './JwtTool'
 import QrCodeTool from './QrCodeTool'
@@ -57,6 +58,7 @@ const TOOL_COMPONENTS: Record<ToolId, () => ReactNode> = {
   url: () => <UrlTool />,
   qrcode: () => <QrCodeTool />,
   detect: () => <DetectTool />,
+  hash: () => <HashTool />,
 }
 
 interface SortableTabProps {

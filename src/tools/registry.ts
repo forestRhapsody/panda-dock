@@ -11,6 +11,7 @@ export type ToolId =
   | 'url'
   | 'qrcode'
   | 'detect'
+  | 'hash'
 
 export interface ToolMeta {
   id: ToolId
@@ -24,6 +25,7 @@ export const DEFAULT_TOOLS: ToolMeta[] = [
   { id: 'base64', label: 'Base64' },
   { id: 'timestamp', label: 'Timestamp' },
   { id: 'qrcode', label: 'QR Code Tool' },
+  { id: 'hash', label: 'Hash' },
   { id: 'json', label: 'JSON' },
   { id: 'url', label: 'URL' },
   { id: 'jwt', label: 'JWT' },

@@ -32,6 +32,7 @@ export type IconName =
   | 'minimize' // 还原 / 退出全屏
   | 'plus' // 新增加号
   | 'edit' // 编辑（铅笔）
+  | 'hash' // 哈希 / 校验和（#）
 
 interface IconProps {
   name: IconName
@@ -194,6 +195,14 @@ const GLYPHS: Record<IconName, ReactNode> = {
     <>
       <path d='M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' />
       <path d='m15 5 4 4' />
+    </>
+  ),
+  hash: (
+    <>
+      <line x1='4' y1='9' x2='20' y2='9' />
+      <line x1='4' y1='15' x2='20' y2='15' />
+      <line x1='10' y1='3' x2='8' y2='21' />
+      <line x1='16' y1='3' x2='14' y2='21' />
     </>
   ),
 }

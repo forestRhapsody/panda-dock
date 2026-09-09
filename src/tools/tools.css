@@ -1140,9 +1140,14 @@
   gap: 8px;
 }
 
-/* 正在编辑的行 */
+/* 正在编辑的行 / 新增行卡片 */
 .tw-store__row--editing {
   border-color: var(--tk-ring);
+  box-shadow: 0 0 0 1px var(--tk-ring);
+}
+
+.tw-store__row--creating {
+  margin-bottom: 2px;
 }
 
 /* —— 双击行内编辑缓存值 —— */
@@ -1153,7 +1158,7 @@
 .tw-store__edit {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .tw-store__editval {
@@ -1182,10 +1187,171 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
 }
 
+/* —— JSON 状态提示与表单错误提示（轻量纯文本，无背景容器） —— */
+.tw-store__status-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: var(--tk-text-xs);
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.tw-store__status-bar--ok {
+  color: var(--tk-muted-foreground);
+}
+
+.tw-store__status-bar--ok .tw-store__status-icon {
+  color: var(--tk-muted-foreground);
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.tw-store__status-bar--err {
+  color: var(--tk-destructive);
+}
+
+.tw-store__status-bar--err .tw-store__status-icon {
+  color: var(--tk-destructive);
+  flex-shrink: 0;
+}
+
+/* —— 编辑操作工具条：极简轻量分层（左侧纯文本工具，右侧幽灵取消 + 微型主色保存） —— */
 .tw-store__edit-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 2px;
+  flex-wrap: wrap;
+}
+
+.tw-store__edit-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tw-store__edit-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* 左侧辅助动作：纯文本按钮，零边框零背景 */
+.tw-store__text-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 6px;
+  background: none;
+  border: none;
+  border-radius: var(--tk-radius-sm);
+  font-family: inherit;
+  font-size: var(--tk-text-xs);
+  line-height: 1;
+  color: var(--tk-muted-foreground);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    color var(--tk-transition),
+    background-color var(--tk-transition);
+}
+
+.tw-store__text-btn:hover:not(:disabled) {
+  color: var(--tk-foreground);
+  background: var(--tk-muted);
+}
+
+.tw-store__text-btn:active:not(:disabled) {
+  background: color-mix(in srgb, var(--tk-muted) 80%, transparent);
+}
+
+.tw-store__text-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 右侧次要动作：无边框幽灵取消 */
+.tw-store__ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(24px * var(--tk-font-scale));
+  padding: 0 8px;
+  background: none;
+  border: none;
+  border-radius: var(--tk-radius-sm);
+  font-family: inherit;
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    color var(--tk-transition),
+    background-color var(--tk-transition);
+}
+
+.tw-store__ghost-btn:hover {
+  color: var(--tk-foreground);
+  background: var(--tk-muted);
+}
+
+.tw-store__ghost-btn:active {
+  background: color-mix(in srgb, var(--tk-muted) 80%, transparent);
+}
+
+/* 右侧主要动作：微型精致主保存按钮 */
+.tw-store__save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(24px * var(--tk-font-scale));
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-primary);
+  color: var(--tk-primary-foreground);
+  font-family: inherit;
+  font-size: var(--tk-text-xs);
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  box-shadow: var(--tk-shadow-sm);
+  transition:
+    opacity var(--tk-transition),
+    background-color var(--tk-transition);
+}
+
+.tw-store__save-btn:hover {
+  opacity: 0.92;
+}
+
+.tw-store__save-btn:active {
+  opacity: 0.84;
+}
+
+.tw-store__text-btn:focus-visible,
+.tw-store__ghost-btn:focus-visible,
+.tw-store__save-btn:focus-visible {
+  outline: 2px solid var(--tk-ring);
+  outline-offset: 1px;
+}
+
+/* —— 站点摘要信息条 —— */
+.tw-store__summary {
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+  line-height: 1.5;
 }
 
 /* —— Cookie 徽章与详情展开 —— */
@@ -1939,4 +2105,11 @@
 .tw-cookie-modal__err {
   margin-right: auto;
   font-size: var(--tk-text-xs);
+}
+
+/* —— 哈希校验匹配激活态（shadcn/ui 沉静聚焦风格） —— */
+.tw-detect__field--matched {
+  border-color: var(--tk-ring);
+  box-shadow: 0 0 0 1px var(--tk-ring);
+  background: color-mix(in srgb, var(--tk-accent) 60%, var(--tk-card));
 }

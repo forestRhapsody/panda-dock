@@ -127,7 +127,12 @@ function EditorForm({
           onChange={(e) => onKeyChange(e.target.value)}
         />
       </label>
-      {formError && <StatusText kind='err'>{formError}</StatusText>}
+      {formError && (
+        <div className='tw-store__status-bar tw-store__status-bar--err'>
+          <Icon name='alert' size={12} className='tw-store__status-icon' />
+          <span>{formError}</span>
+        </div>
+      )}
       {showJson ? (
         <JsonTextarea
           value={draftValue}
@@ -146,29 +151,52 @@ function EditorForm({
         />
       )}
       {showJson && (
-        <StatusText kind={draftJson.ok ? 'ok' : 'err'}>
-          {draftJson.ok
-            ? t('tool.storage.jsonValid')
-            : t('tool.storage.jsonInvalidDetail', { error: draftJson.error })}
-        </StatusText>
+        <div
+          className={`tw-store__status-bar ${
+            draftJson.ok ? 'tw-store__status-bar--ok' : 'tw-store__status-bar--err'
+          }`}
+        >
+          <Icon
+            name={draftJson.ok ? 'check' : 'alert'}
+            size={12}
+            className='tw-store__status-icon'
+          />
+          <span>
+            {draftJson.ok
+              ? t('tool.storage.jsonValid')
+              : t('tool.storage.jsonInvalidDetail', { error: draftJson.error })}
+          </span>
+        </div>
       )}
       <div className='tw-store__edit-actions'>
         {showJson && (
-          <>
-            <button type='button' className='tw-link' disabled={!draftJson.ok} onClick={format}>
+          <div className='tw-store__edit-tools'>
+            <button
+              type='button'
+              className='tw-store__text-btn'
+              disabled={!draftJson.ok}
+              onClick={format}
+            >
               {t('tool.storage.format')}
             </button>
-            <button type='button' className='tw-link' disabled={!draftJson.ok} onClick={minify}>
+            <button
+              type='button'
+              className='tw-store__text-btn'
+              disabled={!draftJson.ok}
+              onClick={minify}
+            >
               {t('tool.storage.minify')}
             </button>
-          </>
+          </div>
         )}
-        <button type='button' className='tw-link' onClick={onCancel}>
-          {t('tool.storage.cancel')}
-        </button>
-        <button type='button' className='tw-link' onClick={onSave}>
-          {t('tool.storage.save')}
-        </button>
+        <div className='tw-store__edit-btns'>
+          <button type='button' className='tw-store__ghost-btn' onClick={onCancel}>
+            {t('tool.storage.cancel')}
+          </button>
+          <button type='button' className='tw-store__save-btn' onClick={onSave}>
+            {t('tool.storage.save')}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -270,10 +298,12 @@ export default function StorageTool() {
     if (area === 'cookie') return
     const res = await removeStorageKey(area as WebStorageArea, key)
     if (!res.ok) {
+      toast.error(res.error)
       setStatus({ kind: 'err', text: res.error })
       return
     }
-    setStatus({ kind: 'ok', text: t('tool.storage.deleted', { key }) })
+    toast.success(t('tool.storage.deleted', { key }))
+    setStatus(null)
     void load()
   }
 
@@ -295,10 +325,12 @@ export default function StorageTool() {
     if (area === 'cookie') return
     const res = await clearStorageArea(area as WebStorageArea)
     if (!res.ok) {
+      toast.error(res.error)
       setStatus({ kind: 'err', text: res.error })
       return
     }
-    setStatus({ kind: 'ok', text: t('tool.storage.cleared') })
+    toast.success(t('tool.storage.cleared'))
+    setStatus(null)
     void load()
   }
 
@@ -322,10 +354,12 @@ export default function StorageTool() {
     if (!cookieResult?.ok) return
     const res = await removeCookie(cookie, cookieResult.data.url)
     if (!res.ok) {
+      toast.error(res.error)
       setStatus({ kind: 'err', text: res.error })
       return
     }
-    setStatus({ kind: 'ok', text: t('tool.storage.cookieDeleted', { name: cookie.name }) })
+    toast.success(t('tool.storage.cookieDeleted', { name: cookie.name }))
+    setStatus(null)
     void load()
   }
 
@@ -344,10 +378,12 @@ export default function StorageTool() {
     if (!cookieResult?.ok) return
     const res = await clearAllCookies(cookieResult.data.url)
     if (!res.ok) {
+      toast.error(res.error)
       setStatus({ kind: 'err', text: res.error })
       return
     }
-    setStatus({ kind: 'ok', text: t('tool.storage.cookieCleared') })
+    toast.success(t('tool.storage.cookieCleared'))
+    setStatus(null)
     void load()
   }
 
@@ -436,15 +472,17 @@ export default function StorageTool() {
         if (!(await persist(key, value))) return
         const rm = await removeStorageKey(area as WebStorageArea, editingKey)
         if (!rm.ok) {
+          toast.error(rm.error)
           setStatus({ kind: 'err', text: rm.error })
           return
         }
       }
-      setStatus({ kind: 'ok', text: t('tool.storage.updated', { key }) })
+      toast.success(t('tool.storage.updated', { key }))
     } else {
       if (!(await persist(key, value))) return
-      setStatus({ kind: 'ok', text: t('tool.storage.added', { key }) })
+      toast.success(t('tool.storage.added', { key }))
     }
+    setStatus(null)
     closeEditor()
     void load()
   }
@@ -543,6 +581,7 @@ export default function StorageTool() {
         </button>
         {area !== 'cookie' ? (
           <button type='button' className='tk-btn' onClick={startCreate} disabled={editorOpen}>
+            <Icon name='plus' size={13} />
             {t('tool.storage.add')}
           </button>
         ) : (
@@ -601,7 +640,7 @@ export default function StorageTool() {
       )}
 
       {area !== 'cookie' && data && (
-        <StatusText kind='info'>
+        <StatusText kind='info' className='tw-store__summary'>
           {t('tool.storage.statusSummary', { origin: data.origin, count: data.totalCount })}
           {q ? t('tool.storage.statusFiltered', { count: entries.length }) : ''}
           {data.listTruncated ? t('tool.storage.statusTruncated') : ''}
@@ -610,7 +649,7 @@ export default function StorageTool() {
       )}
 
       {area === 'cookie' && cookieData && (
-        <StatusText kind='info'>
+        <StatusText kind='info' className='tw-store__summary'>
           {t('tool.storage.statusSummary', {
             origin: cookieData.origin,
             count: cookieData.totalCount,
@@ -619,7 +658,11 @@ export default function StorageTool() {
         </StatusText>
       )}
 
-      {creating && area !== 'cookie' && <EditorForm {...editorProps} />}
+      {creating && area !== 'cookie' && (
+        <div className='tw-store__row tw-store__row--editing tw-store__row--creating'>
+          <EditorForm {...editorProps} />
+        </div>
+      )}
 
       {area !== 'cookie' && empty && <p className='tw-note'>{t('tool.storage.empty')}</p>}
       {area === 'cookie' && cookieEmpty && (
@@ -688,7 +731,10 @@ export default function StorageTool() {
                           : t('tool.storage.copyFullValue')
                       }
                       onResult={(ok) => {
-                        if (!ok) setStatus({ kind: 'err', text: t('tool.storage.copyFailed') })
+                        if (!ok) {
+                          toast.error(t('tool.storage.copyFailed'))
+                          setStatus({ kind: 'err', text: t('tool.storage.copyFailed') })
+                        }
                       }}
                     />
                     <button
@@ -808,7 +854,10 @@ export default function StorageTool() {
                     className='tw-link'
                     title={t('tool.storage.copyFullValue')}
                     onResult={(ok) => {
-                      if (!ok) setStatus({ kind: 'err', text: t('tool.storage.copyFailed') })
+                      if (!ok) {
+                        toast.error(t('tool.storage.copyFailed'))
+                        setStatus({ kind: 'err', text: t('tool.storage.copyFailed') })
+                      }
                     }}
                   />
                   <button
