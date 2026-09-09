@@ -558,3 +558,30 @@
 .tk-switch--on .tk-switch__knob {
   left: 22px;
 }
+
+/* —— Checkbox（tk-checkbox）：通用复选框，遵循设计令牌与紧凑对齐 —— */
+
+.tk-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--tk-font);
+  font-size: var(--tk-text-xs);
+  color: var(--tk-foreground);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.tk-checkbox input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--tk-primary);
+  cursor: pointer;
+  border-radius: var(--tk-radius-sm);
+}
+
+.tk-checkbox:hover {
+  color: var(--tk-primary);
+}

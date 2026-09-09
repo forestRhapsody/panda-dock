@@ -273,7 +273,7 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
         </DndContext>
       </nav>
 
-      <main className='tw__body' role='tabpanel'>
+      <main className={`tw__body tw__body--${active}`} role='tabpanel'>
         {TOOL_COMPONENTS[active]?.() ?? null}
       </main>
 

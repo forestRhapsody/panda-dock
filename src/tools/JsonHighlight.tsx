@@ -79,17 +79,20 @@ export function highlightJson(text: string): ReactNode[] {
 
 interface JsonHighlightProps {
   text: string
-  /** 最大高度(px)，超出后内部滚动。默认 360 */
+  /** 最大高度(px)，超出后内部滚动。默认 360。当 fill 为 true 时被忽略 */
   maxHeight?: number
+  /** 是否占满父级容器高度（用于分屏/弹性布局），启用内部纵向滚动 */
+  fill?: boolean
   /** 占位提示文案，缺省走 i18n */
   placeholder?: string
   className?: string
 }
 
-/** 带语法着色的只读 JSON 展示（自适应高度 + 封顶滚动） */
+/** 带语法着色的只读 JSON 展示（支持自适应高度 + 封顶滚动 或 满高分屏模式） */
 export default function JsonHighlight({
   text,
   maxHeight = 360,
+  fill = false,
   placeholder,
   className,
 }: JsonHighlightProps) {
@@ -102,14 +105,22 @@ export default function JsonHighlight({
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
+    if (fill) {
+      el.style.height = '100%'
+      el.style.overflowY = 'auto'
+      return
+    }
     el.style.height = 'auto'
     const h = Math.min(el.scrollHeight, maxHeight)
     el.style.height = `${h}px`
     el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden'
-  }, [text, maxHeight])
+  }, [text, maxHeight, fill])
 
   return (
-    <pre ref={ref} className={`tw-json-hl${className ? ` ${className}` : ''}`}>
+    <pre
+      ref={ref}
+      className={`tw-json-hl${fill ? ' tw-json-hl--fill' : ''}${className ? ` ${className}` : ''}`}
+    >
       <code>{text ? nodes : <span className='tw-json-hl__empty'>{emptyText}</span>}</code>
     </pre>
   )

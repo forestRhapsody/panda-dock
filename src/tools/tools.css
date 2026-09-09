@@ -70,6 +70,14 @@
   padding: 14px 16px;
 }
 
+/* JSON 工具满高分屏工作台：由内部上下两块分屏独立滚动，消除外部滚动条 */
+.tw__body--json {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px 16px;
+}
+
 .tw__footer {
   display: flex;
   align-items: center;
@@ -384,6 +392,178 @@
   gap: 12px;
 }
 
+/* —— JSON 分屏工作台 (Split Workspace) —— */
+.tw-json-split {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  gap: 8px;
+}
+
+.tw-json-split--dragging {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tw-json-split--dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  cursor: row-resize !important;
+}
+
+.tw-json__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: none;
+}
+
+.tw-json__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tw-json__options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tw-json__indent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 分屏工作区容器：填满剩余纵向空间 */
+.tw-json__workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  position: relative;
+}
+
+/* 上下分屏面板 */
+.tw-json__pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tw-json__pane .tw-field__label {
+  flex: none;
+  margin-bottom: 4px;
+}
+
+/* 上方面板输入框：满高自适应，无多余外层高度，内部滚动 */
+.tw-json__editor {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  height: 100%;
+  resize: none;
+  overflow: auto;
+}
+
+/* 可拖拽分屏控制条 (Splitter) */
+.tw-json__splitter {
+  position: relative;
+  flex: 0 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: row-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  box-sizing: border-box;
+  margin: 2px 0;
+}
+
+.tw-json__splitter::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--tk-border);
+  transition:
+    background-color 0.15s ease,
+    height 0.15s ease;
+}
+
+.tw-json__splitter-handle {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--tk-border-strong);
+  transition:
+    background-color 0.15s ease,
+    width 0.15s ease,
+    height 0.15s ease;
+}
+
+.tw-json__splitter:hover::before,
+.tw-json__splitter:focus-visible::before,
+.tw-json__splitter--active::before {
+  background: var(--tk-primary);
+  height: 2px;
+}
+
+.tw-json__splitter:hover .tw-json__splitter-handle,
+.tw-json__splitter:focus-visible .tw-json__splitter-handle,
+.tw-json__splitter--active .tw-json__splitter-handle {
+  background: var(--tk-primary);
+  width: 44px;
+  height: 5px;
+}
+
+.tw-json__result-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tw-json__stats {
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+  font-weight: normal;
+  font-family: var(--tk-font-sans);
+}
+
+.tw-json__result-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tw-json__download-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tw-json__status-bar {
+  flex: none;
+}
+
+.tw-json__status-bar .tw-status {
+  margin: 0;
+}
+
 /* 输入框默认高度更高 */
 .tw-area--tall {
   min-height: 200px;
@@ -409,6 +589,15 @@
   user-select: text;
   scrollbar-width: thin;
   scrollbar-color: var(--tk-border-strong) transparent;
+}
+
+.tw-json-hl--fill,
+.tw-json__viewer {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  height: 100%;
+  overflow: auto;
 }
 
 .tw-json-hl code {
