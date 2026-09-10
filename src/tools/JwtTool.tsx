@@ -98,7 +98,7 @@ export default function JwtTool() {
           {t('tool.jwt.decode')}
         </button>
         <button type='button' className='tk-btn' onClick={clear}>
-          {t('tool.jwt.clear')}
+          {t('common.clear')}
         </button>
       </div>
 
@@ -113,7 +113,7 @@ export default function JwtTool() {
                 text={decoded.headerText}
                 className='tw-link'
                 onResult={(ok) => {
-                  if (!ok) setStatus({ kind: 'err', text: t('tool.jwt.copyFailed') })
+                  if (!ok) setStatus({ kind: 'err', text: t('common.copyFailed') })
                 }}
               />
             </span>
@@ -127,7 +127,7 @@ export default function JwtTool() {
                 text={decoded.payloadText}
                 className='tw-link'
                 onResult={(ok) => {
-                  if (!ok) setStatus({ kind: 'err', text: t('tool.jwt.copyFailed') })
+                  if (!ok) setStatus({ kind: 'err', text: t('common.copyFailed') })
                 }}
               />
             </span>

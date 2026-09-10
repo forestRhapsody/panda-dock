@@ -1841,8 +1841,9 @@
   min-height: 240px;
   padding: 16px;
   border: 1px solid var(--tk-border);
-  /* 设计意图：QR 码图像本身为正方形，预览区刻意不圆角以保持像素精准对齐 */
-  border-radius: 0;
+  /* 最外层容器遵循全局面板圆角，与 .tw-qr__drop-zone 等保持一致；
+     所见即所得由内层 .tw-qr__img-wrapper / .tw-qr__img 的直角保证，容器圆角不接触导出图像 */
+  border-radius: var(--tk-radius);
   background: color-mix(in srgb, var(--tk-muted) 40%, var(--tk-card));
 }
 

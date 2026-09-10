@@ -349,7 +349,7 @@ export default function Base64Tool() {
             {t('tool.base64.runDecode')}
           </button>
           <button type='button' className='tk-btn' onClick={clearDecode}>
-            {t('tool.base64.clear')}
+            {t('common.clear')}
           </button>
         </div>
 
@@ -363,7 +363,7 @@ export default function Base64Tool() {
               disabled={!decodeOutput}
               className='tw-link'
               onResult={(ok) => {
-                if (!ok) setDecodeStatus({ kind: 'err', text: t('tool.base64.copyFailed') })
+                if (!ok) setDecodeStatus({ kind: 'err', text: t('common.copyFailed') })
               }}
             />
           </span>
@@ -397,7 +397,7 @@ export default function Base64Tool() {
             {t('tool.base64.runEncode')}
           </button>
           <button type='button' className='tk-btn' onClick={clearEncode}>
-            {t('tool.base64.clear')}
+            {t('common.clear')}
           </button>
         </div>
 
@@ -411,7 +411,7 @@ export default function Base64Tool() {
               disabled={!encodeOutput}
               className='tw-link'
               onResult={(ok) => {
-                if (!ok) setEncodeStatus({ kind: 'err', text: t('tool.base64.copyFailed') })
+                if (!ok) setEncodeStatus({ kind: 'err', text: t('common.copyFailed') })
               }}
             />
           </span>
@@ -512,7 +512,7 @@ export default function Base64Tool() {
 
             <div className='tw-actions'>
               <button type='button' className='tk-btn' onClick={clearFileEncode}>
-                {t('tool.base64.clear')}
+                {t('common.clear')}
               </button>
             </div>
           </>
@@ -542,7 +542,7 @@ export default function Base64Tool() {
             {t('tool.fileB64.pasteFromClipboard')}
           </button>
           <button type='button' className='tk-btn' onClick={clearFileDecode}>
-            {t('tool.base64.clear')}
+            {t('common.clear')}
           </button>
         </div>
 

@@ -47,7 +47,7 @@ export default function TimestampTool() {
           {t('tool.timestamp.now')}
         </button>
         <button type='button' className='tk-btn' onClick={clearInput}>
-          {t('tool.timestamp.clear')}
+          {t('common.clear')}
         </button>
       </div>
 

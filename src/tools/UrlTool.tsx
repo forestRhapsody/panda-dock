@@ -107,7 +107,7 @@ function UrlParserPanel() {
           {t('tool.url.fetchCurrent')}
         </button>
         <button type='button' className='tk-btn' onClick={clear}>
-          {t('tool.url.clear')}
+          {t('common.clear')}
         </button>
       </div>
 
@@ -288,7 +288,7 @@ function UrlCodecPanel() {
           {t('tool.url.fetchCurrent')}
         </button>
         <button type='button' className='tk-btn' onClick={clear}>
-          {t('tool.url.clear')}
+          {t('common.clear')}
         </button>
       </div>
 
@@ -302,7 +302,7 @@ function UrlCodecPanel() {
             disabled={!output}
             className='tw-link'
             onResult={(ok) => {
-              if (!ok) setStatus({ kind: 'err', text: t('tool.url.codec.copyFailed') })
+              if (!ok) setStatus({ kind: 'err', text: t('common.copyFailed') })
             }}
           />
         </span>

@@ -614,7 +614,7 @@ export default function CookieEditModal({
               ? t('tool.storage.saving')
               : mode === 'raw' && rawParseResult?.ok && (rawParseResult.count ?? 1) > 1
                 ? t('tool.storage.cookieSaveBatch', { count: rawParseResult.count })
-                : t('tool.storage.save')}
+                : t('common.save')}
           </button>
         </div>
       </div>

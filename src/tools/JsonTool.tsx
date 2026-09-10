@@ -350,7 +350,7 @@ export default function JsonTool() {
               {t('tool.json.unescapeBtn')}
             </button>
             <button type='button' className='tk-btn' onClick={clear}>
-              {t('tool.json.clear')}
+              {t('common.clear')}
             </button>
           </div>
           {status && (
@@ -405,7 +405,7 @@ export default function JsonTool() {
                 disabled={!output}
                 className='tw-link'
                 onResult={(ok) => {
-                  if (!ok) setStatus({ kind: 'err', text: t('tool.json.copyFailed') })
+                  if (!ok) setStatus({ kind: 'err', text: t('common.copyFailed') })
                 }}
               />
               {output && (

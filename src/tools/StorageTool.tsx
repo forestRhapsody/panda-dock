@@ -192,10 +192,10 @@ function EditorForm({
         )}
         <div className='tw-store__edit-btns'>
           <button type='button' className='tw-store__ghost-btn' onClick={onCancel}>
-            {t('tool.storage.cancel')}
+            {t('common.cancel')}
           </button>
           <button type='button' className='tw-store__save-btn' onClick={onSave}>
-            {t('tool.storage.save')}
+            {t('common.save')}
           </button>
         </div>
       </div>
@@ -734,8 +734,8 @@ export default function StorageTool() {
                       }
                       onResult={(ok) => {
                         if (!ok) {
-                          toast.error(t('tool.storage.copyFailed'))
-                          setStatus({ kind: 'err', text: t('tool.storage.copyFailed') })
+                          toast.error(t('common.copyFailed'))
+                          setStatus({ kind: 'err', text: t('common.copyFailed') })
                         }
                       }}
                     />
@@ -848,9 +848,7 @@ export default function StorageTool() {
                     className='tw-link'
                     onClick={() => toggleCookieExpand(cookieId)}
                   >
-                    {isExpanded
-                      ? t('tool.storage.cookieCollapse')
-                      : t('tool.storage.cookieDetails')}
+                    {isExpanded ? t('common.collapse') : t('tool.storage.cookieDetails')}
                   </button>
                   <CopyButton
                     text={cookie.value}
@@ -858,8 +856,8 @@ export default function StorageTool() {
                     title={t('tool.storage.copyFullValue')}
                     onResult={(ok) => {
                       if (!ok) {
-                        toast.error(t('tool.storage.copyFailed'))
-                        setStatus({ kind: 'err', text: t('tool.storage.copyFailed') })
+                        toast.error(t('common.copyFailed'))
+                        setStatus({ kind: 'err', text: t('common.copyFailed') })
                       }
                     }}
                   />
@@ -901,8 +899,8 @@ export default function StorageTool() {
         <ConfirmDialog
           title={confirm.title}
           message={confirm.message}
-          confirmLabel={confirm.confirmLabel ?? t('tool.storage.confirm')}
-          cancelLabel={t('tool.storage.cancel')}
+          confirmLabel={confirm.confirmLabel ?? t('common.confirm')}
+          cancelLabel={t('common.cancel')}
           danger={confirm.danger ?? false}
           onCancel={() => setConfirm(null)}
           onConfirm={() => {

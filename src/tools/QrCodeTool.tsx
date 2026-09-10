@@ -455,7 +455,7 @@ export default function QrCodeTool() {
             {inputText && (
               <button type='button' className='tk-btn' onClick={clearInputText}>
                 <Icon name='close' size={13} />
-                {t('tool.json.clear')}
+                {t('common.clear')}
               </button>
             )}
           </div>
