@@ -15,6 +15,7 @@ import JsonTextarea from './JsonTextarea'
 import { StatusText } from './StatusText'
 import type { ToolStatus } from './StatusText'
 import {
+  bareCookieDomain,
   clearAllCookies,
   clearStorageArea,
   isPageContext,
@@ -209,7 +210,6 @@ export default function StorageTool() {
   const [area, setArea] = useState<StorageArea>('local')
   const [result, setResult] = useState<StorageResult | null>(null)
   const [cookieResult, setCookieResult] = useState<CookieResult | null>(null)
-  const [expandedCookies, setExpandedCookies] = useState<Set<string>>(new Set())
   const [cookieModalOpen, setCookieModalOpen] = useState(false)
   const [editingCookie, setEditingCookie] = useState<CookieEntry | null>(null)
   const [status, setStatus] = useState<ToolStatus | null>(null)
@@ -409,15 +409,6 @@ export default function StorageTool() {
     void load()
   }
 
-  function toggleCookieExpand(key: string) {
-    setExpandedCookies((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }
-
   // 进入编辑（可同时改 key）；值过长已截断时禁止编辑
   function startEdit(entry: StorageEntry) {
     if (entry.truncated) {
@@ -563,9 +554,9 @@ export default function StorageTool() {
           setCreating(false)
         }}
         items={[
-          { id: 'local', label: 'localStorage' },
-          { id: 'session', label: 'sessionStorage' },
-          { id: 'cookie', label: 'Cookie' },
+          { id: 'local', label: t('tool.storage.areaLocal') },
+          { id: 'session', label: t('tool.storage.areaSession') },
+          { id: 'cookie', label: t('tool.storage.areaCookie') },
         ]}
       />
 
@@ -758,7 +749,6 @@ export default function StorageTool() {
         <ul className='tw-store'>
           {cookieEntries.map((cookie) => {
             const cookieId = `${cookie.domain}:${cookie.path}:${cookie.name}`
-            const isExpanded = expandedCookies.has(cookieId)
             return (
               <li key={cookieId} className='tw-store__row'>
                 <div className='tw-store__head'>
@@ -775,6 +765,11 @@ export default function StorageTool() {
                       {cookie.session && (
                         <span className='tw-cookie__badge'>{t('tool.storage.cookieSession')}</span>
                       )}
+                      {cookie.hostOnly === false && (
+                        <span className='tw-cookie__badge'>
+                          {t('tool.storage.cookieSubdomains')}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <span className='tw-store__size'>{fmtSize(cookie.size)}</span>
@@ -790,48 +785,31 @@ export default function StorageTool() {
                     {cookie.value || t('tool.storage.emptyString')}
                   </code>
                 </Tooltip>
-                {isExpanded && (
-                  <div className='tw-cookie__details'>
-                    <div className='tw-cookie__detail-row'>
-                      <span className='tw-cookie__detail-label'>
-                        {t('tool.storage.cookieDomain')}
-                      </span>
-                      <span className='tw-cookie__detail-value'>{cookie.domain}</span>
-                    </div>
-                    <div className='tw-cookie__detail-row'>
-                      <span className='tw-cookie__detail-label'>
-                        {t('tool.storage.cookiePath')}
-                      </span>
-                      <span className='tw-cookie__detail-value'>{cookie.path}</span>
-                    </div>
-                    <div className='tw-cookie__detail-row'>
-                      <span className='tw-cookie__detail-label'>
-                        {t('tool.storage.cookieExpires')}
-                      </span>
-                      <span className='tw-cookie__detail-value'>
-                        {cookie.session || !cookie.expirationDate
-                          ? t('tool.storage.cookieSession')
-                          : new Date(cookie.expirationDate * 1000).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className='tw-cookie__detail-row'>
-                      <span className='tw-cookie__detail-label'>HttpOnly</span>
-                      <span className='tw-cookie__detail-value'>
-                        {cookie.httpOnly ? t('tool.storage.yes') : t('tool.storage.no')}
-                      </span>
-                    </div>
-                    <div className='tw-cookie__detail-row'>
-                      <span className='tw-cookie__detail-label'>Secure</span>
-                      <span className='tw-cookie__detail-value'>
-                        {cookie.secure ? t('tool.storage.yes') : t('tool.storage.no')}
-                      </span>
-                    </div>
-                    <div className='tw-cookie__detail-row'>
-                      <span className='tw-cookie__detail-label'>SameSite</span>
-                      <span className='tw-cookie__detail-value'>{cookie.sameSite}</span>
-                    </div>
+                {/* 元数据默认常显：HttpOnly / Secure / SameSite / 会话 已由上方徽章呈现，此处只补徽章未覆盖的字段 */}
+                <div className='tw-cookie__details'>
+                  <div className='tw-cookie__detail-row'>
+                    <span className='tw-cookie__detail-label'>
+                      {t('tool.storage.cookieDomain')}
+                    </span>
+                    <span className='tw-cookie__detail-value'>
+                      {bareCookieDomain(cookie.domain)}
+                    </span>
                   </div>
-                )}
+                  <div className='tw-cookie__detail-row'>
+                    <span className='tw-cookie__detail-label'>{t('tool.storage.cookiePath')}</span>
+                    <span className='tw-cookie__detail-value'>{cookie.path}</span>
+                  </div>
+                  <div className='tw-cookie__detail-row'>
+                    <span className='tw-cookie__detail-label'>
+                      {t('tool.storage.cookieExpires')}
+                    </span>
+                    <span className='tw-cookie__detail-value'>
+                      {cookie.session || !cookie.expirationDate
+                        ? t('tool.storage.cookieSession')
+                        : new Date(cookie.expirationDate * 1000).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
                 <div className='tw-store__actions'>
                   <button
                     type='button'
@@ -842,13 +820,6 @@ export default function StorageTool() {
                     }}
                   >
                     {t('tool.storage.edit')}
-                  </button>
-                  <button
-                    type='button'
-                    className='tw-link'
-                    onClick={() => toggleCookieExpand(cookieId)}
-                  >
-                    {isExpanded ? t('common.collapse') : t('tool.storage.cookieDetails')}
                   </button>
                   <CopyButton
                     text={cookie.value}

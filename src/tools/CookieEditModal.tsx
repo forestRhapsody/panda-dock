@@ -10,7 +10,7 @@ import AutoArea from './AutoArea'
 import { parseRawCookie, serializeCookieToRaw, type CookieSetDetails } from './cookieRaw'
 import { StatusText } from './StatusText'
 import type { CookieEntry } from './storage'
-import { saveCookies } from './storage'
+import { bareCookieDomain, saveCookies } from './storage'
 import ToolTabs from './ToolTabs'
 
 export type CookieEditMode = 'form' | 'raw'
@@ -77,7 +77,7 @@ export default function CookieEditModal({
     if (cookie) {
       setName(cookie.name)
       setValue(cookie.value)
-      setDomain(cookie.domain)
+      setDomain(bareCookieDomain(cookie.domain))
       setPath(cookie.path || '/')
       setSecure(Boolean(cookie.secure))
       setHttpOnly(Boolean(cookie.httpOnly))
@@ -94,7 +94,7 @@ export default function CookieEditModal({
       // 编辑时如果有高级非默认属性，自动展开高级项
       const isAdv =
         Boolean(cookie.httpOnly) ||
-        cookie.domain !== defaultDomain ||
+        bareCookieDomain(cookie.domain) !== defaultDomain ||
         (cookie.path && cookie.path !== '/') ||
         !cookie.session
       setShowAdvanced(isAdv)
@@ -397,7 +397,7 @@ export default function CookieEditModal({
                         value={domain}
                         spellCheck={false}
                         onChange={(e) => setDomain(e.target.value)}
-                        placeholder='.example.com'
+                        placeholder='example.com'
                       />
                     </label>
 

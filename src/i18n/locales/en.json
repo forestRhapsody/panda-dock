@@ -1,13 +1,14 @@
 {
   "common": {
+    "close": "Close",
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",
-    "collapse": "Collapse",
     "copy": "Copy",
     "copied": "Copied",
     "clear": "Clear",
-    "copyFailed": "Copy failed"
+    "copyFailed": "Copy failed",
+    "notifications": "Notifications"
   },
   "popup": {
     "quickSettings": "Quick settings",
@@ -222,6 +223,17 @@
       "customizeToggle": "Style & Label",
       "fgColor": "Foreground",
       "bgColor": "Background",
+      "colorBlack": "Black",
+      "colorNavy": "Navy",
+      "colorSlate": "Slate",
+      "colorGreen": "Green",
+      "colorPurple": "Purple",
+      "colorRed": "Red",
+      "colorWhite": "White",
+      "colorWarmWhite": "Warm white",
+      "colorCream": "Cream",
+      "colorLightGray": "Light gray",
+      "colorLightGreen": "Light green",
       "centerLogo": "Center Logo",
       "uploadLogo": "Upload logo",
       "removeLogo": "Remove logo",
@@ -407,6 +419,9 @@
     "storage": {
       "add": "Add",
       "added": "Added {{key}}",
+      "areaLocal": "localStorage",
+      "areaSession": "sessionStorage",
+      "areaCookie": "Cookies",
       "clearAll": "Clear all",
       "clearFilter": "Clear search",
       "clearMessage": "Clear {{area}} for {{origin}}? ({{count}} items)",
@@ -419,7 +434,6 @@
       "cookieDeleteMessage": "Delete cookie \"{{name}}\"?",
       "cookieDeleteTitle": "Delete cookie",
       "cookieDeleted": "Deleted cookie \"{{name}}\"",
-      "cookieDetails": "Details",
       "cookieDomain": "Domain",
       "cookieEditTitle": "Edit Cookie",
       "cookieEmpty": "No cookies found for this page.",
@@ -442,6 +456,7 @@
       "cookieSecureDesc": "HTTPS secure transmission only",
       "cookieSession": "Session",
       "cookieShowAdvanced": "Show Advanced (Domain, Path, Expires...)",
+      "cookieSubdomains": "Subdomains",
       "cookieValue": "Value",
       "copyFullValue": "Copy full value",
       "dblClickEdit": "Double-click to edit",
@@ -491,9 +506,7 @@
       "truncatedNoEdit": "Value truncated — editing not supported",
       "truncatedPreview": "{{value}}… (too long, showing first 8000 characters)",
       "truncatedShort": "Value too long and truncated; editing disabled",
-      "updated": "Updated {{key}}",
-      "yes": "Yes",
-      "no": "No"
+      "updated": "Updated {{key}}"
     },
     "hash": {
       "tabText": "Text Hash",

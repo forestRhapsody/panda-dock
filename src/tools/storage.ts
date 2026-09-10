@@ -41,6 +41,8 @@ export interface CookieEntry {
   value: string
   domain: string
   path: string
+  /** 是否为 host-only Cookie（为 false 表示 Cookie 的 Domain 覆盖其子域，即原始 domain 带前导点） */
+  hostOnly: boolean
   secure: boolean
   httpOnly: boolean
   sameSite: 'no_restriction' | 'lax' | 'strict' | 'unspecified'
@@ -161,12 +163,17 @@ export async function clearStorageArea(area: WebStorageArea): Promise<SimpleResu
   }
 }
 
+/** 去除 Cookie domain 的 RFC 6265 遗留前导点（".example.com" → "example.com"）；
+ *  该点的语义是「Cookie 覆盖其子域」，由 `hostOnly` 字段承载，展示层不再展示这个点 */
+export function bareCookieDomain(domain: string): string {
+  return domain.startsWith('.') ? domain.slice(1) : domain
+}
+
 export function getCookieUrl(
   cookie: Pick<CookieEntry, 'domain' | 'path' | 'secure'>,
   fallbackUrl?: string,
 ): string {
-  let domain = cookie.domain
-  if (domain.startsWith('.')) domain = domain.slice(1)
+  let domain = bareCookieDomain(cookie.domain)
   if (!domain && fallbackUrl) {
     try {
       domain = new URL(fallbackUrl).hostname
@@ -193,6 +200,7 @@ export async function listCookies(pageUrl?: string): Promise<CookieResult> {
             value: 's%3A9F8aB3k1mQ4rZ2w8.dev_preview_session_mock',
             domain: '.example.com',
             path: '/',
+            hostOnly: false,
             secure: true,
             httpOnly: true,
             sameSite: 'lax',
@@ -205,6 +213,7 @@ export async function listCookies(pageUrl?: string): Promise<CookieResult> {
             value: 'system',
             domain: 'example.com',
             path: '/',
+            hostOnly: true,
             secure: false,
             httpOnly: false,
             sameSite: 'lax',

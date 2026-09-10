@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import Icon from './Icon'
 import { toast } from './toast'
 import type { ToastItem } from './toast'
@@ -14,6 +16,7 @@ interface ToasterProps {
  * 支持堆叠、精致图标徽章、关闭按钮与弹性上升微动效。
  */
 export default function Toaster({ position = 'bottom' }: ToasterProps) {
+  const { t } = useTranslation()
   const [items, setItems] = useState<ToastItem[]>([])
 
   useEffect(() => {
@@ -27,7 +30,7 @@ export default function Toaster({ position = 'bottom' }: ToasterProps) {
       className={`tk-toaster tk-toaster--${position}`}
       role='region'
       aria-live='polite'
-      aria-label='Notifications'
+      aria-label={t('common.notifications')}
     >
       {items.map((item) => (
         <div key={item.id} className={`tk-toast tk-toast--${item.kind}`} role='status'>
@@ -46,7 +49,7 @@ export default function Toaster({ position = 'bottom' }: ToasterProps) {
           <button
             type='button'
             className='tk-toast__close'
-            aria-label='Close'
+            aria-label={t('common.close')}
             onClick={() => toast.dismiss(item.id)}
           >
             <Icon name='close' size={12} />

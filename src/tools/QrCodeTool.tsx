@@ -20,20 +20,20 @@ import ToolTabs from './ToolTabs'
 type QrMode = 'generate' | 'decode'
 
 const PRESET_FG_COLORS = [
-  { label: '黑', color: '#000000' },
-  { label: '深蓝', color: '#1d4ed8' },
-  { label: '深灰', color: '#1e293b' },
-  { label: '绿', color: '#047857' },
-  { label: '紫', color: '#6d28d9' },
-  { label: '红', color: '#b91c1c' },
+  { labelKey: 'tool.qrcode.colorBlack', color: '#000000' },
+  { labelKey: 'tool.qrcode.colorNavy', color: '#1d4ed8' },
+  { labelKey: 'tool.qrcode.colorSlate', color: '#1e293b' },
+  { labelKey: 'tool.qrcode.colorGreen', color: '#047857' },
+  { labelKey: 'tool.qrcode.colorPurple', color: '#6d28d9' },
+  { labelKey: 'tool.qrcode.colorRed', color: '#b91c1c' },
 ]
 
 const PRESET_BG_COLORS = [
-  { label: '白', color: '#ffffff' },
-  { label: '暖白', color: '#f8fafc' },
-  { label: '米白', color: '#fefce8' },
-  { label: '浅灰', color: '#f1f5f9' },
-  { label: '浅绿', color: '#ecfdf5' },
+  { labelKey: 'tool.qrcode.colorWhite', color: '#ffffff' },
+  { labelKey: 'tool.qrcode.colorWarmWhite', color: '#f8fafc' },
+  { labelKey: 'tool.qrcode.colorCream', color: '#fefce8' },
+  { labelKey: 'tool.qrcode.colorLightGray', color: '#f1f5f9' },
+  { labelKey: 'tool.qrcode.colorLightGreen', color: '#ecfdf5' },
 ]
 
 const MARGIN_OPTIONS = [
@@ -545,12 +545,12 @@ export default function QrCodeTool() {
                     />
                     <div className='tw-qr__color-swatches'>
                       {PRESET_FG_COLORS.map((p) => (
-                        <Tooltip key={p.color} content={p.label}>
+                        <Tooltip key={p.color} content={t(p.labelKey)}>
                           <button
                             type='button'
                             className={`tw-qr__swatch${fgColor === p.color ? ' tw-qr__swatch--active' : ''}`}
                             style={{ backgroundColor: p.color }}
-                            aria-label={p.label}
+                            aria-label={t(p.labelKey)}
                             onClick={() => setFgColor(p.color)}
                           />
                         </Tooltip>
@@ -570,12 +570,12 @@ export default function QrCodeTool() {
                     />
                     <div className='tw-qr__color-swatches'>
                       {PRESET_BG_COLORS.map((p) => (
-                        <Tooltip key={p.color} content={p.label}>
+                        <Tooltip key={p.color} content={t(p.labelKey)}>
                           <button
                             type='button'
                             className={`tw-qr__swatch${bgColor === p.color ? ' tw-qr__swatch--active' : ''}`}
                             style={{ backgroundColor: p.color }}
-                            aria-label={p.label}
+                            aria-label={t(p.labelKey)}
                             onClick={() => setBgColor(p.color)}
                           />
                         </Tooltip>

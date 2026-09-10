@@ -72,7 +72,11 @@ src/
 - **只用设计令牌**：颜色/字号/控件高/圆角/阴影全部走 `theme.css` 的 `--tk-*` 变量，禁硬编码；主题靠 `data-theme` 自动切换。
 - **前缀分域**：`tk-*`(通用组件) / `tw-*`(工具箱) / `tek-*`(content 悬浮层) / `pop-*` `opt-*` `sp-*`(各宿主页)。
 - **复用现成组件**：`.tk-btn`/`.tk-icon-btn`、`TkSelect`(禁用原生 select)、`ConfirmDialog`(禁用 window.confirm)、`Icon`(禁用 emoji)、`CopyButton`/`DownloadButton`/`StatusText`。
-- **文案必须 i18n**：`t()` + 同步补 `zh.json`/`en.json`，禁硬编码；key 语义化（`tool.registry.<id>`、`settings.*`、`common.*` 等）。
+- **文案必须 i18n（含「中英同形」文案）**：所有面向用户的文案一律走 `t()` 并同步补齐 `zh.json`/`en.json`，严禁在组件内硬编码文案字符串；key 语义化（`tool.registry.<id>`、`tool.<tool>.*`、`settings.*`、`common.*` 等）。
+  - **载体清单**：按钮、选项卡/区域标签、下拉选项、状态与错误提示、占位符、空状态引导语、`aria-label` / `title` / Tooltip 文本——全部算文案（纯技术示例值除外，如 `example.com`、`1780000000`、`/`，可直接写字面量）。
+  - **「两种语言当前同形」不是硬编码的理由**：API 名与专有名词（`localStorage`、`sessionStorage`、`Base64` 等）同样必须登记 key。硬编码等于把一个字符串焊死给所有语言，一旦某语言需要分叉（单复数、量词、词序、术语本地化）就必然有一边出错——`cookie` 区域标签曾硬编码 `'Cookie'`，英文因此缺复数。形态差异写在各语言自己的 key 值里，可同可异：既不必为「对称」硬造不自然的译法，也不必为省事强行统一。
+  - **单复数按语义而非按语言**：指代集合/类别时用复数（如区域标签 `Cookies`），指代单个实体时用单数（如「删除 Cookie「name」」），中英保持同一判断。
+  - **自查**：改完扫一遍组件内残留的字面量文案，形如 `label: '…'`、`placeholder='…'`、`title='…'`、`aria-label='…'`，以及 JSX 中的裸中文/英文句子。
 - **入口统一挂三 hook**：`useLocale()` / `useFontScale()` / `useTheme()`。
 - **路径别名**：用 `@/` 导入 `src/*`，不用深层相对路径（import 排序由 prettier 自动处理，提交前跑 `format`）。
 - **全局滚动条严格统一**：全扩展所有滚动容器（宿主页面、侧边栏、抽屉 Shadow DOM、各类弹窗、下拉、表格、代码高亮区及多行输入框）统一复用 `theme.css` 根级定义的 6px 极简悬浮圆角滚动条（`scrollbar-width: thin; scrollbar-color: var(--tk-border-strong) transparent;` + 6px WebKit 胶囊滑块与透明轨道），严禁使用系统原生粗滚动条或各组件自造样式；横向药丸标签栏（`.tw-tabs`、`.tw-nav`、`.tw-detect__tabs`）强制隐藏滚动条（`scrollbar-width: none`）。

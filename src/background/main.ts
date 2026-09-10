@@ -258,6 +258,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               value: c.value,
               domain: c.domain,
               path: c.path,
+              hostOnly: c.hostOnly,
               secure: c.secure,
               httpOnly: c.httpOnly,
               sameSite: c.sameSite,
