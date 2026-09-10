@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -6,7 +6,7 @@ import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import type { DetectBlock, DetectField, DetectItem, DetectResult } from './detect'
 import DownloadButton from './DownloadButton'
-import JsonTextarea from './JsonTextarea'
+import JsonHighlight from './JsonHighlight'
 import { StatusText } from './StatusText'
 
 const KIND_LABEL: Record<DetectResult['kind'], string> = {
@@ -32,12 +32,6 @@ function fieldLabelKey(key: string): string {
 
 function FieldRow({ field }: { field: DetectField }) {
   const { t } = useTranslation()
-  const [val, setVal] = useState(field.value)
-
-  useEffect(() => {
-    setVal(field.value)
-  }, [field.value])
-
   const urlIdx = field.key.match(/^url\.(\d+)$/)
   const isClaim = field.key.startsWith('claim.')
   const label = urlIdx
@@ -48,44 +42,33 @@ function FieldRow({ field }: { field: DetectField }) {
   return (
     <div className='tw-detect__field'>
       <span className='tw-detect__field-label'>{label}</span>
-      <input
-        className={`tw-detect__field-input${field.mono ? ' tw-detect__field-input--mono' : ''}`}
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        spellCheck={false}
-      />
-      <CopyButton text={val} icon className='tw-detect__copy' />
+      <code
+        className={`tw-detect__field-value${field.mono ? ' tw-detect__field-value--mono' : ''}`}
+      >
+        {field.value}
+      </code>
+      <CopyButton text={field.value} icon className='tw-detect__copy' />
     </div>
   )
 }
 
 function BlockRow({ block, blockMaxHeight }: { block: DetectBlock; blockMaxHeight?: number }) {
   const { t } = useTranslation()
-  const [val, setVal] = useState(block.value)
-
-  useEffect(() => {
-    setVal(block.value)
-  }, [block.value])
-
   return (
     <div className='tw-detect__block'>
       <span className='tw-field__label'>
         {t(`tool.detect.row.${block.key}`)}
-        <CopyButton text={val} className='tw-link' />
+        <CopyButton text={block.value} className='tw-link' />
       </span>
       {block.image ? (
         <img src={block.value} alt={t('tool.detect.previewAlt')} className='tw-detect__image' />
       ) : block.json ? (
-        <JsonTextarea
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
-          maxHeight={blockMaxHeight}
-        />
+        <JsonHighlight text={block.value} maxHeight={blockMaxHeight} />
       ) : (
         <AutoArea
-          className='tw-area'
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
+          className='tw-area tw-area--result'
+          value={block.value}
+          readOnly
           maxHeight={blockMaxHeight}
           placeholder={t('tool.detect.resultPlaceholder')}
           spellCheck={false}

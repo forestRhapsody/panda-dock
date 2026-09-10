@@ -51,6 +51,8 @@ export default function TimestampTool() {
         </button>
       </div>
 
+      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
+
       {result.ok && (
         <div className='tw-detect__fields'>
           {result.rows.map((row) => (
@@ -64,8 +66,6 @@ export default function TimestampTool() {
           ))}
         </div>
       )}
-
-      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
     </div>
   )
 }

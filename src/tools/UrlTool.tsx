@@ -178,7 +178,8 @@ function UrlCodecPanel() {
   }
 
   function setInput(val: string) {
-    setDraft((prev) => ({ ...prev, input: val }))
+    setDraft((prev) => ({ ...prev, input: val, output: '' }))
+    setStatus(null)
   }
 
   function runEncode(rawText: string = input, currentScope: CodecScope = scope) {
@@ -294,25 +295,26 @@ function UrlCodecPanel() {
 
       {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
 
-      <div className='tw-field'>
-        <span className='tw-field__label'>
-          {t('tool.url.codec.result')}
-          <CopyButton
-            text={output}
-            disabled={!output}
-            className='tw-link'
-            onResult={(ok) => {
-              if (!ok) setStatus({ kind: 'err', text: t('common.copyFailed') })
-            }}
+      {Boolean(output) && (
+        <div className='tw-field'>
+          <span className='tw-field__label'>
+            {t('tool.url.codec.result')}
+            <CopyButton
+              text={output}
+              className='tw-link'
+              onResult={(ok) => {
+                if (!ok) setStatus({ kind: 'err', text: t('common.copyFailed') })
+              }}
+            />
+          </span>
+          <AutoArea
+            className='tw-area tw-area--result'
+            value={output}
+            readOnly
+            placeholder={t('tool.url.codec.statusNeedInput')}
           />
-        </span>
-        <AutoArea
-          className='tw-area tw-area--result'
-          value={output}
-          readOnly
-          placeholder={t('tool.url.codec.statusNeedInput')}
-        />
-      </div>
+        </div>
+      )}
     </div>
   )
 }

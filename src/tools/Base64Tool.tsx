@@ -338,7 +338,8 @@ export default function Base64Tool() {
             placeholder={t('tool.base64.inputPlaceholderDecode')}
             onChange={(e) => {
               const val = e.target.value
-              setDraft((prev) => ({ ...prev, decodeInput: val }))
+              setDraft((prev) => ({ ...prev, decodeInput: val, decodeOutput: '' }))
+              setDecodeStatus(null)
             }}
             spellCheck={false}
           />
@@ -355,25 +356,26 @@ export default function Base64Tool() {
 
         {decodeStatus && <StatusText kind={decodeStatus.kind}>{decodeStatus.text}</StatusText>}
 
-        <div className='tw-field'>
-          <span className='tw-field__label'>
-            {t('tool.base64.result')}
-            <CopyButton
-              text={decodeOutput}
-              disabled={!decodeOutput}
-              className='tw-link'
-              onResult={(ok) => {
-                if (!ok) setDecodeStatus({ kind: 'err', text: t('common.copyFailed') })
-              }}
+        {Boolean(decodeOutput) && (
+          <div className='tw-field'>
+            <span className='tw-field__label'>
+              {t('tool.base64.result')}
+              <CopyButton
+                text={decodeOutput}
+                className='tw-link'
+                onResult={(ok) => {
+                  if (!ok) setDecodeStatus({ kind: 'err', text: t('common.copyFailed') })
+                }}
+              />
+            </span>
+            <AutoArea
+              className='tw-area tw-area--result'
+              value={decodeOutput}
+              readOnly
+              placeholder={t('tool.base64.resultPlaceholder')}
             />
-          </span>
-          <AutoArea
-            className='tw-area tw-area--result'
-            value={decodeOutput}
-            readOnly
-            placeholder={t('tool.base64.resultPlaceholder')}
-          />
-        </div>
+          </div>
+        )}
       </div>
 
       {/* 2. 文本编码面板：独立维护 encodeInput / encodeOutput */}
@@ -386,7 +388,8 @@ export default function Base64Tool() {
             placeholder={t('tool.base64.inputPlaceholderEncode')}
             onChange={(e) => {
               const val = e.target.value
-              setDraft((prev) => ({ ...prev, encodeInput: val }))
+              setDraft((prev) => ({ ...prev, encodeInput: val, encodeOutput: '' }))
+              setEncodeStatus(null)
             }}
             spellCheck={false}
           />
@@ -403,25 +406,26 @@ export default function Base64Tool() {
 
         {encodeStatus && <StatusText kind={encodeStatus.kind}>{encodeStatus.text}</StatusText>}
 
-        <div className='tw-field'>
-          <span className='tw-field__label'>
-            {t('tool.base64.result')}
-            <CopyButton
-              text={encodeOutput}
-              disabled={!encodeOutput}
-              className='tw-link'
-              onResult={(ok) => {
-                if (!ok) setEncodeStatus({ kind: 'err', text: t('common.copyFailed') })
-              }}
+        {Boolean(encodeOutput) && (
+          <div className='tw-field'>
+            <span className='tw-field__label'>
+              {t('tool.base64.result')}
+              <CopyButton
+                text={encodeOutput}
+                className='tw-link'
+                onResult={(ok) => {
+                  if (!ok) setEncodeStatus({ kind: 'err', text: t('common.copyFailed') })
+                }}
+              />
+            </span>
+            <AutoArea
+              className='tw-area tw-area--result'
+              value={encodeOutput}
+              readOnly
+              placeholder={t('tool.base64.resultPlaceholder')}
             />
-          </span>
-          <AutoArea
-            className='tw-area tw-area--result'
-            value={encodeOutput}
-            readOnly
-            placeholder={t('tool.base64.resultPlaceholder')}
-          />
-        </div>
+          </div>
+        )}
       </div>
 
       {/* 3. 文件转 Base64 面板 */}
@@ -546,6 +550,8 @@ export default function Base64Tool() {
           </button>
         </div>
 
+        {decError && <StatusText kind='err'>{decError}</StatusText>}
+
         {decInfo && (
           <div className='tw-fileb64__result'>
             {decInfo.mime.startsWith('image/') && (
@@ -580,8 +586,6 @@ export default function Base64Tool() {
             </div>
           </div>
         )}
-
-        {decError && <StatusText kind='err'>{decError}</StatusText>}
       </div>
     </div>
   )
