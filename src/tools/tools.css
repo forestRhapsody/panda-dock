@@ -1220,13 +1220,13 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .tw-store__row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   padding: 8px 10px;
   border: 1px solid var(--tk-border);
   border-radius: var(--tk-radius);
@@ -1264,7 +1264,7 @@
   font-family: var(--tk-font-mono);
   font-size: var(--tk-text-xs);
   line-height: 1.6;
-  color: var(--tk-muted-foreground);
+  color: var(--tk-foreground);
   white-space: pre-wrap;
   word-break: break-all;
   user-select: text;

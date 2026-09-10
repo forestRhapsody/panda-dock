@@ -596,6 +596,8 @@ export default function StorageTool() {
         </button>
       </div>
 
+      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
+
       {((area !== 'cookie' && data && (data.entries.length > 0 || filter)) ||
         (area === 'cookie' && cookieData && (cookieData.cookies.length > 0 || filter))) && (
         <div className='tw-store__search'>
@@ -847,8 +849,6 @@ export default function StorageTool() {
       )}
 
       {!isPageContext() && <p className='tw-note'>{t('tool.storage.extPageNote')}</p>}
-
-      {status && <StatusText kind={status.kind}>{status.text}</StatusText>}
 
       {cookieModalOpen && (
         <CookieEditModal
