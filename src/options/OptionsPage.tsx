@@ -294,7 +294,7 @@ export default function OptionsPage() {
     setWhitelistText('')
   }
 
-  /** 恢复「悬浮球与侧边栏」这块到默认（显示、吸边、点击动作） */
+  /** 恢复「悬浮球与唤起方式」这块到默认（显示、吸边、点击动作） */
   function resetBallSection() {
     const base = defaultSettings()
     persist({
@@ -361,6 +361,80 @@ export default function OptionsPage() {
       <main className='opt__main'>
         <div className='opt__card'>
           <div className='opt__card-head'>
+            <h2>{t('settings.appearanceDisplay')}</h2>
+            <button type='button' className='opt__reset' onClick={resetAppearance}>
+              {t('settings.resetDefault')}
+            </button>
+          </div>
+          <ul className='opt__list'>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.theme')}</strong>
+                <p>{t('settings.themeDesc')}</p>
+              </div>
+              <TkSelect
+                value={settings.theme}
+                onChange={(e) => setTheme(e.target.value as ThemeMode)}
+                aria-label={t('settings.theme')}
+              >
+                {THEME_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {t(
+                      o.value === 'system'
+                        ? 'settings.themeSystem'
+                        : o.value === 'light'
+                          ? 'settings.themeLight'
+                          : 'settings.themeDark',
+                    )}
+                  </option>
+                ))}
+              </TkSelect>
+            </li>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.language')}</strong>
+                <p>{t('settings.languageDesc')}</p>
+              </div>
+              <TkSelect
+                value={settings.locale}
+                onChange={(e) => setLocale(e.target.value as LocaleSetting)}
+                aria-label={t('settings.language')}
+              >
+                {LOCALE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.value === 'system' ? t('settings.localeSystem') : o.label}
+                  </option>
+                ))}
+              </TkSelect>
+            </li>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.fontScale')}</strong>
+                <p>{t('settings.fontScaleDesc')}</p>
+              </div>
+              <TkSelect
+                value={settings.fontScale}
+                onChange={(e) => setFontScale(Number(e.target.value))}
+                aria-label={t('settings.fontScale')}
+              >
+                {FONT_SCALE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {t(
+                      o.value === 1
+                        ? 'settings.fontStandard'
+                        : o.value === 1.1
+                          ? 'settings.fontLarge'
+                          : 'settings.fontMax',
+                    )}
+                  </option>
+                ))}
+              </TkSelect>
+            </li>
+          </ul>
+        </div>
+
+        <div className='opt__card'>
+          <div className='opt__card-head'>
             <h2>{t('settings.ballSection')}</h2>
             <button type='button' className='opt__reset' onClick={resetBallSection}>
               {t('settings.resetDefault')}
@@ -398,6 +472,14 @@ export default function OptionsPage() {
                 <option value='native'>{t('settings.actionNative')}</option>
               </TkSelect>
             </li>
+          </ul>
+        </div>
+
+        <div className='opt__card'>
+          <div className='opt__card-head'>
+            <h2>{t('settings.shortcutSection')}</h2>
+          </div>
+          <ul className='opt__list'>
             <li className='opt__item'>
               <div className='opt__item-text'>
                 <strong>{t('settings.shortcutTitle')}</strong>
@@ -569,38 +651,6 @@ export default function OptionsPage() {
 
         <div className='opt__card'>
           <div className='opt__card-head'>
-            <h2>{t('settings.toolbox')}</h2>
-            <button type='button' className='opt__reset' onClick={resetLayout}>
-              {t('settings.resetDefault')}
-            </button>
-          </div>
-          <p className='opt__env'>{t('settings.toolboxDesc')}</p>
-
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={settings.toolOrder} strategy={verticalListSortingStrategy}>
-              <ul className='opt-tools'>
-                {settings.toolOrder.map((id) => {
-                  const meta = TOOL_META.get(id)
-                  if (!meta) return null
-                  return (
-                    <SortableToolRow
-                      key={id}
-                      id={id}
-                      label={t(`tool.registry.${id}`)}
-                      on={settings.toolEnabled[id] !== false}
-                      onToggle={toggleTool}
-                    />
-                  )
-                })}
-              </ul>
-            </SortableContext>
-          </DndContext>
-
-          <p className='opt__env opt__env--hint'>{t('settings.toolboxHint')}</p>
-        </div>
-
-        <div className='opt__card'>
-          <div className='opt__card-head'>
             <h2>{t('settings.domainSection')}</h2>
             <button type='button' className='opt__reset' onClick={resetDomainRules}>
               {t('settings.resetDefault')}
@@ -708,76 +758,34 @@ export default function OptionsPage() {
 
         <div className='opt__card'>
           <div className='opt__card-head'>
-            <h2>{t('settings.appearanceDisplay')}</h2>
-            <button type='button' className='opt__reset' onClick={resetAppearance}>
+            <h2>{t('settings.toolbox')}</h2>
+            <button type='button' className='opt__reset' onClick={resetLayout}>
               {t('settings.resetDefault')}
             </button>
           </div>
-          <ul className='opt__list'>
-            <li className='opt__item'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.theme')}</strong>
-                <p>{t('settings.themeDesc')}</p>
-              </div>
-              <TkSelect
-                value={settings.theme}
-                onChange={(e) => setTheme(e.target.value as ThemeMode)}
-                aria-label={t('settings.theme')}
-              >
-                {THEME_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {t(
-                      o.value === 'system'
-                        ? 'settings.themeSystem'
-                        : o.value === 'light'
-                          ? 'settings.themeLight'
-                          : 'settings.themeDark',
-                    )}
-                  </option>
-                ))}
-              </TkSelect>
-            </li>
-            <li className='opt__item'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.language')}</strong>
-                <p>{t('settings.languageDesc')}</p>
-              </div>
-              <TkSelect
-                value={settings.locale}
-                onChange={(e) => setLocale(e.target.value as LocaleSetting)}
-                aria-label={t('settings.language')}
-              >
-                {LOCALE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.value === 'system' ? t('settings.localeSystem') : o.label}
-                  </option>
-                ))}
-              </TkSelect>
-            </li>
-            <li className='opt__item'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.fontScale')}</strong>
-                <p>{t('settings.fontScaleDesc')}</p>
-              </div>
-              <TkSelect
-                value={settings.fontScale}
-                onChange={(e) => setFontScale(Number(e.target.value))}
-                aria-label={t('settings.fontScale')}
-              >
-                {FONT_SCALE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {t(
-                      o.value === 1
-                        ? 'settings.fontStandard'
-                        : o.value === 1.1
-                          ? 'settings.fontLarge'
-                          : 'settings.fontMax',
-                    )}
-                  </option>
-                ))}
-              </TkSelect>
-            </li>
-          </ul>
+          <p className='opt__env'>{t('settings.toolboxDesc')}</p>
+
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={settings.toolOrder} strategy={verticalListSortingStrategy}>
+              <ul className='opt-tools'>
+                {settings.toolOrder.map((id) => {
+                  const meta = TOOL_META.get(id)
+                  if (!meta) return null
+                  return (
+                    <SortableToolRow
+                      key={id}
+                      id={id}
+                      label={t(`tool.registry.${id}`)}
+                      on={settings.toolEnabled[id] !== false}
+                      onToggle={toggleTool}
+                    />
+                  )
+                })}
+              </ul>
+            </SortableContext>
+          </DndContext>
+
+          <p className='opt__env opt__env--hint'>{t('settings.toolboxHint')}</p>
         </div>
 
         <div className='opt__card opt__card--danger'>

@@ -23,16 +23,16 @@ export const DEFAULT_TOOLS: ToolMeta[] = [
   { id: 'detect', label: 'Smart Parse' },
   { id: 'storage', label: 'Web Storage' },
   { id: 'base64', label: 'Base64' },
-  { id: 'timestamp', label: 'Timestamp' },
-  { id: 'qrcode', label: 'QR Code Tool' },
-  { id: 'hash', label: 'Hash' },
   { id: 'json', label: 'JSON' },
   { id: 'url', label: 'URL' },
+  { id: 'timestamp', label: 'Timestamp' },
+  { id: 'qrcode', label: 'QR Code' },
   { id: 'jwt', label: 'JWT' },
+  { id: 'hash', label: 'Hash' },
 ]
 
-/** 默认隐藏（不启用）的工具：用户截图里关闭的那几个 */
-const DEFAULT_HIDDEN_TOOLS: ToolId[] = ['url', 'jwt']
+/** 默认隐藏（不启用）的工具：JWT 与哈希属中低频能力，默认收起以缩短首屏标签栏，需要时可在设置页一键开启 */
+const DEFAULT_HIDDEN_TOOLS: ToolId[] = ['jwt', 'hash']
 
 export function isToolId(value: unknown): value is ToolId {
   return DEFAULT_TOOLS.some((t) => t.id === value)
