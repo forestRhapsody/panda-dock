@@ -91,9 +91,13 @@ export default function Base64Tool() {
 
   // —— 独立状态：文本解码 ——
   const [decodeStatus, setDecodeStatus] = useState<ToolStatus | null>(null)
+  const [decodeEmptyErr, setDecodeEmptyErr] = useState(false)
+  const decodeInputRef = useRef<HTMLTextAreaElement>(null)
 
   // —— 独立状态：文本编码 ——
   const [encodeStatus, setEncodeStatus] = useState<ToolStatus | null>(null)
+  const [encodeEmptyErr, setEncodeEmptyErr] = useState(false)
+  const encodeInputRef = useRef<HTMLTextAreaElement>(null)
 
   // —— 独立状态：文件 → Base64 ——
   const [file, setFile] = useState<File | null>(null)
@@ -113,14 +117,18 @@ export default function Base64Tool() {
 
   function switchTab(next: Base64Mode) {
     setDraft((prev) => ({ ...prev, tab: next }))
+    setDecodeEmptyErr(false)
+    setEncodeEmptyErr(false)
   }
 
   // —— 文本解码独立操作 ——
   function runDecode() {
     const text = decodeInput.trim()
     if (!text) {
-      setDecodeStatus({ kind: 'info', text: t('tool.base64.statusEmpty') })
+      setDecodeEmptyErr(true)
       setDraft((prev) => ({ ...prev, decodeOutput: '' }))
+      setDecodeStatus(null)
+      decodeInputRef.current?.focus()
       return
     }
     if (!isLikelyBase64(text)) {
@@ -147,14 +155,17 @@ export default function Base64Tool() {
   function clearDecode() {
     setDraft((prev) => ({ ...prev, decodeInput: '', decodeOutput: '' }))
     setDecodeStatus(null)
+    setDecodeEmptyErr(false)
   }
 
   // —— 文本编码独立操作 ——
   function runEncode() {
     const text = encodeInput.trim()
     if (!text) {
-      setEncodeStatus({ kind: 'info', text: t('tool.base64.statusEmpty') })
+      setEncodeEmptyErr(true)
       setDraft((prev) => ({ ...prev, encodeOutput: '' }))
+      setEncodeStatus(null)
+      encodeInputRef.current?.focus()
       return
     }
     try {
@@ -176,6 +187,7 @@ export default function Base64Tool() {
   function clearEncode() {
     setDraft((prev) => ({ ...prev, encodeInput: '', encodeOutput: '' }))
     setEncodeStatus(null)
+    setEncodeEmptyErr(false)
   }
 
   // —— 文件转 Base64 独立操作 ——
@@ -333,12 +345,14 @@ export default function Base64Tool() {
         <label className='tw-field'>
           <span className='tw-field__label'>{t('tool.base64.labelInputDecode')}</span>
           <textarea
-            className='tw-area'
+            ref={decodeInputRef}
+            className={`tw-area${decodeEmptyErr ? ' tw-area--empty-err' : ''}`}
             value={decodeInput}
             placeholder={t('tool.base64.inputPlaceholderDecode')}
             onChange={(e) => {
               const val = e.target.value
               setDraft((prev) => ({ ...prev, decodeInput: val, decodeOutput: '' }))
+              if (decodeEmptyErr) setDecodeEmptyErr(false)
               setDecodeStatus(null)
             }}
             spellCheck={false}
@@ -383,12 +397,14 @@ export default function Base64Tool() {
         <label className='tw-field'>
           <span className='tw-field__label'>{t('tool.base64.labelInputEncode')}</span>
           <textarea
-            className='tw-area'
+            ref={encodeInputRef}
+            className={`tw-area${encodeEmptyErr ? ' tw-area--empty-err' : ''}`}
             value={encodeInput}
             placeholder={t('tool.base64.inputPlaceholderEncode')}
             onChange={(e) => {
               const val = e.target.value
               setDraft((prev) => ({ ...prev, encodeInput: val, encodeOutput: '' }))
+              if (encodeEmptyErr) setEncodeEmptyErr(false)
               setEncodeStatus(null)
             }}
             spellCheck={false}

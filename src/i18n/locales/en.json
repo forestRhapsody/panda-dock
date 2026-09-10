@@ -176,7 +176,9 @@
         "hex": "Hex",
         "uuid": "UUID"
       },
+      "minifyOption": "Minify (single-line)",
       "row": {
+        "parsed": "Parsed Result",
         "decoded": "Decoded",
         "formatted": "Formatted",
         "minified": "Minified",
@@ -360,8 +362,8 @@
       "inputPlaceholder": "Enter or paste JSON…",
       "sortKeysOption": "Sort Keys",
       "sortKeysDesc": "Recursively sort object keys alphabetically (A-Z)",
-      "autoUnescapeOption": "Auto Unescape",
-      "autoUnescapeDesc": "Automatically unescape strings with escaped quotes",
+      "minifyOption": "Minify (single-line)",
+      "minifyDesc": "Minify into a compact single line, removing whitespace and line breaks",
       "indent": "Indent",
       "indent2": "2 spaces",
       "indent4": "4 spaces",

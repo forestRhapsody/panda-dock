@@ -27,6 +27,8 @@ export interface DetectBlock {
   value: string
   json?: boolean
   image?: boolean
+  formattedValue?: string
+  minifiedValue?: string
 }
 
 /** 可下载的文件（base64 反解成原始文件，点击可还原下载） */
@@ -141,12 +143,18 @@ function detectJson(s: string): DetectResult | null {
   if (!formatted.ok) return null
   const minified = minifyJson(s)
   const text = formatted.text ?? ''
+  const minText = minified.text ?? ''
   return {
     kind: 'json',
     fields: [],
     blocks: [
-      { key: 'formatted', value: text, json: true },
-      { key: 'minified', value: minified.text ?? '', json: false },
+      {
+        key: 'parsed',
+        value: text,
+        formattedValue: text,
+        minifiedValue: minText,
+        json: true,
+      },
     ],
     copy: text,
   }
@@ -276,11 +284,25 @@ function detectBase64(s: string): DetectResult | null {
     if (decoded.isText) {
       // 若解码出的文本含有不可见控制字符（除了制表符/换行/回车），说明并非有意义的文本 Base64
       if (hasControlChars(decoded.text)) return null
+      const trimmed = decoded.text.trim()
+      const jsonRes = isJsonLike(trimmed) ? formatJson(trimmed) : null
+      const isJson = Boolean(jsonRes?.ok && jsonRes.text)
+      const minifiedRes = isJson ? minifyJson(trimmed) : null
+      const formattedVal = isJson ? jsonRes!.text! : decoded.text
+      const minifiedVal = isJson ? (minifiedRes?.text ?? trimmed) : undefined
       return {
         kind: 'base64',
         fields: [],
-        blocks: [{ key: 'decoded', value: decoded.text }],
-        copy: decoded.text,
+        blocks: [
+          {
+            key: isJson ? 'parsed' : 'decoded',
+            value: formattedVal,
+            formattedValue: formattedVal,
+            minifiedValue: minifiedVal,
+            json: isJson,
+          },
+        ],
+        copy: formattedVal,
       }
     }
     // 非 UTF-8 文本：必须能通过魔数识别出明确的文件类型（图片/文档/压缩包等），避免将随机字母串误识别为二进制文件

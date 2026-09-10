@@ -497,19 +497,103 @@
   margin-bottom: 4px;
 }
 
-/* 上方面板输入框：弹性自适应剩余高度（禁用 height: 100% 避免撑出容器），内部滚动 */
-.tw-json__editor {
+/* 上方面板输入框：带行号栏的专业编辑器容器 */
+.tw-json-editor-wrap {
   flex: 1 1 0;
-  min-height: 108px;
+  min-height: 72px;
   max-height: none;
   height: auto;
-  resize: none;
-  overflow: auto;
+  box-sizing: border-box;
+  display: flex;
+  border: 1px solid var(--tk-input);
+  border-radius: var(--tk-radius);
+  background: var(--tk-card);
+  overflow: hidden;
+  position: relative;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
-.tw-json__editor:focus {
+.tw-json-editor-wrap:hover:not(:focus-within) {
+  border-color: var(--tk-border-strong);
+}
+
+.tw-json-editor-wrap:focus-within {
   position: relative;
   z-index: 2;
+  border-color: var(--tk-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+}
+
+.tw-json-editor-wrap--empty-err {
+  border-color: var(--tk-destructive) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-destructive) 25%, transparent) !important;
+}
+
+.tw-json-editor-wrap--empty-err .tw-json-editor__input::placeholder {
+  color: var(--tk-destructive) !important;
+  opacity: 0.85;
+}
+
+/* 行号槽（Gutter）：与输入框同底色无缝融为一体，极简通透 */
+.tw-json-editor__gutter {
+  flex: none;
+  overflow: hidden;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: transparent;
+  border-right: 1px solid color-mix(in srgb, var(--tk-border) 45%, transparent);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tw-json-editor__ln {
+  box-sizing: content-box;
+  height: 1.6em;
+  line-height: 1.6em;
+  padding-left: 8px;
+  padding-right: 10px;
+  text-align: right;
+  color: var(--tk-muted-foreground);
+  opacity: 0.38;
+  font-family: var(--tk-font-mono);
+  font-size: var(--tk-text-base);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 错误行高亮标红指示（行号纯净变红加粗） */
+.tw-json-editor__ln--error {
+  color: var(--tk-destructive) !important;
+  opacity: 1 !important;
+  font-weight: 600;
+}
+
+/* 输入框核心：透明背景，零边框，单行滚动 */
+.tw-json-editor__input {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 10px 12px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--tk-font-mono);
+  font-size: var(--tk-text-base);
+  line-height: 1.6;
+  color: var(--tk-foreground);
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow: auto;
+  resize: none;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tk-border-strong) transparent;
 }
 
 /* 可拖拽分屏控制条 (Splitter) */
@@ -623,7 +707,7 @@
   box-sizing: border-box;
   width: 100%;
   margin: 0;
-  min-height: 88px;
+  min-height: 0;
   padding: 10px 12px;
   border: 1px solid var(--tk-input);
   border-radius: var(--tk-radius);
@@ -641,7 +725,7 @@
 .tw-json-hl--fill,
 .tw-json__viewer {
   flex: 1 1 0;
-  min-height: 108px;
+  min-height: 72px;
   max-height: none;
   height: auto;
   overflow: auto;
@@ -651,9 +735,52 @@
   font-family: inherit;
 }
 
+/* 行号与代码行结构（专业编辑器质感） */
+.tw-json-hl--numbered {
+  padding-left: 0;
+}
+
+.tw-json-hl__line {
+  display: flex;
+  align-items: flex-start;
+  min-height: 1.6em;
+  line-height: inherit;
+}
+
+.tw-json-hl__line:hover {
+  background: color-mix(in srgb, var(--tk-foreground) 3.5%, transparent);
+}
+
+.tw-json-hl__ln {
+  flex: none;
+  box-sizing: content-box;
+  text-align: right;
+  padding-left: 10px;
+  padding-right: 10px;
+  margin-right: 10px;
+  border-right: 1px solid color-mix(in srgb, var(--tk-border) 70%, transparent);
+  color: var(--tk-muted-foreground);
+  opacity: 0.5;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tw-json-hl__content {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: inherit;
+}
+
 .tw-json-hl__empty {
   color: var(--tk-muted-foreground);
   user-select: none;
+  padding-left: 12px;
 }
 
 /* 高亮 token 颜色（通用：JsonHighlight 与 JsonTextarea 共享） */
@@ -1087,6 +1214,16 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.tw-detect__block .tw-area--result {
+  min-height: 0;
+}
+
+.tw-detect__block-options {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
 }
 
 .tw-detect__image {

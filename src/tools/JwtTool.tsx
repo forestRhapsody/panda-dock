@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -26,6 +26,8 @@ export default function JwtTool() {
   const [token, setToken, clearToken] = useToolDraft<string>('jwt.token', '')
   const [decoded, setDecoded] = useState<JwtDecoded | null>(null)
   const [status, setStatus] = useState<ToolStatus | null>(null)
+  const [emptyErr, setEmptyErr] = useState(false)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     const raw = token.trim()
@@ -45,7 +47,9 @@ export default function JwtTool() {
     const raw = text.trim()
     if (!raw) {
       setDecoded(null)
-      setStatus({ kind: 'info', text: t('tool.jwt.statusEmpty') })
+      setStatus(null)
+      setEmptyErr(true)
+      inputRef.current?.focus()
       return
     }
     const result = decodeJwt(raw)
@@ -68,9 +72,11 @@ export default function JwtTool() {
     clearToken()
     setDecoded(null)
     setStatus(null)
+    setEmptyErr(false)
   }
 
   function fillSample() {
+    setEmptyErr(false)
     setToken(SAMPLE_JWT)
     run(SAMPLE_JWT)
   }
@@ -85,10 +91,15 @@ export default function JwtTool() {
           </button>
         </span>
         <textarea
-          className='tw-area'
+          ref={inputRef}
+          className={`tw-area${emptyErr ? ' tw-area--empty-err' : ''}`}
           value={token}
           placeholder={t('tool.jwt.placeholder')}
-          onChange={(e) => setToken(e.target.value)}
+          onChange={(e) => {
+            setToken(e.target.value)
+            if (emptyErr) setEmptyErr(false)
+            if (status) setStatus(null)
+          }}
           spellCheck={false}
         />
       </label>
@@ -117,7 +128,7 @@ export default function JwtTool() {
                 }}
               />
             </span>
-            <JsonHighlight text={decoded.headerText} maxHeight={180} />
+            <JsonHighlight text={decoded.headerText} maxHeight={180} showLineNumbers />
           </div>
 
           <div className='tw-field'>
@@ -131,7 +142,7 @@ export default function JwtTool() {
                 }}
               />
             </span>
-            <JsonHighlight text={decoded.payloadText} maxHeight={300} />
+            <JsonHighlight text={decoded.payloadText} maxHeight={300} showLineNumbers />
           </div>
 
           {decoded.claims.length > 0 && (

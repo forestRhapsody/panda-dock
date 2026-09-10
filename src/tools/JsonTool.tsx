@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -16,7 +16,6 @@ import {
   SAMPLE_JSON,
   unescapeJson,
   type JsonIndent,
-  type JsonProcessOptions,
 } from './json'
 import JsonHighlight from './JsonHighlight'
 import { StatusText } from './StatusText'
@@ -29,7 +28,7 @@ interface JsonDraft {
   output: string
   indent: JsonIndent
   sortKeys: boolean
-  autoUnescape: boolean
+  minify: boolean
   lastAction: JsonAction | null
   splitRatio?: number
 }
@@ -39,7 +38,7 @@ const DEFAULT_DRAFT: JsonDraft = {
   output: '',
   indent: 2,
   sortKeys: false,
-  autoUnescape: false,
+  minify: false,
   lastAction: null,
   splitRatio: 50,
 }
@@ -48,27 +47,42 @@ const DEFAULT_DRAFT: JsonDraft = {
  * 全功能 JSON 工具工作台：
  * 采用类似 IDE 的上下可拖拽分屏布局，高度 100% 自适应撑满且无外层滚动条；
  * 输入区与结果区支持独立纵向滚动，汇聚格式化、单行压缩、字符串转义、去转义能力，
- * 并支持「键名排序」与「自动去转义」复选框自由组合与即时联动。
+ * 并支持「单行压缩」与「键名排序」复选框自由组合与即时联动。
  */
 export default function JsonTool() {
   const { t } = useTranslation()
   const [draft, setDraft] = useToolDraft<JsonDraft>('json.workbench', DEFAULT_DRAFT)
-  const { input, output, indent, sortKeys, autoUnescape, lastAction } = draft
+  const { input, output, indent, sortKeys, minify = false } = draft
   const [status, setStatus] = useState<ToolStatus | null>(null)
 
-  // 分屏高度比例（上方面板占比百分比，范围 25~75，默认 50）
+  // 分屏高度比例（上方面板占比百分比，范围 15~85，默认 50）
   const [splitRatio, setSplitRatio] = useState<number>(
-    Math.max(25, Math.min(75, draft.splitRatio ?? 50)),
+    Math.max(15, Math.min(85, draft.splitRatio ?? 50)),
   )
   const [isDragging, setIsDragging] = useState(false)
   const workspaceRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const gutterRef = useRef<HTMLDivElement>(null)
   const [emptyError, setEmptyError] = useState(false)
+  const [errorLine, setErrorLine] = useState<number | null>(null)
+
+  const inputLineCount = useMemo(() => {
+    if (!input) return 1
+    return input.split('\n').length
+  }, [input])
+  const inputLnDigits = Math.max(2, String(inputLineCount).length)
+  const inputLnStyle = { width: `${inputLnDigits}ch` }
+
+  const handleInputScroll = () => {
+    if (gutterRef.current && inputRef.current) {
+      gutterRef.current.scrollTop = inputRef.current.scrollTop
+    }
+  }
 
   // 当外部 draft.splitRatio 改变（如切换标签还原）且不在拖拽中时同步
   useEffect(() => {
     if (!isDragging && draft.splitRatio !== undefined && draft.splitRatio !== splitRatio) {
-      setSplitRatio(Math.max(25, Math.min(75, draft.splitRatio)))
+      setSplitRatio(Math.max(15, Math.min(85, draft.splitRatio)))
     }
   }, [draft.splitRatio, isDragging, splitRatio])
 
@@ -94,11 +108,11 @@ export default function JsonTool() {
     const rect = workspace.getBoundingClientRect()
     if (rect.height <= 0) return
 
-    // 保障上方面板输入框(108px + 头部/按钮/状态~80px = ~188px) 与 下方面板结果区(108px + 头部/配置~54px = ~162px)
-    const minTopPx = 188
-    const minBottomPx = 162
-    const minPct = Math.min(45, Math.max(20, (minTopPx / rect.height) * 100))
-    const maxPct = Math.max(55, Math.min(80, 100 - (minBottomPx / rect.height) * 100))
+    // 保障上方面板输入框(72px + 头部/按钮/状态~64px = ~136px) 与 下方面板结果区(72px + 头部/配置~54px = ~126px)
+    const minTopPx = 136
+    const minBottomPx = 126
+    const minPct = Math.min(45, Math.max(15, (minTopPx / rect.height) * 100))
+    const maxPct = Math.max(55, Math.min(85, 100 - (minBottomPx / rect.height) * 100))
 
     const offsetY = e.clientY - rect.top
     let pct = (offsetY / rect.height) * 100
@@ -137,12 +151,12 @@ export default function JsonTool() {
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'ArrowUp') {
       e.preventDefault()
-      const next = Math.max(25, splitRatio - 5)
+      const next = Math.max(15, splitRatio - 5)
       setSplitRatio(next)
       setDraft((prev) => ({ ...prev, splitRatio: next }))
     } else if (e.key === 'ArrowDown') {
       e.preventDefault()
-      const next = Math.min(75, splitRatio + 5)
+      const next = Math.min(85, splitRatio + 5)
       setSplitRatio(next)
       setDraft((prev) => ({ ...prev, splitRatio: next }))
     } else if (e.key === 'Home') {
@@ -160,160 +174,156 @@ export default function JsonTool() {
     setDraft((prev) => ({ ...prev, output: val }))
   }
 
-  function runFormat(text = input, opts?: Partial<JsonProcessOptions>) {
-    const raw = text.trim()
-    if (!raw) {
-      setOutput('')
-      setStatus(null)
-      setEmptyError(true)
-      inputRef.current?.focus()
-      return
-    }
-    setEmptyError(false)
-    const currentOpts: JsonProcessOptions = {
-      indent: opts?.indent ?? indent,
-      sortKeys: opts?.sortKeys ?? sortKeys,
-      autoUnescape: opts?.autoUnescape ?? autoUnescape,
-    }
-    const res = formatJson(raw, currentOpts)
-    if (res.ok) {
-      setDraft((prev) => ({
-        ...prev,
-        output: res.text ?? '',
-        lastAction: 'format',
-        ...(opts?.indent !== undefined ? { indent: opts.indent as JsonIndent } : {}),
-        ...(opts?.sortKeys !== undefined ? { sortKeys: opts.sortKeys } : {}),
-        ...(opts?.autoUnescape !== undefined ? { autoUnescape: opts.autoUnescape } : {}),
-      }))
-      setStatus(null)
+  function handleParseError(res: { error?: string; line?: number; offset?: number }) {
+    setOutput('')
+    setStatus({ kind: 'err', text: res.error ?? t('tool.json.failed') })
+    if (res.line) {
+      setErrorLine(res.line)
+      if (inputRef.current) {
+        const offset = res.offset ?? 0
+        inputRef.current.focus()
+        const end = Math.min(offset + 1, inputRef.current.value.length)
+        inputRef.current.setSelectionRange(offset, end)
+        const targetScrollTop = Math.max(0, (res.line - 3) * 22.4)
+        inputRef.current.scrollTop = targetScrollTop
+        if (gutterRef.current) gutterRef.current.scrollTop = targetScrollTop
+      }
     } else {
-      setOutput('')
-      setStatus({ kind: 'err', text: res.error ?? t('tool.json.failed') })
+      setErrorLine(null)
     }
   }
 
-  function runMinify(text = input, opts?: Partial<JsonProcessOptions>) {
+  function runFormat(
+    text = input,
+    opts?: { indent?: JsonIndent; sortKeys?: boolean; minify?: boolean },
+  ) {
     const raw = text.trim()
     if (!raw) {
       setOutput('')
       setStatus(null)
+      setErrorLine(null)
       setEmptyError(true)
       inputRef.current?.focus()
       return
     }
     setEmptyError(false)
-    const currentOpts: JsonProcessOptions = {
-      sortKeys: opts?.sortKeys ?? sortKeys,
-      autoUnescape: opts?.autoUnescape ?? autoUnescape,
-    }
-    const res = minifyJson(raw, currentOpts)
-    if (res.ok) {
-      setDraft((prev) => ({
-        ...prev,
-        output: res.text ?? '',
-        lastAction: 'minify',
-        ...(opts?.sortKeys !== undefined ? { sortKeys: opts.sortKeys } : {}),
-        ...(opts?.autoUnescape !== undefined ? { autoUnescape: opts.autoUnescape } : {}),
-      }))
-      setStatus(null)
+    const shouldMinify = opts?.minify ?? minify
+    const currentSort = opts?.sortKeys ?? sortKeys
+
+    if (shouldMinify) {
+      const res = minifyJson(raw, { sortKeys: currentSort })
+      if (res.ok) {
+        setErrorLine(null)
+        setDraft((prev) => ({
+          ...prev,
+          output: res.text ?? '',
+          lastAction: 'minify',
+          ...(opts?.sortKeys !== undefined ? { sortKeys: opts.sortKeys } : {}),
+          ...(opts?.minify !== undefined ? { minify: opts.minify } : {}),
+        }))
+        setStatus(null)
+      } else {
+        handleParseError(res)
+      }
     } else {
-      setOutput('')
-      setStatus({ kind: 'err', text: res.error ?? t('tool.json.failed') })
+      const currentIndent = opts?.indent ?? indent
+      const res = formatJson(raw, { indent: currentIndent, sortKeys: currentSort })
+      if (res.ok) {
+        setErrorLine(null)
+        setDraft((prev) => ({
+          ...prev,
+          output: res.text ?? '',
+          lastAction: 'format',
+          ...(opts?.indent !== undefined ? { indent: opts.indent } : {}),
+          ...(opts?.sortKeys !== undefined ? { sortKeys: opts.sortKeys } : {}),
+          ...(opts?.minify !== undefined ? { minify: opts.minify } : {}),
+        }))
+        setStatus(null)
+      } else {
+        handleParseError(res)
+      }
     }
   }
 
-  function runEscape(text = input, opts?: Partial<JsonProcessOptions>) {
+  function runEscape(text = input) {
     const raw = text.trim()
     if (!raw) {
       setOutput('')
       setStatus(null)
+      setErrorLine(null)
       setEmptyError(true)
       inputRef.current?.focus()
       return
     }
     setEmptyError(false)
-    const currentOpts: JsonProcessOptions = {
-      sortKeys: opts?.sortKeys ?? sortKeys,
-    }
-    const res = escapeJson(raw, currentOpts)
+    const res = escapeJson(raw, { sortKeys })
     if (res.ok) {
+      setErrorLine(null)
       setDraft((prev) => ({ ...prev, output: res.text ?? '', lastAction: 'escape' }))
       setStatus(null)
     } else {
-      setOutput('')
-      setStatus({ kind: 'err', text: res.error ?? t('tool.json.failed') })
+      handleParseError(res)
     }
   }
 
-  function runUnescape(text = input, opts?: Partial<JsonProcessOptions>) {
+  function runUnescape(text = input) {
     const raw = text.trim()
     if (!raw) {
       setOutput('')
       setStatus(null)
+      setErrorLine(null)
       setEmptyError(true)
       inputRef.current?.focus()
       return
     }
     setEmptyError(false)
-    const currentOpts: JsonProcessOptions = {
-      indent: opts?.indent ?? indent,
-      sortKeys: opts?.sortKeys ?? sortKeys,
-    }
-    const res = unescapeJson(raw, currentOpts)
+    const res = unescapeJson(raw, { indent, sortKeys })
     if (res.ok) {
+      setErrorLine(null)
       setDraft((prev) => ({
         ...prev,
         output: res.text ?? '',
         lastAction: 'unescape',
-        ...(opts?.indent !== undefined ? { indent: opts.indent as JsonIndent } : {}),
-        ...(opts?.sortKeys !== undefined ? { sortKeys: opts.sortKeys } : {}),
       }))
       setStatus(null)
     } else {
-      setOutput('')
-      setStatus({ kind: 'err', text: res.error ?? t('tool.json.failed') })
+      handleParseError(res)
     }
   }
 
-  /** 当复选框或缩进状态改变时，若当前有输出结果，无缝就地重新计算输出 */
-  function reprocess(overrides: Partial<JsonProcessOptions> = {}) {
-    const action = lastAction ?? 'format'
-    if (action === 'format') runFormat(input, overrides)
-    else if (action === 'minify') runMinify(input, overrides)
-    else if (action === 'unescape') runUnescape(input, overrides)
-    else if (action === 'escape') runEscape(input, overrides)
+  function onMinifyChange(checked: boolean) {
+    setDraft((prev) => ({ ...prev, minify: checked }))
+    if (output) {
+      runFormat(input || output, { minify: checked })
+    }
   }
 
   function onSortKeysChange(checked: boolean) {
     setDraft((prev) => ({ ...prev, sortKeys: checked }))
     if (output) {
-      reprocess({ sortKeys: checked })
-    }
-  }
-
-  function onAutoUnescapeChange(checked: boolean) {
-    setDraft((prev) => ({ ...prev, autoUnescape: checked }))
-    if (output && (lastAction === 'format' || lastAction === 'minify')) {
-      reprocess({ autoUnescape: checked })
+      runFormat(input || output, { sortKeys: checked })
     }
   }
 
   function onIndentChange(val: string | number) {
     const nextIndent: JsonIndent = val === 'tab' ? 'tab' : (Number(val) as 2 | 4)
     setDraft((prev) => ({ ...prev, indent: nextIndent }))
-    if (output && (lastAction === 'format' || lastAction === 'unescape')) {
-      reprocess({ indent: nextIndent })
+    if (output && !minify) {
+      runFormat(input || output, { indent: nextIndent })
     }
   }
 
   function fillSample() {
     setEmptyError(false)
+    setErrorLine(null)
     setInput(SAMPLE_JSON)
-    runFormat(SAMPLE_JSON, { indent, sortKeys, autoUnescape })
+    runFormat(SAMPLE_JSON, { indent, sortKeys, minify })
+    if (gutterRef.current) gutterRef.current.scrollTop = 0
   }
 
   function clear() {
     setEmptyError(false)
+    setErrorLine(null)
     setDraft((prev) => ({
       ...prev,
       input: '',
@@ -321,6 +331,7 @@ export default function JsonTool() {
       lastAction: null,
     }))
     setStatus(null)
+    if (gutterRef.current) gutterRef.current.scrollTop = 0
   }
 
   const outputByteSize = output ? new Blob([output]).size : 0
@@ -340,24 +351,44 @@ export default function JsonTool() {
               {t('tool.json.fillSample')}
             </button>
           </div>
-          <textarea
-            ref={inputRef}
-            className={`tw-area tw-json__editor${emptyError ? ' tw-area--empty-err' : ''}`}
-            value={input}
-            placeholder={t('tool.json.inputPlaceholder')}
-            onChange={(e) => {
-              setInput(e.target.value)
-              if (emptyError) setEmptyError(false)
-              if (status) setStatus(null)
-            }}
-            spellCheck={false}
-          />
+          <div
+            className={`tw-json-editor-wrap${emptyError ? ' tw-json-editor-wrap--empty-err' : ''}`}
+          >
+            {Boolean(input) && (
+              <div ref={gutterRef} className='tw-json-editor__gutter' aria-hidden='true'>
+                {Array.from({ length: inputLineCount }, (_, i) => {
+                  const lineNum = i + 1
+                  const isErr = lineNum === errorLine
+                  return (
+                    <div
+                      key={i}
+                      className={`tw-json-editor__ln${isErr ? ' tw-json-editor__ln--error' : ''}`}
+                      style={inputLnStyle}
+                    >
+                      {lineNum}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            <textarea
+              ref={inputRef}
+              className='tw-json-editor__input'
+              value={input}
+              placeholder={t('tool.json.inputPlaceholder')}
+              onScroll={handleInputScroll}
+              onChange={(e) => {
+                setInput(e.target.value)
+                if (emptyError) setEmptyError(false)
+                if (errorLine !== null) setErrorLine(null)
+                if (status) setStatus(null)
+              }}
+              spellCheck={false}
+            />
+          </div>
           <div className='tw-json__actions'>
             <button type='button' className='tk-btn tk-btn--primary' onClick={() => runFormat()}>
               {t('tool.json.formatBtn')}
-            </button>
-            <button type='button' className='tk-btn' onClick={() => runMinify()}>
-              {t('tool.json.minifyBtn')}
             </button>
             <button type='button' className='tk-btn' onClick={() => runEscape()}>
               {t('tool.json.escapeBtn')}
@@ -383,8 +414,8 @@ export default function JsonTool() {
             aria-orientation='horizontal'
             aria-label={t('tool.json.splitterLabel')}
             aria-valuenow={Math.round(splitRatio)}
-            aria-valuemin={25}
-            aria-valuemax={75}
+            aria-valuemin={15}
+            aria-valuemax={85}
             tabIndex={0}
             className={`tw-json__splitter${isDragging ? ' tw-json__splitter--active' : ''}`}
             onPointerDown={handlePointerDown}
@@ -439,11 +470,23 @@ export default function JsonTool() {
           <JsonHighlight
             text={output}
             fill
+            showLineNumbers={outputLineCount > 1}
             placeholder={t('tool.json.resultPlaceholder')}
             className='tw-json__viewer'
           />
           <div className='tw-json__options'>
             <div className='tw-json__options-group'>
+              <Tooltip content={t('tool.json.minifyDesc')}>
+                <label className='tk-checkbox'>
+                  <input
+                    type='checkbox'
+                    checked={minify}
+                    onChange={(e) => onMinifyChange(e.target.checked)}
+                  />
+                  <span>{t('tool.json.minifyOption')}</span>
+                </label>
+              </Tooltip>
+
               <Tooltip content={t('tool.json.sortKeysDesc')}>
                 <label className='tk-checkbox'>
                   <input
@@ -454,23 +497,13 @@ export default function JsonTool() {
                   <span>{t('tool.json.sortKeysOption')}</span>
                 </label>
               </Tooltip>
-
-              <Tooltip content={t('tool.json.autoUnescapeDesc')}>
-                <label className='tk-checkbox'>
-                  <input
-                    type='checkbox'
-                    checked={autoUnescape}
-                    onChange={(e) => onAutoUnescapeChange(e.target.checked)}
-                  />
-                  <span>{t('tool.json.autoUnescapeOption')}</span>
-                </label>
-              </Tooltip>
             </div>
 
             <div className='tw-json__indent'>
               <TkSelect
                 variant='sm'
                 value={indent}
+                disabled={minify}
                 onChange={(e) => onIndentChange(e.target.value)}
                 title={t('tool.json.indent')}
               >

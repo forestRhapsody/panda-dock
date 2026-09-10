@@ -176,7 +176,9 @@
         "hex": "Hex",
         "uuid": "UUID"
       },
+      "minifyOption": "单行压缩",
       "row": {
+        "parsed": "解析结果",
         "decoded": "解码结果",
         "formatted": "格式化结果",
         "minified": "压缩结果",
@@ -360,8 +362,8 @@
       "inputPlaceholder": "请输入或粘贴 JSON…",
       "sortKeysOption": "键名排序",
       "sortKeysDesc": "按字母 A-Z 递归排序对象属性键",
-      "autoUnescapeOption": "自动去转义",
-      "autoUnescapeDesc": "输入包含 \\\" 等转义字符时自动去转义解析",
+      "minifyOption": "单行压缩",
+      "minifyDesc": "压缩为紧凑单行 JSON，去除所有空格与换行",
       "indent": "缩进",
       "indent2": "2 空格",
       "indent4": "4 空格",

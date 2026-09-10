@@ -172,6 +172,8 @@ function UrlCodecPanel() {
   const [status, setStatus] = useState<ToolStatus | null>(null)
   const [fetching, setFetching] = useState(false)
   const [lastAction, setLastAction] = useState<'encode' | 'decode' | null>(null)
+  const [emptyErr, setEmptyErr] = useState(false)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   function setScope(nextScope: CodecScope) {
     setDraft((prev) => ({ ...prev, scope: nextScope }))
@@ -179,13 +181,16 @@ function UrlCodecPanel() {
 
   function setInput(val: string) {
     setDraft((prev) => ({ ...prev, input: val, output: '' }))
+    if (emptyErr) setEmptyErr(false)
     setStatus(null)
   }
 
   function runEncode(rawText: string = input, currentScope: CodecScope = scope) {
     if (!rawText.trim()) {
-      setStatus({ kind: 'info', text: t('tool.url.codec.statusNeedInput') })
       setDraft((prev) => ({ ...prev, output: '' }))
+      setStatus(null)
+      setEmptyErr(true)
+      inputRef.current?.focus()
       return
     }
     setLastAction('encode')
@@ -204,8 +209,10 @@ function UrlCodecPanel() {
 
   function runDecode(rawText: string = input, currentScope: CodecScope = scope) {
     if (!rawText.trim()) {
-      setStatus({ kind: 'info', text: t('tool.url.codec.statusNeedInput') })
       setDraft((prev) => ({ ...prev, output: '' }))
+      setStatus(null)
+      setEmptyErr(true)
+      inputRef.current?.focus()
       return
     }
     setLastAction('decode')
@@ -240,6 +247,7 @@ function UrlCodecPanel() {
     clearDraft()
     setStatus(null)
     setLastAction(null)
+    setEmptyErr(false)
   }
 
   return (
@@ -265,7 +273,8 @@ function UrlCodecPanel() {
           </div>
         </div>
         <AutoArea
-          className='tw-area'
+          areaRef={inputRef}
+          className={`tw-area${emptyErr ? ' tw-area--empty-err' : ''}`}
           value={input}
           placeholder={t('tool.url.codec.inputPlaceholder')}
           onChange={(e) => setInput(e.target.value)}

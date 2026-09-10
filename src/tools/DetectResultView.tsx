@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -54,25 +54,56 @@ function FieldRow({ field }: { field: DetectField }) {
 
 function BlockRow({ block, blockMaxHeight }: { block: DetectBlock; blockMaxHeight?: number }) {
   const { t } = useTranslation()
+  const [minified, setMinified] = useState(false)
+  const canMinify = Boolean(block.minifiedValue)
+
+  useEffect(() => {
+    setMinified(false)
+  }, [block.value])
+
+  const currentValue =
+    canMinify && minified
+      ? (block.minifiedValue ?? block.value)
+      : (block.formattedValue ?? block.value)
+  const isMultiLine = currentValue.includes('\n')
+  // 压缩为单行时不显示行号；仅在未压缩的多行格式化视图下展示等宽行号栏
+  const showLineNumbers = !minified && isMultiLine
+
   return (
     <div className='tw-detect__block'>
       <span className='tw-field__label'>
         {t(`tool.detect.row.${block.key}`)}
-        <CopyButton text={block.value} className='tw-link' />
+        <CopyButton text={currentValue} className='tw-link' />
       </span>
       {block.image ? (
-        <img src={block.value} alt={t('tool.detect.previewAlt')} className='tw-detect__image' />
-      ) : block.json ? (
-        <JsonHighlight text={block.value} maxHeight={blockMaxHeight} />
+        <img src={currentValue} alt={t('tool.detect.previewAlt')} className='tw-detect__image' />
+      ) : block.json || isMultiLine ? (
+        <JsonHighlight
+          text={currentValue}
+          maxHeight={blockMaxHeight}
+          showLineNumbers={showLineNumbers}
+        />
       ) : (
         <AutoArea
           className='tw-area tw-area--result'
-          value={block.value}
+          value={currentValue}
           readOnly
           maxHeight={blockMaxHeight}
           placeholder={t('tool.detect.resultPlaceholder')}
           spellCheck={false}
         />
+      )}
+      {canMinify && (
+        <div className='tw-detect__block-options'>
+          <label className='tk-checkbox'>
+            <input
+              type='checkbox'
+              checked={minified}
+              onChange={(e) => setMinified(e.target.checked)}
+            />
+            <span>{t('tool.detect.minifyOption')}</span>
+          </label>
+        </div>
       )}
     </div>
   )
