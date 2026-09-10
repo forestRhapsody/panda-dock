@@ -62,6 +62,8 @@ export default function JsonTool() {
   )
   const [isDragging, setIsDragging] = useState(false)
   const workspaceRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const [emptyError, setEmptyError] = useState(false)
 
   // 当外部 draft.splitRatio 改变（如切换标签还原）且不在拖拽中时同步
   useEffect(() => {
@@ -162,9 +164,12 @@ export default function JsonTool() {
     const raw = text.trim()
     if (!raw) {
       setOutput('')
-      setStatus({ kind: 'info', text: t('tool.json.pasteFirst') })
+      setStatus(null)
+      setEmptyError(true)
+      inputRef.current?.focus()
       return
     }
+    setEmptyError(false)
     const currentOpts: JsonProcessOptions = {
       indent: opts?.indent ?? indent,
       sortKeys: opts?.sortKeys ?? sortKeys,
@@ -180,7 +185,7 @@ export default function JsonTool() {
         ...(opts?.sortKeys !== undefined ? { sortKeys: opts.sortKeys } : {}),
         ...(opts?.autoUnescape !== undefined ? { autoUnescape: opts.autoUnescape } : {}),
       }))
-      setStatus({ kind: 'ok', text: t('tool.json.formatOk') })
+      setStatus(null)
     } else {
       setOutput('')
       setStatus({ kind: 'err', text: res.error ?? t('tool.json.failed') })
@@ -191,9 +196,12 @@ export default function JsonTool() {
     const raw = text.trim()
     if (!raw) {
       setOutput('')
-      setStatus({ kind: 'info', text: t('tool.json.pasteFirst') })
+      setStatus(null)
+      setEmptyError(true)
+      inputRef.current?.focus()
       return
     }
+    setEmptyError(false)
     const currentOpts: JsonProcessOptions = {
       sortKeys: opts?.sortKeys ?? sortKeys,
       autoUnescape: opts?.autoUnescape ?? autoUnescape,
@@ -207,7 +215,7 @@ export default function JsonTool() {
         ...(opts?.sortKeys !== undefined ? { sortKeys: opts.sortKeys } : {}),
         ...(opts?.autoUnescape !== undefined ? { autoUnescape: opts.autoUnescape } : {}),
       }))
-      setStatus({ kind: 'ok', text: t('tool.json.minifyOk') })
+      setStatus(null)
     } else {
       setOutput('')
       setStatus({ kind: 'err', text: res.error ?? t('tool.json.failed') })
@@ -218,21 +226,19 @@ export default function JsonTool() {
     const raw = text.trim()
     if (!raw) {
       setOutput('')
-      setStatus({ kind: 'info', text: t('tool.json.pasteFirst') })
+      setStatus(null)
+      setEmptyError(true)
+      inputRef.current?.focus()
       return
     }
+    setEmptyError(false)
     const currentOpts: JsonProcessOptions = {
       sortKeys: opts?.sortKeys ?? sortKeys,
     }
     const res = escapeJson(raw, currentOpts)
     if (res.ok) {
-      setDraft((prev) => ({
-        ...prev,
-        output: res.text ?? '',
-        lastAction: 'escape',
-        ...(opts?.sortKeys !== undefined ? { sortKeys: opts.sortKeys } : {}),
-      }))
-      setStatus({ kind: 'ok', text: t('tool.json.escapeOk') })
+      setDraft((prev) => ({ ...prev, output: res.text ?? '', lastAction: 'escape' }))
+      setStatus(null)
     } else {
       setOutput('')
       setStatus({ kind: 'err', text: res.error ?? t('tool.json.failed') })
@@ -243,9 +249,12 @@ export default function JsonTool() {
     const raw = text.trim()
     if (!raw) {
       setOutput('')
-      setStatus({ kind: 'info', text: t('tool.json.pasteFirst') })
+      setStatus(null)
+      setEmptyError(true)
+      inputRef.current?.focus()
       return
     }
+    setEmptyError(false)
     const currentOpts: JsonProcessOptions = {
       indent: opts?.indent ?? indent,
       sortKeys: opts?.sortKeys ?? sortKeys,
@@ -259,7 +268,7 @@ export default function JsonTool() {
         ...(opts?.indent !== undefined ? { indent: opts.indent as JsonIndent } : {}),
         ...(opts?.sortKeys !== undefined ? { sortKeys: opts.sortKeys } : {}),
       }))
-      setStatus({ kind: 'ok', text: t('tool.json.unescapeOk') })
+      setStatus(null)
     } else {
       setOutput('')
       setStatus({ kind: 'err', text: res.error ?? t('tool.json.failed') })
@@ -298,11 +307,13 @@ export default function JsonTool() {
   }
 
   function fillSample() {
+    setEmptyError(false)
     setInput(SAMPLE_JSON)
     runFormat(SAMPLE_JSON, { indent, sortKeys, autoUnescape })
   }
 
   function clear() {
+    setEmptyError(false)
     setDraft((prev) => ({
       ...prev,
       input: '',
@@ -330,10 +341,15 @@ export default function JsonTool() {
             </button>
           </div>
           <textarea
-            className='tw-area tw-json__editor'
+            ref={inputRef}
+            className={`tw-area tw-json__editor${emptyError ? ' tw-area--empty-err' : ''}`}
             value={input}
             placeholder={t('tool.json.inputPlaceholder')}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value)
+              if (emptyError) setEmptyError(false)
+              if (status) setStatus(null)
+            }}
             spellCheck={false}
           />
           <div className='tw-json__actions'>

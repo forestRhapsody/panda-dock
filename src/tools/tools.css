@@ -247,6 +247,17 @@
   word-break: break-all;
 }
 
+/* 输入框无数据操作时的醒目警示态（边框、光环与占位符静止变红，无多余动画） */
+.tw-area--empty-err {
+  border-color: var(--tk-destructive) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-destructive) 25%, transparent) !important;
+}
+
+.tw-area--empty-err::placeholder {
+  color: var(--tk-destructive) !important;
+  opacity: 0.85;
+}
+
 /* —— 智能解析高亮输入框 (HighlightArea) —— */
 
 .tw-area-wrapper {

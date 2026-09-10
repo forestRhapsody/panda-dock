@@ -357,7 +357,7 @@
       "unescapeBtn": "Unescape",
       "fillSample": "Fill sample",
       "inputLabel": "JSON Input",
-      "inputPlaceholder": "Enter or paste JSON / escaped text, e.g. {\"name\":\"toolkit\"}…",
+      "inputPlaceholder": "Enter or paste JSON…",
       "sortKeysOption": "Sort Keys",
       "sortKeysDesc": "Recursively sort object keys alphabetically (A-Z)",
       "autoUnescapeOption": "Auto Unescape",
