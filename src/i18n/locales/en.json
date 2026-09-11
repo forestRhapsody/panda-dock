@@ -194,7 +194,9 @@
         "payload": "Payload",
         "mime": "MIME",
         "image": "Image preview",
-        "url": "URL"
+        "url": "URL",
+        "signature": "Signature",
+        "validity": "Status"
       }
     },
     "fileB64": {
@@ -404,6 +406,7 @@
     "jwt": {
       "header": "Header",
       "payload": "Payload",
+      "signature": "Signature",
       "algUnknown": "Unknown",
       "statusEmpty": "Please paste a JWT",
       "statusSuccess": "Decoded: alg={{alg}} · signature length {{len}} chars",
@@ -412,7 +415,30 @@
       "decode": "Decode →",
       "headerLabel": "Header",
       "payloadLabel": "Payload",
+      "signatureLabel": "Signature",
       "claimsLabel": "Standard claims",
+      "sigChars": "Signature {{len}} chars",
+      "hintExpired": "Expired",
+      "hintExpiredDays": "Expired ({{count}}d ago)",
+      "hintDaysLeft": "{{count}}d left",
+      "hintHoursLeft": "{{count}}h left",
+      "hintMinsLeft": "{{count}}m left",
+      "hintStartsInDays": "Starts in {{count}}d",
+      "hintStartsInHours": "Starts in {{count}}h",
+      "hintStartsInMins": "Starts in {{count}}m",
+      "hintJustIssued": "Just issued",
+      "hintIssuedDaysAgo": "Issued {{count}}d ago",
+      "hintIssuedHoursAgo": "Issued {{count}}h ago",
+      "hintIssuedMinsAgo": "Issued {{count}}m ago",
+      "claim": {
+        "iss": "Issuer (iss)",
+        "sub": "Subject (sub)",
+        "aud": "Audience (aud)",
+        "exp": "Expiration Time (exp)",
+        "nbf": "Not Before (nbf)",
+        "iat": "Issued At (iat)",
+        "jti": "JWT ID (jti)"
+      },
       "errorNotJson": "{{what}} is not valid JSON: {{message}}",
       "errorSegmentCount": "A JWT must contain 3 segments (header.payload.signature); got {{count}}",
       "errorEmptySegment": "JWT has an empty segment: none of header.payload.signature may be empty",

@@ -247,6 +247,12 @@
   word-break: break-all;
 }
 
+/* 只读结果框不应触发编辑类聚焦光环 */
+.tw-area--result:focus {
+  border-color: var(--tk-input);
+  box-shadow: none;
+}
+
 /* 输入框无数据操作时的醒目警示态（边框、光环与占位符静止变红，无多余动画） */
 .tw-area--empty-err {
   border-color: var(--tk-destructive) !important;
@@ -2480,4 +2486,25 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 14px;
+}
+
+/* —— JWT 工具：签名区与 Claims 相对时间辅助注解 —— */
+.tw-jwt__time-hint {
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+  font-family: var(--tk-font);
+  user-select: none;
+  margin-left: 6px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.tw-jwt__time-hint--expired {
+  color: var(--tk-destructive);
+  font-weight: 500;
+}
+
+.tw-jwt__signature {
+  max-height: 140px;
+  overflow-y: auto;
 }

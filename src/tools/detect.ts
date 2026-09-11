@@ -166,14 +166,8 @@ function detectJwt(s: string): DetectResult | null {
   const res = decodeJwt(clean)
   if (!res.ok) return null
   const d = res.data
-  let alg = ''
-  try {
-    alg = (JSON.parse(d.headerText) as { alg?: string }).alg ?? ''
-  } catch {
-    // 忽略
-  }
   const fields: DetectField[] = []
-  if (alg) fields.push({ key: 'algorithm', value: alg, mono: true })
+  if (d.alg) fields.push({ key: 'algorithm', value: d.alg, mono: true })
   for (const c of d.claims) fields.push({ key: `claim.${c.key}`, value: c.display, mono: true })
   return {
     kind: 'jwt',
@@ -181,6 +175,7 @@ function detectJwt(s: string): DetectResult | null {
     blocks: [
       { key: 'header', value: d.headerText, json: true },
       { key: 'payload', value: d.payloadText, json: true },
+      { key: 'signature', value: d.signatureB64 },
     ],
     copy: d.payloadText,
   }

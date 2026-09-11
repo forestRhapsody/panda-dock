@@ -34,10 +34,11 @@ function FieldRow({ field }: { field: DetectField }) {
   const { t } = useTranslation()
   const urlIdx = field.key.match(/^url\.(\d+)$/)
   const isClaim = field.key.startsWith('claim.')
+  const claimKey = isClaim ? field.key.slice('claim.'.length) : ''
   const label = urlIdx
     ? `${t('tool.detect.row.url')} ${urlIdx[1]}`
     : isClaim
-      ? field.key.slice('claim.'.length)
+      ? t(`tool.jwt.claim.${claimKey}`, { defaultValue: claimKey })
       : t(fieldLabelKey(field.key))
   return (
     <div className='tw-detect__field'>
@@ -52,7 +53,15 @@ function FieldRow({ field }: { field: DetectField }) {
   )
 }
 
-function BlockRow({ block, blockMaxHeight }: { block: DetectBlock; blockMaxHeight?: number }) {
+function BlockRow({
+  block,
+  blockMaxHeight,
+  kind,
+}: {
+  block: DetectBlock
+  blockMaxHeight?: number
+  kind?: DetectResult['kind']
+}) {
   const { t } = useTranslation()
   const [minified, setMinified] = useState(false)
   const canMinify = Boolean(block.minifiedValue)
@@ -66,8 +75,8 @@ function BlockRow({ block, blockMaxHeight }: { block: DetectBlock; blockMaxHeigh
       ? (block.minifiedValue ?? block.value)
       : (block.formattedValue ?? block.value)
   const isMultiLine = currentValue.includes('\n')
-  // 压缩为单行时不显示行号；仅在未压缩的多行格式化视图下展示等宽行号栏
-  const showLineNumbers = !minified && isMultiLine
+  // 压缩为单行或 JWT 解码块时不显示行号；仅在未压缩的多行格式化视图下展示等宽行号栏
+  const showLineNumbers = kind !== 'jwt' && !minified && isMultiLine
 
   return (
     <div className='tw-detect__block'>
@@ -232,7 +241,12 @@ export default function DetectResultView({
       )}
 
       {result.blocks.map((block) => (
-        <BlockRow key={block.key} block={block} blockMaxHeight={blockMaxHeight} />
+        <BlockRow
+          key={block.key}
+          block={block}
+          blockMaxHeight={blockMaxHeight}
+          kind={result.kind}
+        />
       ))}
 
       {result.download && (

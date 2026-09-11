@@ -11,16 +11,7 @@ import type { JwtDecoded } from './jwt'
 import { StatusText } from './StatusText'
 import type { ToolStatus } from './StatusText'
 
-function headerAlg(decoded: JwtDecoded, unknownLabel: string): string {
-  try {
-    const header = JSON.parse(decoded.headerText) as { alg?: string }
-    return header.alg ?? unknownLabel
-  } catch {
-    return unknownLabel
-  }
-}
-
-/** JWT 解码工具：解码 header / payload，展示标准声明；不校验签名 */
+/** JWT 解码工具：解码 header / payload，展示签名与标准声明 */
 export default function JwtTool() {
   const { t } = useTranslation()
   const [token, setToken, clearToken] = useToolDraft<string>('jwt.token', '')
@@ -30,7 +21,10 @@ export default function JwtTool() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    const raw = token.trim()
+    const raw = token
+      .trim()
+      .replace(/^Bearer\s+/i, '')
+      .trim()
     if (!raw) {
       setDecoded(null)
       return
@@ -44,7 +38,10 @@ export default function JwtTool() {
   }, [token])
 
   function run(text = token) {
-    const raw = text.trim()
+    const raw = text
+      .trim()
+      .replace(/^Bearer\s+/i, '')
+      .trim()
     if (!raw) {
       setDecoded(null)
       setStatus(null)
@@ -59,13 +56,7 @@ export default function JwtTool() {
       return
     }
     setDecoded(result.data)
-    setStatus({
-      kind: 'ok',
-      text: t('tool.jwt.statusSuccess', {
-        alg: headerAlg(result.data, t('tool.jwt.algUnknown')),
-        len: result.data.signatureB64.length,
-      }),
-    })
+    setStatus(null)
   }
 
   function clear() {
@@ -128,7 +119,7 @@ export default function JwtTool() {
                 }}
               />
             </span>
-            <JsonHighlight text={decoded.headerText} maxHeight={180} showLineNumbers />
+            <JsonHighlight text={decoded.headerText} maxHeight={180} />
           </div>
 
           <div className='tw-field'>
@@ -142,7 +133,23 @@ export default function JwtTool() {
                 }}
               />
             </span>
-            <JsonHighlight text={decoded.payloadText} maxHeight={300} showLineNumbers />
+            <JsonHighlight text={decoded.payloadText} maxHeight={300} />
+          </div>
+
+          <div className='tw-field'>
+            <span className='tw-field__label'>
+              {t('tool.jwt.signatureLabel')}
+              <CopyButton
+                text={decoded.signatureB64}
+                className='tw-link'
+                onResult={(ok) => {
+                  if (!ok) setStatus({ kind: 'err', text: t('common.copyFailed') })
+                }}
+              />
+            </span>
+            <pre className='tw-json-hl tw-jwt__signature'>
+              <code>{decoded.signatureB64}</code>
+            </pre>
           </div>
 
           {decoded.claims.length > 0 && (
@@ -151,10 +158,17 @@ export default function JwtTool() {
               <div className='tw-detect__fields'>
                 {decoded.claims.map((c) => (
                   <div key={c.key} className='tw-detect__field'>
-                    <span className='tw-detect__field-label'>{c.key}</span>
+                    <span className='tw-detect__field-label'>{c.label}</span>
                     <code className='tw-detect__field-value tw-detect__field-value--mono'>
                       {c.display}
                     </code>
+                    {c.hint && (
+                      <span
+                        className={`tw-jwt__time-hint${c.hint.expired ? ' tw-jwt__time-hint--expired' : ''}`}
+                      >
+                        {c.hint.text}
+                      </span>
+                    )}
                     <CopyButton text={c.display} icon className='tw-detect__copy' />
                   </div>
                 ))}

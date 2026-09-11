@@ -194,7 +194,9 @@
         "payload": "载荷 (Payload)",
         "mime": "MIME",
         "image": "图片预览",
-        "url": "网址"
+        "url": "网址",
+        "signature": "签名 (Signature)",
+        "validity": "状态"
       }
     },
     "fileB64": {
@@ -404,6 +406,7 @@
     "jwt": {
       "header": "Header",
       "payload": "Payload",
+      "signature": "Signature",
       "algUnknown": "未知",
       "statusEmpty": "请粘贴 JWT",
       "statusSuccess": "解码成功：alg={{alg}} · 签名长度 {{len}} 字符",
@@ -412,7 +415,30 @@
       "decode": "解码 →",
       "headerLabel": "Header",
       "payloadLabel": "Payload",
+      "signatureLabel": "签名 (Signature)",
       "claimsLabel": "标准声明",
+      "sigChars": "签名 {{len}} 字符",
+      "hintExpired": "已过期",
+      "hintExpiredDays": "已过期（{{count}} 天前）",
+      "hintDaysLeft": "剩余 {{count}} 天",
+      "hintHoursLeft": "剩余 {{count}} 小时",
+      "hintMinsLeft": "剩余 {{count}} 分钟",
+      "hintStartsInDays": "{{count}} 天后生效",
+      "hintStartsInHours": "{{count}} 小时后生效",
+      "hintStartsInMins": "{{count}} 分钟后生效",
+      "hintJustIssued": "刚刚签发",
+      "hintIssuedDaysAgo": "{{count}} 天前签发",
+      "hintIssuedHoursAgo": "{{count}} 小时前签发",
+      "hintIssuedMinsAgo": "{{count}} 分钟前签发",
+      "claim": {
+        "iss": "签发者 (iss)",
+        "sub": "主体 (sub)",
+        "aud": "受众 (aud)",
+        "exp": "过期时间 (exp)",
+        "nbf": "生效时间 (nbf)",
+        "iat": "签发时间 (iat)",
+        "jti": "唯一标识 (jti)"
+      },
       "errorNotJson": "{{what}} 不是合法 JSON：{{message}}",
       "errorSegmentCount": "JWT 应包含 header.payload.signature 三段，当前为 {{count}} 段",
       "errorEmptySegment": "JWT 存在空白段：header.payload.signature 三段都不能为空",
