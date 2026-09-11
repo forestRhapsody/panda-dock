@@ -2,6 +2,7 @@ import { decodeBase64 } from './base64'
 import { base64ToDataUrl, detectMimeFromBytes, fmtSize } from './file'
 import { formatJson, minifyJson } from './json'
 import { decodeJwt } from './jwt'
+import { parseCustomDate, toLocalText, toRelative } from './timestamp'
 
 export type DetectKind =
   | 'json'
@@ -217,26 +218,63 @@ function detectUrl(s: string): DetectResult | null {
   }
 }
 
-function pad(n: number): string {
-  return String(n).padStart(2, '0')
-}
-
 function detectTimestamp(s: string): DetectResult | null {
-  if (!/^-?\d+$/.test(s)) return null
-  const num = Number(s)
-  const isSecs = s.replace(/^-/, '').length <= 10
-  const ms = isSecs ? num * 1000 : num
-  const date = new Date(ms)
-  if (Number.isNaN(date.getTime())) return null
+  const trimmed = s.trim()
+  if (!trimmed) return null
+
+  let date: Date | null = null
+
+  if (/^-?\d+$/.test(trimmed)) {
+    const digits = trimmed.replace(/^-/, '')
+    // 纯数字时间戳：通常秒是 9~11 位，毫秒是 12~16 位；过滤掉普通简短数字如 200, 8080, 2025 等
+    if (digits.length < 9 || digits.length > 16) return null
+    const num = Number(trimmed)
+    const isSecs = digits.length <= 10
+    const ms = isSecs ? num * 1000 : num
+    const d = new Date(ms)
+    if (!Number.isNaN(d.getTime())) {
+      date = d
+    }
+  } else {
+    // 文本日期：必须具备日期间隔符（-、/、.、年、T 等）或 RFC 2822 格式
+    // 避免普通英文单词或代码标识符产生假阳性
+    const hasDateIndicator =
+      /[-/.T年]/.test(trimmed) || /^[A-Za-z]{3},\s*\d{1,2}\s+[A-Za-z]{3}/.test(trimmed)
+    if (hasDateIndicator) {
+      const parsed = parseCustomDate(trimmed)
+      if (parsed && !Number.isNaN(parsed.getTime())) {
+        date = parsed
+      }
+    }
+  }
+
+  if (!date) return null
   if (date.getFullYear() < 1900 || date.getFullYear() > 2200) return null
-  const local = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+
+  const local = toLocalText(date)
+  let iso = ''
+  try {
+    iso = date.toISOString()
+  } catch {
+    iso = '-'
+  }
+
+  let utc = ''
+  try {
+    utc = date.toUTCString()
+  } catch {
+    utc = '-'
+  }
+
   return {
     kind: 'timestamp',
     fields: [
       { key: 'seconds', value: String(Math.floor(date.getTime() / 1000)), mono: true },
       { key: 'milliseconds', value: String(date.getTime()), mono: true },
-      { key: 'date', value: local },
-      { key: 'iso', value: date.toISOString(), mono: true },
+      { key: 'iso', value: iso, mono: true },
+      { key: 'date', value: local, mono: true },
+      { key: 'utc', value: utc, mono: true },
+      { key: 'relative', value: toRelative(date), mono: true },
     ],
     blocks: [],
     copy: local,
@@ -477,12 +515,23 @@ interface EmbeddedCandidate {
   text: string
   startIndex: number
   endIndex: number
-  kindHint?: 'jwt' | 'base64'
+  kindHint?: 'jwt' | 'base64' | 'timestamp'
 }
 
 // 连续 JWT 特征：由两个点分隔的 3 段 Base64URL 字符
 const EMBEDDED_JWT_RE =
   /(?<![A-Za-z0-9_-])([A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*)(?![A-Za-z0-9_-])/g
+
+// 中文日期特征：如 2025年1月1日 15点30分 / 2025年1月1日 15:30:00 / 2025年1月1日
+const EMBEDDED_CN_DATE_RE =
+  /(\d{4}年\d{1,2}月\d{1,2}[日号]?(?:\s*(?:\d{1,2}[点时](?:\d{1,2}分?(?:\d{1,2}秒?)?)?|\d{1,2}:\d{1,2}(?::\d{1,2})?))?)/g
+
+// 标准年月日特征：如 2025-01-01 15:30:00 / 2025/01/01 / 2025-01-01T15:30:00Z
+const EMBEDDED_STD_DATE_RE =
+  /(?<![A-Za-z0-9])(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}(?:\s+\d{1,2}:\d{1,2}(?::\d{1,2})?|T\d{1,2}:\d{1,2}(?::\d{1,2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)?)(?![A-Za-z0-9])/g
+
+// 10位或13位纯数字时间戳（如 1712345678、1712345678000）
+const EMBEDDED_STAMP_NUM_RE = /(?<!\d)(\d{10}|\d{13})(?!\d)/g
 
 // 连续 Base64 特征：边界非 Base64 字符（中文、全半角标点、空格、换行等），长度 >= 8 且为 4 的倍数
 const EMBEDDED_B64_RE = /(?<![A-Za-z0-9+/=])([A-Za-z0-9+/]{4,}=*={0,2})(?![A-Za-z0-9+/=])/g
@@ -509,7 +558,43 @@ function extractEmbeddedCandidates(input: string): EmbeddedCandidate[] {
     }
   }
 
-  // 2. 扫描潜伏在中文或空格/标点周围的 Base64 连续块
+  // 2. 扫描中文日期与标准格式日期
+  for (const m of input.matchAll(EMBEDDED_CN_DATE_RE)) {
+    const text = m[1].trim()
+    const startIndex = m.index ?? 0
+    const endIndex = startIndex + m[1].length
+    const key = `${startIndex}:${endIndex}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      candidates.push({ text, startIndex, endIndex, kindHint: 'timestamp' })
+    }
+  }
+
+  for (const m of input.matchAll(EMBEDDED_STD_DATE_RE)) {
+    const text = m[1].trim()
+    if (text.length < 8) continue
+    const startIndex = m.index ?? 0
+    const endIndex = startIndex + m[1].length
+    const key = `${startIndex}:${endIndex}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      candidates.push({ text, startIndex, endIndex, kindHint: 'timestamp' })
+    }
+  }
+
+  // 3. 扫描独立 10 位或 13 位纯数字时间戳
+  for (const m of input.matchAll(EMBEDDED_STAMP_NUM_RE)) {
+    const text = m[1]
+    const startIndex = m.index ?? 0
+    const endIndex = startIndex + text.length
+    const key = `${startIndex}:${endIndex}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      candidates.push({ text, startIndex, endIndex, kindHint: 'timestamp' })
+    }
+  }
+
+  // 4. 扫描潜伏在中文或空格/标点周围的 Base64 连续块
   for (const m of input.matchAll(EMBEDDED_B64_RE)) {
     const text = m[1]
     if (text.length < 8 || text.length % 4 !== 0) continue
@@ -554,7 +639,7 @@ export function detect(input: string): DetectResult | null {
     text: string
     startIndex: number
     endIndex: number
-    kindHint?: 'jwt' | 'base64'
+    kindHint?: 'jwt' | 'base64' | 'timestamp'
     priority: number // 2: 引号或外壳; 1: 嵌入式挖掘
   }
 
@@ -647,6 +732,8 @@ export function detect(input: string): DetectResult | null {
       res = detectJwt(cand.text)
     } else if (cand.kindHint === 'base64') {
       res = detectBase64(cand.text)
+    } else if (cand.kindHint === 'timestamp') {
+      res = detectTimestamp(cand.text)
     }
     if (!res) {
       res = detectCore(cand.text)

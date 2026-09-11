@@ -19,12 +19,12 @@ function pad(n: number): string {
 }
 
 /** 本地时间 YYYY-MM-DD HH:mm:ss（无时区歧义，适合直接写入数据库） */
-function toLocalText(date: Date): string {
+export function toLocalText(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
 /** 相对现在的时间描述 */
-function toRelative(date: Date): string {
+export function toRelative(date: Date): string {
   const diffSec = Math.round((date.getTime() - Date.now()) / 1000)
   const abs = Math.abs(diffSec)
   if (abs < 5) return i18n.t('tool.timestamp.justNow')
