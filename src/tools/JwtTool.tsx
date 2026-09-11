@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -19,23 +19,6 @@ export default function JwtTool() {
   const [status, setStatus] = useState<ToolStatus | null>(null)
   const [emptyErr, setEmptyErr] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    const raw = token
-      .trim()
-      .replace(/^Bearer\s+/i, '')
-      .trim()
-    if (!raw) {
-      setDecoded(null)
-      return
-    }
-    const result = decodeJwt(raw)
-    if (result.ok) {
-      setDecoded(result.data)
-    } else {
-      setDecoded(null)
-    }
-  }, [token])
 
   function run(text = token) {
     const raw = text
@@ -90,6 +73,12 @@ export default function JwtTool() {
             setToken(e.target.value)
             if (emptyErr) setEmptyErr(false)
             if (status) setStatus(null)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault()
+              run()
+            }
           }}
           spellCheck={false}
         />
