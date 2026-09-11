@@ -18,7 +18,10 @@ import AppLogo from '@/ui/AppLogo'
 import ConfirmDialog from '@/ui/ConfirmDialog'
 import Icon from '@/ui/Icon'
 import TkSelect from '@/ui/TkSelect'
+import { toast } from '@/ui/toast'
+import Toaster from '@/ui/Toaster'
 import Tooltip from '@/ui/Tooltip'
+import { applyBackup, exportSettingsBackup, parseAndValidateBackup } from '@/utils/backup'
 import { parseDomainPatterns } from '@/utils/domainMatch'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
@@ -46,7 +49,12 @@ import type {
   Settings,
   ThemeMode,
 } from '@/utils/settings'
-import { getDetectShortcut, getToolkitShortcut, openShortcutsPage } from '@/utils/shortcuts'
+import {
+  formatShortcutForDisplay,
+  getDetectShortcut,
+  getToolkitShortcut,
+  openShortcutsPage,
+} from '@/utils/shortcuts'
 import { useTheme } from '@/utils/theme'
 
 import './index.css'
@@ -130,9 +138,12 @@ export default function OptionsPage() {
   const [blacklistText, setBlacklistText] = useState('')
   const [whitelistText, setWhitelistText] = useState('')
   const [showGlobalConfirm, setShowGlobalConfirm] = useState(false)
+  const [showImportSuccessDialog, setShowImportSuccessDialog] = useState(false)
   const [ballImage, setBallImageState] = useState<string | null>(null)
   const [ballImageError, setBallImageError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const importInputRef = useRef<HTMLInputElement>(null)
+  const [exporting, setExporting] = useState(false)
   const inExt = isExtension()
 
   // 使整体字体大小随设置即时缩放（含本设置页）
@@ -348,6 +359,47 @@ export default function OptionsPage() {
     setShowGlobalConfirm(false)
   }
 
+  /** 导出当前完整配置并生成 JSON 备份文件下载 */
+  async function handleExport() {
+    try {
+      setExporting(true)
+      await exportSettingsBackup(settings)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  /** 从所选的 JSON 文件中读取并还原配置 */
+  function handleImportFile(file: File | undefined) {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = async () => {
+      try {
+        const text = String(reader.result ?? '')
+        const res = parseAndValidateBackup(text)
+        if (!res.ok) {
+          toast.error(t(res.errorKey))
+          return
+        }
+        await applyBackup({ settings: res.settings, ballImage: res.ballImage })
+        // 即时同步更新当前页面各项 UI 状态
+        setSettings(res.settings)
+        setDomainTab(res.settings.ballDomainMode)
+        setBlacklistText(res.settings.ballBlacklist.join('\n'))
+        setWhitelistText(res.settings.ballWhitelist.join('\n'))
+        setBallImageState(res.ballImage)
+        toast.success(t('settings.importSuccess'))
+        setShowImportSuccessDialog(true)
+      } catch {
+        toast.error(t('settings.importFileReadError'))
+      }
+    }
+    reader.onerror = () => {
+      toast.error(t('settings.importFileReadError'))
+    }
+    reader.readAsText(file)
+  }
+
   return (
     <div className='opt'>
       <header className='opt__header'>
@@ -486,7 +538,7 @@ export default function OptionsPage() {
                 <p>{t('settings.shortcutDesc')}</p>
               </div>
               <div className='opt__shortcut-group'>
-                <kbd className='opt__kbd'>{shortcut}</kbd>
+                <kbd className='opt__kbd'>{formatShortcutForDisplay(shortcut)}</kbd>
                 {inExt && (
                   <button
                     type='button'
@@ -505,7 +557,7 @@ export default function OptionsPage() {
                 <p>{t('settings.detectShortcutDesc')}</p>
               </div>
               <div className='opt__shortcut-group'>
-                <kbd className='opt__kbd'>{detectShortcut}</kbd>
+                <kbd className='opt__kbd'>{formatShortcutForDisplay(detectShortcut)}</kbd>
                 {inExt && (
                   <button
                     type='button'
@@ -788,6 +840,56 @@ export default function OptionsPage() {
           <p className='opt__env opt__env--hint'>{t('settings.toolboxHint')}</p>
         </div>
 
+        <div className='opt__card'>
+          <div className='opt__card-head'>
+            <h2>{t('settings.backupSection')}</h2>
+          </div>
+          <p className='opt__env'>{t('settings.backupDesc')}</p>
+          <ul className='opt__list'>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.exportSettings')}</strong>
+                <p>{t('settings.exportSettingsDesc')}</p>
+              </div>
+              <button
+                type='button'
+                className='tk-btn tk-btn--sm'
+                onClick={() => void handleExport()}
+                disabled={exporting}
+              >
+                <Icon name='download' size={14} />
+                {t('settings.exportSettingsBtn')}
+              </button>
+            </li>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.importSettings')}</strong>
+                <p>{t('settings.importSettingsDesc')}</p>
+              </div>
+              <div>
+                <button
+                  type='button'
+                  className='tk-btn tk-btn--sm'
+                  onClick={() => importInputRef.current?.click()}
+                >
+                  <Icon name='upload' size={14} />
+                  {t('settings.importSettingsBtn')}
+                </button>
+                <input
+                  ref={importInputRef}
+                  type='file'
+                  accept='.json,application/json'
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    handleImportFile(e.target.files?.[0])
+                    e.target.value = ''
+                  }}
+                />
+              </div>
+            </li>
+          </ul>
+        </div>
+
         <div className='opt__card opt__card--danger'>
           <h2>{t('settings.restoreDefaults')}</h2>
           <p className='opt__env'>{t('settings.restoreDefaultsDesc')}</p>
@@ -809,6 +911,19 @@ export default function OptionsPage() {
           onConfirm={doGlobalReset}
         />
       )}
+
+      {showImportSuccessDialog && (
+        <ConfirmDialog
+          title={t('settings.importSuccessTitle')}
+          message={t('settings.importSuccessDialogMsg')}
+          confirmLabel={t('common.gotIt')}
+          hideCancel
+          closeOnBackdrop
+          onConfirm={() => setShowImportSuccessDialog(false)}
+        />
+      )}
+
+      <Toaster position='bottom' />
     </div>
   )
 }

@@ -44,3 +44,33 @@ export async function openShortcutsPage(): Promise<boolean> {
   }
   return false
 }
+
+/** 判断当前运行平台是否为 macOS */
+export function isMac(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const p =
+    navigator.platform ||
+    (navigator as unknown as { userAgentData?: { platform?: string } }).userAgentData?.platform ||
+    ''
+  return /Mac|iPhone|iPad|iPod/i.test(p) || /Macintosh/i.test(navigator.userAgent)
+}
+
+/** 将快捷键字符串（如 'Alt+Shift+D'）根据操作系统规范化为友好的显示文本 */
+export function formatShortcutForDisplay(rawShortcut: string): string {
+  if (!rawShortcut) return ''
+  const mac = isMac()
+  const parts = rawShortcut.split('+').map((p) => p.trim())
+  if (mac) {
+    return parts
+      .map((p) => {
+        const lower = p.toLowerCase()
+        if (lower === 'alt' || lower === 'option') return '⌥'
+        if (lower === 'shift') return '⇧'
+        if (lower === 'ctrl' || lower === 'control') return '⌃'
+        if (lower === 'cmd' || lower === 'command' || lower === 'meta') return '⌘'
+        return p.toUpperCase()
+      })
+      .join(' ')
+  }
+  return parts.join(' + ')
+}

@@ -9,7 +9,7 @@ import Tooltip from '@/ui/Tooltip'
 import { closeDrawerInActiveTab, openDrawerInActiveTab } from '@/utils/drawer'
 import { isExtension, openOptionsPage } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
-import { getToolkitShortcut, openShortcutsPage } from '@/utils/shortcuts'
+import { formatShortcutForDisplay, getToolkitShortcut, openShortcutsPage } from '@/utils/shortcuts'
 import { closeNativeSidePanel, openNativeSidePanel } from '@/utils/sidePanel'
 import { useTheme } from '@/utils/theme'
 
@@ -94,7 +94,9 @@ export default function Popup() {
                 className='pop__shortcut-btn'
                 onClick={() => void openShortcutsPage()}
               >
-                <kbd className='pop__kbd'>{shortcut || 'Alt+Shift+D'}</kbd>
+                <kbd className='pop__kbd'>
+                  {formatShortcutForDisplay(shortcut || 'Alt+Shift+D')}
+                </kbd>
                 <Icon name='external-link' size={12} />
               </button>
             </Tooltip>

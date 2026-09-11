@@ -450,18 +450,50 @@ export default function ToolkitOverlay() {
     })
   }, [])
 
-  // 页面内直接监听 Alt+Shift+S（或 Option+Shift+S）作为双保险，
-  // 确保在任何网页中开箱即用，即使 Chrome 快捷键注册尚未同步也能即时生效
+  const lastToggleTimeRef = useRef(0)
+
+  // 切换工具箱开合（抽屉或侧边栏，根据 ballAction 配置）：
+  // 悬浮球点击与快捷键 Alt+Shift+D 共用，附带 300ms 节流防抖，避免与 Chrome commands 广播重叠触发
+  const toggleToolkit = useCallback(() => {
+    const now = Date.now()
+    if (now - lastToggleTimeRef.current < 300) return
+    lastToggleTimeRef.current = now
+
+    if (drawerOpen) {
+      setDrawerOpen(false)
+      return
+    }
+    if (ballAction === 'native' && inExt) {
+      void requestNativeSidePanel().then((ok) => {
+        if (!ok) {
+          showNotice(t('toast.nativeSidePanelFallback'))
+          setDrawerOpen(true)
+        }
+      })
+      return
+    }
+    // 打开网页内抽屉前先把原生侧边栏关掉（互斥：两种工具箱不同时显示）
+    if (inExt) void chrome.runtime.sendMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
+    setDrawerOpen(true)
+  }, [ballAction, drawerOpen, inExt, showNotice, t])
+
+  // 页面内直接监听 Alt+Shift+S / Alt+Shift+D（或 Option+Shift）作为双保险，
+  // 确保在任何网页中开箱即用，即使 Chrome 快捷键注册延迟也能即时生效
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.altKey || e.metaKey) && e.shiftKey && (e.key === 'S' || e.key === 's')) {
-        e.preventDefault()
-        triggerDetect()
+      if ((e.altKey || e.metaKey) && e.shiftKey) {
+        if (e.key === 'S' || e.key === 's') {
+          e.preventDefault()
+          triggerDetect()
+        } else if (e.key === 'D' || e.key === 'd') {
+          e.preventDefault()
+          toggleToolkit()
+        }
       }
     }
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [triggerDetect])
+  }, [toggleToolkit, triggerDetect])
 
   // 监听来自其他页面或扩展后台的消息
   useEffect(() => {
@@ -473,6 +505,12 @@ export default function ToolkitOverlay() {
     ) => {
       const action = (message as { action?: string } | undefined)?.action
       if (action === MSG_TOGGLE_DRAWER) {
+        const now = Date.now()
+        if (now - lastToggleTimeRef.current < 300) {
+          sendResponse({ ok: true })
+          return
+        }
+        lastToggleTimeRef.current = now
         setDrawerOpen((prev) => {
           const next = !prev
           if (next && inExt) {
@@ -527,25 +565,8 @@ export default function ToolkitOverlay() {
     [inExt, ballSnap, ballSize],
   )
 
-  // 悬浮球点击：抽屉开着则收起；否则按配置唤起原生侧边栏或打开抽屉
-  const handleBallClick = useCallback(() => {
-    if (drawerOpen) {
-      setDrawerOpen(false)
-      return
-    }
-    if (ballAction === 'native' && inExt) {
-      void requestNativeSidePanel().then((ok) => {
-        if (!ok) {
-          showNotice(t('toast.nativeSidePanelFallback'))
-          setDrawerOpen(true)
-        }
-      })
-      return
-    }
-    // 打开网页内抽屉前先把原生侧边栏关掉（互斥：两种工具箱不同时显示）
-    if (inExt) void chrome.runtime.sendMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
-    setDrawerOpen(true)
-  }, [ballAction, drawerOpen, inExt, showNotice, t])
+  // 悬浮球点击复用 toggleToolkit
+  const handleBallClick = toggleToolkit
 
   // 划选弹窗点击「带入侧边栏并解析」
   const handleOpenInSidePanel = useCallback(
