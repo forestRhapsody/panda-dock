@@ -101,6 +101,108 @@ async function requestNativeSidePanel(forceOpen = false): Promise<boolean> {
 }
 
 /**
+ * 精准计算 textarea 内选中文本所在行的包围盒（避免锚点落于高大 textarea 的最底部）
+ */
+function getTextareaSelectionRect(el: HTMLTextAreaElement, start: number): SelectionRect {
+  const r = el.getBoundingClientRect()
+  try {
+    const textBefore = el.value.slice(0, start)
+    const lineIndex = textBefore.split('\n').length - 1
+    const computed = window.getComputedStyle(el)
+    const lineHeight = parseFloat(computed.lineHeight) || 20
+    const paddingTop = parseFloat(computed.paddingTop) || 0
+    const estimatedTop = r.top + paddingTop + lineIndex * lineHeight - el.scrollTop
+    const top = Math.max(r.top, Math.min(estimatedTop, r.bottom - lineHeight))
+    const bottom = Math.max(r.top + lineHeight, Math.min(top + lineHeight, r.bottom))
+    return {
+      left: r.left,
+      top,
+      right: r.right,
+      bottom,
+      width: r.width,
+      height: bottom - top,
+    }
+  } catch {
+    return {
+      left: r.left,
+      top: r.top,
+      right: r.right,
+      bottom: r.bottom,
+      width: r.width,
+      height: r.height,
+    }
+  }
+}
+
+/**
+ * 获取 input 单行输入框的包围盒
+ */
+function getInputElementRect(el: HTMLInputElement): SelectionRect {
+  const r = el.getBoundingClientRect()
+  return {
+    left: r.left,
+    top: r.top,
+    right: r.right,
+    bottom: r.bottom,
+    width: r.width,
+    height: r.height,
+  }
+}
+
+/**
+ * 深度获取当前页面选中的文本与定位矩形：
+ * 1. 深度穿透查找当前聚焦的 activeElement，优先检查可编辑元素（input / textarea）；
+ * 2. 其次检查普通 DOM 节点选区（window.getSelection()）。
+ */
+function getPageSelectionInfo(): { text: string; rect?: SelectionRect } | null {
+  let activeEl: Element | null = document.activeElement
+  while (activeEl?.shadowRoot?.activeElement) {
+    activeEl = activeEl.shadowRoot.activeElement
+  }
+
+  if (activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement) {
+    const start = activeEl.selectionStart
+    const end = activeEl.selectionEnd
+    if (typeof start === 'number' && typeof end === 'number' && start < end) {
+      const text = activeEl.value.slice(start, end).trim()
+      if (text) {
+        const rect =
+          activeEl instanceof HTMLTextAreaElement
+            ? getTextareaSelectionRect(activeEl, start)
+            : getInputElementRect(activeEl)
+        return { text, rect }
+      }
+    }
+  }
+
+  try {
+    const sel = window.getSelection()
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      const text = sel.toString().trim()
+      if (text) {
+        let rect: SelectionRect | undefined
+        const r = sel.getRangeAt(0).getBoundingClientRect()
+        if (r.width > 0 || r.height > 0) {
+          rect = {
+            left: r.left,
+            top: r.top,
+            right: r.right,
+            bottom: r.bottom,
+            width: r.width,
+            height: r.height,
+          }
+        }
+        return { text, rect }
+      }
+    }
+  } catch {
+    // 忽略异常
+  }
+
+  return null
+}
+
+/**
  * 注入到网页上的「悬浮球 + 网页内抽屉」。
  * - 悬浮球可拖拽贴靠屏幕左右两侧，鼠标移开只露一半
  * - 点击行为可配置：网页内抽屉（默认）/ 尽量唤起浏览器原生侧边栏（失败自动回退抽屉并提示）
@@ -142,6 +244,7 @@ export default function ToolkitOverlay() {
     x: number
     y: number
     targetRect?: SelectionRect
+    selectedText?: string
   }>({ x: 8, y: 8 })
 
   const showNotice = useCallback((text: string) => {
@@ -156,38 +259,56 @@ export default function ToolkitOverlay() {
   useEffect(() => {
     const onCtx = (e: MouseEvent) => {
       let rect: SelectionRect | undefined
-      try {
-        const sel = window.getSelection()
-        if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-          const r = sel.getRangeAt(0).getBoundingClientRect()
-          if (r.width > 0 || r.height > 0) {
-            rect = {
-              left: r.left,
-              top: r.top,
-              right: r.right,
-              bottom: r.bottom,
-              width: r.width,
-              height: r.height,
-            }
-          }
+      let selectedText = ''
+
+      // 1. 若右键目标为可编辑输入框，优先读取该输入框内的选区与定位
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        const start = e.target.selectionStart
+        const end = e.target.selectionEnd
+        if (typeof start === 'number' && typeof end === 'number' && start < end) {
+          selectedText = e.target.value.slice(start, end).trim()
+          rect =
+            e.target instanceof HTMLTextAreaElement
+              ? getTextareaSelectionRect(e.target, start)
+              : getInputElementRect(e.target)
+        } else {
+          rect =
+            e.target instanceof HTMLTextAreaElement
+              ? {
+                  left: e.target.getBoundingClientRect().left,
+                  top: e.clientY - 10,
+                  right: e.target.getBoundingClientRect().right,
+                  bottom: e.clientY + 10,
+                  width: e.target.getBoundingClientRect().width,
+                  height: 20,
+                }
+              : getInputElementRect(e.target)
         }
-      } catch {
-        // 忽略跨域 iframe 或特殊选区异常
       }
 
-      if (!rect && e.target instanceof HTMLElement) {
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-          const r = e.target.getBoundingClientRect()
-          if (r.width > 0 && r.height > 0) {
-            rect = {
-              left: r.left,
-              top: r.top,
-              right: r.right,
-              bottom: r.bottom,
-              width: r.width,
-              height: r.height,
+      // 2. 否则尝试从常规 DOM 选区读取
+      if (!selectedText) {
+        try {
+          const sel = window.getSelection()
+          if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+            const raw = sel.toString().trim()
+            if (raw) {
+              selectedText = raw
+              const r = sel.getRangeAt(0).getBoundingClientRect()
+              if (r.width > 0 || r.height > 0) {
+                rect = {
+                  left: r.left,
+                  top: r.top,
+                  right: r.right,
+                  bottom: r.bottom,
+                  width: r.width,
+                  height: r.height,
+                }
+              }
             }
           }
+        } catch {
+          // 忽略跨域 iframe 或特殊选区异常
         }
       }
 
@@ -195,6 +316,7 @@ export default function ToolkitOverlay() {
         x: e.clientX,
         y: e.clientY,
         targetRect: rect,
+        selectedText,
       }
     }
     window.addEventListener('contextmenu', onCtx, true)
@@ -302,39 +424,14 @@ export default function ToolkitOverlay() {
     if (now - lastDetectTriggerRef.current < 300) return
     lastDetectTriggerRef.current = now
 
-    // 1. 检查当前网页是否有选中文本
-    let selText = ''
-    let rect: SelectionRect | undefined
-    try {
-      const sel = window.getSelection()
-      if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-        const raw = sel.toString().trim()
-        if (raw) {
-          selText = raw
-          const r = sel.getRangeAt(0).getBoundingClientRect()
-          if (r.width > 0 || r.height > 0) {
-            rect = {
-              left: r.left,
-              top: r.top,
-              right: r.right,
-              bottom: r.bottom,
-              width: r.width,
-              height: r.height,
-            }
-          }
-        }
-      }
-    } catch {
-      // 忽略
-    }
-
-    if (selText) {
-      // 选中文字的情况下：出现的位置和之前一样（正下方/上方居中跟随）
+    // 1. 检查当前网页是否有选中文本（同时深度支持 input / textarea / 普通 DOM 选区）
+    const info = getPageSelectionInfo()
+    if (info && info.text) {
       setSelectionDetect({
-        text: selText,
-        x: rect ? rect.left + rect.width / 2 : window.innerWidth / 2,
-        y: rect ? rect.bottom : window.innerHeight / 2,
-        targetRect: rect,
+        text: info.text,
+        x: info.rect ? info.rect.left + info.rect.width / 2 : window.innerWidth / 2,
+        y: info.rect ? info.rect.bottom : window.innerHeight / 2,
+        targetRect: info.rect,
         position: 'selection',
       })
       return
@@ -391,29 +488,14 @@ export default function ToolkitOverlay() {
         setDrawerOpen(false)
         sendResponse({ ok: true })
       } else if (action === MSG_DETECT_SELECTION) {
-        // 右键菜单「智能解析选中文字」→ 弹出悬浮面板（位置优先取选区矩形，否则取右键点）
-        const { text } = message as { text?: string }
+        // 右键菜单「智能解析选中文字」→ 弹出悬浮面板（优先取选区矩形，否则取右键点）
+        const { text: msgText } = message as { text?: string }
+        const text = msgText || lastCtxPos.current.selectedText
         if (text) {
           let rect = lastCtxPos.current.targetRect
           if (!rect) {
-            try {
-              const sel = window.getSelection()
-              if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-                const r = sel.getRangeAt(0).getBoundingClientRect()
-                if (r.width > 0 || r.height > 0) {
-                  rect = {
-                    left: r.left,
-                    top: r.top,
-                    right: r.right,
-                    bottom: r.bottom,
-                    width: r.width,
-                    height: r.height,
-                  }
-                }
-              }
-            } catch {
-              // 忽略
-            }
+            const info = getPageSelectionInfo()
+            rect = info?.rect
           }
           setSelectionDetect({
             text,

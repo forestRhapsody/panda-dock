@@ -62,14 +62,14 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
       id: DETECT_MENU_ID,
       title: zh ? '智能解析选中文字' : 'Smart parse selected text',
-      contexts: ['selection'],
+      contexts: ['selection', 'editable'],
     })
   })
 })
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId !== DETECT_MENU_ID || !info.selectionText || !tab?.id) return
-  // 说明：OnClickData 不提供鼠标坐标，面板位置由 content script 自己记录右键位置。
+  if (info.menuItemId !== DETECT_MENU_ID || !tab?.id) return
+  // 说明：OnClickData 不提供鼠标坐标，面板位置与可编辑选区兜底由 content script 自己记录。
   void chrome.tabs
     .sendMessage(tab.id, {
       action: MSG_DETECT_SELECTION,
