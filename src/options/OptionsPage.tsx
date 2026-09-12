@@ -23,7 +23,7 @@ import Toaster from '@/ui/Toaster'
 import Tooltip from '@/ui/Tooltip'
 import { applyBackup, exportSettingsBackup, parseAndValidateBackup } from '@/utils/backup'
 import { parseDomainPatterns } from '@/utils/domainMatch'
-import { isExtension, storageGet, storageSet } from '@/utils/env'
+import { isExtension, storageGet } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
 import type { BallAction } from '@/utils/messages'
 import {
@@ -37,6 +37,7 @@ import {
   getBallImage,
   LOCALE_OPTIONS,
   normalizeSettings,
+  saveSettings,
   setBallImage,
   THEME_OPTIONS,
 } from '@/utils/settings'
@@ -204,9 +205,11 @@ export default function OptionsPage() {
 
   function persist(next: Settings) {
     setSettings(next)
-    if (inExt) {
-      void storageSet('sync', 'settings', next)
-    }
+    if (!inExt) return
+    // 写入失败（如 sync 配额已满）必须告知用户，否则用户会以为设置已保存
+    void saveSettings(next).then((saved) => {
+      if (!saved) toast.error(t('settings.saveFailed'))
+    })
   }
 
   function toggle(key: 'quickOpen' | 'ballSnap') {
@@ -242,6 +245,21 @@ export default function OptionsPage() {
   }
 
   /** 选择自定义图片：校验上传文件体积（≤128KB），读为 base64 data URL 后存 local */
+  /** 写入自定义悬浮球图片并就地反馈失败（体积超限 / 存储写入失败） */
+  function persistBallImage(dataUrl: string | null) {
+    if (!inExt) return
+    void setBallImage(dataUrl).then((res) => {
+      if (res.ok) return
+      setBallImageError(
+        t(
+          res.reason === 'too-large'
+            ? 'settings.ballImageTooLarge'
+            : 'settings.ballImageSaveFailed',
+        ),
+      )
+    })
+  }
+
   function onPickImage(file: File | undefined) {
     setBallImageError(null)
     if (!file) return
@@ -257,7 +275,7 @@ export default function OptionsPage() {
     reader.onload = () => {
       const dataUrl = String(reader.result ?? '')
       setBallImageState(dataUrl)
-      if (inExt) void setBallImage(dataUrl)
+      persistBallImage(dataUrl)
     }
     reader.onerror = () => setBallImageError(t('settings.ballImageReadError'))
     reader.readAsDataURL(file)
@@ -266,7 +284,7 @@ export default function OptionsPage() {
   function removeBallImage() {
     setBallImageError(null)
     setBallImageState(null)
-    if (inExt) void setBallImage(null)
+    persistBallImage(null)
   }
 
   function toggleTool(id: ToolId) {
@@ -327,7 +345,7 @@ export default function OptionsPage() {
     })
     setBallImageState(null)
     setBallImageError(null)
-    if (inExt) void setBallImage(null)
+    persistBallImage(null)
   }
 
   /** 恢复「外观与显示」到默认（主题、语言、字号） */
@@ -355,7 +373,7 @@ export default function OptionsPage() {
     setWhitelistText('')
     setBallImageState(null)
     setBallImageError(null)
-    if (inExt) void setBallImage(null)
+    persistBallImage(null)
     setShowGlobalConfirm(false)
   }
 
@@ -381,13 +399,24 @@ export default function OptionsPage() {
           toast.error(t(res.errorKey))
           return
         }
-        await applyBackup({ settings: res.settings, ballImage: res.ballImage })
+        const applied = await applyBackup({ settings: res.settings, ballImage: res.ballImage })
         // 即时同步更新当前页面各项 UI 状态
         setSettings(res.settings)
         setDomainTab(res.settings.ballDomainMode)
         setBlacklistText(res.settings.ballBlacklist.join('\n'))
         setWhitelistText(res.settings.ballWhitelist.join('\n'))
         setBallImageState(res.ballImage)
+        // 写入未成功时不进入成功态：sync 配额写满时导入会半途失败，必须让用户知道
+        if (!applied.ok) {
+          toast.error(
+            t(
+              applied.reason === 'ballImage'
+                ? 'settings.ballImageSaveFailed'
+                : 'settings.saveFailed',
+            ),
+          )
+          return
+        }
         toast.success(t('settings.importSuccess'))
         setShowImportSuccessDialog(true)
       } catch {

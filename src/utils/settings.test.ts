@@ -1,7 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { defaultToolLayout, isToolId, normalizeToolLayout, visibleTools } from '@/tools/registry'
-import { defaultSettings, normalizeSettings } from '@/utils/settings'
+import {
+  BALL_IMAGE_MAX_DATA_URL_LENGTH,
+  defaultSettings,
+  normalizeSettings,
+  saveSettings,
+  setBallImage,
+} from '@/utils/settings'
 
 describe('defaultSettings / normalizeSettings', () => {
   it('空数据兜底为完整默认值', () => {
@@ -109,5 +115,55 @@ describe('registry 兜底与可见性', () => {
     expect(isToolId('json')).toBe(true)
     expect(isToolId('bogus')).toBe(false)
     expect(isToolId(undefined)).toBe(false)
+  })
+})
+
+/** T133：设置类写入必须把失败信号交回调用方，由调用方提示用户 */
+describe('saveSettings / setBallImage 的失败信号', () => {
+  /** 用 unknown 断开与 @types/chrome 的强类型绑定：这里只需要一个「可写可删」的桩 */
+  const globalWithChrome = globalThis as unknown as { chrome?: unknown }
+
+  const stubChrome = (set: () => Promise<void>) => {
+    globalWithChrome.chrome = {
+      storage: { sync: { set }, local: { set }, session: { set } },
+    }
+  }
+
+  afterEach(() => {
+    delete globalWithChrome.chrome
+  })
+
+  it('saveSettings 成功返回 true，配额失败返回 false', async () => {
+    stubChrome(async () => {})
+    await expect(saveSettings(defaultSettings())).resolves.toBe(true)
+
+    stubChrome(async () => {
+      throw new Error('quota exceeded')
+    })
+    await expect(saveSettings(defaultSettings())).resolves.toBe(false)
+  })
+
+  it('saveSettings 在非扩展环境返回 false', async () => {
+    await expect(saveSettings(defaultSettings())).resolves.toBe(false)
+  })
+
+  it('setBallImage 超限时返回 too-large，且不触碰存储', async () => {
+    let wrote = false
+    stubChrome(async () => {
+      wrote = true
+    })
+    const oversized = `data:image/png;base64,${'A'.repeat(BALL_IMAGE_MAX_DATA_URL_LENGTH)}`
+    await expect(setBallImage(oversized)).resolves.toEqual({ ok: false, reason: 'too-large' })
+    expect(wrote).toBe(false)
+  })
+
+  it('setBallImage 写入失败返回 write-failed，成功返回 ok（不再抛异常）', async () => {
+    stubChrome(async () => {
+      throw new Error('quota exceeded')
+    })
+    await expect(setBallImage(null)).resolves.toEqual({ ok: false, reason: 'write-failed' })
+
+    stubChrome(async () => {})
+    await expect(setBallImage(null)).resolves.toEqual({ ok: true })
   })
 })

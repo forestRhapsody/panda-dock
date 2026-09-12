@@ -10,6 +10,7 @@ body {
 }
 
 .pop {
+  position: relative; /* Toaster 以绝对定位挂在本容器上 */
   display: flex;
   flex-direction: column;
   width: 380px;

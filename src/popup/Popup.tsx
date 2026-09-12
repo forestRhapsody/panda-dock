@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useLocale } from '@/i18n/useLocale'
 import AppLogo from '@/ui/AppLogo'
 import Icon from '@/ui/Icon'
+import Toaster from '@/ui/Toaster'
 import Tooltip from '@/ui/Tooltip'
 import { closeDrawerInActiveTab, openDrawerInActiveTab } from '@/utils/drawer'
 import { isExtension, openOptionsPage } from '@/utils/env'
@@ -108,6 +109,8 @@ export default function Popup() {
       <main className='pop__body'>
         <QuickSettings />
       </main>
+      {/* 快捷设置写入失败（sync 配额等）时就地提示 */}
+      <Toaster position='bottom' />
     </div>
   )
 }

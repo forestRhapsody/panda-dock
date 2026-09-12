@@ -20,11 +20,12 @@ import { CSS } from '@dnd-kit/utilities'
 import { useTranslation } from 'react-i18next'
 
 import AppLogo from '@/ui/AppLogo'
+import { toast } from '@/ui/toast'
 import Toaster from '@/ui/Toaster'
 import ToolErrorBoundary from '@/ui/ToolErrorBoundary'
 import { useToolDraft } from '@/utils/draft'
-import { extVersion, isExtension, openOptionsPage, storageGet, storageSet } from '@/utils/env'
-import { normalizeSettings } from '@/utils/settings'
+import { extVersion, isExtension, openOptionsPage, storageGet } from '@/utils/env'
+import { normalizeSettings, saveSettings } from '@/utils/settings'
 import type { Settings } from '@/utils/settings'
 
 import Base64Tool from './Base64Tool'
@@ -199,13 +200,14 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
       const nextOrder = rebuildOrder(order, enabled, nextVisibleIds)
       setOrder(nextOrder)
       if (inExt) {
-        void storageGet<Partial<Settings>>('sync', 'settings').then((cur) => {
+        void storageGet<Partial<Settings>>('sync', 'settings').then(async (cur) => {
           const next = normalizeSettings({ ...(cur ?? {}), toolOrder: nextOrder })
-          void storageSet('sync', 'settings', next)
+          const saved = await saveSettings(next)
+          if (!saved) toast.error(t('settings.saveFailed'))
         })
       }
     },
-    [order, enabled, inExt],
+    [order, enabled, inExt, t],
   )
 
   /** 把激活的选项卡滚动到容器水平居中（类似 Vant） */

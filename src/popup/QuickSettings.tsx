@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
 import TkSelect from '@/ui/TkSelect'
+import { toast } from '@/ui/toast'
 import Tooltip from '@/ui/Tooltip'
 import { isDomainMatched, shouldShowFloatingBall } from '@/utils/domainMatch'
-import { isExtension, storageGet, storageSet } from '@/utils/env'
+import { isExtension, storageGet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
 import { getCurrentPageUrl } from '@/utils/pageUrl'
-import { LOCALE_OPTIONS, normalizeSettings, THEME_OPTIONS } from '@/utils/settings'
+import { LOCALE_OPTIONS, normalizeSettings, saveSettings, THEME_OPTIONS } from '@/utils/settings'
 import type { LocaleSetting, Settings, ThemeMode } from '@/utils/settings'
 
 const SETTINGS_KEY = 'settings'
@@ -61,16 +62,25 @@ export default function QuickSettings() {
     }
   }, [inExt])
 
-  const update = useCallback(
-    (patch: Partial<Settings>) => {
-      setSettings((prev) => {
-        const next = normalizeSettings({ ...prev, ...patch })
-        if (inExt) void storageSet('sync', SETTINGS_KEY, next)
-        return next
-      })
-    },
-    [inExt],
-  )
+  /**
+   * 用户主动修改后写回存储。
+   * 用「脏标记 + effect」而不是在 setState 的 updater 里写存储：
+   * updater 必须是纯函数（StrictMode 下会被调用两次），副作用放在 effect 里更安全；
+   * 外部同步（storage.onChanged）触发的 setSettings 不会置脏，因此不会回环写回。
+   */
+  const dirtyRef = useRef(false)
+  useEffect(() => {
+    if (!inExt || !dirtyRef.current) return
+    dirtyRef.current = false
+    void saveSettings(settings).then((saved) => {
+      if (!saved) toast.error(t('settings.saveFailed'))
+    })
+  }, [settings, inExt, t])
+
+  const update = useCallback((patch: Partial<Settings>) => {
+    dirtyRef.current = true
+    setSettings((prev) => normalizeSettings({ ...prev, ...patch }))
+  }, [])
 
   const siteAllowed = currentSite ? shouldShowFloatingBall(settings, currentSite) : true
 

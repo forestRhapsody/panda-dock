@@ -118,12 +118,29 @@ export async function getBallImage(): Promise<string | null> {
   return storageGet<string>('local', BALL_IMAGE_KEY)
 }
 
-/** 保存（或置空）自定义悬浮球图片。文件大小超过 128KB 抛错；传 null 清除。 */
-export async function setBallImage(dataUrl: string | null): Promise<void> {
+export type BallImageSaveResult = { ok: true } | { ok: false; reason: 'too-large' | 'write-failed' }
+
+/**
+ * 保存（或置空）自定义悬浮球图片。传 null 清除。
+ * 不再抛异常：体积超限与写入失败都通过返回值表达，由调用方翻成当前语言的提示
+ * （避免在纯逻辑模块里硬编码文案，也避免调用方 `void setBallImage(...)` 吞掉异常）。
+ */
+export async function setBallImage(dataUrl: string | null): Promise<BallImageSaveResult> {
   if (dataUrl && dataUrl.length > BALL_IMAGE_MAX_DATA_URL_LENGTH) {
-    throw new Error('图片过大，文件大小不能超过 128KB')
+    return { ok: false, reason: 'too-large' }
   }
-  await storageSet('local', BALL_IMAGE_KEY, dataUrl)
+  const saved = await storageSet('local', BALL_IMAGE_KEY, dataUrl)
+  return saved ? { ok: true } : { ok: false, reason: 'write-failed' }
+}
+
+/**
+ * 保存设置到 `chrome.storage.sync`，返回是否写入成功。
+ * `chrome.storage.sync` 有单条 8KB 与写入频率配额，失败是**静默**的
+ * （storageSet 只返回布尔值），所以调用方必须检查返回值并提示用户，
+ * 否则用户会以为设置已经保存。
+ */
+export async function saveSettings(settings: Settings): Promise<boolean> {
+  return storageSet('sync', 'settings', settings)
 }
 
 export interface Settings {

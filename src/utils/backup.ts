@@ -117,16 +117,23 @@ export function parseAndValidateBackup(jsonText: string): ParseBackupResult {
   }
 }
 
+export type ApplyBackupResult = { ok: true } | { ok: false; reason: 'settings' | 'ballImage' }
+
 /**
- * 将解析好的备份持久化到系统存储（sync 与 local）
+ * 将解析好的备份持久化到系统存储（sync 与 local）。
+ * 返回失败原因而不是静默吞掉：sync 配额写满时导入会半途失败，必须让用户知道。
  */
 export async function applyBackup(backup: {
   settings: Settings
   ballImage: string | null
-}): Promise<void> {
-  const inExt = isExtension()
-  if (inExt) {
-    await storageSet('sync', 'settings', backup.settings)
-    await setBallImage(backup.ballImage)
-  }
+}): Promise<ApplyBackupResult> {
+  if (!isExtension()) return { ok: true }
+
+  const settingsSaved = await storageSet('sync', 'settings', backup.settings)
+  if (!settingsSaved) return { ok: false, reason: 'settings' }
+
+  const imageSaved = await setBallImage(backup.ballImage)
+  if (!imageSaved.ok) return { ok: false, reason: 'ballImage' }
+
+  return { ok: true }
 }
