@@ -276,7 +276,7 @@ describe('detect：多 URL 提取与去重', () => {
     expect(res?.items?.[0].copy).toBe('https://a.com/')
   })
 
-  it('detect 从不产出 kind="urls"（该类型只存在于类型定义中）', () => {
+  it('多个网址各自产出独立的 url 项', () => {
     const res = detect('https://a.com https://b.com')
     expect(res?.kind).toBe('url')
     expect(kindsOf(res)).toEqual(['url', 'url'])

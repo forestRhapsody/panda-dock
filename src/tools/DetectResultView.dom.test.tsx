@@ -110,7 +110,7 @@ function expectNoBareI18nKey() {
 }
 
 describe('DetectResultView 的类型标签与整体骨架', () => {
-  it('头部展示「解析为：<类型>」，9 种解析类型各有固定标签', () => {
+  it('头部展示「解析为：<类型>」，8 种解析类型各有固定标签', () => {
     const cases: Array<[DetectResult['kind'], string]> = [
       ['json', 'JSON'],
       ['jwt', 'JWT'],
@@ -120,7 +120,6 @@ describe('DetectResultView 的类型标签与整体骨架', () => {
       ['base64', 'Base64'],
       ['hex', 'Hex'],
       ['dataurl', 'Data URL'],
-      ['urls', 'URLs'],
     ]
     for (const [kind, label] of cases) {
       render({ result: result({ kind }) })
@@ -173,7 +172,7 @@ describe('DetectResultView 的字段行', () => {
   it('url.N 键生成带序号的网址标签', () => {
     render({
       result: result({
-        kind: 'urls',
+        kind: 'url',
         fields: [field('url.1', 'https://a.example'), field('url.2', 'https://b.example')],
       }),
     })

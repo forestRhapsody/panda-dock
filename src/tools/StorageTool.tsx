@@ -7,6 +7,7 @@ import ConfirmDialog from '@/ui/ConfirmDialog'
 import Icon from '@/ui/Icon'
 import { toast } from '@/ui/toast'
 import Tooltip from '@/ui/Tooltip'
+import { useToolDraft } from '@/utils/draft'
 
 import AutoArea from './AutoArea'
 import CookieEditModal from './CookieEditModal'
@@ -119,7 +120,17 @@ function EditorForm({
   }
 
   return (
-    <div className='tw-store__edit'>
+    <div
+      className='tw-store__edit'
+      // 声明「本子树接管 Escape」：抽屉的关闭守卫据此让行（见 content/Drawer.tsx）。
+      // Escape = 取消编辑，与「取消」按钮同义（丢弃草稿，不写存储）。
+      data-tk-escape
+      onKeyDown={(e) => {
+        if (e.key !== 'Escape') return
+        e.preventDefault()
+        onCancel()
+      }}
+    >
       <label className='tw-field'>
         <span className='tw-field__label'>{t('tool.storage.key')}</span>
         <input
@@ -207,7 +218,10 @@ function EditorForm({
 /** 本地存储管理：查看/清理当前站点 localStorage / sessionStorage；支持改 key 与新增缓存 */
 export default function StorageTool() {
   const { t } = useTranslation()
-  const [area, setArea] = useState<StorageArea>('local')
+  // 区域 tab 跨挂载保留：切到别的工具再回来不会跳回 localStorage。
+  // 草稿不做校验（AGENTS §5），脏值一律回落到 local。
+  const [areaDraft, setArea] = useToolDraft<string>('storage.area', 'local')
+  const area: StorageArea = areaDraft === 'session' || areaDraft === 'cookie' ? areaDraft : 'local'
   const [result, setResult] = useState<StorageResult | null>(null)
   const [cookieResult, setCookieResult] = useState<CookieResult | null>(null)
   const [cookieModalOpen, setCookieModalOpen] = useState(false)
@@ -602,6 +616,9 @@ export default function StorageTool() {
             placeholder={t('tool.storage.filter')}
             aria-label={t('tool.storage.filterAriaLabel')}
             value={filter}
+            // 只有存在筛选词时才声明接管 Escape：空筛选时若也接管，
+            // 焦点停在搜索框上会让抽屉再也无法用 Escape 关闭。
+            data-tk-escape={filter ? true : undefined}
             onChange={(e) => setFilter(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {

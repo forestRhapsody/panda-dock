@@ -19,6 +19,7 @@ import {
 import type { CookieEntry, CookieSnapshot, StorageEntry, StorageSnapshot } from '@/tools/storage'
 import StorageTool from '@/tools/StorageTool'
 import { toast } from '@/ui/toast'
+import { setDraftValue } from '@/utils/draft'
 
 /**
  * StorageTool 的真实 DOM 行为测试。
@@ -102,7 +103,7 @@ function makeCookieSnapshot(over: Partial<CookieSnapshot> = {}): CookieSnapshot 
   }
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   confirmSpy = vi.fn(() => true)
   vi.stubGlobal('confirm', confirmSpy)
 
@@ -123,6 +124,8 @@ beforeEach(() => {
   vi.mocked(clearAllCookies).mockResolvedValue({ ok: true })
   vi.mocked(toast.success).mockReset()
   vi.mocked(toast.error).mockReset()
+  // 草稿的 memoryCache 是模块级常驻的：显式重置区域，避免用例之间互相污染
+  await setDraftValue('storage.area', 'local')
 
   container = document.createElement('div')
   document.body.appendChild(container)
@@ -145,6 +148,16 @@ async function renderTool(): Promise<void> {
   await act(async () => {
     root.render(<StorageTool />)
   })
+}
+
+/** 模拟「切到别的工具再切回来」：整棵组件卸载后重新挂载 */
+async function remount(): Promise<void> {
+  act(() => root.unmount())
+  container.remove()
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+  await renderTool()
 }
 
 function buttonsIn(scope: ParentNode = container): HTMLButtonElement[] {
@@ -237,6 +250,30 @@ describe('StorageTool 存储浏览', () => {
     expect(keys()).toEqual(['beta'])
     expect(container.textContent).toContain('session-value')
     expect(container.textContent).not.toContain('alpha')
+  })
+
+  it('区域 tab 跨挂载保留：切到 session 后重挂载仍停在 session（回归）', async () => {
+    await renderTool()
+    expect(listStorage).toHaveBeenCalledWith('local')
+
+    await act(async () => buttonWithText('sessionStorage').click())
+    expect(listStorage).toHaveBeenLastCalledWith('session')
+
+    await remount()
+
+    // 回归：源码曾用 useState 存区域，切到别的工具再回来会跳回 localStorage
+    expect(listStorage).toHaveBeenLastCalledWith('session')
+    expect(container.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe(
+      'sessionStorage',
+    )
+  })
+
+  it('草稿里的脏区域值回落到 local（草稿不做校验）', async () => {
+    await setDraftValue('storage.area', '这不是一个合法区域')
+
+    await renderTool()
+
+    expect(listStorage).toHaveBeenCalledWith('local')
   })
 
   it('渲染 key、值与字节 size，并给出站点/条数摘要', async () => {
@@ -551,6 +588,56 @@ describe('StorageTool 编辑与写入', () => {
       await new Promise((resolve) => setTimeout(resolve, 600))
     })
     expect(buttonWithText('刷新').disabled).toBe(false)
+  })
+
+  it('内联编辑时按 Escape 退出编辑：丢弃草稿、不写存储，并声明接管 Escape 供抽屉让行', async () => {
+    vi.mocked(listStorage).mockResolvedValue({
+      ok: true,
+      data: makeSnapshot({ entries: [makeEntry('a', '1')], totalCount: 1 }),
+    })
+    await renderTool()
+    await act(async () => buttonWithText('编辑', firstRow()).click())
+    await act(async () => setInput(editorValueArea(), 'changed'))
+
+    const editor = container.querySelector<HTMLElement>('.tw-store__edit')
+    if (!editor) throw new Error('编辑器未打开')
+    // 抽屉的 Escape 守卫（content/Drawer.tsx）据此标记 + 焦点判断「内层正在处理键盘」
+    expect(editor.hasAttribute('data-tk-escape')).toBe(true)
+
+    const escaped = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    await act(async () => {
+      editor.dispatchEvent(escaped)
+    })
+
+    // Escape = 取消编辑：编辑器关闭、草稿丢弃、不落盘
+    expect(escaped.defaultPrevented).toBe(true)
+    expect(container.querySelector('.tw-store__edit')).toBeNull()
+    expect(keys()).toEqual(['a'])
+    expect(setStorageValue).not.toHaveBeenCalled()
+  })
+
+  it('搜索框只在存在筛选词时声明接管 Escape（否则焦点停在这里会让抽屉关不掉）', async () => {
+    vi.mocked(listStorage).mockResolvedValue({
+      ok: true,
+      data: makeSnapshot({ entries: [makeEntry('a', '1')], totalCount: 1 }),
+    })
+    await renderTool()
+    const search = container.querySelector<HTMLInputElement>('.tw-store__search-input')
+    if (!search) throw new Error('未找到搜索框')
+
+    expect(search.hasAttribute('data-tk-escape')).toBe(false)
+
+    await act(async () => setInput(search, 'a'))
+    expect(search.hasAttribute('data-tk-escape')).toBe(true)
+
+    // 有筛选词时接管：Escape 复位筛选，而不是关掉抽屉
+    const escaped = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    await act(async () => {
+      search.dispatchEvent(escaped)
+    })
+    expect(escaped.defaultPrevented).toBe(true)
+    expect(search.value).toBe('')
+    expect(search.hasAttribute('data-tk-escape')).toBe(false)
   })
 })
 

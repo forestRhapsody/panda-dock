@@ -1509,7 +1509,12 @@
 /* 正在编辑的行 / 新增行卡片 */
 .tw-store__row--editing {
   border-color: var(--tk-ring);
-  box-shadow: 0 0 0 1px var(--tk-ring);
+  /* 用 outline 画外圈，而不是 box-shadow：
+     box-shadow 是独立阴影层，编辑态行高骤降（约 190px → 97px）时 Chrome 会残留
+     旧底边位置的 1px 绘制，表现为条目下方一条几秒后才消失的横线（T9）。
+     outline 与元素本体同相绘制/失效，且 1px 边框 + 1px outline 仍是原来的 2px 强调观感。 */
+  outline: 1px solid var(--tk-ring);
+  outline-offset: 0;
 }
 
 .tw-store__row--creating {

@@ -70,12 +70,10 @@ describe('toolForDetectKind：只有确有额外能力的类型才给入口', ()
     expect(toolForDetectKind('hex')).toBeNull()
     expect(toolForDetectKind('uuid')).toBeNull()
     expect(toolForDetectKind('dataurl')).toBeNull()
-    // 多 URL 提取结果同样没有「额外能力」的目标工具
-    expect(toolForDetectKind('urls')).toBeNull()
   })
 
   it('映射是纯函数：同一 kind 重复调用结果稳定', () => {
-    for (const kind of ['json', 'url', 'timestamp', 'urls'] as const) {
+    for (const kind of ['json', 'url', 'timestamp', 'hex'] as const) {
       expect(toolForDetectKind(kind)).toBe(toolForDetectKind(kind))
     }
   })

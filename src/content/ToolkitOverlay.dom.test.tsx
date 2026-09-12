@@ -368,6 +368,57 @@ describe('抽屉的开合入口', () => {
     expect(drawerEl()).toBeNull()
   })
 
+  it('焦点在声明接管 Escape 的内联编辑里时不关抽屉，编辑结束后才轮到抽屉', async () => {
+    await renderOverlay()
+    await flush()
+    await openDrawer()
+
+    // 网页存储双击编辑值时的真实形态：编辑容器带 data-tk-escape，焦点落在其内部
+    const editor = document.createElement('div')
+    editor.setAttribute('data-tk-escape', '')
+    const input = document.createElement('input')
+    editor.appendChild(input)
+    shadowRoot().appendChild(editor)
+    act(() => input.focus())
+
+    const deferred = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    })
+    act(() => {
+      document.dispatchEvent(deferred)
+    })
+    // 让行：既不关抽屉，也不 preventDefault（按键留给内层编辑）
+    expect(deferred.defaultPrevented).toBe(false)
+    expect(drawerEl()).not.toBeNull()
+
+    // 编辑结束（标记随编辑态一起消失）后，Escape 重新归抽屉
+    editor.remove()
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+    expect(drawerEl()).toBeNull()
+  })
+
+  it('焦点在未声明接管 Escape 的普通输入里时，Escape 仍关闭抽屉（不过度让行）', async () => {
+    await renderOverlay()
+    await flush()
+    await openDrawer()
+
+    // 只对「有标记 + 有焦点」让行：否则抽屉在任意输入聚焦时都关不掉
+    const plain = document.createElement('input')
+    shadowRoot().appendChild(plain)
+    act(() => plain.focus())
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    act(() => {
+      document.dispatchEvent(event)
+    })
+    expect(event.defaultPrevented).toBe(true)
+    expect(drawerEl()).toBeNull()
+  })
+
   it('影子根里存在 .tek-detect-panel 划选面板时 Escape 不关抽屉，也不 preventDefault', async () => {
     await renderOverlay()
     await flush()

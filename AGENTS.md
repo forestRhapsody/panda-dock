@@ -111,10 +111,12 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
   | `activeToolTab` | `ToolId \| null` | 工具箱当前激活项（`ToolsApp`） |
   | `base64` | `{ tab, decodeInput, decodeOutput, encodeInput, encodeOutput, fileB64Input }` | 对象，各 tab 独立 |
   | `detect.input` | `string` | 智能解析输入 |
+  | `storage.area` | `'local' \| 'session' \| 'cookie'` | 网页存储的区域 tab（切走再回来保持选择） |
   | `hash` | `{ tab, textInput, hmacKey, showHmac, uppercase, expectedChecksum }` | 对象，文本 / 文件两个 tab 共用字段 |
   | `json.workbench` | `JsonDraft` 对象 | `input` / `output` / `indent` / `sortKeys` / `minify` / `lastAction` / `splitRatio` |
   | `jwt.token` | `string` | JWT 输入 |
   | `qrcode.input` | `string` | 二维码生成输入 |
+  | `qrcode.tab` | `'generate' \| 'decode'` | 二维码内层 tab（与 `url.tab` 同构） |
   | `timestamp.input` | `string` | 时间戳输入 |
   | `url.tab` | `'parse' \| 'codec'` | URL 工具额外有 tab 草稿 |
   | `url.parse.input` | `string` | URL 解析输入 |

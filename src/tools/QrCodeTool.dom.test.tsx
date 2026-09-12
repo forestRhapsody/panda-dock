@@ -154,6 +154,21 @@ async function renderTool() {
   await flush(0)
 }
 
+/** 当前激活的内层 tab 文案 */
+function activeTabLabel(): string {
+  return query('[role="tab"][aria-selected="true"]').textContent ?? ''
+}
+
+/** 模拟「切到别的工具再切回来」：整棵组件卸载后重新挂载 */
+async function remount(): Promise<void> {
+  act(() => root.unmount())
+  container.remove()
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+  await renderTool()
+}
+
 function query<T extends Element>(selector: string): T {
   const el = container.querySelector<T>(selector)
   if (!el) throw new Error(`未找到元素: ${selector}`)
@@ -273,6 +288,7 @@ beforeEach(async () => {
   stubChrome()
   // 草稿的 memoryCache 是模块级常驻的，显式写成空串，避免用例之间互相污染
   await setDraftValue('qrcode.input', '')
+  await setDraftValue('qrcode.tab', 'generate')
 
   mockedGenerate.mockReset()
   mockedGenerate.mockResolvedValue({ dataUrl: QR_DATA_URL, width: 1200, height: 1200 })
@@ -348,6 +364,27 @@ describe('QrCodeTool：Tab 切换与状态独立', () => {
     // 再回解析：解析结果也还在
     clickTab(i18n.t('tool.qrcode.decodeTab'))
     expect(decodeArea().value).toBe(DECODED_URL)
+  })
+
+  it('内层 tab 跨挂载保留：切到解析模式后重挂载仍停在解析（回归）', async () => {
+    await renderTool()
+    clickTab(i18n.t('tool.qrcode.decodeTab'))
+    expect(activeTabLabel()).toBe(i18n.t('tool.qrcode.decodeTab'))
+
+    await remount()
+
+    // 回归：源码曾用 useState 存 mode，切到别的工具再回来会跳回「生成」
+    expect(activeTabLabel()).toBe(i18n.t('tool.qrcode.decodeTab'))
+    expect(container.querySelector('.tw-qr__drop-zone')).not.toBeNull()
+  })
+
+  it('草稿里的脏 tab 值回落到生成模式（草稿不做校验）', async () => {
+    await setDraftValue('qrcode.tab', '这不是一个合法 tab')
+
+    await renderTool()
+
+    expect(activeTabLabel()).toBe(i18n.t('tool.qrcode.generateTab'))
+    expect(container.querySelector('.tw-qr__drop-zone')).toBeNull()
   })
 })
 

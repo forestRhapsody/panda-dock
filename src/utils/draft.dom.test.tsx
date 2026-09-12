@@ -58,11 +58,27 @@ function Probe({ draftKey }: { draftKey: string }) {
   return <span data-testid='value'>{value}</span>
 }
 
+/** 可写草稿的探针：点击按钮写入指定值，用于验证防抖窗口内的卸载 / 重挂载行为 */
+function EditableProbe({ draftKey, next }: { draftKey: string; next: string }) {
+  const [value, setValue] = useToolDraft<string>(draftKey, '(empty)')
+  return (
+    <button type='button' data-testid='setValue' onClick={() => setValue(next)}>
+      {value}
+    </button>
+  )
+}
+
 let container: HTMLDivElement
 let root: Root
 
 const flush = () => act(async () => new Promise((resolve) => setTimeout(resolve, 0)))
 const text = () => container.textContent
+
+function clickSetValue() {
+  act(() => {
+    container.querySelector<HTMLButtonElement>('[data-testid="setValue"]')?.click()
+  })
+}
 
 beforeEach(() => {
   stubChrome()
@@ -143,5 +159,64 @@ describe('外部写入草稿（T134 手递手）', () => {
 
     // 不 flush，直接看首帧
     expect(text()).toBe('新值')
+  })
+})
+
+describe('防抖写入 × 卸载 / 重挂载（切走工具的场景）', () => {
+  it('防抖窗口内卸载：改动会立即落盘，不只留在内存缓存里', async () => {
+    const key = 'debounce.flush'
+    await act(async () => {
+      root.render(<EditableProbe draftKey={key} next='新值' />)
+    })
+    clickSetValue()
+    expect(text()).toBe('新值')
+
+    // 200ms 防抖还没到就切走工具（卸载）
+    await act(async () => {
+      root.unmount()
+    })
+
+    // 清理里必须补写这次改动：否则会话存储仍是旧值，其它页面与下次挂载都读不到
+    expect(store[`toolkit.draft.${key}`]).toBe('新值')
+  })
+
+  it('落盘还没完成时重挂载：存储里的旧值不会覆盖内存里的新值', async () => {
+    const key = 'debounce.pending'
+    // 初始状态：会话存储里是旧值
+    store[`toolkit.draft.${key}`] = '旧值'
+
+    // 让写入挂起，模拟「flush 已发出但还没写完」
+    let release: (() => void) | undefined
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const chromeStub = globalWithChrome.chrome as {
+      storage: { session: { set: (obj: Record<string, unknown>) => Promise<void> } }
+    }
+    const realSet = chromeStub.storage.session.set
+    chromeStub.storage.session.set = async (obj) => {
+      await gate
+      await realSet(obj)
+    }
+
+    await act(async () => {
+      root.render(<EditableProbe draftKey={key} next='新值' />)
+    })
+    clickSetValue()
+
+    await act(async () => {
+      root.unmount()
+    })
+    root = createRoot(container)
+    await act(async () => {
+      root.render(<Probe draftKey={key} />)
+    })
+    await flush()
+
+    // 存储仍是旧值（写入还挂着），但内存里的新值必须赢
+    expect(text()).toBe('新值')
+
+    release?.()
+    await flush()
   })
 })

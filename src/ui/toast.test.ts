@@ -312,4 +312,37 @@ describe('到点自动消失', () => {
     vi.advanceTimersByTime(4000)
     expect(latest()).toEqual([])
   })
+
+  it('非法 duration 回落出的默认时长真的被用于排期，而不只是写在快照里', () => {
+    startCapture()
+    toast.create('负数', { duration: -100 })
+
+    // 若实现把**原始非法值**传给 setTimeout（-100 被当成 0），条目会立刻消失
+    expect(messages()).toEqual(['负数'])
+
+    vi.advanceTimersByTime(1999)
+    expect(messages()).toEqual(['负数'])
+
+    // 到第 2000ms 才按 success 的默认时长消失 —— 证明排期用的是回落值
+    vi.advanceTimersByTime(1)
+    expect(messages()).toEqual([])
+  })
+
+  it('被挤出 / 被 dismiss 的条目：清理过的定时器到点后不再产生任何推送', () => {
+    startCapture()
+    toast.create('将被挤出', { duration: 100 })
+    const dismissed = toast.create('将被 dismiss', { duration: 100 })
+    toast.create('保留 A', { duration: 10_000 })
+    toast.create('保留 B', { duration: 10_000 }) // 第 4 条把「将被挤出」挤掉
+    toast.dismiss(dismissed)
+
+    expect(messages()).toEqual(['保留 B', '保留 A'])
+    const pushes = frames.length
+
+    // 只靠 getTimerCount() 断言「清没清」是间接的：这里断言到点后**没有任何回调真的跑起来**。
+    // dismiss(id) 即使没删掉任何条目也会 emit，所以漏清理会表现为 frames 变长。
+    vi.advanceTimersByTime(100)
+    expect(frames).toHaveLength(pushes)
+    expect(messages()).toEqual(['保留 B', '保留 A'])
+  })
 })

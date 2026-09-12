@@ -135,6 +135,21 @@ function clickTab(id: ToolId) {
   })
 }
 
+/** happy-dom 没有排版：伪造只含水平几何的 DOMRect，用来验证「激活项滚到容器中心」的算法 */
+function hRect(left: number, width: number): DOMRect {
+  return {
+    left,
+    right: left + width,
+    width,
+    top: 0,
+    bottom: 0,
+    height: 0,
+    x: left,
+    y: 0,
+    toJSON: () => ({}),
+  } as DOMRect
+}
+
 beforeEach(async () => {
   // 工具抛错时 React 与 ToolErrorBoundary 都会打印错误，测试期间静音
   console.error = () => {}
@@ -286,6 +301,25 @@ describe('ToolsApp：点击选项卡切换工具', () => {
     clickTab('hash')
     expect(probes()).toEqual(['hash'])
     expect(container.querySelector('.tw-error')).toBeNull()
+  })
+
+  it('切换工具时把激活选项卡滚到容器中心（tab 条溢出时靠它保证激活项可见）', async () => {
+    stores.sync.settings = layout(ALL_IDS, { hash: true })
+    await render()
+
+    const nav = container.querySelector<HTMLElement>('.tw-nav')
+    const target = container.querySelector<HTMLElement>('[role="tab"][data-tool="hash"]')
+    if (!nav || !target) throw new Error('未找到选项卡条或目标选项卡')
+
+    const scrollBy = vi.fn()
+    nav.scrollBy = scrollBy as unknown as typeof nav.scrollBy
+    // 桩出「容器宽 200（中心 100）、目标按钮中心 400」→ 期望滚动 300（浏览器会自行夹在 [0, maxScroll]）
+    vi.spyOn(nav, 'getBoundingClientRect').mockReturnValue(hRect(0, 200))
+    vi.spyOn(target, 'getBoundingClientRect').mockReturnValue(hRect(380, 40))
+
+    clickTab('hash')
+
+    expect(scrollBy).toHaveBeenCalledWith({ left: 300, behavior: 'smooth' })
   })
 })
 

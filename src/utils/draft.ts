@@ -6,6 +6,13 @@ const DRAFT_PREFIX = 'toolkit.draft.'
 const memoryCache = new Map<string, unknown>()
 
 /**
+ * 本页面已改、但还没确认落盘的草稿键（防抖还在窗口内，或写入正在飞行中）。
+ * 挂载时的异步读取必须避开它们：卸载会清掉防抖定时器，会话存储里可能仍是旧值，
+ * 直接套用会把内存里刚改好的新值覆盖回去 —— 表现为「刚切的 tab / 刚输入的内容被还原」。
+ */
+const locallyDirty = new Set<string>()
+
+/**
  * 读取某个草稿（优先内存缓存，回退会话存储）。
  * 供「写入前先保留用户其它偏好」的场景使用（如智能解析送数据给 JSON 工具时保留其缩进/排序设置）。
  */
@@ -23,7 +30,9 @@ export async function getDraftValue<T>(key: string): Promise<T | null> {
 export async function setDraftValue<T>(key: string, value: T): Promise<void> {
   const fullKey = `${DRAFT_PREFIX}${key}`
   memoryCache.set(fullKey, value)
+  locallyDirty.add(fullKey)
   await storageSet('session', fullKey, value)
+  locallyDirty.delete(fullKey)
 }
 
 /**
@@ -52,7 +61,8 @@ export function useToolDraft<T>(
     let alive = true
     void storageGet<T>('session', fullKey).then((saved) => {
       if (!alive) return
-      if (saved !== null && saved !== undefined) {
+      // 本页面刚改过、还没确认落盘的值，不能被存储里的旧值覆盖
+      if (saved !== null && saved !== undefined && !locallyDirty.has(fullKey)) {
         memoryCache.set(fullKey, saved)
         setValue(saved)
       }
@@ -89,6 +99,16 @@ export function useToolDraft<T>(
         chrome.storage.onChanged.removeListener(onStorageChange)
       }
       window.clearTimeout(timerRef.current)
+      // 卸载（切走工具 / 关抽屉）时把防抖窗口里的改动立即落盘：
+      // 只清定时器会让这次改动停留在内存缓存里、会话存储仍是旧值，
+      // 既让其它页面读不到，又会被重挂载后的首个异步读取覆盖回去。
+      if (timerRef.current !== undefined) {
+        timerRef.current = undefined
+        const pending = memoryCache.get(fullKey)
+        if (pending !== undefined) {
+          void storageSet('session', fullKey, pending).finally(() => locallyDirty.delete(fullKey))
+        }
+      }
     }
   }, [fullKey, initialValue])
 
@@ -97,10 +117,12 @@ export function useToolDraft<T>(
       setValue((prev) => {
         const next = typeof action === 'function' ? (action as (p: T) => T)(prev) : action
         memoryCache.set(fullKey, next)
+        locallyDirty.add(fullKey)
         window.clearTimeout(timerRef.current)
         timerRef.current = window.setTimeout(() => {
+          timerRef.current = undefined
           isSelfUpdate.current = true
-          void storageSet('session', fullKey, next)
+          void storageSet('session', fullKey, next).finally(() => locallyDirty.delete(fullKey))
         }, 200)
         return next
       })
@@ -110,7 +132,9 @@ export function useToolDraft<T>(
 
   const clearDraft = useCallback(() => {
     window.clearTimeout(timerRef.current)
+    timerRef.current = undefined
     memoryCache.delete(fullKey)
+    locallyDirty.delete(fullKey)
     setValue(initialValue)
     void storageRemove('session', fullKey)
   }, [fullKey, initialValue])

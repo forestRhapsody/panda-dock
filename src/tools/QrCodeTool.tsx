@@ -65,7 +65,9 @@ const FONT_SIZE_OPTIONS = [
 
 export default function QrCodeTool() {
   const { t } = useTranslation()
-  const [mode, setMode] = useState<QrMode>('generate')
+  // 生成 / 解析 tab 与 Base64 / URL / Hash 一致：跨挂载保留上次选择（草稿不做校验，脏值回落生成模式）
+  const [modeDraft, setMode] = useToolDraft<string>('qrcode.tab', 'generate')
+  const mode: QrMode = modeDraft === 'decode' ? 'decode' : 'generate'
 
   // —— 生成模式状态 ——
   const [inputText, setInputText, clearInputText] = useToolDraft<string>('qrcode.input', '')

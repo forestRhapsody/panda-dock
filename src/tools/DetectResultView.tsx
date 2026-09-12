@@ -24,7 +24,6 @@ const KIND_LABEL: Record<string, string | undefined> = {
   base64: 'Base64',
   hex: 'Hex',
   dataurl: 'Data URL',
-  urls: 'URLs',
 }
 
 /** 字段的语义 key → i18n label；claim.* 直接用声明名（如 exp / iat） */

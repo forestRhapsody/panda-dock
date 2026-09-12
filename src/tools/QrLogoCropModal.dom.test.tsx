@@ -568,4 +568,27 @@ describe('QrLogoCropModal：导出失败反馈', () => {
     expect(onConfirm).not.toHaveBeenCalled()
     expect(container.textContent).toContain(i18n.t('tool.qrcode.cropExportError'))
   })
+
+  it('导出失败后环境恢复：可再次确认并成功导出，错误提示随之清除', async () => {
+    await renderModal()
+    const getContext = HTMLCanvasElement.prototype.getContext as unknown as {
+      mockImplementation: (fn: () => unknown) => void
+    }
+    getContext.mockImplementation(() => null)
+
+    act(() => confirmButton().click())
+    expect(container.textContent).toContain(i18n.t('tool.qrcode.cropExportError'))
+
+    // 失败不关弹窗：按钮只受图片加载状态约束，用户可以直接重试
+    expect(container.querySelector('.tk-modal')).not.toBeNull()
+    expect(confirmButton().disabled).toBe(false)
+
+    getContext.mockImplementation(() => ctx)
+    act(() => confirmButton().click())
+
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+    expect(onConfirm).toHaveBeenCalledWith(CROPPED_DATA_URL, expect.any(String))
+    // 回归：确认路径若不清掉 exportError，用户即使导出成功也会一直看到「导出失败」
+    expect(container.textContent).not.toContain(i18n.t('tool.qrcode.cropExportError'))
+  })
 })

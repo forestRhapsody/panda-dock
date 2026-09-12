@@ -13,7 +13,6 @@ export type DetectKind =
   | 'base64'
   | 'hex'
   | 'dataurl'
-  | 'urls'
 
 /** 短字段（单行 label|value，可逐项复制） */
 export interface DetectField {
