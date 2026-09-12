@@ -224,6 +224,26 @@ export function parseCustomDate(raw: string): Date | null {
   // 4. 标准纯数字日期格式（YYYY-MM-DD / MM/DD/YYYY 等）
   if (STD_DATE_RE.test(trimmed) || US_DATE_RE.test(trimmed)) {
     const normalized = trimmed.replace(/^(\d{4})\.(\d{1,2})\.(\d{1,2})/, '$1-$2-$3')
+
+    // 4a. 纯日期（无时间、无时区）必须按**本地零点**构造。
+    // `new Date('2025-01-01')` 按 UTC 解析，在负 UTC 偏移时区里会落到前一天（本地 2024-12-31），
+    // 再配合后面的本地字段校验就会被判为非法 —— `detect('2025-01-01')` 因此直接返回 null。
+    // 日期在直觉上属于「本地日历」，这里统一按本地零点解析，与中文分支的构造方式保持一致。
+    const dateOnly = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+    if (dateOnly) {
+      const y = Number(dateOnly[1])
+      const m = Number(dateOnly[2]) - 1
+      const day = Number(dateOnly[3])
+      const local = new Date(0)
+      local.setHours(0, 0, 0, 0)
+      local.setFullYear(y, m, day)
+      // setFullYear 会把 2 月 31 日滚动到 3 月：字段对不上即视为非法日期
+      if (local.getFullYear() !== y || local.getMonth() !== m || local.getDate() !== day) {
+        return null
+      }
+      return y >= 1900 && y <= 2200 ? local : null
+    }
+
     const d = new Date(normalized)
     if (!Number.isNaN(d.getTime())) {
       const yearMatch = normalized.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)

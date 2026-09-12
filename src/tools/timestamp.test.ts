@@ -194,17 +194,18 @@ describe('parseCustomDate 标准数字日期', () => {
     )
   })
 
-  it('ISO 纯日期（无时间）按 UTC 零点解析；本地与 UTC 不同日时源码会判无效（时区相关疑点）', () => {
-    // 源码用本地字段校验滚动，而纯日期串被 Date 按 UTC 解析：
-    // UTC 偏移为负的时区下本地日期会退到前一天，从而被误判为无效。
-    const utcMidnight = new Date(Date.UTC(2025, 0, 1))
-    const sameLocalDay =
-      utcMidnight.getFullYear() === 2025 &&
-      utcMidnight.getMonth() === 0 &&
-      utcMidnight.getDate() === 1
+  it('ISO 纯日期（无时间）按本地零点解析，不随时区变化（回归：曾按 UTC 解析导致负偏移时区被判非法）', () => {
     const d = parseCustomDate('2025-01-01')
-    if (sameLocalDay) expect(d?.getTime()).toBe(Date.UTC(2025, 0, 1))
-    else expect(d).toBeNull()
+    // 断言本地日历字段而不是 UTC 时间戳：这样在任意时区下都成立
+    expect(d).not.toBeNull()
+    expect(d?.getFullYear()).toBe(2025)
+    expect(d?.getMonth()).toBe(0)
+    expect(d?.getDate()).toBe(1)
+    expect(d?.getHours()).toBe(0)
+    expect(d?.getMinutes()).toBe(0)
+    expect(d?.getSeconds()).toBe(0)
+    // 与本地构造完全一致（修复前是 UTC 零点，且负偏移时区下直接返回 null）
+    expect(d?.getTime()).toBe(new Date(2025, 0, 1).getTime())
   })
 
   it('年-月-日 格式的越界 / 滚动日期通过本地字段比对被拒绝', () => {

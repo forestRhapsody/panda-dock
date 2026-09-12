@@ -163,17 +163,16 @@ describe('detect：JWT', () => {
     expect(detect('a$b.c.d')?.kind).not.toBe('jwt')
   })
 
-  it('两段式 token 会被裸域名规则误判为 URL（现状记录，源码疑点）', () => {
+  it('两段式 token 不再被裸域名规则误判为 URL（回归：裸域名 TLD 白名单）', () => {
     const res = detect('eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ')
-    expect(res?.kind).not.toBe('jwt')
-    expect(res?.kind).toBe('url')
-    expect(res?.copy).toBe('https://eyjhbgcioijiuzi1nij9.eyjhijoxfq/')
+    expect(res?.kind).not.toBe('url')
+    expect(res?.items ?? []).not.toContainEqual(expect.objectContaining({ kind: 'url' }))
   })
 
-  it('payload 不是 JSON 时三段式 token 降级为 URL（现状记录，源码疑点）', () => {
+  it('payload 不是 JSON 时三段式 token 也不再降级成 URL（回归：裸域名 TLD 白名单）', () => {
     const res = detect('eyJhbGciOiJIUzI1NiJ9.bm90LWpzb24.c2ln')
-    expect(res?.kind).not.toBe('jwt')
-    expect(res?.kind).toBe('url')
+    expect(res?.kind).not.toBe('url')
+    expect(res?.items ?? []).not.toContainEqual(expect.objectContaining({ kind: 'url' }))
   })
 })
 
@@ -386,37 +385,19 @@ describe('detect：时间戳（秒 / 毫秒 / 日期文本）', () => {
     expect(detect('Mon, 01 Jan 1899 00:00:00 GMT')).toBeNull()
   })
 
-  it('YYYY-MM-DD 是 date-only（按 UTC 解析），但年份校验用本地日历：负偏移时区会被拒识（现状记录，源码疑点）', () => {
-    const utcMidnight = new Date('2025-01-01')
-    const sameLocalDate =
-      utcMidnight.getFullYear() === 2025 &&
-      utcMidnight.getMonth() === 0 &&
-      utcMidnight.getDate() === 1
+  it('YYYY-MM-DD 是 date-only，按本地零点解析（回归：负偏移时区曾被拒识）', () => {
     const res = detect('2025-01-01')
-    if (!sameLocalDate) {
-      // 如 America/New_York：本地日历回退到 2024-12-31，parseCustomDate 的本地年月日校验因此判为非法
-      expect(res).toBeNull()
-      return
-    }
+    const local = new Date(2025, 0, 1)
     expect(fieldMap(res)).toMatchObject({
-      seconds: '1735689600',
-      milliseconds: '1735689600000',
-      iso: '2025-01-01T00:00:00.000Z',
+      seconds: String(Math.floor(local.getTime() / 1000)),
+      milliseconds: String(local.getTime()),
+      iso: local.toISOString(),
     })
   })
 
   it('点分隔日期被规范化为年-月-日，行为与 YYYY-MM-DD 完全一致', () => {
-    const utcMidnight = new Date('2025-01-01')
-    const sameLocalDate =
-      utcMidnight.getFullYear() === 2025 &&
-      utcMidnight.getMonth() === 0 &&
-      utcMidnight.getDate() === 1
     const res = detect('2025.01.01')
-    if (!sameLocalDate) {
-      expect(res).toBeNull()
-      return
-    }
-    expect(fieldMap(res)).toMatchObject({ iso: '2025-01-01T00:00:00.000Z' })
+    expect(fieldMap(res)).toMatchObject({ iso: new Date(2025, 0, 1).toISOString() })
   })
 
   it('斜杠日期按本地时间解析', () => {
@@ -865,15 +846,14 @@ describe('detect：自由文本中的嵌入式挖掘', () => {
     })
   })
 
-  it('句子中的 JWT 会额外产生一条重叠的伪 URL 项（现状记录，源码疑点）', () => {
-    // extractUrls 对整段原文跑裸域名正则，token 的 header.payload 被当成域名，
-    // 且去重只针对「带协议 URL」，无法感知已识别的 JWT 区间
+  it('句子中的 JWT 不再额外产生重叠的伪 URL 项（回归：裸域名 TLD 白名单）', () => {
+    // 修复前：extractUrls 对整段原文跑裸域名正则，token 的 header.payload 被当成域名，
+    // 于是结果里多出一条指向不存在站点的伪 URL。
     const token = makeToken({ alg: 'HS256' }, { a: 1 })
     const input = `token: ${token} 已生成`
     const res = detect(input)
-    const urlItem = res?.items?.find((i) => i.kind === 'url')
-    expect(urlItem?.sourceMatch.startIndex).toBe(7)
-    expect(urlItem?.sourceMatch.endIndex).toBeLessThan(7 + token.length)
+    expect(res?.items?.some((i) => i.kind === 'url')).toBe(false)
+    expect(res?.items?.some((i) => i.kind === 'jwt')).toBe(true)
   })
 
   it('多个 Base64 候选按正文顺序全部保留（含重复内容）', () => {
@@ -954,9 +934,17 @@ describe('detect：误判防护（非支持类型必须返回 null）', () => {
     expect(detect(input)).toBeNull()
   })
 
-  it('纯文本里出现的 xxx.tld 会被当成网址（裸域名提取的副作用，现状记录）', () => {
-    expect(expectKind('see file.txt', 'url').copy).toBe('https://file.txt/')
-    expect(expectKind('README.md', 'url').copy).toBe('https://readme.md/')
+  it('常见文件名不再被当成网址（回归：裸域名 TLD 白名单）', () => {
+    const kindsOf = (input: string) => {
+      const res = detect(input)
+      return [res?.kind, ...(res?.items ?? []).map((i) => i.kind)]
+    }
+    // .txt / .md / .zip 都不是白名单里的 TLD（`md` 虽是摩尔多瓦 ccTLD，但作为文件名远更常见）
+    for (const input of ['see file.txt', 'README.md', 'archive.zip']) {
+      expect(kindsOf(input), input).not.toContain('url')
+    }
+    // 常见域名仍然照常识别
+    expect(expectKind('example.com', 'url').copy).toBe('https://example.com/')
   })
 })
 

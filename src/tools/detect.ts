@@ -106,6 +106,148 @@ function normalizeUrl(raw: string): string | null {
   return null
 }
 
+/**
+ * 裸域名只认常见 TLD。
+ * 背景：`BARE_URL_RE` 把 `[a-z]{2,}` 当 TLD，于是 `file.txt` / `README.md` 这类**文件名**会被当成网址
+ * （`md` 虽是摩尔多瓦 ccTLD，但作为文件名出现得多得多）。这里用白名单换取可预测的误判方向：
+ * 宁可漏报冷门后缀，也不把普通文件名当网址。需要新后缀时在此补充（注意别把常见文件扩展名放进来）。
+ */
+const KNOWN_TLDS = new Set([
+  // 通用 / 常见新 gTLD
+  'com',
+  'net',
+  'org',
+  'edu',
+  'gov',
+  'mil',
+  'int',
+  'info',
+  'biz',
+  'name',
+  'pro',
+  'mobi',
+  'asia',
+  'app',
+  'dev',
+  'io',
+  'ai',
+  'sh',
+  'co',
+  'me',
+  'tv',
+  'cc',
+  'xyz',
+  'top',
+  'site',
+  'online',
+  'store',
+  'shop',
+  'tech',
+  'cloud',
+  'blog',
+  'wiki',
+  'news',
+  'media',
+  'live',
+  'life',
+  'world',
+  'today',
+  'space',
+  'fun',
+  'games',
+  'group',
+  'team',
+  'work',
+  'zone',
+  'network',
+  'systems',
+  'solutions',
+  'digital',
+  'studio',
+  'agency',
+  'design',
+  'art',
+  'club',
+  'email',
+  'host',
+  'page',
+  'link',
+  'click',
+  // 常见国家 / 地区
+  'cn',
+  'uk',
+  'de',
+  'fr',
+  'jp',
+  'kr',
+  'ru',
+  'br',
+  'in',
+  'au',
+  'ca',
+  'us',
+  'eu',
+  'ch',
+  'it',
+  'nl',
+  'se',
+  'no',
+  'es',
+  'pl',
+  'be',
+  'at',
+  'dk',
+  'fi',
+  'cz',
+  'pt',
+  'gr',
+  'tr',
+  'tw',
+  'hk',
+  'sg',
+  'my',
+  'th',
+  'vn',
+  'id',
+  'ph',
+  'mx',
+  'ar',
+  'cl',
+  'za',
+  'eg',
+  'sa',
+  'ae',
+  'il',
+  'nz',
+  'ie',
+  'is',
+  'lu',
+  'ee',
+  'lv',
+  'lt',
+  'sk',
+  'si',
+  'hr',
+  'rs',
+  'bg',
+  'ro',
+  'hu',
+  'ua',
+  'kz',
+  'pk',
+  'bd',
+  'lk',
+  'np',
+])
+
+/** 裸域名候选的 TLD 是否可信（去掉端口 / 路径 / 查询 / hash 后取最后一段） */
+function isKnownBareDomain(raw: string): boolean {
+  const host = raw.split(/[/?#]/)[0].split(':')[0].toLowerCase()
+  const dot = host.lastIndexOf('.')
+  if (dot < 0) return false
+  return KNOWN_TLDS.has(host.slice(dot + 1))
+}
+
 interface ExtractedUrl {
   value: string
   start: number
@@ -128,6 +270,8 @@ function extractUrls(input: string): ExtractedUrl[] {
     const start = m.index ?? 0
     const end = start + m[0].length
     if (found.some((p) => start >= p.start && end <= p.end)) continue
+    // 文件名不是网址：只有 TLD 在白名单里才认（`file.txt` / `README.md` / base64 片段都被挡在这里）
+    if (!isKnownBareDomain(m[0])) continue
     const url = normalizeUrl(m[0])
     if (url) found.push({ value: url, start, end })
   }
@@ -201,6 +345,9 @@ function detectUrl(s: string): DetectResult | null {
       } else if (/^(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?([/?#].*)?$/.test(s)) {
         url = new URL(`http://${s}`)
       } else if (/^[a-z0-9.-]+\.[a-z]{2,}(?::\d+)?([/?#].*)?$/i.test(s)) {
+        // 与 extractUrls 同一套 TLD 白名单：否则 `README.md` / `file.txt` 会在「纯输入」路径上
+        // 绕过白名单被直接判成网址
+        if (!isKnownBareDomain(s)) return null
         url = new URL(`https://${s}`)
       } else {
         url = null

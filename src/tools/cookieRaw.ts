@@ -76,6 +76,31 @@ export function serializeCookieToRaw(
 }
 
 /**
+ * 按 `;` 切分 Set-Cookie / Cookie 头，但**跳过双引号内的分号**。
+ * RFC 6265 允许 cookie-value 是 quoted-string（如 `note="a;b"`），直接 `split(';')`
+ * 会把值截断成 `"a` —— 属于静默数据损坏：用户把解析结果存回去就会写坏 Cookie。
+ * 引号按原样保留在值里，Raw 模式得以原样往返。
+ */
+function splitCookieSegments(line: string): string[] {
+  const segments: string[] = []
+  let current = ''
+  let inQuote = false
+  for (const ch of line) {
+    if (ch === '"') {
+      inQuote = !inQuote
+      current += ch
+    } else if (ch === ';' && !inQuote) {
+      segments.push(current)
+      current = ''
+    } else {
+      current += ch
+    }
+  }
+  segments.push(current)
+  return segments.map((p) => p.trim()).filter(Boolean)
+}
+
+/**
  * 解析单行 Set-Cookie 语法
  */
 function parseSetCookieLine(
@@ -83,10 +108,7 @@ function parseSetCookieLine(
   defaultDomain?: string,
   defaultPath = '/',
 ): CookieSetDetails | null {
-  const parts = line
-    .split(';')
-    .map((p) => p.trim())
-    .filter(Boolean)
+  const parts = splitCookieSegments(line)
   if (parts.length === 0) return null
 
   const first = parts[0]
@@ -233,10 +255,8 @@ export function parseRawCookie(
     }
 
     // 检查本行是单项带属性的 Set-Cookie 还是分号拼接的多项 key=val
-    const semicolonParts = line
-      .split(';')
-      .map((p) => p.trim())
-      .filter(Boolean)
+    // （同样要跳过引号内的分号，否则 `note="a;b"` 会被误判成两个条目）
+    const semicolonParts = splitCookieSegments(line)
     const hasAttr = semicolonParts.slice(1).some((p) => {
       const eq = p.indexOf('=')
       const k = (eq > 0 ? p.slice(0, eq) : p).trim().toLowerCase()

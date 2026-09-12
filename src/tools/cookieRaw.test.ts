@@ -14,6 +14,39 @@ describe('parseRawCookie', () => {
     expect(res.cookies.every((c) => c.path === '/' && c.secure === false)).toBe(true)
   })
 
+  it('引号内的分号不当作分隔符：RFC 6265 的 quoted-string 值不被截断', () => {
+    const res = parseRawCookie('note="a;b"; theme=dark')
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+    expect(res.cookies.map((c) => c.name)).toEqual(['note', 'theme'])
+    // 引号按原样保留在值里：Raw 模式要能原样往返
+    expect(res.cookies[0].value).toBe('"a;b"')
+    expect(res.cookies[1].value).toBe('dark')
+  })
+
+  it('带引号值的完整 Set-Cookie 行：属性照常解析，值不被截断', () => {
+    const res = parseRawCookie('Set-Cookie: note="a;b"; Domain=example.com; Path=/; HttpOnly')
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+    expect(res.cookies).toHaveLength(1)
+    expect(res.cookies[0]).toMatchObject({
+      name: 'note',
+      value: '"a;b"',
+      domain: 'example.com',
+      path: '/',
+      httpOnly: true,
+    })
+  })
+
+  it('引号值可以原样往返：序列化后再解析得到同一个值', () => {
+    const raw = serializeCookieToRaw({ name: 'note', value: '"a;b"' })
+    expect(raw).toBe('note="a;b"')
+    const back = parseRawCookie(raw)
+    expect(back.ok).toBe(true)
+    if (!back.ok) return
+    expect(back.cookies[0].value).toBe('"a;b"')
+  })
+
   it('解析完整 Set-Cookie 行（含前缀与全部属性）', () => {
     const res = parseRawCookie(
       'Set-Cookie: token=abc; Domain=example.com; Path=/api; HttpOnly; Secure; SameSite=None',
@@ -355,12 +388,12 @@ describe('parseRawCookie：文本模式边界', () => {
     ])
   })
 
-  it('值里的引号与空格原样保留；引号内的分号会被误切（现状限制）', () => {
+  it('值里的引号与空格原样保留；引号内的分号不再被误切（回归）', () => {
     expect(cookiesOf('token="abc def"')[0].value).toBe('"abc def"')
-    // 解析器不识别引号，按 ; 硬切 —— `note="a;b"` 的值被截成 '"a'，另一段因无 = 被丢弃
-    const broken = cookiesOf('note="a;b"')
-    expect(broken).toHaveLength(1)
-    expect(broken[0]).toMatchObject({ name: 'note', value: '"a' })
+    // 回归：切分改为引号感知，`note="a;b"` 的值完整保留；修复前会被按 ; 硬切成 '"a' 且丢掉另一段
+    const quoted = cookiesOf('note="a;b"')
+    expect(quoted).toHaveLength(1)
+    expect(quoted[0]).toMatchObject({ name: 'note', value: '"a;b"' })
   })
 
   it('同名 Cookie 不去重，顺序与输入一致（domain/path 不同时尤其重要）', () => {
