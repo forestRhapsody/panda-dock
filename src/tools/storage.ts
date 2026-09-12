@@ -1,6 +1,7 @@
 import i18n from '@/i18n'
 import { isExtension } from '@/utils/env'
 import {
+  isErrorCode,
   MSG_COOKIE_CLEAR_ALL,
   MSG_COOKIE_GET_ALL,
   MSG_COOKIE_REMOVE,
@@ -11,6 +12,7 @@ import {
   MSG_STORAGE_REMOVE,
   MSG_STORAGE_SET,
 } from '@/utils/messages'
+import type { ErrorCode } from '@/utils/messages'
 
 import type { CookieSetDetails } from './cookieRaw'
 
@@ -62,6 +64,44 @@ export interface CookieSnapshot {
 export type CookieResult = { ok: true; data: CookieSnapshot } | { ok: false; error: string }
 
 export type SimpleResult = { ok: true } | { ok: false; error: string }
+
+/**
+ * 错误码 → i18n key。必须与 `utils/messages.ts` 的 ERROR_CODES 一一对应，
+ * 且对应 key 必须在 zh/en 语言包中同时存在（由 storage.test.ts 断言兜底）。
+ */
+const ERROR_KEYS: Record<ErrorCode, string> = {
+  ERR_COOKIE_NO_PAGE_URL: 'tool.storage.errorCookieNoPageUrl',
+  ERR_COOKIE_MISSING_PARAM: 'tool.storage.errorCookieMissingParam',
+  ERR_COOKIE_REMOVE_FAILED: 'tool.storage.errorCookieDelete',
+  ERR_COOKIE_SET_FAILED: 'tool.storage.errorCookieSetFailed',
+  ERR_COOKIE_EMPTY_PAYLOAD: 'tool.storage.errorCookieEmptyPayload',
+  ERR_NO_TARGET_URL: 'tool.storage.errorNoTargetUrl',
+  ERR_UNEXPECTED: 'tool.storage.errorUnexpected',
+}
+
+/** 供测试断言映射完备性（见 storage.test.ts） */
+export function storageErrorKey(code: ErrorCode): string {
+  return ERROR_KEYS[code]
+}
+
+/**
+ * 把 background 的失败响应转成当前语言的文案。
+ * - 新版 background 回 `{ ok:false, code, detail? }` → 按 code 映射；
+ * - 升级过渡期（扩展页已更新、Service Worker 仍是旧版）回的是 error 句子 → 原样透传，不丢信息；
+ * - 两者都没有 → 使用调用方给的兜底 key。
+ */
+export function resolveStorageError(res: unknown, fallbackKey: string): string {
+  const payload = res as { code?: unknown; detail?: unknown; error?: unknown } | null | undefined
+  if (isErrorCode(payload?.code)) {
+    const detail = typeof payload?.detail === 'string' && payload.detail ? payload.detail : ''
+    if (payload.code === 'ERR_COOKIE_SET_FAILED' && detail) {
+      return i18n.t('tool.storage.errorCookieSetFailedDetail', { detail })
+    }
+    return i18n.t(ERROR_KEYS[payload.code])
+  }
+  if (typeof payload?.error === 'string' && payload.error) return payload.error
+  return i18n.t(fallbackKey)
+}
 
 const MAX_KEYS = 2000
 const MAX_VALUE_CHARS = 8000
@@ -233,7 +273,7 @@ export async function listCookies(pageUrl?: string): Promise<CookieResult> {
       url: targetUrl,
     })
     if (!res?.ok) {
-      return { ok: false, error: res?.error ?? i18n.t('tool.storage.errorUnreadable') }
+      return { ok: false, error: resolveStorageError(res, 'tool.storage.errorUnreadable') }
     }
     const encoder = new TextEncoder()
     const rawCookies = (res.data?.cookies ?? []) as CookieEntry[]
@@ -267,7 +307,7 @@ export async function removeCookie(cookie: CookieEntry, pageUrl: string): Promis
       storeId: cookie.storeId,
     })
     if (res?.ok) return { ok: true }
-    return { ok: false, error: res?.error ?? i18n.t('tool.storage.errorCookieDelete') }
+    return { ok: false, error: resolveStorageError(res, 'tool.storage.errorCookieDelete') }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
@@ -282,7 +322,7 @@ export async function clearAllCookies(pageUrl: string): Promise<SimpleResult> {
       url: pageUrl,
     })
     if (res?.ok) return { ok: true }
-    return { ok: false, error: res?.error ?? i18n.t('tool.storage.errorCookieClear') }
+    return { ok: false, error: resolveStorageError(res, 'tool.storage.errorCookieClear') }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
@@ -312,7 +352,7 @@ export async function saveCookies(
         : undefined,
     })
     if (res?.ok) return { ok: true }
-    return { ok: false, error: res?.error ?? i18n.t('tool.storage.errorCookieSave') }
+    return { ok: false, error: resolveStorageError(res, 'tool.storage.errorCookieSave') }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }

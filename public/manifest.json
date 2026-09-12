@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Panda Dock",
-  "description": "Panda Dock：现代、高效的 Chrome 开发者日常工具箱，内置智能解析、网页存储、Base64、JSON、网址、时间戳与二维码等常用工具。",
+  "default_locale": "zh_CN",
+  "description": "__MSG_appDescription__",
   "version": "0.2.0",
   "icons": {
     "16": "icons/icon16.png",
@@ -30,14 +31,14 @@
         "default": "Alt+Shift+D",
         "mac": "Alt+Shift+D"
       },
-      "description": "打开/收起工具箱"
+      "description": "__MSG_commandToggleToolkit__"
     },
     "toggle-detect": {
       "suggested_key": {
         "default": "Alt+Shift+S",
         "mac": "Alt+Shift+S"
       },
-      "description": "快速唤起智能解析"
+      "description": "__MSG_commandToggleDetect__"
     }
   },
   "background": {

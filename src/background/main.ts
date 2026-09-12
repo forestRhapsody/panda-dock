@@ -1,4 +1,5 @@
 import {
+  errorResponse,
   MSG_CLOSE_DRAWER,
   MSG_CLOSE_NATIVE_SIDE_PANEL,
   MSG_COOKIE_CLEAR_ALL,
@@ -55,13 +56,14 @@ if (typeof sessionArea?.setAccessLevel === 'function') {
 /**
  * 右键菜单「智能解析选中文字」：安装/更新时注册。
  * 选中文字后点击 → 把选中文本与点击位置转给当前页 content script，在网页内弹出悬浮面板。
+ * 标题走 chrome.i18n（文案在 public/_locales/{zh_CN,en}/messages.json），
+ * 不再手写「按浏览器语言二选一」的分支——那需要维护两套字符串，且随语言增加会失控。
  */
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
-    const zh = chrome.i18n.getUILanguage().toLowerCase().startsWith('zh')
     chrome.contextMenus.create({
       id: DETECT_MENU_ID,
-      title: zh ? '智能解析选中文字' : 'Smart parse selected text',
+      title: chrome.i18n.getMessage('contextMenuDetectSelection'),
       contexts: ['selection', 'editable'],
     })
   })
@@ -240,10 +242,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         const url = await resolveTargetUrl((message as { url?: string }).url)
         if (!url) {
-          sendResponse({
-            ok: false,
-            error: '无法读取当前页面的 Cookie：当前标签页不是 http(s) 网页',
-          })
+          sendResponse(errorResponse('ERR_COOKIE_NO_PAGE_URL'))
           return
         }
         const cookies = await chrome.cookies.getAll({ url })
@@ -270,7 +269,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           },
         })
       } catch (e) {
-        sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })
+        sendResponse(errorResponse('ERR_UNEXPECTED', e instanceof Error ? e.message : String(e)))
       }
     })()
     return true
@@ -281,17 +280,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         const { url, name, storeId } = message as { url?: string; name?: string; storeId?: string }
         if (!url || !name) {
-          sendResponse({ ok: false, error: '缺少 Cookie url 或 name' })
+          sendResponse(errorResponse('ERR_COOKIE_MISSING_PARAM'))
           return
         }
         const removed = await chrome.cookies.remove({ url, name, storeId })
         if (removed) {
           sendResponse({ ok: true })
         } else {
-          sendResponse({ ok: false, error: '删除 Cookie 失败' })
+          sendResponse(errorResponse('ERR_COOKIE_REMOVE_FAILED'))
         }
       } catch (e) {
-        sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })
+        sendResponse(errorResponse('ERR_UNEXPECTED', e instanceof Error ? e.message : String(e)))
       }
     })()
     return true
@@ -335,7 +334,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         const targetUrl = await resolveTargetUrl(payload.url)
         if (!targetUrl) {
-          sendResponse({ ok: false, error: '无法获取目标网页 URL' })
+          sendResponse(errorResponse('ERR_NO_TARGET_URL'))
           return
         }
 
@@ -356,7 +355,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             : []
 
         if (list.length === 0) {
-          sendResponse({ ok: false, error: '未提供待保存的 Cookie 数据' })
+          sendResponse(errorResponse('ERR_COOKIE_EMPTY_PAYLOAD'))
           return
         }
 
@@ -395,16 +394,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
           const result = await chrome.cookies.set(setDetails)
           if (!result) {
-            const err = chrome.runtime.lastError?.message
-            throw new Error(
-              err || `写入 Cookie [${item.name}] 失败，请检查作用域 Domain 或 Secure 属性`,
-            )
+            // 只回错误码：文案由 UI 侧按当前语言生成（Chrome 原生报错作为 detail 透传）
+            sendResponse(errorResponse('ERR_COOKIE_SET_FAILED', chrome.runtime.lastError?.message))
+            return
           }
         }
 
         sendResponse({ ok: true, count: list.length })
       } catch (e) {
-        sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })
+        sendResponse(errorResponse('ERR_UNEXPECTED', e instanceof Error ? e.message : String(e)))
       }
     })()
     return true
@@ -415,7 +413,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         const url = await resolveTargetUrl((message as { url?: string }).url)
         if (!url) {
-          sendResponse({ ok: false, error: '无法获取目标网页 URL' })
+          sendResponse(errorResponse('ERR_NO_TARGET_URL'))
           return
         }
         const cookies = await chrome.cookies.getAll({ url })
@@ -430,7 +428,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         )
         sendResponse({ ok: true })
       } catch (e) {
-        sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) })
+        sendResponse(errorResponse('ERR_UNEXPECTED', e instanceof Error ? e.message : String(e)))
       }
     })()
     return true

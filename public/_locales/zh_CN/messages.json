@@ -1,0 +1,18 @@
+{
+  "appDescription": {
+    "message": "Panda Dock：现代、高效的 Chrome 开发者日常工具箱，内置智能解析、网页存储、Base64、JSON、网址、时间戳与二维码等常用工具。",
+    "description": "扩展简介，展示在 Chrome 应用商店与扩展管理页；所列工具与默认开启项保持一致（见 T87）。"
+  },
+  "commandToggleToolkit": {
+    "message": "打开/收起工具箱",
+    "description": "全局快捷键说明，展示在 chrome://extensions/shortcuts。"
+  },
+  "commandToggleDetect": {
+    "message": "快速唤起智能解析",
+    "description": "全局快捷键说明，展示在 chrome://extensions/shortcuts。"
+  },
+  "contextMenuDetectSelection": {
+    "message": "智能解析选中文字",
+    "description": "右键菜单项标题：解析当前选中的文字。"
+  }
+}

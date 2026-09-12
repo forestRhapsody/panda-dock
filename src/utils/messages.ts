@@ -56,3 +56,47 @@ export const MSG_OPEN_SHORTCUTS = 'OPEN_SHORTCUTS_PAGE'
 
 /** 悬浮球点击行为配置 */
 export type BallAction = 'drawer' | 'native'
+
+/**
+ * 跨端错误码。
+ * Service Worker 无法感知用户的语言设置（i18n 由各端的 useLocale 驱动），
+ * 因此 background **只回错误码**，由 UI 侧（src/tools/storage.ts）统一映射为当前语言文案，
+ * 避免在后台硬编码任何一种语言的句子（历史上曾因此让英文界面显示中文）。
+ * 新增错误码时必须同步：storage.ts 的 ERROR_KEYS 映射 + zh/en 语言包（由 storage.test.ts 断言兜底）。
+ */
+export const ERROR_CODES = [
+  /** 当前标签页不是 http(s) 网页，读不到 Cookie */
+  'ERR_COOKIE_NO_PAGE_URL',
+  /** 删除 Cookie 时缺少 url / name 参数 */
+  'ERR_COOKIE_MISSING_PARAM',
+  /** chrome.cookies.remove 未删除成功 */
+  'ERR_COOKIE_REMOVE_FAILED',
+  /** chrome.cookies.set 写入失败（多为 Domain 作用域或 Secure 属性不匹配） */
+  'ERR_COOKIE_SET_FAILED',
+  /** 没有可写入的 Cookie 数据 */
+  'ERR_COOKIE_EMPTY_PAYLOAD',
+  /** 无法确定目标网页地址 */
+  'ERR_NO_TARGET_URL',
+  /** 兜底：未预期的异常（detail 携带原始报错，便于排查） */
+  'ERR_UNEXPECTED',
+] as const
+
+export type ErrorCode = (typeof ERROR_CODES)[number]
+
+/** 运行时判定：只有已注册的错误码才走本地化映射，其余回退到调用方的兜底文案 */
+export function isErrorCode(value: unknown): value is ErrorCode {
+  return typeof value === 'string' && (ERROR_CODES as readonly string[]).includes(value)
+}
+
+/** background → UI 的统一失败响应：只表达语义（code），不携带任何语言的文案 */
+export interface ErrorResponse {
+  ok: false
+  code: ErrorCode
+  /** 可选诊断信息（如 Chrome 原生报错），由 UI 侧决定是否展示 */
+  detail?: string
+}
+
+/** 构造失败响应 */
+export function errorResponse(code: ErrorCode, detail?: string): ErrorResponse {
+  return detail ? { ok: false, code, detail } : { ok: false, code }
+}

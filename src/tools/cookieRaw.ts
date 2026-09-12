@@ -1,3 +1,5 @@
+import i18n from '@/i18n'
+
 export interface CookieSetDetails {
   url?: string
   name: string
@@ -151,7 +153,7 @@ export function parseRawCookie(
 ): { ok: true; cookies: CookieSetDetails[] } | { ok: false; error: string } {
   const trimmed = raw.trim()
   if (!trimmed) {
-    return { ok: false, error: '输入内容为空' }
+    return { ok: false, error: i18n.t('tool.storage.errorEmpty') }
   }
 
   // 1. 尝试 JSON 格式
@@ -160,17 +162,17 @@ export function parseRawCookie(
       const parsed = JSON.parse(trimmed) as unknown
       const items = Array.isArray(parsed) ? parsed : [parsed]
       if (items.length === 0) {
-        return { ok: false, error: 'JSON 数组为空' }
+        return { ok: false, error: i18n.t('tool.storage.rawErrorJsonArrayEmpty') }
       }
       const cookies: CookieSetDetails[] = []
       for (const item of items) {
         if (!item || typeof item !== 'object') {
-          return { ok: false, error: 'JSON 条目格式错误（需为对象）' }
+          return { ok: false, error: i18n.t('tool.storage.rawErrorJsonItemInvalid') }
         }
         const obj = item as Record<string, unknown>
         const name = String(obj.name ?? obj.Name ?? obj.key ?? '').trim()
         if (!name) {
-          return { ok: false, error: 'JSON 条目缺少 name 字段' }
+          return { ok: false, error: i18n.t('tool.storage.rawErrorJsonMissingName') }
         }
         const value = String(obj.value ?? obj.Value ?? '')
         const domain = obj.domain != null ? String(obj.domain).trim() : defaultDomain
@@ -204,7 +206,12 @@ export function parseRawCookie(
     } catch (e) {
       // 若 JSON 解析报错，若开头明显是 JSON 则直接报 JSON 错误，避免误判
       if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-        return { ok: false, error: `JSON 语法错误: ${e instanceof Error ? e.message : String(e)}` }
+        return {
+          ok: false,
+          error: i18n.t('tool.storage.rawErrorJsonSyntax', {
+            detail: e instanceof Error ? e.message : String(e),
+          }),
+        }
       }
     }
   }
@@ -263,7 +270,7 @@ export function parseRawCookie(
   }
 
   if (cookies.length === 0) {
-    return { ok: false, error: '未识别出合法的 Cookie 键值对（例如 name=value）' }
+    return { ok: false, error: i18n.t('tool.storage.rawErrorNoPairs') }
   }
 
   return { ok: true, cookies }
