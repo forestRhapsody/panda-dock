@@ -1,0 +1,41 @@
+name: CI
+
+# 质量门禁：类型检查 → 只读 lint → 单元测试 → 完整构建
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 版本取自 package.json 的 packageManager 字段（pnpm@10.17.0）。
+      # 注意：不要同时传 version，否则 action 会因重复指定版本而直接报错。
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          # 版本单一来源：读取 package.json 的 volta.node（当前 24.8.0），升级 volta 后 CI 自动跟随
+          node-version-file: package.json
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm type-check
+
+      # 只读校验：本地的 `pnpm lint` 带 --fix，会在 CI 里改写工作区文件
+      - name: Lint (read-only)
+        run: pnpm lint:check
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build extension
+        run: pnpm build
