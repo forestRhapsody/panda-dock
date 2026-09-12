@@ -363,19 +363,20 @@
   opacity: 0.7;
 }
 
-/* 荧光标记涂抹层：紧密跟随字符自然流动，换行独立克隆，仅对当前项精准着色 */
+/* 匹配标记涂抹层：紧密跟随字符自然流动，换行独立克隆。
+   扁平样式（T24）——无圆角、无描边：当前项用荧光色，其余待切换项用次级背景色，只靠颜色区分 */
 .tw-area-mark {
   color: transparent;
   background: var(--tk-highlight);
-  border-radius: 3px;
   padding: 1px 2px;
   margin: 0 -1px;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
-  box-shadow: 0 0 0 1px var(--tk-highlight-border);
-  transition:
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: background-color 0.15s ease;
+}
+
+.tw-area-mark--idle {
+  background: var(--tk-secondary);
 }
 
 .tw-actions {
@@ -919,7 +920,9 @@
 .tw-nav {
   display: flex;
   gap: 2px;
-  padding: 0 14px;
+  /* 与按钮内边距配合，让首个 tab 的文字左缘与头部标题对齐：8(把手) + 4 + 14 = 26 = 8 + 18(.tw__header)；
+     原先 0 14px + 按钮 10px 16px 会比头部多缩进 12px，看着像凭空多出一段空白 */
+  padding: 0 4px;
   border-bottom: 1px solid var(--tk-border);
   background: var(--tk-card);
   flex: none;
@@ -935,7 +938,8 @@
 
 .tw-nav__btn {
   flex-shrink: 0;
-  padding: 10px 16px;
+  /* 14px：与 .tw-nav 的 4px 叠加后文字与头部标题对齐；同时 9 个 tab 在默认抽屉宽度下不再横向溢出 */
+  padding: 10px 14px;
   border: none;
   border-bottom: 2px solid transparent;
   border-radius: 0;

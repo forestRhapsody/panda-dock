@@ -4,7 +4,9 @@ import i18n from '@/i18n'
 
 import {
   escapeJson,
+  formatAndMinifyJson,
   formatJson,
+  isJsonText,
   minifyJson,
   parseJsonc,
   SAMPLE_JSON,
@@ -607,5 +609,42 @@ describe('错误文案的 i18n 双语', () => {
     const zh = unescapeJson('plain')
     expect(zh.error).toBe(i18n.t('tool.json.unescapeNoChange'))
     expect(CJK.test(zh.error ?? '')).toBe(true)
+  })
+})
+
+describe('isJsonText：只做布尔校验（智能解析的候选预筛）', () => {
+  it('合法 JSON / JSONC 为 true', () => {
+    expect(isJsonText('{"a":1}')).toBe(true)
+    expect(isJsonText('[1,2]')).toBe(true)
+    expect(isJsonText('{ /* c */ "a": 1, }')).toBe(true)
+    expect(isJsonText('null')).toBe(true)
+  })
+
+  it('非 JSON 与空内容为 false', () => {
+    expect(isJsonText('{a: 1}')).toBe(false)
+    expect(isJsonText('function f() { return 1 }')).toBe(false)
+    expect(isJsonText('')).toBe(false)
+    expect(isJsonText('   ')).toBe(false)
+  })
+
+  it('极深嵌套不会抛栈溢出，按不可解析处理（回归）', () => {
+    const deep = '['.repeat(20000)
+    expect(isJsonText(deep)).toBe(false)
+    expect(parseJsonc(deep).ok).toBe(false)
+    expect(formatJson(deep).ok).toBe(false)
+    expect(formatAndMinifyJson(deep)).toBeNull()
+  })
+})
+
+describe('formatAndMinifyJson：一次解析同时给出两份文本', () => {
+  it('格式化按 2 空格缩进、压缩为单行，键序保持原样', () => {
+    expect(formatAndMinifyJson('{"b":2,  "a": 1}')).toEqual({
+      formatted: '{\n  "b": 2,\n  "a": 1\n}',
+      minified: '{"b":2,"a":1}',
+    })
+  })
+
+  it('非法输入返回 null', () => {
+    expect(formatAndMinifyJson('{bad}')).toBeNull()
   })
 })

@@ -139,7 +139,14 @@ export function parseJsonc(
   | { ok: true; value: unknown }
   | { ok: false; error: string; line: number; column: number; offset: number } {
   const errors: ParseError[] = []
-  const value = parse(raw, errors, { allowTrailingComma: true })
+  let value: unknown
+  try {
+    value = parse(raw, errors, { allowTrailingComma: true })
+  } catch {
+    // 极深嵌套（例如两万层 `[`）会让 jsonc-parser 递归爆栈抛 RangeError。
+    // 这里一律按「不可解析」返回：否则异常会穿透 detect()/JsonTool，让整块界面渲染失败
+    return { ok: false, error: i18n.t('tool.json.errGeneric'), line: 1, column: 1, offset: 0 }
+  }
 
   // JSON 允许 null（解析为 null），空内容解析为 undefined
   if (value === undefined && errors.length === 0) {
@@ -159,6 +166,35 @@ export function parseJsonc(
     }
   }
   return { ok: true, value }
+}
+
+/**
+ * 只做「能不能解析成 JSON/JSONC」的布尔校验 —— 不构造错误文案、不算行列。
+ * 供候选预筛这类只关心能不能解析、且会对大量片段调用的场景使用（`parseJsonc` 的失败分支
+ * 要拼 i18n 文案与行列，成本高得多）。
+ */
+export function isJsonText(raw: string): boolean {
+  const errors: ParseError[] = []
+  let value: unknown
+  try {
+    value = parse(raw, errors, { allowTrailingComma: true })
+  } catch {
+    return false // 极深嵌套爆栈：按不可解析处理
+  }
+  if (errors.length > 0) return false
+  // 与 parseJsonc 保持一致：空内容（undefined 且无错）不算合法 JSON
+  return value !== undefined
+}
+
+/**
+ * 解析一次，同时给出「格式化（2 空格缩进）」与「压缩」两份文本。
+ * 智能解析的结果块两者都要（格式化/压缩切换）；分别调用 formatJson + minifyJson
+ * 会把同一段大 JSON 解析两遍 —— 这里只解析一次（T20 的性能优化）。
+ */
+export function formatAndMinifyJson(raw: string): { formatted: string; minified: string } | null {
+  const res = parseJsonc(raw)
+  if (!res.ok) return null
+  return { formatted: JSON.stringify(res.value, null, 2), minified: JSON.stringify(res.value) }
 }
 
 /** 递归按字典序排序所有 Object 键名（保持 Array 元素顺序不变） */

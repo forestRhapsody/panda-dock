@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 
 import i18n from '@/i18n'
 
-import { parseCustomDate, parseStamp, toLocalText, toRelative } from './timestamp'
+import { parseCustomDate, parseStamp, parseTimeValue, toLocalText, toRelative } from './timestamp'
 
 /** 中日韩字符与全角标点：用来断言「英文界面下不出现中文」 */
 const CJK = /[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef]/
@@ -594,5 +594,23 @@ describe('timestamp 文案 i18n（中英双语）', () => {
       '相对现在',
     ])
     expect(CJK.test(res.rows[5].value)).toBe(true)
+  })
+})
+
+describe('parseTimeValue：时间值口径（独立时间戳候选与 JSON 内时间提示共用）', () => {
+  it('数字：9~10 位按秒、11~16 位按毫秒；长度不合格返回 null', () => {
+    expect(parseTimeValue('1516239022')?.getTime()).toBe(1516239022 * 1000)
+    expect(parseTimeValue('1516239022000')?.getTime()).toBe(1516239022000)
+    expect(parseTimeValue('2025')).toBeNull() // 太短（普通年份数字）
+    expect(parseTimeValue('3600000')).toBeNull() // 7 位：毫秒时长，不成时间点
+    expect(parseTimeValue('15162390220000000')).toBeNull() // 17 位：太长
+  })
+
+  it('日期文本走 parseCustomDate；空串 / 随机文本为 null', () => {
+    expect(parseTimeValue('2025-01-01')?.getFullYear()).toBe(2025)
+    expect(parseTimeValue('2020年1月1日')?.getFullYear()).toBe(2020)
+    expect(parseTimeValue('')).toBeNull()
+    expect(parseTimeValue('   ')).toBeNull()
+    expect(parseTimeValue('not a date')).toBeNull()
   })
 })

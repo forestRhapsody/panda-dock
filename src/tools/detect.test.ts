@@ -97,16 +97,82 @@ describe('detect：JSON / JSONC', () => {
     expect(expectKind('{"名":"值😀"}', 'json').copy).toBe('{\n  "名": "值😀"\n}')
   })
 
-  it.each(['{bad}', '{"a":}', '{"a":1} extra', '["a"', '{"a" 1}', 'NaN'])(
+  // 注：'{"a":1} extra' 这类「合法 JSON + 尾巴文字」现在会被拆出 JSON 项（见「正文夹带的 JSON」），
+  // 因此不再在这里断言整体不可解析
+  it.each(['{bad}', '{"a":}', '["a"', '{"a" 1}', 'NaN'])(
     '%s 不是合法 JSON，且不应被其它类型误判',
     (input) => {
       expect(detect(input)).toBeNull()
     },
   )
 
-  it('仅有 { / [ 开头才进入 JSON 分支：前置注释的 JSONC 不识别（现状记录）', () => {
-    // formatJson 本身支持注释，但 detectJson 的 isJsonLike 只认首字符，属于源码疑点
-    expect(detect('// note\n{"a":1}')).toBeNull()
+  it('前置注释的 JSONC：注释后的 JSON 现在也能被识别（回归：曾整段不识别）', () => {
+    // detectJson 的 isJsonLike 只认首字符，但「正文夹带 JSON」的扫描会把注释后的对象挖出来
+    const res = detect('// note\n{"a":1}')
+    expect(res?.kind).toBe('json')
+    expect(res?.copy).toBe('{\n  "a": 1\n}')
+  })
+})
+
+describe('detect：正文夹带的 JSON', () => {
+  it('数据 + 说明文字：JSON 与其它可解析目标各自成项（回归）', () => {
+    const res = detect(
+      '{"name":"Panda Dock","version":"1.0.0","tools":["parse","storage","qrcode"],"active":true}\n\n2020年1月1日',
+    )
+    expect(res?.items?.map((it) => it.kind)).toEqual(['json', 'timestamp'])
+    // 首项是格式化后的 JSON，而不是被后面的日期顶掉
+    expect(res?.items?.[0].copy).toContain('"name": "Panda Dock"')
+  })
+
+  it('JSON 夹在中文里也能识别（回归）', () => {
+    const res = detect('看这个 {"a":1} 怎么样')
+    expect(res?.kind).toBe('json')
+    expect(res?.copy).toBe('{\n  "a": 1\n}')
+  })
+
+  it('合法 JSON 后面跟尾巴文字：识别其中的 JSON', () => {
+    const res = detect('{"a":1} extra')
+    expect(res?.kind).toBe('json')
+    expect(res?.copy).toBe('{\n  "a": 1\n}')
+  })
+
+  it('数组同样识别；字符串里的括号与转义不会把配对带偏', () => {
+    expect(detect('结果 [1,2,3] 完毕')?.copy).toBe('[\n  1,\n  2,\n  3\n]')
+
+    const res = detect('文本 {"a":"} { \\"x\\"","b":2} 结尾')
+    expect(res?.kind).toBe('json')
+    expect(res?.copy).toContain('"b": 2')
+  })
+
+  it('非 JSON 的花括号不误判', () => {
+    for (const input of ['function f() { return 1 }', 'const o = {a: 1}', '看 {不是 json} 吧']) {
+      const res = detect(input)
+      expect(res?.kind, input).not.toBe('json')
+      expect(res?.items?.some((it) => it.kind === 'json') ?? false, input).toBe(false)
+    }
+  })
+
+  it('大量未配平括号不会抛错或识别出内容（扫描为单遍 O(n)）', () => {
+    // 两万层 `[` 会让 jsonc-parser 递归爆栈：必须被兜成「不可解析」，而不是抛 RangeError
+    expect(detect('['.repeat(20000))).toBeNull()
+  })
+
+  it('JSON 内部的 URL 不再单独成项（重叠时保留 JSON，与「整段是 JSON」一致）', () => {
+    const res = detect('配置 {"url":"https://a.com"} 结束')
+    expect(res?.items?.map((it) => it.kind)).toEqual(['json'])
+  })
+
+  it('多个顶层 JSON 块各自成项（单遍扫描，不设尝试次数上限）', () => {
+    const res = detect('{"a":1} 和 {"b":2}')
+    expect(res?.items?.map((it) => it.kind)).toEqual(['json', 'json'])
+    expect(res?.items?.map((it) => it.copy)).toEqual(['{\n  "a": 1\n}', '{\n  "b": 2\n}'])
+  })
+
+  it('前面有大量非 JSON 花括号也照样能找到后面的 JSON（预筛不误伤）', () => {
+    const noise = Array.from({ length: 80 }, (_, i) => `{f${i}: ${i}}`).join(' ')
+    const res = detect(`${noise} {"ok":1}`)
+    expect(res?.kind).toBe('json')
+    expect(res?.copy).toBe('{\n  "ok": 1\n}')
   })
 })
 
@@ -562,13 +628,66 @@ describe('detect：Base64', () => {
     expect(res.copy).toBe('{\n  "a": 1\n}')
   })
 
-  it('换行分隔的 Base64 仍可解码（只拒绝空格与制表符）', () => {
-    expect(expectKind('SGVsbG8g\nV29ybGQ=', 'base64').copy).toBe('Hello World')
-    expect(expectKind('SGVsbG8g\r\nV29ybGQ=', 'base64').copy).toBe('Hello World')
+  it('折行护栏：76 列折行的 Base64 仍按「一段」解析，并标注为折行（回归）', () => {
+    const payload = 'A'.repeat(120)
+    const encoded = btoa(payload)
+    expect(encoded.length).toBeGreaterThan(76)
+    const wrapped = encoded.replace(/(.{76})/g, '$1\n')
+    const res = detect(wrapped)
+    expect(res?.copy).toBe(payload)
+    expect(res?.items).toBeUndefined()
+    expect(res?.hint).toBe('base64-wrapped')
+  })
+
+  it('手工折行的短串按行成项（LF 与 CRLF 都算行边界）', () => {
+    for (const sep of ['\n', '\r\n']) {
+      const res = detect(`SGVsbG8g${sep}V29ybGQ=`)
+      expect(
+        res?.items?.map((it) => it.copy),
+        JSON.stringify(sep),
+      ).toEqual(['Hello ', 'World'])
+      expect(res?.items?.map((it) => it.kind)).toEqual(['base64', 'base64'])
+    }
   })
 
   it.each(['SGVs bG8=', 'SGVs\tbG8='])('%j 含空格/制表符，按普通分词文本拒绝', (input) => {
     expect(detect(input)).toBeNull()
+  })
+
+  it('全角空格 / NBSP 分隔的两段各自成项，不再被静默合并（回归）', () => {
+    const seg = 'SGVsbG8sIFBhbmRhIERvY2shIFdlbGNvbWUgdG8gdGhlIHRvb2xraXQu'
+    const decoded = 'Hello, Panda Dock! Welcome to the toolkit.'
+    for (const glue of ['\u3000', '\u00a0']) {
+      const res = detect(`${seg}${glue}${seg}`)
+      expect(
+        res?.items?.map((it) => it.kind),
+        JSON.stringify(glue),
+      ).toEqual(['base64', 'base64'])
+      expect(res?.items?.map((it) => it.copy)).toEqual([decoded, decoded])
+    }
+  })
+
+  it('多行「每行都是合法 Base64」按行成项，并标注为按行解析（回归）', () => {
+    const seg = 'SGVsbG8sIFBhbmRhIERvY2shIFdlbGNvbWUgdG8gdGhlIHRvb2xraXQu'
+    const decoded = 'Hello, Panda Dock! Welcome to the toolkit.'
+    for (const sep of ['\n', '\r\n']) {
+      const res = detect(`${seg}${sep}${seg}`)
+      expect(
+        res?.items?.map((it) => it.kind),
+        JSON.stringify(sep),
+      ).toEqual(['base64', 'base64'])
+      expect(res?.items?.map((it) => it.copy)).toEqual([decoded, decoded])
+      expect(res?.hint).toBe('base64-lines')
+    }
+  })
+
+  it('反向护栏：非末行带 padding 时必然是列表（即使行长命中折行宽度）', () => {
+    const first = btoa('x'.repeat(47)) // 47 字节 → 64 列，且以 '=' 结尾
+    expect(first).toHaveLength(64)
+    expect(first.endsWith('=')).toBe(true)
+    const res = detect(`${first}\nSGVsbG8=`)
+    expect(res?.items).toHaveLength(2)
+    expect(res?.hint).toBe('base64-lines')
   })
 
   it('二进制文件：命中 PNG 魔数时给出预览块与可下载信息', () => {

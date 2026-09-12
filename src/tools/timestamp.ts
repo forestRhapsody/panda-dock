@@ -164,6 +164,34 @@ function matchesCalendarDate(date: Date, year: number, month: number, day: numbe
   return checkYear === year && checkMonth === month && checkDate === day
 }
 
+/**
+ * 「这个值算不算一个时间」的统一判定 —— 独立的时间戳候选（detect）与 JSON 值内的时间提示共用，
+ * 保证两处口径一致：纯数字按 9~16 位截断（≤10 位视为秒、否则视为毫秒），其余走 `parseCustomDate`；
+ * 命中后还要求年份落在 1900~2200，避免把毫秒时长（如 3600000）当成 1970 年。
+ */
+export function parseTimeValue(raw: string): Date | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+
+  let date: Date | null = null
+  if (/^-?\d+$/.test(trimmed)) {
+    const digits = trimmed.replace(/^-/, '')
+    // 纯数字时间戳：秒通常 9~11 位、毫秒 12~16 位；过滤掉普通简短数字如 200 / 8080 / 2025
+    if (digits.length < 9 || digits.length > 16) return null
+    const num = Number(trimmed)
+    const isSecs = digits.length <= 10
+    const parsed = new Date(isSecs ? num * 1000 : num)
+    if (!Number.isNaN(parsed.getTime())) date = parsed
+  } else {
+    const parsed = parseCustomDate(trimmed)
+    if (parsed && !Number.isNaN(parsed.getTime())) date = parsed
+  }
+
+  if (!date) return null
+  if (date.getFullYear() < 1900 || date.getFullYear() > 2200) return null
+  return date
+}
+
 /** 英文日期里的显式时区标记（含 RFC 2822 的命名时区），用于决定字段比对按 UTC 还是本地 */
 const EN_TZ_RE =
   /(?:z$|[+-]\d{2}:?\d{2}$|\b(?:gmt|utc|est|edt|cst|mst|mdt|pst|pdt|bst|cet|cest)\b)/i

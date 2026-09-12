@@ -1,8 +1,8 @@
 import { decodeBase64 } from './base64'
 import { base64ToDataUrl, detectMimeFromBytes, fmtSize } from './file'
-import { formatJson, minifyJson } from './json'
+import { formatAndMinifyJson, formatJson, isJsonText, minifyJson } from './json'
 import { decodeJwt } from './jwt'
-import { parseCustomDate, toLocalText, toRelative } from './timestamp'
+import { parseTimeValue, toLocalText, toRelative } from './timestamp'
 
 export type DetectKind =
   | 'json'
@@ -63,6 +63,12 @@ export interface DetectItem {
   sourceMatch: DetectSourceMatch
 }
 
+/**
+ * 解析解释提示：文本层面存在多种等价解读时（如多行 Base64 既可当「每行一段」也可当「一段折行」），
+ * 把本次实际采用的解释显性告知用户，而不是让他猜。
+ */
+export type DetectHint = 'base64-lines' | 'base64-wrapped'
+
 export interface DetectResult {
   kind: DetectKind
   fields: DetectField[]
@@ -75,6 +81,8 @@ export interface DetectResult {
   sourceMatches?: DetectSourceMatch[]
   /** 当输入中存在多个可解析结果时（如两个 Base64），提供完整的匹配项列表供切换 */
   items?: DetectItem[]
+  /** 本次采用的解释方式（结果区显性标注，见 DetectHint） */
+  hint?: DetectHint
 }
 
 // 版本段允许 1–8：v6/v7 是 RFC 9562 现行标准，v8 也已存在；variant 仍是 [89ab]。
@@ -286,24 +294,24 @@ function isJsonLike(s: string): boolean {
 
 function detectJson(s: string): DetectResult | null {
   if (!isJsonLike(s)) return null
-  const formatted = formatJson(s)
-  if (!formatted.ok) return null
-  const minified = minifyJson(s)
-  const text = formatted.text ?? ''
-  const minText = minified.text ?? ''
+  // 一次解析同时拿到「格式化 + 压缩」两份文本：大 JSON 不必解析两遍（见 T20）
+  const pair = formatAndMinifyJson(s)
+  if (!pair) return null
   return {
     kind: 'json',
+    // 不做「JSON 内时间字段可读化」这类猜测（T21 已按产品决定回滚）：
+    // 值本身分不清时间戳与 ID/金额，猜错的代价是误导，收益又有限
     fields: [],
     blocks: [
       {
         key: 'parsed',
-        value: text,
-        formattedValue: text,
-        minifiedValue: minText,
+        value: pair.formatted,
+        formattedValue: pair.formatted,
+        minifiedValue: pair.minified,
         json: true,
       },
     ],
-    copy: text,
+    copy: pair.formatted,
   }
 }
 
@@ -371,28 +379,9 @@ function detectTimestamp(s: string): DetectResult | null {
   const trimmed = s.trim()
   if (!trimmed) return null
 
-  let date: Date | null = null
-
-  if (/^-?\d+$/.test(trimmed)) {
-    const digits = trimmed.replace(/^-/, '')
-    // 纯数字时间戳：通常秒是 9~11 位，毫秒是 12~16 位；过滤掉普通简短数字如 200, 8080, 2025 等
-    if (digits.length < 9 || digits.length > 16) return null
-    const num = Number(trimmed)
-    const isSecs = digits.length <= 10
-    const ms = isSecs ? num * 1000 : num
-    const d = new Date(ms)
-    if (!Number.isNaN(d.getTime())) {
-      date = d
-    }
-  } else {
-    const parsed = parseCustomDate(trimmed)
-    if (parsed && !Number.isNaN(parsed.getTime())) {
-      date = parsed
-    }
-  }
-
+  // 口径与「JSON 值内的时间提示」共用同一个解析函数，避免两处判断不一致
+  const date = parseTimeValue(trimmed)
   if (!date) return null
-  if (date.getFullYear() < 1900 || date.getFullYear() > 2200) return null
 
   const local = toLocalText(date)
   let iso = ''
@@ -449,9 +438,11 @@ function hasControlChars(str: string): boolean {
 }
 
 function detectBase64(s: string): DetectResult | null {
-  // 含有水平空格/制表符说明是普通分词文本，不是 Base64
-  if (/[ \t]/.test(s)) return null
-  const clean = s.replace(/\s+/g, '')
+  // 只有折行算「格式空白」（MIME Base64 每 76 字符折行，粘贴时常带 CR/LF）；
+  // 其它任何空白（半角空格 / 制表符 / NBSP / 全角空格…）都说明这是被分词的自由文本，
+  // 不是一段 Base64 —— 否则两段相邻的 Base64 会被静默拼成一段，解出拼接后的错误文本。
+  if (/[^\S\n\r]/.test(s)) return null
+  const clean = s.replace(/[\n\r]+/g, '')
   if (clean.length < 4 || clean.length % 4 !== 0 || !B64_RE.test(clean)) return null
   // 长度恰为 4 是最小 Base64 单元，仅含 3 字节信息量：全小写纯字母（file / edit / aced）
   // 几乎必然是被误当密文的英文单词，而其解码结果又恰好是合法 UTF-8 可打印文本，
@@ -505,6 +496,36 @@ function detectBase64(s: string): DetectResult | null {
   } catch {
     return null
   }
+}
+
+/** 常见 Base64 折行宽度：`openssl base64` 默认 64 列，MIME / `base64 -w 76` 为 76 列 */
+const BASE64_WRAP_WIDTHS = [64, 76]
+
+/**
+ * 判断「多行输入」是否该按「每行一段 Base64」解析（只在真有歧义时生效）：
+ * - 至少 2 个非空行，且**每行**都能独立通过 Base64 校验（否则交给逐块挖掘去处理混杂文本）；
+ * - 折行护栏：任一行长度恰为 64/76 列 → 视为「一段被折行的 Base64」，交回整段解释
+ *   （典型来源：`openssl base64` / MIME 邮件正文 / `base64 -w`）；
+ * - 反向护栏：非末行出现 padding(`=`) → 必然是列表 —— 折行的 padding 只可能落在整段最后一个字符。
+ * 返回按行切好的候选（含精确高亮区间），不满足时返回 null。
+ */
+function base64LineCandidates(
+  input: string,
+): { text: string; startIndex: number; endIndex: number }[] | null {
+  const lines: { text: string; startIndex: number; endIndex: number }[] = []
+  for (const m of input.matchAll(/[^\r\n]+/g)) {
+    const raw = m[0]
+    const text = raw.trim()
+    if (!text) continue
+    const startIndex = (m.index ?? 0) + raw.indexOf(text)
+    lines.push({ text, startIndex, endIndex: startIndex + text.length })
+  }
+  if (lines.length < 2) return null
+  if (!lines.every((line) => detectBase64(line.text) !== null)) return null
+  const hitsWrapWidth = lines.some((line) => BASE64_WRAP_WIDTHS.includes(line.text.length))
+  const interiorPadding = lines.slice(0, -1).some((line) => line.text.endsWith('='))
+  if (hitsWrapWidth && !interiorPadding) return null
+  return lines
 }
 
 function detectHex(s: string): DetectResult | null {
@@ -666,6 +687,80 @@ interface EmbeddedCandidate {
   kindHint?: 'jwt' | 'base64' | 'timestamp'
 }
 
+/**
+ * 几乎零成本的「首 token」预筛：紧跟在 `{` / `[` 后的第一个非空白字符，
+ * 是否可能是合法 JSON 的起始字符（对象只能是 `"` / `}` / JSONC 注释；数组只能是值起始字符或 `]`）。
+ * 这是**必要不充分**条件：不满足者必然不是 JSON，于是代码块（`{ return 1 }` / `{a: 1}`）
+ * 连切片和解析都省了 —— 这是热路径上最划算的一刀。
+ */
+function looksLikeJsonStart(input: string, start: number, end: number): boolean {
+  let i = start + 1
+  while (i < end) {
+    const ch = input[i]
+    if (ch !== ' ' && ch !== '\n' && ch !== '\r' && ch !== '\t') break
+    i++
+  }
+  const ch = input[i]
+  if (ch === undefined) return false
+  return input[start] === '{'
+    ? ch === '"' || ch === '}' || ch === '/'
+    : '"[]{}-0123456789tfn/'.includes(ch)
+}
+
+/**
+ * 扫描正文中夹带的 JSON 对象 / 数组（「数据 + 一句说明」是最常见的粘贴形态，而整段又不是纯 JSON）。
+ *
+ * 实现要点（都是性能相关）：
+ * - **单遍 O(n) 遍历 + 括号栈**：只在括号栈回到空时产出一个「顶层配平区间」，
+ *   因此不存在「每个 `{` 各自向后重扫」的 O(n²) 隐患，也不需要限制尝试次数；
+ *   顶层块命中后，其内部的嵌套对象不会被重复挖出来（也不会重复解析）。
+ * - 字符串内部的括号与 `\"` 转义都跳过，JSON 值里的花括号不会把配对带偏。
+ * - 先用 `looksLikeJsonStart` 预筛，再用 `isJsonText`（只做布尔解析、不拼错误文案）校验。
+ */
+function extractEmbeddedJsonCandidates(
+  input: string,
+): { text: string; startIndex: number; endIndex: number }[] {
+  const out: { text: string; startIndex: number; endIndex: number }[] = []
+  const open: { ch: string; index: number }[] = []
+  let inString = false
+  let escaped = false
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (ch === '\\') escaped = true
+      else if (ch === '"') inString = false
+      continue
+    }
+    if (ch === '"') {
+      inString = true
+      continue
+    }
+    if (ch === '{' || ch === '[') {
+      open.push({ ch, index: i })
+      continue
+    }
+    if (ch !== '}' && ch !== ']') continue
+
+    const top = open[open.length - 1]
+    if (!top) continue // 多余的收尾括号：忽略
+    if ((top.ch === '{') !== (ch === '}')) {
+      // 括号类型不匹配：当前这段结构（如 JS 代码块）已不可能配平，丢弃整个栈
+      open.length = 0
+      continue
+    }
+    open.pop()
+    if (open.length > 0) continue // 只产出顶层块
+
+    if (!looksLikeJsonStart(input, top.index, i)) continue
+    const text = input.slice(top.index, i + 1)
+    if (!isJsonText(text)) continue
+    out.push({ text, startIndex: top.index, endIndex: i + 1 })
+  }
+  return out
+}
+
 // 连续 JWT 特征：由两个点分隔的 3 段 Base64URL 字符
 const EMBEDDED_JWT_RE =
   /(?<![A-Za-z0-9_-])([A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*)(?![A-Za-z0-9_-])/g
@@ -756,6 +851,18 @@ function extractEmbeddedCandidates(input: string): EmbeddedCandidate[] {
     candidates.push({ text, startIndex, endIndex, kindHint: 'base64' })
   }
 
+  // 5. 扫描正文中夹带的 JSON 对象 / 数组
+  for (const json of extractEmbeddedJsonCandidates(input)) {
+    const key = `${json.startIndex}:${json.endIndex}`
+    if (seen.has(key)) continue
+    // 若已被前面命中的范围包含则跳过（与其它扫描一致的去重策略）
+    if (candidates.some((c) => json.startIndex >= c.startIndex && json.endIndex <= c.endIndex)) {
+      continue
+    }
+    seen.add(key)
+    candidates.push(json)
+  }
+
   candidates.sort((a, b) => a.startIndex - b.startIndex)
   return candidates
 }
@@ -774,12 +881,21 @@ export function detect(input: string): DetectResult | null {
   const s = input.trim()
   if (!s) return null
 
+  // 0) 多行 Base64 的歧义消解：文本层面「每行一段」与「一段折行」完全等价，
+  //    这里优先按行成项（符合「一行一项」的普遍直觉），由 base64LineCandidates 的护栏兜住折行场景。
+  const lineCandidates = base64LineCandidates(input)
+
   // 1. 原文直接检测（纯净单目标，如纯单个 Base64、纯单个 URL、纯 JSON、纯 JWT 等）
-  const direct = detectCore(s)
-  if (direct) {
-    // 整段文本就是纯净目标，不存在其他字符，不应高亮
-    direct.sourceMatches = undefined
-    return direct
+  //    多行 Base64 列表不走这条路，否则会被当成「一段折行」拼起来。
+  if (!lineCandidates) {
+    const direct = detectCore(s)
+    if (direct) {
+      // 整段文本就是纯净目标，不存在其他字符，不应高亮
+      direct.sourceMatches = undefined
+      // 多行却被整段解出：本次采用「一段折行的 Base64」解释，显性标注出来
+      if (direct.kind === 'base64' && /[\r\n]/.test(input)) direct.hint = 'base64-wrapped'
+      return direct
+    }
   }
 
   // 2. 收集所有可能的候选区间（外壳剥离、成对引号、嵌入式挖掘）
@@ -792,6 +908,13 @@ export function detect(input: string): DetectResult | null {
   }
 
   const rawCandidates: RawCandidate[] = []
+
+  // 2.0 每行一段的 Base64（最高优先级）：此时整段是 N 个独立值，而不是一段折行
+  if (lineCandidates) {
+    for (const line of lineCandidates) {
+      rawCandidates.push({ ...line, kindHint: 'base64', priority: 3 })
+    }
+  }
 
   // 2.1 整段代码外壳或对称首尾引号
   const strippedInfo = stripCommonWrappers(input)
@@ -874,6 +997,8 @@ export function detect(input: string): DetectResult | null {
 
   // 4. 对每个候选区间依次进行实体解析判定（非 URL 实体：Base64、JWT、JSON、时间戳等）
   const items: DetectItem[] = []
+  // 已识别为 JSON 的块区间：其内部的 URL 不再单独成项（见第 5 步）
+  const jsonRanges: { start: number; end: number }[] = []
   for (const cand of mergedCandidates) {
     let res: DetectResult | null = null
     if (cand.kindHint === 'jwt') {
@@ -902,12 +1027,15 @@ export function detect(input: string): DetectResult | null {
         sourceMatches: [match],
         sourceMatch: match,
       })
+      if (res.kind === 'json') jsonRanges.push({ start: cand.startIndex, end: cand.endIndex })
     }
   }
 
   // 5. 提取自由文本中出现的所有网址：每个网址独立作为一个匹配项（与 Base64/JWT 等行为完全一致，每次解析/高亮一个）
   const extractedUrls = extractUrls(input)
   for (const u of extractedUrls) {
+    // JSON 块内部的 URL 不单独成项：结构化容器优先，与「整段是 JSON」时的行为保持一致
+    if (jsonRanges.some((r) => u.start >= r.start && u.end <= r.end)) continue
     const match: DetectSourceMatch = {
       text: u.value,
       startIndex: u.start,
@@ -933,6 +1061,9 @@ export function detect(input: string): DetectResult | null {
 
   if (items.length === 0) return null
 
+  // 由「每行一段」解释而来：显性标注，让用户看出这是多段而不是一段折行
+  const hint: DetectHint | undefined = lineCandidates ? 'base64-lines' : undefined
+
   if (items.length === 1) {
     return {
       kind: items[0].kind,
@@ -942,6 +1073,7 @@ export function detect(input: string): DetectResult | null {
       download: items[0].download,
       sourceMatches: items[0].sourceMatches.map((m) => ({ ...m, active: true })),
       items,
+      hint,
     }
   }
 
@@ -957,5 +1089,6 @@ export function detect(input: string): DetectResult | null {
       it.sourceMatches.map((m) => ({ ...m, active: idx === 0 })),
     ),
     items,
+    hint,
   }
 }

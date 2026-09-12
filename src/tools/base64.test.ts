@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import i18n from '@/i18n'
+
 import { decodeBase64, encodeBase64, isLikelyBase64 } from './base64'
 
 /**
@@ -82,6 +84,26 @@ describe('decodeBase64', () => {
     expect(decodeBase64(' aGVs bG8= ').text).toBe('hello')
     expect(decodeBase64('aGVs\r\nbG8=').text).toBe('hello')
     expect(decodeBase64('aGVs\tbG8=\n').text).toBe('hello')
+  })
+
+  it('只忽略 ASCII 空白：NBSP / 全角空格 / 行分隔符不再被当透明胶水（回归）', () => {
+    // 旧实现用 /\s+/ 会把它们一并删掉，把两段本不相干的 Base64 静默拼成一段
+    for (const glue of ['\u00a0', '\u3000', '\u2028']) {
+      expect(() => decodeBase64(`aGVs${glue}bG8=`), JSON.stringify(glue)).toThrow(
+        '不是有效的 Base64：字符集或长度不正确',
+      )
+    }
+    // 反向对照：ASCII 空白里的换页 \f 仍被忽略（与 atob() 的 forgiving-base64 对齐）
+    expect(decodeBase64('aGVs\fbG8=').text).toBe('hello')
+  })
+
+  it('错误文案跟随当前语言（Base64 错误不再是硬编码中文）', async () => {
+    await i18n.changeLanguage('en')
+    try {
+      expect(() => decodeBase64('ab*d')).toThrow('Not valid Base64: bad character set or length.')
+    } finally {
+      await i18n.changeLanguage('zh')
+    }
   })
 
   it('兼容 URL-safe（-/_）与省略 padding 的写法', () => {
@@ -192,6 +214,14 @@ describe('isLikelyBase64', () => {
     expect(isLikelyBase64('aGVs\nbG8=')).toBe(true)
     expect(isLikelyBase64(' Y Q = = ')).toBe(true)
     expect(isLikelyBase64('YQ==\n')).toBe(true)
+  })
+
+  it('只剥离 ASCII 空白：Unicode 空白按非法字符处理（回归）', () => {
+    expect(isLikelyBase64('aGVs\u00a0bG8=')).toBe(false)
+    expect(isLikelyBase64('aGVs\u3000bG8=')).toBe(false)
+    // 反向对照：半角空格/制表符仍被忽略
+    expect(isLikelyBase64('aGVs bG8=')).toBe(true)
+    expect(isLikelyBase64('aGVs\tbG8=')).toBe(true)
   })
 
   it('非法字符、超量 padding、非 ASCII 判为否', () => {

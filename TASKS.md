@@ -133,6 +133,137 @@
   - 门禁 `format / lint:check / type-check / test(76 files / 1870) / build` 全绿。
   - 备注：若以后仍要解决「看不出两端还有内容」，可行的替代是**tab 条换行**（`flex-wrap: wrap`，全部可见）或**加左右箭头按钮**（需 DOM + JS + i18n）；**纯 CSS 背景方案已证伪**（背景压在文字后面，做不到「淡出」）。
 
+- [x] **T14 Base64 空白语义收紧：只有折行透明，Unicode 空白不再被当「胶水」**
+  - 描述：现状 `base64.ts` / `detect.ts` 都用 `/\s+/` 剥空白，而 `\s` 包含 NBSP(`\u00a0`)、全角空格(`\u3000`)、行分隔符(`\u2028`) 等 Unicode 空白；解析入口只拒绝 `[ \t]`。结果是**半角空格算分隔符、全角空格/NBSP 反而算"看不见的胶水"**：两段相邻 Base64 会被静默拼成一段（内容相同时解出重复文本，正是这次报告的现象）。修法：把"可忽略空白"收紧为 **ASCII 空白**（与浏览器 `atob()` 的 forgiving-base64 对齐）：`base64.ts` 用 `[\t\n\f\r ]`；`detect.ts` 的整段判定只放行 **CR/LF**（MIME 折行），其余空白一律当分隔符，交给逐块挖掘出多项。
+  - 顺带修复：`base64.ts` 的两条错误文案原本是**硬编码中文**，而 `Base64Tool` 直接展示 `e.message` —— 本次改动让"非法字符"这条错误更容易触发（粘贴含全角空格的密文），因此同一改动里改为 `i18n.t()` 取 key，zh/en 两套都补。
+  - 验收标准：折行（LF/CRLF）Base64 仍按一段解码；NBSP/全角空格分隔的两段各自成项；含 Unicode 空白的密文报错而不是静默拼接；错误文案跟随语言；`pnpm format && pnpm lint && pnpm type-check && pnpm test && pnpm build` 全绿。
+  - 依赖：无
+  - 结果：**红→绿**（修复前 4 例红、230 例绿）。
+    - `base64.ts`：新增 `IGNORABLE_WS_RE = /[\t\n\f\r ]+/g`（与 `atob()` 的 forgiving-base64 对齐），`isLikelyBase64` / `decodeBase64` 都改用它；两条错误文案由硬编码中文改为 `i18n.t('tool.base64.errInvalidBase64')` / `i18n.t('tool.base64.errDecodeFailed')` —— `Base64Tool` 本来就展示 `e.message`，所以文案直接跟随当前语言。
+    - `detect.ts` 的 `detectBase64`：闸门由 `/[ \t]/` 改为 `/[^\S\n\r]/`（只放行 CR/LF），剥离改为 `replace(/[\n\r]+/g, '')` → 半角空格 / 制表符 / NBSP / 全角空格 / `\f` 等一律当分隔符，交给逐块挖掘产出多项。
+    - i18n：`zh.json` / `en.json` 各补 `errInvalidBase64` / `errDecodeFailed` 两个 key。
+  - 用例：`base64.test.ts` +3（Unicode 空白不再被当透明胶水、错误文案跟随语言、`isLikelyBase64` 只剥 ASCII 空白）；`detect.test.ts` +2（全角空格 / NBSP 分隔的两段各自成项、两行内容相同仍按一段折行处理），并把旧用例标题改为「只有 CR/LF 是透明空白」。测试 1870 → **1875**。
+  - 语义边界（有意保留）：**LF / CRLF 仍然透明** —— 两行内容相同的输入仍会合成一段（MIME 折行语义，也是本次报告现象的直接原因）；本次修的是「Unicode 空白被当隐形胶水」这条不一致。组件层未新增用例：`Base64Tool.dom.test.tsx` 已有「非法 Base64 报错并清空结果；中文包中文、英文包英文」覆盖同一交互流。
+  - 门禁 `format / lint:check / type-check / test(76 files / 1875) / build` 全绿。
+
+- [x] **T15 智能解析：多行 Base64 按行成项 + 折行护栏 + 结果区显性标注**
+  - 描述：T14 之后仍有"两行相同的 Base64 被整段合成一段（解出重复文本）"的现象 —— 文本层面「一段折行」与「两段相邻」本就等价。按人体工学取舍：在**智能解析**里默认「一行一项」（符合"一行一项"的普遍直觉，且合并错误是**静默**的、拆分错误是**可见**的），同时加护栏保住折行场景，并把解释方式显性标注，避免任一方静默胜出。
+  - 规则：至少 2 个非空行、且**每行**都能独立通过 Base64 校验 → 按行成项；**折行护栏**：任一行长度恰为 64/76 列（`openssl base64` / MIME / `base64 -w`）→ 仍按「一段折行」整段解析；**反向护栏**：非末行出现 padding(`=`) → 必然是列表（折行的 padding 只可能在最末字符）。
+  - 显性标注：`DetectResult.hint`（`'base64-lines'` / `'base64-wrapped'`）→ 结果区一行小字说明本次的解释方式。Base64 解码工具保持宽容合并不动（用户明确说"解这段"，且对齐 `atob`）。
+  - 验收标准：两行相同/多行 Base64 → 多项 + `base64-lines` 提示；76 列折行 → 一段 + `base64-wrapped` 提示；`pnpm format && pnpm lint && pnpm type-check && pnpm test && pnpm build` 全绿。
+  - 依赖：无
+  - 结果：**红→绿**（修复前 4 例 detect + 1 例 view 红、235 例绿）。
+    - `detect.ts`：新增 `DetectHint` 类型与 `DetectResult.hint`；新增 `base64LineCandidates()`（≥2 个非空行、每行独立通过 Base64 校验、64/76 折行护栏、非末行 padding 反向护栏）；`detect()` 在多行列表时**跳过「整段即目标」分支**，把每行作为最高优先级候选（`priority: 3`）接入既有候选机制（复用去重/排序/items 聚合，不另起一套）；整段被解出的折行场景打 `hint: 'base64-wrapped'`。
+    - `DetectResultView.tsx`：`hint` 渲染为 `.tw-note` 一行小字（无 hint 不留空占位）。
+    - i18n：`tool.detect.hintBase64Lines` / `hintBase64Wrapped`（zh/en 各补）。
+  - 用例：`detect.test.ts`（多行 → 两项 + `base64-lines`、76 列折行 → 一段 + `base64-wrapped`、非末行 padding 的反向护栏、手工折行短串按行成项）+ `DetectResultView.dom.test.tsx`（hint 渲染 / 无 hint 不占位）；原「换行分隔的 Base64 仍按一段解码」用例按新语义改写为「手工折行的短串按行成项」。测试 1875 → **1879**。
+  - 语义变化（有意）：**智能解析**里多行 Base64 默认「一行一项」，不再静默合并；折行场景由 64/76 护栏 + 反向 padding 护栏保住，并把解释显性标注。**Base64 解码工具不受影响**（仍按一段宽松解码，对齐 `atob`）。
+  - 已知代价：非标准宽度的手工折行短串（如把 `Hello World` 折成 8 列的两行）现在会拆成两项 —— 每项都会解出片段，属于**可见**的误判，用户一眼能看出并改回。
+  - 门禁 `format / lint:check / type-check / test(76 files / 1879) / build` 全绿。
+
+- [x] **T16 视觉：工具选项卡条左侧多出一段空白（与面板标题不对齐）**
+  - 描述：首个 tab 的文字距抽屉左缘 = 8px(把手) + `.tw-nav` 的 `padding-left: 14px` + 按钮自身 `padding: 10px 16px` ≈ 38px，而头部标题只有 8 + 18 = 26px、内容区 8 + 16 = 24px —— 所以看着像凭空多出一截空白（截图已确认）。
+  - 修法：`.tw-nav` 左右内边距 `14px → 4px`，`.tw-nav__btn` 内边距 `10px 16px → 10px 14px`，使 tab 文字左缘与头部标题对齐（26px）。
+  - 顺带收益：每个 tab 窄 4px、nav 左右各少 10px → 默认抽屉宽度下 9 个 tab 不再横向溢出（原先溢出 24px）。
+  - 验收标准：浏览器里首个 tab 文字与「Panda Dock」标题左缘对齐；`pnpm format && pnpm lint && pnpm type-check && pnpm test && pnpm build` 全绿。
+  - 依赖：真实浏览器目测（间距无法在 happy-dom 断言）
+  - 结果：`tools.css` 两处 —— `.tw-nav` 左右内边距 `14px → 4px`、`.tw-nav__btn` `10px 16px → 10px 14px`（两处都写了推导注释）。首个 tab 文字左缘 38px → **26px**，与头部标题（8 + 18）对齐；内容区为 8 + 16 = 24px，相差 2px，目视一致。
+  - 附带收益：每个 tab 窄 4px、nav 左右各少 10px → 默认抽屉宽度（400px）下 9 个 tab **不再横向溢出**（此前溢出 24px，正是 T10 那段讨论的由来）。
+  - 门禁 `format / lint:check / type-check / test(76 files / 1879) / build` 全绿。
+  - 未闭环：纯间距改动无法在 happy-dom 断言，需浏览器目测对齐与拥挤度（归入 `T7`）。
+
+- [x] **T17 划选解析面板：输入框最大高度不该随「是否有解析结果」变化**
+  - 描述：`SelectionDetectPanel` 传的是 `maxHeight={currentResult ? 220 : 320}` —— 有结果时输入框最高 220px，**解析失败时却能长到 320px**，于是"失败"比"成功"占得还多、面板也被撑大，与预期（一个固定最大高度）不符。
+  - 修法：抽成常量 `INPUT_MAX_HEIGHT = 220`，两种状态一致；输入框内部本就可滚动，压低上限不会让内容不可见。
+  - 验收标准：有结果与无结果时输入框 wrapper 的 `max-height` 相同；`pnpm format && pnpm lint && pnpm type-check && pnpm test && pnpm build` 全绿。
+  - 依赖：真实浏览器目测高度观感（面板尺寸属视觉，happy-dom 无排版）
+  - 结果：`content/SelectionDetectPanel.tsx` 新增 `INPUT_MAX_HEIGHT` 常量（带推导注释），并以它替代条件传值。用例：`SelectionDetectPanel.dom.test.tsx` +1（比较两种状态下 `.tw-area-wrapper` 的内联 `max-height`）——**变异验证**：把传值改回 `currentResult ? 220 : 320`，该用例立刻变红。测试 1879 → **1880**。
+  - 未闭环：数值 220 是否合适需浏览器目测；想更矮/更高只改这一个常量。
+
+- [x] **T18 划选解析面板：结果较长时出现「面板外层 + 输入框 + 结果块」三条滚动条**
+  - 描述：`.tek-detect-panel__body` 是滚动容器（`overflow-y: auto`），而输入框（≤220px）与结果块（≤260px）各自也有滚动；面板被 `max-height: min(620px, 100vh - 24px)` 限制时内容超出 → 外层再滚一条，三条叠在一起（截图已确认，其中外层那条是用户抱怨的对象）。
+  - 修法：不砍内层滚动（T17 刚统一过输入框上限），改为让面板内部**按优先级让步** —— `.tek-detect__editor { min-height: 0 }`（允许被压缩：此前 flex 自动最小尺寸 = 内容高度，必然把外层撑出滚动条）+ 结果区外包一层 `.tek-detect__result { flex: 0 0 auto }`（结果块是 JS 定高 + 内部滚动，压扁会裁内容）。空间不足时由**输入框**让步：它自带滚动，并有 96px 下限兜底。
+  - 验收标准：结果较长时不再出现最外层滚动条；输入框与结果块各自的滚动保持可用；`pnpm format && pnpm lint && pnpm type-check && pnpm test && pnpm build` 全绿。
+  - 依赖：**需真实浏览器复验**（布局压缩无法在 happy-dom 断言）
+  - 结果：`content/SelectionDetectPanel.tsx` 用 `.tek-detect__result` 包裹结果视图；`content/content.css` 给 `.tek-detect__editor` 加 `min-height: 0`、新增 `.tek-detect__result { flex: 0 0 auto }`（两处都写了推导注释）。用例：`SelectionDetectPanel.dom.test.tsx` +1（断言结果区挂点存在 —— 去掉它就等于把外层滚动条放回来）；该用例在改动前必然失败。测试 1880 → **1881**。
+  - 未闭环：压缩后的实际观感（输入框可能从 220 略降到 ~200，极端情况下到 96 下限）需浏览器目测；**极矮视口**下外层滚动条仍会出现，这是正确兜底（否则内容不可达）。
+
+- [x] **T19 智能解析：补「正文夹带的 JSON」这一类候选**
+  - 描述：`detectCore` 只在「整段即纯 JSON」「被引号/`atob` 外壳包裹」时认 JSON，而候选挖掘（`extractEmbeddedCandidates`）只扫 JWT / 中文日期 / 标准日期 / 数字时间戳 / Base64 —— **没有 JSON**。于是 `{"a":1}\n\n2020年1月1日` 这种「数据 + 一句说明」只能解析出时间；`看这个 {"a":1} 怎么样` 更是完全识别不出。
+  - 修法：新增第 5 类扫描 —— 字符串感知的括号配平取出 `{...}` / `[...]` 区间（跳过字符串内部与 `\"` 转义），再用现有 `formatJson` 严格校验，只有真能解析成 JSON 的才作为候选；沿用既有候选机制（兜底 `detectCore` 认成 `json`），自动复用去重/高亮/分项 Tab。病态输入（`[[[[[…`）用尝试次数上限兜住 O(n²)。
+  - 已拍板的取舍：候选区间重叠时**保留 JSON**（其内部的 URL/Base64 不再单独成项），与「整段是 JSON」时的现有行为一致。
+  - 验收标准：JSON + 日期混排 → 两项；JSON 夹在中文里 → 一项；代码块 / 非 JSON 花括号不误判；字符串里的括号不影响配对；`pnpm format && pnpm lint && pnpm type-check && pnpm test && pnpm build` 全绿。
+  - 依赖：无
+  - 结果：**红→绿**（修复前 4 例红、210 例绿）。
+    - `detect.ts` 新增 `matchJsonBracket()`（字符串与 `\"` 转义感知的括号配平，未配平返回 -1）、`MAX_JSON_SCAN_ATTEMPTS = 64`（防 `[[[[[…` 这类病态输入退化成 O(n²)）、`extractEmbeddedJsonCandidates()`（配平取区间 + `formatJson` 严格校验；命中整块后跳过内部，避免嵌套重复）；作为**第 5 类扫描**接入 `extractEmbeddedCandidates`（沿用 `seen` 与包含关系去重），后续由 `detectCore` 兜底认成 `json`。
+    - URL 那条抽取路径（`extractUrls`）原本不参与候选去重，因此额外在 `detect()` 里记录被识别为 JSON 的区间（`jsonRanges`），**跳过落在其中的 URL** —— 落实「JSON 内部不再单独成项」这条已拍板的取舍。
+  - 用例：`detect.test.ts` 新增「正文夹带的 JSON」整组 5 条（数据+说明两项、夹在中文里、数组与转义括号、非 JSON 花括号不误判、JSON 内 URL 不单独成项）+ 病态输入 1 条；两条旧用例按新行为改写：`'{"a":1} extra'` 移出「整体不可解析」列表并单独立例（现在会拆出 JSON 项）、「前置注释 JSONC 不识别（现状记录）」改为回归断言（现在能识别）。
+  - 正向副作用：`// 注释\n{"a":1}` 这类「JSON 前有注释」的输入现在也能识别（原先整段不识别）。
+  - 门禁 `format / lint:check / type-check / test(76 files / 1887) / build` 全绿。
+  - ⚠️ 实现细节随后由 `T20` 优化：改为**单遍 O(n) 括号栈扫描**（不再有 `matchJsonBracket` 与尝试次数上限），校验改用 `isJsonText`，并去掉 `detectJson` 的重复解析。
+
+- [x] **T20 性能与健壮性：给嵌入 JSON 扫描提速，并兜住深嵌套爆栈**
+  - 背景：评审提醒注意性能。用一次性 vitest 探针（跑完即删）对 T19 首版实现做实测，撞到两处真实问题：
+    1. 首版是「逐个 `{` 向后配平 + `formatJson` 校验」：既有 O(n²) 隐患（靠 64 次尝试上限兜底），又让每个候选先完整 `formatJson`（解析 + 序列化）一次、随后 `detectJson` 再解析两次；
+    2. 顺带撞到一个**既有**缺陷：`'['.repeat(20000)` 会让 `jsonc-parser` 递归爆栈抛 `RangeError`，而 `parseJsonc` 没有兜底 —— 异常会穿透 `detect()`（悬浮面板没有错误边界）与 `JsonTool`。
+  - 修法：
+    - `extractEmbeddedJsonCandidates` 改为**单遍 O(n) 遍历 + 括号栈**：只在栈回到空时产出「顶层配平块」，内部嵌套不重复挖、不重复解析；删除 `matchJsonBracket` 与 `MAX_JSON_SCAN_ATTEMPTS`。
+    - 新增近乎零成本的 `looksLikeJsonStart()` 首 token 预筛（对象只能是 `"` / `}` / JSONC 注释，数组只能是值起始字符或 `]`）—— 代码块在新版里连切片与解析都省掉。
+    - `json.ts` 新增 `isJsonText()`（只做布尔解析，不拼错误文案/行列）供预筛校验；新增 `formatAndMinifyJson()`（一次解析给出格式化 + 压缩两份文本），`detectJson` 改用它，去掉重复解析。
+    - `parseJsonc` / `isJsonText` 的 `parse()` 包 try/catch：极深嵌套按「不可解析」返回，不再把 `RangeError` 抛给调用方。
+  - 实测（各 20 次平均）：16KB JSON 整段 **0.90ms**、同 JSON 夹在中文里 **2.22ms**、80 个代码块 + JSON **0.14ms**、20K 未配平括号 **1.36ms**、17KB 普通中文 **0.37ms**、300 行多行 Base64 **2.06ms** —— 均远小于一帧；`detect()` 在两个宿主里都走 `useDeferredValue`，不会阻塞输入。
+  - 用例：`detect.test.ts`（多个顶层 JSON 各自成项、80 个非 JSON 花括号后仍能找到 JSON、两万层括号返回 null 不抛错）；`json.test.ts`（`isJsonText` 合法/非法/深嵌套，`formatAndMinifyJson` 两份文本与非法输入）。
+  - 门禁 `format / lint:check / type-check / test(76 files / 1894) / build` 全绿。
+
+- [x] **T21 结果集嵌套结果：JSON 内「像时间的字段」可读化并入该 JSON 结果（方案 C）**
+  - 描述：只要外层 JSON 成立，内部的时间/日期/URL/base64 都不再单独成项（T19 的区间占位去重 + URL 过滤），于是出现不一致：「两个时间戳并列写在正文里 → 2 项；套进 `{}` → 1 项，且时间不可读」。按拍板选择**方案 C**：不把内部目标变成独立 tab（会刷屏，且把 `{"port":1700000000}` 这类数字误报成时间），而是把**字段名像时间**且值真能解析成日期的项，作为**该 JSON 结果的字段**展示 —— 复用现有 fields 区，零 UI 改动，与 JWT 展示 `iat`/`exp` 的体验一致。
+  - 实现：
+    - `timestamp.ts` 抽出 `parseTimeValue()`（原先内联在 `detectTimestamp` 的数字位数 / `parseCustomDate` / 年份 1900~2200 判定），`detectTimestamp` 改用它 —— 「什么算时间值」单一来源，两处口径不会漂移。
+    - 新增 `jsonTimeHints.ts`：`collectJsonTimeHints(value, max)`。字段名判定 = 精确名单（`iat` / `exp` / `nbf` / `timestamp` / `date` / `time` / `*_at` …）+ 下划线后缀 + 小驼峰后缀（`createdAt`，大小写敏感以免把 `format` 认成 `at`）；值判定走 `parseTimeValue`；路径带层级（`meta.created_at` / `items.0.iat`），数组元素没有字段名故天然不提示；上限 5 条 + 深度 6 + 节点 2000 兜住超大对象。
+    - `json.ts`：`formatAndMinifyJson` → `parseJsonWithFormats`（额外返回解析结果供遍历挑字段，仍是**单次解析**）；`detect.ts` 的 `detectJson` 用它生成 `fields`（key = `jsonTime.<path>`）。
+    - `DetectResultView.tsx`：`jsonTime.` 前缀的字段标签**原样展示路径**（用户数据，不走 i18n，也不会漏出裸 key）。
+    - i18n：`tool.detect.jsonTimeHint` = `{{time}}（{{relative}}）` / `{{time}} ({{relative}})`。
+  - 用例：新增 `jsonTimeHints.test.ts` 7 条（名单与 camelCase、值与独立时间戳候选口径一致、字段名不像时间不提示、嵌套路径与数组、条数上限、非对象不抛错、i18n 模板）；`detect.test.ts` +3（纯 JSON 带出时间字段且不新增 tab、无时间字段时 fields 为空、正文里的 JSON 同样带出提示）；`DetectResultView.dom.test.tsx` +1（标签是路径本身、不漏裸 key）；`timestamp.test.ts` +2（`parseTimeValue` 口径）。
+  - 门禁 `format / lint:check / type-check / test(77 files / 1906) / build` 全绿。
+  - ⚠️ **已回滚**：经产品判断，连窄版本也会给用户增加心智负担（同一份 JSON 里有的字段冒时间、有的不冒，用户得先理解"工具在猜"），见 `T22`。
+
+- [x] **T22 按产品决定回滚 T21：不做「JSON 内时间字段可读化」**
+  - 决定依据：**连窄版本也没必要**。理由有三 ——
+    1. **心智负担**：同一份 JSON 里，命名字段的旁边冒出可读时间、其余不冒；用户必须先理解"工具在猜字段名"才知道该信哪一行，反而不如不做。
+    2. **要覆盖自定义名（`sssssss`）就只能"只看值"**，而 10~16 位数字在文本层面**分不清**时间戳与 ID / 金额 / 手机号 —— 那是**错报**，比漏报更糟；窄版本唯一的失败模式是漏报（安全）。
+    3. **收益面窄**：真实场景的高频字段名（`iat` / `exp` / `*_at` / `createdAt` / `timestamp`）本来就那几种，为长尾名字长期维护一套启发式不划算。
+  - 回滚内容：删除 `jsonTimeHints.ts` 与其 7 条测试；`detectJson` 的 `fields` 回到 `[]`；`DetectResultView` 去掉 `jsonTime.` 标签分支；zh/en 删掉 `tool.detect.jsonTimeHint`；`detect.test.ts` 删掉 3 条 T21 用例、`DetectResultView.dom.test.tsx` 删掉 1 条。
+  - **保留**（与"猜时间"无关的独立收益）：`timestamp.ts` 抽出的 `parseTimeValue()`（`detectTimestamp` 改用，值口径单一来源）+ 其 2 条测试；`json.ts` 的 `formatAndMinifyJson()` 单次解析（T20 性能优化）；`parseJsonc` / `isJsonText` 的深嵌套 try/catch（T20 健壮性）。
+  - 结论：JSON 结果只做它该做的事（格式化 / 压缩展示），不替用户判断哪个数字是时间；若将来确有强需求，更诚实的做法是**按需动作**（选中数字 → "按时间解释"），而不是自动猜。
+  - 门禁 `format / lint:check / type-check / test(76 files / 1896) / build` 全绿。
+
+- [x] **T23 视觉：智能解析的「待切换选项」改扁平样式（去边框 / 去圆角 + 次级背景色）**
+  - ⚠️ **已回滚**：改错了对象 —— 产品要改的是输入框里的**高亮标记**（`.tw-area-mark`），不是这排小胶囊。本项已完整退回原样式，实际改动见 `T24`。
+  - 描述：格式预设 chips（`.tw-detect__format-chip`）与结果 Tab（`.tw-detect__tab`）原本都是「有边框 + 圆角」的小胶囊。按产品要求改扁平：**无边框、无圆角**，默认/未选中态用**次级背景色**（`--tk-secondary`）表达"可点、可切换"，hover 用 `--tk-accent`，结果 Tab 选中态仍用主色（`--tk-primary`）。
+  - 变化：chips 背景 `--tk-muted` → `--tk-secondary`、`border: 1px solid var(--tk-border)` → `none`、`border-radius: var(--tk-radius-sm)` → `0`；结果 Tab 背景 `--tk-card` → `--tk-secondary`，同样去边框去圆角；两处 hover/active 规则里的 `border-color` 与选中态的 `box-shadow` 一并删掉（无边框无圆角后已无意义），transition 同步只留 color/background。全部走设计令牌（AGENTS §4.12）。
+  - 范围：只动 `tw-detect__*`，不影响其它工具与划选面板。
+  - 未闭环：纯视觉改动，需浏览器目测；**未**改输入框（`.tw-area-wrapper`）与结果块（`.tw-detect__block .tw-area--result`）—— 若"去掉边框和弧度"也包含它们，各是一处 CSS，按需再加。
+  - 门禁 `format / lint:check / type-check / test(76 files / 1896) / build` 全绿。
+
+- [x] **T24 视觉：高亮标记扁平化 + 「待切换」匹配用次级背景标出**
+  - 描述：要改的是**输入框里那块黄色高亮**（匹配结果标记 `.tw-area-mark`）：① 去掉「圆角 + 描边」—— 原本是 `border-radius: 3px` 加 `box-shadow: 0 0 0 1px var(--tk-highlight-border)` 画的一圈描边；② **非当前（待切换）的匹配项原本完全不画**（`HighlightArea` 直接 push 纯文本，注释写着"不涂任何浅色背景"），于是用户看不出文本里还有别的匹配可以切过去 —— 现在用**次级背景色**（`--tk-secondary`）画出来。
+  - 变化：`.tw-area-mark` 去掉 `border-radius` 与 `box-shadow`（transition 同步只留 `background-color`）；新增 `.tw-area-mark--idle { background: var(--tk-secondary) }`；`HighlightArea` 把非激活项渲染为 `<mark class="tw-area-mark tw-area-mark--idle">`（原先渲染纯文本）；`theme.css` 删掉随之失去唯一使用者的 `--tk-highlight-border`（浅色 / 深色各一处）。
+  - 对齐不变：idle 与 active 共用同一套 `padding: 1px 2px` / `margin: 0 -1px` 与 `box-decoration-break: clone`，涂层与 textarea 仍逐字对齐（错位重影的守卫用例继续覆盖）。
+  - 用例：`HighlightArea.dom.test.tsx` 改 2 条 —— 原断言「非 active 项保持纯文本」「`markTexts()` 只含激活项」改为「两个匹配都画出来，并用 `tw-area-mark--idle` 区分」；**测试先行跑红**（2 例），实现后 22 例全绿。
+  - 未闭环：纯视觉，需浏览器目测（荧光黄与次级灰的对比度、深色主题下的可见度）。
+  - 门禁 `format / lint:check / type-check / test(76 files / 1896) / build` 全绿。
+
+- [x] **T25 深色主题：高亮标记（`.tw-area-mark`）的文字看不清**
+  - 现象：深色主题下，输入框里被高亮的那段文字看不清。
+  - 根因：高亮是**纯背景层** —— `.tw-area-backdrop` 的 `color: transparent`，可见文字由上层 textarea 用 `--tk-foreground` 画（`tools.css` 的 `.tw-area-backdrop` / `.tw-area-input`）。所以高亮底色**必须比文字暗**；而深色主题的 `--tk-highlight` 原本是 `color-mix(in srgb, #fef9c3 30%, transparent)` —— 一层 30% 的浅黄罩在近黑卡片（`--tk-card`）上，合成出来是发灰的橄榄色（约 `rgb(89 87 72)`），近白文字压上去只剩 **≈6.9:1**，且已经完全看不出"黄色高亮"。
+  - 修法：深色 `--tk-highlight` 改为**不透明的深琥珀** `hsl(45 70% 18%)`（合成后 `rgb(78 62 14)`）：文字对比度 **6.9:1 → 9.96:1**，同时保留"琥珀/黄"的语义色相；浅色主题（`#fef9c3` 浅底 + 深字，16.97:1）不动，待切换项（`--tk-secondary`）在深色下本来就是深底浅字（16.04:1）也不动。
+  - 为什么不能在深色下继续用"亮黄底"：字色由 textarea 整块统一下发（一个元素一个颜色），**没法只给高亮范围内的字换成深色** —— 只能把底色压暗。反过来把输入框文字整体改深色更不行（非高亮处会变成深字压深底）。
+  - 用例：`theme.dom.test.ts` 新增 `describe('高亮标记的可读性')` 4 条，配一组 WCAG 小工具（读 `theme.css` → 剥注释 → 按 `:root[data-theme='dark']` 切分取令牌 → `#rrggbb` / `hsl()` 解析 → 相对亮度 → 对比度），断言浅 / 深两套主题下 `--tk-foreground` 压在 `--tk-highlight`（当前项）与 `--tk-secondary`（待切换项）上都 ≥ 4.5:1。
+    - 选择**读 theme.css 文件**而不是断言一组写死的色值：令牌唯一出处仍在 `theme.css`（AGENTS §3），不在用例里再复制一份；Vitest 里 CSS 导入会被置空（`?inline` 与 `?raw` 实测都是空串），所以走 `import.meta.dirname` + `readFileSync`。
+    - **变异验证**：还原成 `color-mix(...)` → 红（解析器明确拒绝半透明写法，10/20 之外的 1 条失败）；换成"不透明但过亮"的 `hsl(45 70% 80%)` → 红（1.28:1）；改回后 20 例全绿。
+  - 未闭环：纯视觉，仍需浏览器目测确认「深琥珀底 + 近白字」在高亮语义上是否够醒目（本会话环境没有浏览器，无法目测）。若希望更醒目，可再调深浅（会同步影响上面的对比度用例）。
+  - 门禁 `format / lint:check / type-check / test(76 files / 1900) / build` 全绿。
+
 - [ ] **T7 人工浏览器实测（需人在装了 Chrome 的机器上执行）**
   - 描述：TASKS.md「遗留复验」中无法自动化的部分：T4 `#11`/`#12`、T4 `#15`、A6/A8 的真实浏览器行为。可先由 `pnpm build` + 加载 `dist/` 后按清单逐条核对。
   - 验收标准：逐条记录「操作步骤 → 观测结果」，通过者从「遗留复验」移除，异常者开新任务。

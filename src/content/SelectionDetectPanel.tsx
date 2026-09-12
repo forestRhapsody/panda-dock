@@ -48,6 +48,12 @@ export interface SelectionDetectPanelProps {
 
 const PAD = 10
 const GAP = 8
+/**
+ * 输入框的最大高度。刻意**与是否有解析结果无关**：曾按 `currentResult ? 220 : 320` 传值，
+ * 结果「解析失败」时输入框反而比「有结果」时更高，面板整体也被撑大、与预期不符。
+ * 输入框内部可滚动，压低上限不会让内容不可见。
+ */
+const INPUT_MAX_HEIGHT = 220
 
 /**
  * 右键「智能解析选中文字」或快捷键触发在网页内弹出的悬浮面板。
@@ -388,21 +394,23 @@ export default function SelectionDetectPanel({
               setActiveMatchIndex(0)
             }}
             placeholder={t('tool.detect.inputPlaceholder')}
-            maxHeight={currentResult ? 220 : 320}
+            maxHeight={INPUT_MAX_HEIGHT}
             spellCheck={false}
             autoFocus={!currentResult}
           />
         </div>
 
         {currentResult ? (
-          <DetectResultView
-            result={currentResult}
-            blockMaxHeight={260}
-            items={items}
-            activeMatchIndex={safeActiveIndex}
-            onSelectMatch={setActiveMatchIndex}
-            onOpenInTool={onOpenInTool}
-          />
+          <div className='tek-detect__result'>
+            <DetectResultView
+              result={currentResult}
+              blockMaxHeight={260}
+              items={items}
+              activeMatchIndex={safeActiveIndex}
+              onSelectMatch={setActiveMatchIndex}
+              onOpenInTool={onOpenInTool}
+            />
+          </div>
         ) : input.trim() ? (
           <StatusText kind='info'>{t('tool.detect.none')}</StatusText>
         ) : null}

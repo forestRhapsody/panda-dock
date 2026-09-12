@@ -231,6 +231,27 @@ describe('SelectionDetectPanel 结果渲染', () => {
     expect(info?.textContent).toBe(i18n.t('tool.detect.none'))
   })
 
+  it('输入框最大高度与是否有解析结果无关（回归：失败态不再比成功态更高）', () => {
+    renderPanel({ text: 'hello world', onClose: () => {} })
+    const withoutResult = container.querySelector<HTMLElement>('.tw-area-wrapper')?.style.maxHeight
+    expect(withoutResult).toBeTruthy()
+
+    renderPanel({ text: '{"a":1}', onClose: () => {} })
+    const withResult = container.querySelector<HTMLElement>('.tw-area-wrapper')?.style.maxHeight
+
+    // 回归：曾按 currentResult ? 220 : 320 传值，解析失败时输入框反而更高、面板被撑大
+    expect(withResult).toBe(withoutResult)
+  })
+
+  it('结果区挂在独立容器里（回归：外层不再出现第三条滚动条）', () => {
+    renderPanel({ text: '{"a":1}', onClose: () => {} })
+    const result = container.querySelector('.tek-detect__result')
+    // 这个容器是「结果区不参与压缩、空间不足时由输入框让步」这一布局契约的挂点；
+    // 去掉它就等于把面板外层那条滚动条放回来（happy-dom 无排版，只能断言挂点存在）
+    expect(result).not.toBeNull()
+    expect(result?.querySelector('.tw-detect')).not.toBeNull()
+  })
+
   it('空文本不渲染结果区，并自动聚焦输入框方便直接粘贴', () => {
     renderPanel({ text: '', position: 'top-right', onClose: () => {} })
     expect(container.querySelector('.tw-status')).toBeNull()

@@ -232,6 +232,14 @@ export default function DetectResultView({
         )}
       </div>
 
+      {result.hint && (
+        <p className='tw-note'>
+          {result.hint === 'base64-wrapped'
+            ? t('tool.detect.hintBase64Wrapped')
+            : t('tool.detect.hintBase64Lines')}
+        </p>
+      )}
+
       {hasMultiple && (
         <div ref={tabsRef} className='tw-detect__tabs' role='tablist'>
           {items!.map((it, idx) => {

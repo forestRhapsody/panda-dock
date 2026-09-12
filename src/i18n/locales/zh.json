@@ -170,7 +170,9 @@
       "statusNotBase64": "无效的 Base64 格式",
       "statusDecodedText": "解码成功（UTF-8 文本）",
       "statusDecodedBytes": "解码成功（非 UTF-8 内容，已按原始字节显示）",
-      "statusFailed": "转换失败"
+      "statusFailed": "转换失败",
+      "errInvalidBase64": "不是有效的 Base64：字符集或长度不正确",
+      "errDecodeFailed": "解码失败：包含非法字符"
     },
     "registry": {
       "base64": "Base64",
@@ -203,6 +205,8 @@
       "detected": "解析为：{{kind}}",
       "unknown": "未知类型",
       "totalMatches": "共 {{count}} 项结果",
+      "hintBase64Lines": "已按行拆成多个独立 Base64（每行一项）",
+      "hintBase64Wrapped": "已按「一段折行的 Base64」解析（换行视为折行）",
       "none": "未识别出可解析的格式",
       "resultPlaceholder": "解析结果会显示在这里…",
       "download": "下载文件",

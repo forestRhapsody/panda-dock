@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react'
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -386,4 +388,83 @@ describe('useTheme 读取设置与实时切换', () => {
     emitChange({ theme: 'light' })
     expect(document.documentElement.dataset.theme).toBe('dark')
   })
+})
+
+/**
+ * 智能解析的高亮标记是**纯背景层**：可见文字由上层 textarea 用 `--tk-foreground` 绘制
+ * （见 tools.css 的 `.tw-area-backdrop` / `.tw-area-input`），所以「文字色压在高亮底色上」的
+ * 对比度就是可读性下限。浅色主题是浅黄底 + 深色字；深色主题必须反过来用**不透明的深色底**——
+ * 曾经用过 `color-mix(… transparent)` 的半透明浅黄，深色主题下浅色文字压上去几乎看不见。
+ *
+ * 令牌值的唯一出处是 `src/theme.css`（Vitest 里 CSS 导入会被置空，所以直接读文件），
+ * 这里按 WCAG 相对亮度算对比度，把「深色主题必须够深」这条不变量钉死在测试里。
+ */
+const MIN_CONTRAST = 4.5
+
+/** 读 theme.css 并剥掉注释，只留声明，避免注释里出现的令牌名干扰取值 */
+const themeCssText = readFileSync(resolve(import.meta.dirname, '../theme.css'), 'utf8').replace(
+  /\/\*[\s\S]*?\*\//g,
+  '',
+)
+
+/** 浅色令牌在前、深色覆盖块（`:root[data-theme='dark']`）在后，据此切分后取值 */
+function tokenValue(theme: 'light' | 'dark', name: string): string {
+  const [lightPart, darkPart = ''] = themeCssText.split(":root[data-theme='dark']")
+  const matched = (theme === 'dark' ? darkPart : lightPart).match(
+    new RegExp(`${name}:\\s*([^;]+);`),
+  )
+  if (!matched) throw new Error(`theme.css 的 ${theme} 主题里找不到 ${name}`)
+  return matched[1].trim()
+}
+
+/** 解析 `#rrggbb` / `hsl(h s% l%)`；半透明写法（color-mix、rgb(… / 0.3)）无法参与对比度计算 */
+function toRgb(value: string): [number, number, number] {
+  const hex = value.match(/^#([0-9a-f]{6})$/i)
+  if (hex) {
+    const int = Number.parseInt(hex[1], 16)
+    return [((int >> 16) & 0xff) / 255, ((int >> 8) & 0xff) / 255, (int & 0xff) / 255]
+  }
+
+  const hsl = value.match(/^hsl\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*\)$/)
+  if (!hsl) throw new Error(`高亮/前景令牌必须是不透明的 #rrggbb 或 hsl()，无法解析：${value}`)
+
+  const hue = Number(hsl[1]) / 360
+  const saturation = Number(hsl[2]) / 100
+  const lightness = Number(hsl[3]) / 100
+  const channel = (n: number) => {
+    const k = (n + hue * 12) % 12
+    return (
+      lightness -
+      saturation * Math.min(lightness, 1 - lightness) * Math.max(-1, Math.min(k - 3, 9 - k, 1))
+    )
+  }
+  return [channel(0), channel(8), channel(4)]
+}
+
+/** WCAG 2.x 相对亮度 */
+function relativeLuminance(rgb: [number, number, number]): number {
+  const linear = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+  return 0.2126 * linear(rgb[0]) + 0.7152 * linear(rgb[1]) + 0.0722 * linear(rgb[2])
+}
+
+/** WCAG 对比度（1:1 – 21:1） */
+function contrastRatio(foreground: string, background: string): number {
+  const [a, b] = [relativeLuminance(toRgb(foreground)), relativeLuminance(toRgb(background))]
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+}
+
+/** 某主题下，文字色（--tk-foreground）压在给定底色令牌上的对比度 */
+const textOn = (theme: 'light' | 'dark', background: string) =>
+  contrastRatio(tokenValue(theme, '--tk-foreground'), tokenValue(theme, background))
+
+describe('高亮标记的可读性', () => {
+  for (const theme of ['light', 'dark'] as const) {
+    it(`${theme} 主题：激活项高亮（--tk-highlight）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
+      expect(textOn(theme, '--tk-highlight')).toBeGreaterThanOrEqual(MIN_CONTRAST)
+    })
+
+    it(`${theme} 主题：非激活项高亮（--tk-secondary）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
+      expect(textOn(theme, '--tk-secondary')).toBeGreaterThanOrEqual(MIN_CONTRAST)
+    })
+  }
 })

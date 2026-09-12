@@ -122,17 +122,14 @@ export default function HighlightArea({
       }
       const highlighted = value.slice(Math.max(lastIndex, m.startIndex), m.endIndex)
       if (highlighted) {
-        if (m.active !== false) {
-          // 仅当前激活项拥有荧光高亮背景
-          nodes.push(
-            <mark key={`hl-${idx}`} className='tw-area-mark'>
-              {highlighted}
-            </mark>,
-          )
-        } else {
-          // 非当前项不涂任何浅色背景，保持普通文本
-          nodes.push(highlighted)
-        }
+        // 当前激活项用荧光标记；其余「待切换」项也用次级背景画出来 —— 否则用户看不出
+        // 文本里还有别的匹配可以切过去。只靠背景色区分，不用边框/圆角（T24）
+        const idle = m.active === false
+        nodes.push(
+          <mark key={`hl-${idx}`} className={`tw-area-mark${idle ? ' tw-area-mark--idle' : ''}`}>
+            {highlighted}
+          </mark>,
+        )
       }
       lastIndex = Math.max(lastIndex, m.endIndex)
     })

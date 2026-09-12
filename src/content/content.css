@@ -220,6 +220,15 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  /* 允许在面板被 max-height 限制时被压缩：flex 的自动最小尺寸等于内容高度，
+     不置 0 会把面板外层撑出一条多余滚动条（输入框自身已有滚动 + min-height 兜底） */
+  min-height: 0;
+}
+
+/* 结果区按自身内容高度、不参与压缩：内部结果块是 JS 定高 + 内部滚动，被压扁会裁掉内容。
+   面板空间不足时改由输入框先让步 —— 避免「面板外层 / 输入框 / 结果块」三条滚动条叠在一起 */
+.tek-detect__result {
+  flex: 0 0 auto;
 }
 
 .tek-detect__editor-head {

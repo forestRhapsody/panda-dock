@@ -170,7 +170,9 @@
       "statusNotBase64": "Invalid Base64 format",
       "statusDecodedText": "Decoded successfully (UTF-8 text)",
       "statusDecodedBytes": "Decoded successfully (non-UTF-8 content, shown as raw bytes)",
-      "statusFailed": "Conversion failed"
+      "statusFailed": "Conversion failed",
+      "errInvalidBase64": "Not valid Base64: bad character set or length.",
+      "errDecodeFailed": "Decode failed: contains invalid characters."
     },
     "registry": {
       "base64": "Base64",
@@ -203,6 +205,8 @@
       "detected": "Parsed as: {{kind}}",
       "unknown": "Unknown type",
       "totalMatches": "{{count}} results",
+      "hintBase64Lines": "Split into separate Base64 values, one per line",
+      "hintBase64Wrapped": "Treated as one wrapped Base64 value (line breaks ignored)",
       "none": "No parsable format detected",
       "resultPlaceholder": "Parsed result appears here…",
       "download": "Download",

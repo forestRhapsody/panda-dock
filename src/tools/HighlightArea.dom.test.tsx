@@ -139,14 +139,17 @@ describe('HighlightArea 的高亮内容与 textarea 文本一致', () => {
     expect(markTexts()).toEqual([])
   })
 
-  it('仅 active 项包 <mark class="tw-area-mark">，非 active 项保持纯文本', () => {
+  it('当前项用荧光标记、其余待切换项用次级背景标出（靠颜色区分，不靠边框/圆角）', () => {
     render({
       value: 'aaa BBB ccc',
       matches: [match('BBB', 4, 7, true), match('aaa', 0, 3, false)],
     })
 
-    // 只有激活项被荧光笔涂色；分母（非激活项）不涂背景，但仍要在涂层里出现
-    expect(markTexts()).toEqual(['BBB'])
+    // 非激活项也要画出来（否则用户看不出还有别的匹配可切换），但用次级背景而非荧光色
+    const marks = [...container.querySelectorAll<HTMLElement>('.tw-area-mark')]
+    expect(marks.map((el) => el.textContent)).toEqual(['aaa', 'BBB'])
+    expect(marks[0].classList.contains('tw-area-mark--idle')).toBe(true)
+    expect(marks[1].classList.contains('tw-area-mark--idle')).toBe(false)
     // 涂层文本必须与 textarea 完全一致，否则会出现错位重影
     expect(backdropText()).toBe(ta().value)
     expect(backdropText()).toBe('aaa BBB ccc')
@@ -158,7 +161,8 @@ describe('HighlightArea 的高亮内容与 textarea 文本一致', () => {
       matches: [match('three', 8, 13, true), match('one', 0, 3, false)],
     })
 
-    expect(markTexts()).toEqual(['three'])
+    // 两个匹配都会被画出来（一个荧光、一个次级背景），顺序按原文位置
+    expect(markTexts()).toEqual(['one', 'three'])
     expect(backdropText()).toBe('one two three')
   })
 

@@ -59,9 +59,9 @@
   --tk-shadow-md: 0 4px 12px -2px rgb(24 24 27 / 0.08), 0 2px 6px -2px rgb(24 24 27 / 0.05);
   --tk-shadow-lg: 0 12px 26px -6px rgb(24 24 27 / 0.18);
 
-  /* —— 功能色：荧光高亮（智能识别输入框高亮标记） —— */
+  /* —— 功能色：高亮标记（纯背景层；文字由上层 textarea 用 --tk-foreground 绘制，
+     所以高亮底色必须与前景色有足够对比） —— */
   --tk-highlight: #fef9c3;
-  --tk-highlight-border: color-mix(in srgb, #fef9c3 60%, #ca8a04);
 
   /* —— 字体 —— */
   --tk-font:
@@ -119,8 +119,10 @@
   --tk-shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
   --tk-shadow-lg: 0 12px 26px -6px rgb(0 0 0 / 0.6);
 
-  --tk-highlight: color-mix(in srgb, #fef9c3 30%, transparent);
-  --tk-highlight-border: color-mix(in srgb, #fef9c3 50%, transparent);
+  /* 深色主题下高亮必须**比文字暗**：高亮只是背景层，文字由上层 textarea 用 --tk-foreground
+     （深色下接近白色）绘制 —— 原来是半透明浅黄，浅色字压上去看不清。这里改用不透明的深琥珀色，
+     既保留"黄色高亮"的语义，又让浅色文字有足够对比（由 theme.dom.test.ts 的对比度断言守住）。 */
+  --tk-highlight: hsl(45 70% 18%);
 }
 
 /* 字体缩放默认值只设在 :root 与 :host（两者是各场景的令牌宿主，页面取 :root、Shadow DOM 取

@@ -127,6 +127,22 @@ describe('DetectResultView 的类型标签与整体骨架', () => {
     }
   })
 
+  it('解析解释提示（hint）渲染为一行说明：按行解析 / 折行各一条', () => {
+    render({ result: result({ kind: 'base64', hint: 'base64-lines' }) })
+    expect(container.textContent).toContain(i18n.t('tool.detect.hintBase64Lines'))
+    expectNoBareI18nKey()
+
+    render({ result: result({ kind: 'base64', hint: 'base64-wrapped' }) })
+    expect(container.textContent).toContain(i18n.t('tool.detect.hintBase64Wrapped'))
+    expectNoBareI18nKey()
+  })
+
+  it('没有 hint 时不渲染任何解释说明（不留空占位）', () => {
+    render({ result: result({ kind: 'base64' }) })
+    expect(container.textContent).not.toContain(i18n.t('tool.detect.hintBase64Lines'))
+    expect(container.textContent).not.toContain(i18n.t('tool.detect.hintBase64Wrapped'))
+  })
+
   it('未知类型（运行时脏数据）不崩溃，类型名处显示兜底文案', () => {
     const dirty = result({ kind: 'nope' as DetectResult['kind'] })
     expect(() => render({ result: dirty })).not.toThrow()
