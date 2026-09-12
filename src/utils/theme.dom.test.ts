@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react'
 
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
@@ -31,6 +31,10 @@ const LIGHT_FOREGROUND = 'hsl(240 9% 9%)'
 const DARK_FOREGROUND = 'hsl(0 0% 98%)'
 const LIGHT_PRIMARY = '#171717'
 const DARK_PRIMARY = 'hsl(0 0% 96%)'
+const LIGHT_HIGHLIGHT = '#fef08a'
+const DARK_HIGHLIGHT = '#fef08a'
+const LIGHT_HIGHLIGHT_SECONDARY = '#fef9c3'
+const DARK_HIGHLIGHT_SECONDARY = 'hsl(48 60% 25%)'
 
 let changeListeners: ChangeListener[]
 let syncStore: Record<string, unknown>
@@ -158,6 +162,10 @@ describe('applyTheme 的落点与令牌内联', () => {
     expect(cssVar(document.documentElement, '--tk-background')).toBe(LIGHT_BACKGROUND)
     expect(cssVar(document.documentElement, '--tk-foreground')).toBe(LIGHT_FOREGROUND)
     expect(cssVar(document.documentElement, '--tk-primary')).toBe(LIGHT_PRIMARY)
+    expect(cssVar(document.documentElement, '--tk-highlight')).toBe(LIGHT_HIGHLIGHT)
+    expect(cssVar(document.documentElement, '--tk-highlight-secondary')).toBe(
+      LIGHT_HIGHLIGHT_SECONDARY,
+    )
   })
 
   it('无宿主且非扩展：dark 直接生效，内联的是 dark 一套令牌', () => {
@@ -169,6 +177,10 @@ describe('applyTheme 的落点与令牌内联', () => {
     expect(cssVar(document.documentElement, '--tk-background')).toBe(DARK_BACKGROUND)
     expect(cssVar(document.documentElement, '--tk-foreground')).toBe(DARK_FOREGROUND)
     expect(cssVar(document.documentElement, '--tk-primary')).toBe(DARK_PRIMARY)
+    expect(cssVar(document.documentElement, '--tk-highlight')).toBe(DARK_HIGHLIGHT)
+    expect(cssVar(document.documentElement, '--tk-highlight-secondary')).toBe(
+      DARK_HIGHLIGHT_SECONDARY,
+    )
   })
 
   it('存在宿主且处于扩展环境（content script）：只写宿主，绝不碰 documentElement', () => {
@@ -182,6 +194,8 @@ describe('applyTheme 的落点与令牌内联', () => {
     expect(cssVar(host, '--tk-background')).toBe(DARK_BACKGROUND)
     expect(cssVar(host, '--tk-foreground')).toBe(DARK_FOREGROUND)
     expect(cssVar(host, '--tk-primary')).toBe(DARK_PRIMARY)
+    expect(cssVar(host, '--tk-highlight')).toBe(DARK_HIGHLIGHT)
+    expect(cssVar(host, '--tk-highlight-secondary')).toBe(DARK_HIGHLIGHT_SECONDARY)
 
     // 宿主网页的 <html> 必须保持原样，否则内容是「泄漏」到宿主页面上
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
@@ -391,30 +405,64 @@ describe('useTheme 读取设置与实时切换', () => {
 })
 
 /**
- * 智能解析的高亮标记是**纯背景层**：可见文字由上层 textarea 用 `--tk-foreground` 绘制
- * （见 tools.css 的 `.tw-area-backdrop` / `.tw-area-input`），所以「文字色压在高亮底色上」的
- * 对比度就是可读性下限。浅色主题是浅黄底 + 深色字；深色主题必须反过来用**不透明的深色底**——
- * 曾经用过 `color-mix(… transparent)` 的半透明浅黄，深色主题下浅色文字压上去几乎看不见。
+ * 高亮标记的可读性：标记的**底色与文字色成对**取自令牌
+ * （active = `--tk-highlight` / `--tk-highlight-foreground`，idle = `--tk-highlight-secondary` /
+ * `--tk-highlight-secondary-foreground`）—— 见 tools.css 的双层结构：可见文字由涂层绘制，
+ * textarea 只留光标与选区。
  *
  * 令牌值的唯一出处是 `src/theme.css`（Vitest 里 CSS 导入会被置空，所以直接读文件），
- * 这里按 WCAG 相对亮度算对比度，把「深色主题必须够深」这条不变量钉死在测试里。
+ * 这里按 WCAG 相对亮度算对比度，把「明暗两套都得看清」这条不变量钉死在测试里 ——
+ * 深色主题曾经只剩浅黄底 + 近白字（高亮那段字看不见），就是要靠这类断言拦住。
  */
 const MIN_CONTRAST = 4.5
 
-/** 读 theme.css 并剥掉注释，只留声明，避免注释里出现的令牌名干扰取值 */
-const themeCssText = readFileSync(resolve(import.meta.dirname, '../theme.css'), 'utf8').replace(
-  /\/\*[\s\S]*?\*\//g,
-  '',
-)
+/** 本文件的上一级目录 = `src/`：令牌读取与 CSS 守卫都相对它定位 */
+const SRC_DIR = resolve(import.meta.dirname, '..')
 
-/** 浅色令牌在前、深色覆盖块（`:root[data-theme='dark']`）在后，据此切分后取值 */
+/** 仓库里所有 CSS 路径（src 下递归，含以后新增的文件） */
+function allCssFiles(): string[] {
+  return readdirSync(SRC_DIR, { recursive: true })
+    .map((entry) => String(entry).replaceAll('\\', '/'))
+    .filter((entry) => entry.endsWith('.css'))
+}
+
+/**
+ * 读 CSS 并剥掉注释：注释里会提到选择器与令牌名（本文件的守卫就是在注释里抄的例子），
+ * 不剥掉会同时污染「令牌取值」与「选择器守卫」。
+ */
+function readCss(relativePath: string): string {
+  return readFileSync(resolve(SRC_DIR, relativePath), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
+const themeCssText = readCss('theme.css')
+
+/** 浅色基块在前、深色覆盖块（`:root[data-theme='dark']`）在后，据此切分 */
+const [lightCssPart, darkCssPart = ''] = themeCssText.split(":root[data-theme='dark']")
+
+/** 取该段文本里第一条规则的属性块（属性块内不嵌套大括号，第一个 `}` 即结束） */
+function firstRuleBody(part: string): string {
+  const open = part.indexOf('{')
+  const close = part.indexOf('}', open)
+  if (open < 0 || close < 0) throw new Error('theme.css 的规则体解析失败')
+  return part.slice(open + 1, close)
+}
+
+/** 属性块里的全部 `--tk-*` 声明 */
+function declaredTokens(body: string): Map<string, string> {
+  const tokens = new Map<string, string>()
+  for (const [, name, value] of body.matchAll(/(--tk-[\w-]+)\s*:\s*([^;]+);/g)) {
+    tokens.set(name, value.trim())
+  }
+  return tokens
+}
+
+const lightTokens = declaredTokens(firstRuleBody(lightCssPart))
+const darkTokens = declaredTokens(firstRuleBody(darkCssPart))
+
 function tokenValue(theme: 'light' | 'dark', name: string): string {
-  const [lightPart, darkPart = ''] = themeCssText.split(":root[data-theme='dark']")
-  const matched = (theme === 'dark' ? darkPart : lightPart).match(
-    new RegExp(`${name}:\\s*([^;]+);`),
-  )
-  if (!matched) throw new Error(`theme.css 的 ${theme} 主题里找不到 ${name}`)
-  return matched[1].trim()
+  const value = (theme === 'dark' ? darkTokens : lightTokens).get(name)
+  if (!value) throw new Error(`theme.css 的 ${theme} 主题里找不到 ${name}`)
+  return value
 }
 
 /** 解析 `#rrggbb` / `hsl(h s% l%)`；半透明写法（color-mix、rgb(… / 0.3)）无法参与对比度计算 */
@@ -460,11 +508,122 @@ const textOn = (theme: 'light' | 'dark', background: string) =>
 describe('高亮标记的可读性', () => {
   for (const theme of ['light', 'dark'] as const) {
     it(`${theme} 主题：激活项高亮（--tk-highlight）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
-      expect(textOn(theme, '--tk-highlight')).toBeGreaterThanOrEqual(MIN_CONTRAST)
+      // 激活项高亮统一使用 --tk-highlight-foreground（深色字）压在 --tk-highlight（明亮浅黄）上
+      const ratio = contrastRatio(
+        tokenValue(theme, '--tk-highlight-foreground'),
+        tokenValue(theme, '--tk-highlight'),
+      )
+      expect(ratio).toBeGreaterThanOrEqual(MIN_CONTRAST)
     })
 
-    it(`${theme} 主题：非激活项高亮（--tk-secondary）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
+    it(`${theme} 主题：次级高亮（--tk-highlight-secondary）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
+      const ratio = contrastRatio(
+        tokenValue(theme, '--tk-highlight-secondary-foreground'),
+        tokenValue(theme, '--tk-highlight-secondary'),
+      )
+      expect(ratio).toBeGreaterThanOrEqual(MIN_CONTRAST)
+    })
+
+    it(`${theme} 主题：通用次要背景（--tk-secondary）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
       expect(textOn(theme, '--tk-secondary')).toBeGreaterThanOrEqual(MIN_CONTRAST)
     })
   }
+})
+
+/**
+ * 深色令牌有两条送达路径：theme.css 的 `:host([data-theme='dark'])`（Shadow DOM 用）与 theme.ts 的
+ * 内联兜底 `THEME_PALETTES`（内联样式优先级最高，实际值以它为准）。任何一条漏掉一个「主题相关令牌」，
+ * 该令牌在深色下就会悄悄退回浅色值 —— 高亮标记正是这么漏过一次（`--tk-highlight` 不在兜底里，
+ * 于是深色主题拿到浅色主题的浅黄底，压在近白文字上）。
+ */
+describe('内联兜底完整性（theme.css ↔ theme.ts 调色板）', () => {
+  /** 主题相关令牌 = 深色块里改过值的令牌（两套值相同的令牌漏了也无害） */
+  const themeDependent = [...darkTokens].filter(([name, value]) => lightTokens.get(name) !== value)
+
+  it('theme.css 里确实有一批主题相关令牌（守卫自身的前提，防它退化成空转）', () => {
+    expect(themeDependent.length).toBeGreaterThan(10)
+  })
+
+  for (const theme of ['light', 'dark'] as const) {
+    it(`${theme} 主题：每个主题相关令牌都被内联到 Shadow DOM 宿主上`, () => {
+      stubExtension()
+      createHost()
+
+      applyTheme(theme)
+
+      const host = document.getElementById(HOST_ID)
+      if (!host) throw new Error('未创建宿主')
+      const missing = themeDependent
+        .filter(([name]) => cssVar(host, name) === '')
+        .map(([name]) => name)
+      expect(missing).toEqual([])
+    })
+  }
+})
+
+/** 非函数式 `:host` 只能单独成一个 compound；`:host[attr]` / `:host.cls` 这类写法永远不匹配 */
+const BAD_HOST_COMPOUND = /:host(?!\()(?=[.#:[])/
+
+/** 取「选择器列表里恰好含 selector 这条」的规则体（同优先级下最后一条生效，故取最后一条） */
+function ruleBody(css: string, selector: string): string {
+  const bodies = [...css.matchAll(/([^{}]*)\{([^{}]*)\}/g)]
+    .filter(([, prelude]) =>
+      prelude
+        .split(',')
+        .map((part) => part.trim())
+        .includes(selector),
+    )
+    .map(([, , body]) => body)
+  const body = bodies.at(-1)
+  if (body === undefined) throw new Error(`找不到 ${selector} 的规则体`)
+  return body
+}
+
+/**
+ * 按 css-scoping，非函数式 `:host` 必须是 compound 里唯一的简单选择器；`:host[data-theme='dark']`
+ * 永远不匹配。这类写法如果混进选择器列表，深色令牌在 Shadow DOM 里就整块失效（而扩展页面上是好的，
+ * 所以只看页面根本看不出来）—— 曾经就是这么写的，这里把它钉成不可回归的约束。
+ */
+describe('Shadow DOM 主题选择器', () => {
+  it('全仓 CSS 里没有「非函数式 :host + 其它简单选择器」的 compound', () => {
+    const offenders: string[] = []
+    for (const file of allCssFiles()) {
+      readCss(file)
+        .split('\n')
+        .forEach((line, index) => {
+          if (BAD_HOST_COMPOUND.test(line)) offenders.push(`${file}:${index + 1} ${line.trim()}`)
+        })
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it("深色令牌块用的正是函数式 :host([data-theme='dark'])", () => {
+    expect(themeCssText).toContain(":host([data-theme='dark'])")
+  })
+})
+
+/**
+ * 高亮标记的「文字层契约」只存在于 CSS 里（happy-dom 没有排版引擎，断言不了观感），所以按
+ * 声明原文守住结构：可见文字必须由涂层画、textarea 的文字必须透明。反过来写就是那个 bug 的结构 ——
+ * 高亮底色由涂层决定，文字色却由 textarea 统一决定，深色下必然撞成浅底浅字。
+ */
+describe('高亮文字层契约（tools.css）', () => {
+  const toolsCssText = readCss('tools/tools.css')
+
+  it('可见文字由涂层绘制，textarea 文字透明、只保留光标', () => {
+    expect(ruleBody(toolsCssText, '.tw-area-backdrop')).toMatch(/color:\s*var\(--tk-foreground\)/)
+    const input = ruleBody(toolsCssText, '.tw-area-input')
+    expect(input).toMatch(/color:\s*transparent/)
+    expect(input).toMatch(/caret-color:\s*var\(--tk-foreground\)/)
+  })
+
+  it('标记的文字色与底色成对取自高亮令牌，idle 走次级令牌', () => {
+    const mark = ruleBody(toolsCssText, '.tw-area-mark')
+    expect(mark).toMatch(/color:\s*var\(--tk-highlight-foreground\)/)
+    expect(mark).toMatch(/background:\s*var\(--tk-highlight\)/)
+
+    const idle = ruleBody(toolsCssText, '.tw-area-mark--idle')
+    expect(idle).toMatch(/color:\s*var\(--tk-highlight-secondary-foreground\)/)
+    expect(idle).toMatch(/background:\s*var\(--tk-highlight-secondary\)/)
+  })
 })

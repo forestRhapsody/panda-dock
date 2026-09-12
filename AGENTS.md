@@ -33,13 +33,18 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 | 命令 | 作用与注意 |
 | --- | --- |
 | `pnpm dev` | 浏览器预览 UI，无需扩展环境（`chrome.*` 自动降级） |
-| `pnpm build` | 类型检查 + 打包，顺序 content → background → 页面。**顺序不可乱**（content 先清空 `dist/`）；**不跑测试** |
-| `pnpm type-check` | 仅 `tsc -b` |
-| `pnpm lint` | ESLint **自动修复**（内含 Prettier） |
+| `pnpm build` | 类型检查（内含 `tsc -b`）+ 打包，顺序 content → background → 页面。**顺序不可乱**（content 先清空 `dist/`）；**不跑测试**；只在交付门禁或要装进浏览器实测时跑（§7） |
+| `pnpm type-check` | 仅 `tsc -b`（实测 ~5s）；`pnpm build` 已包含它 |
+| `pnpm lint` | ESLint **自动修复**（只覆盖 ts/tsx/js/jsx；css/json 的格式化归 `pnpm format`） |
 | `pnpm lint:check` | 只读校验；**CI 用这个**——`lint` 会改写工作区 |
-| `pnpm test` | Vitest 单测（`vitest run`） |
+| `pnpm test <文件名片段>` | **过程验证的默认手段**：只跑匹配到的测试文件（`pnpm test theme`、`pnpm test HighlightArea`），实测 ~1s |
+| `pnpm test` | 全量单测（76 files / ~1900 例 / 实测 ~11s）。**默认不跑**，只在交付门禁或改动基础全局逻辑时跑（§7） |
+| `pnpm test:changed` | 只跑与当前 git 改动有依赖关系的测试（`vitest run --changed`）。成本随波及面走（工作区改了 20+ 文件时实测 ≈ 全量）；筛选不到任何文件会直接失败 |
+| `pnpm test:watch` | 交互式监听；**人类专用，代理禁用**（会一直挂住会话） |
 | `pnpm format` | Prettier **只覆盖 `src/`**；根配置（`vite*.config.ts`、`vitest.config.ts`、`eslint.config.js`）要手动格式化 |
 | `pnpm icons` | 生成 `public/icons/*.png` |
+
+**验证级别**：迭代时默认只做过程验证——「改了什么 → 跑哪条命令」见 §7.1；全量门禁只在收尾时跑一次（§7.2）。
 
 装载扩展：`pnpm build` 后在 `chrome://extensions` 开启开发者模式 → 加载 `dist/`。
 
@@ -148,7 +153,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 6. `src/i18n/locales/{zh,en}.json`：补 `tool.registry.foo` 与工具内全部文案（两套都要）。
 7. 样式写进 `tools/tools.css`（`tw-*` + 设计令牌）。
 8. 可选：`ui/Icon.tsx` 补图标；`tools/detect.ts` 接入智能解析；`tools/handoff.ts` 接入「在 XX 工具中打开」。
-9. 收尾：`pnpm format && pnpm lint && pnpm type-check && pnpm test && pnpm build`。
+9. 收尾：按 §7 选验证级别——过程中只跑最小集（§7.1），交付前才跑全量门禁（§7.2）。
 
 ### 6.2 新增或修改文案
 
@@ -157,7 +162,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 - **跟随用户设置的语言** → 应用内：`zh.json` + `en.json` 同时加 key（命名 `tool.<tool>.*` / `settings.*` / `common.*`），组件里 `t('key')`、纯逻辑里 `i18n.t('key')`。
 - **跟随浏览器界面语言**（扩展名与描述、快捷键说明、右键菜单） → 清单级：`public/_locales/{zh_CN,en}/messages.json` 两套都加，manifest 里用 `__MSG_key__`，`background` 里用 `chrome.i18n.getMessage('key')`。
 
-两种都要跑 `pnpm test`：守卫测试会校验 key 是否存在、两套语言包是否对齐。
+改完后跑 `pnpm test i18n`：守卫测试会校验 key 是否存在、两套语言包是否对齐（无需跑全量测试）。
 
 ### 6.3 改设置字段（`Settings`）
 
@@ -168,18 +173,52 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 5. 测试：`utils/settings.test.ts` 补归一化用例。
 6. ⚠️ **兼容旧数据**：不要改已有字段的含义或删字段（用户升级后会错乱）；要演进就加新字段，并在 `normalizeSettings` 里做迁移。
 
-## 7 完工定义
+## 7 验证分级与完工定义
 
-改完必须全绿：
+验证分两级：**过程验证**（每次改动都做，默认级别）与**交付门禁**（只在收尾时跑一次）。
+不默认跑全量的理由不是"图省事"：改一个颜色跑全量单测既**证明不了颜色对不对**（没有任何测试断言视觉），又要等、还会把几十个文件的输出灌进上下文。
+
+### 7.1 过程验证（默认）
+
+按最小粒度选命令，**能跑一个文件就不要跑一层**：
+
+| 改了什么 | 过程验证（实测耗时） |
+| --- | --- |
+| 纯文档（`AGENTS.md` / `README` / `TASKS.md`） | 不跑任何命令 |
+| `theme.css` 的令牌值 | `pnpm test theme`（~1s；`theme.dom.test.ts` 断言明暗两套的对比度）——**只改一个颜色就是这一类，不要跑全量** |
+| 工具纯逻辑 `tools/x.ts` | `pnpm test x.test`（~1s，跑同目录的 `*.test.ts`） |
+| 工具组件 `tools/XTool.tsx` | `pnpm test XTool`（happy-dom 用例）+ `pnpm type-check` |
+| 文案 key（zh/en、`_locales`） | `pnpm test i18n`（~1s；守卫 key 存在与两套对齐） |
+| 纯样式类名 / 布局（`tools.css` / `ui.css` / `content.css`） | 没有自动化能证明视觉效果：顺手改了 `.tsx` 就加 `pnpm type-check`，纯 CSS 直接**目测**（必要时 `pnpm dev`） |
+| 公共契约（`registry.ts` / `messages.ts` / `settings.ts` / `manifest.json` / vite、tsconfig、eslint 配置） | `pnpm test:changed` + `pnpm type-check` |
+| 拿不准影响面 | 先 `pnpm test:changed`；它挑不出东西、又确实改了行为，再考虑全量 |
+
+三条纪律：
+
+1. **粒度从最小开始**：先跑单个文件/关键词，绿了就停，不要"顺手"再跑全量。
+2. **输出卫生**：全量单测默认 reporter 会列出全部文件；只想看总数就加 `--reporter=dot`，长输出命令一律 `| tail -n 20`。**不要把整段测试 / 构建输出贴进上下文**——这是最大的一笔 token 开销。
+3. **红了再聚焦**：失败时单独重跑那个文件看完整报错，不要在全量输出里翻。
+
+### 7.2 交付门禁（收尾时跑一次）
+
+满足下列任一条才跑全量：
+
+- 用户明确要求收尾 / 交付 / 提交 / 发版；
+- 改动触及**公共契约**（`registry.ts`、`messages.ts`、`settings.ts`、`theme.css` 里令牌的**增删改名**（只调值不算）、`manifest.json`、任一 vite / tsconfig / eslint 配置）；
+- 本次任务累计改了 ≥ 3 个模块，或过程验证出现过没吃透的信号。
 
 ```
-pnpm format && pnpm lint && pnpm type-check && pnpm test && pnpm build
+pnpm format && pnpm lint && pnpm test && pnpm build
 ```
 
+- `pnpm build` 内含 `tsc -b`（即 `pnpm type-check`），所以链里**不再单跑** `type-check`。
 - `pnpm build` **不跑测试**、`pnpm lint` 只做静态检查，两者不能互相替代。
-- CI 在 push / PR 上跑同样的事（lint 用只读的 `pnpm lint:check`）。
+- 全量链一轮只跑一次：跑过 `pnpm test` 就不要再顺手跑 `pnpm test:changed`。
+- CI 在 push / PR 上跑 `type-check + lint:check + test + build`（只读版），是最终兜底；本地全量是交付前自查，**不必每轮都跑**。
 - 涉及 `chrome.*`、content script、快捷键、抽屉/侧边栏互斥的改动，**必须 `pnpm build` 后在浏览器里实测**——`pnpm dev` 没有 `chrome`，这些路径根本跑不到。
-- 报告完成时要说清：跑了哪些命令、结果如何；**没验证的部分要明说**，不要让人以为已验过。
+- 报告纪律：说清**做了哪一级验证、跑了哪几条命令、结果如何**；只做了过程验证就明说"未跑全量门禁"；没验证的部分要明说，不要让人以为已验过。
+
+> 耗时为本机实测：全量单测 76 files / 1902 例 ≈ 11s、`type-check` ≈ 5s、`lint:check` ≈ 7s、`build` ≈ 14s、全量链 ≈ 35s。换机器会有出入，量级只用来判断"该不该跑"。
 
 ## 8 红线
 

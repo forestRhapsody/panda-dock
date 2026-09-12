@@ -324,9 +324,11 @@
   overflow: hidden;
 }
 
+/* 可见文字层：**文字与高亮底色都由这里绘制**（上层 textarea 的文字是透明的，见下），
+   所以 color 必须与标记底色成对保持高对比；标记内部再按 active / idle 覆写。 */
 .tw-area-backdrop {
   pointer-events: none;
-  color: transparent;
+  color: var(--tk-foreground);
   background: transparent;
   user-select: none;
   -webkit-user-select: none;
@@ -349,12 +351,16 @@
   background: transparent;
 }
 
+/* 输入层：文字透明，只保留光标、选区与输入法 —— 与 JSON 高亮编辑器同一套模式
+   （见 .json-editor__hl / .json-editor__input），避免两层文字叠出重影。
+   ⚠️ 把这里的 color 改回 --tk-foreground 就等于把「高亮底上的字看不清」那个 bug 放回来：
+   高亮底色由涂层画，文字色却由这一层统一决定，深色主题下两者会撞成浅底浅字。 */
 .tw-area-input {
   display: block;
   outline: none;
   resize: none;
   background: transparent;
-  color: var(--tk-foreground);
+  color: transparent;
   caret-color: var(--tk-foreground);
 }
 
@@ -363,10 +369,18 @@
   opacity: 0.7;
 }
 
-/* 匹配标记涂抹层：紧密跟随字符自然流动，换行独立克隆。
-   扁平样式（T24）——无圆角、无描边：当前项用荧光色，其余待切换项用次级背景色，只靠颜色区分 */
-.tw-area-mark {
+.tw-area-input::selection {
+  background: color-mix(in srgb, var(--tk-ring) 30%, transparent);
+  /* 显式透明：否则 UA 的 ::selection 文字色会压上来，与涂层文字叠成重影 */
   color: transparent;
+}
+
+/* 匹配标记涂抹层：紧密跟随字符自然流动，换行独立克隆。
+   沿用 T24 的扁平样式（无圆角、无描边，只靠颜色区分）；底色与文字色成对使用
+   （active = --tk-highlight / -foreground，idle = --tk-highlight-secondary / -foreground），
+   明暗两套主题的对比度都由 theme.dom.test.ts 的「高亮标记的可读性」守住 ≥ 4.5:1。 */
+.tw-area-mark {
+  color: var(--tk-highlight-foreground);
   background: var(--tk-highlight);
   padding: 1px 2px;
   margin: 0 -1px;
@@ -376,7 +390,8 @@
 }
 
 .tw-area-mark--idle {
-  background: var(--tk-secondary);
+  color: var(--tk-highlight-secondary-foreground);
+  background: var(--tk-highlight-secondary);
 }
 
 .tw-actions {
@@ -815,44 +830,36 @@
 }
 
 :root[data-theme='dark'] .tw-json-hl .jhl-key,
-:host[data-theme='dark'] .tw-json-hl .jhl-key,
 :host([data-theme='dark']) .tw-json-hl .jhl-key,
 [data-theme='dark'] .tw-json-hl .jhl-key,
 :root[data-theme='dark'] .json-editor__hl .jhl-key,
-:host[data-theme='dark'] .json-editor__hl .jhl-key,
 :host([data-theme='dark']) .json-editor__hl .jhl-key,
 [data-theme='dark'] .json-editor__hl .jhl-key {
   color: hsl(210 100% 72%);
 }
 
 :root[data-theme='dark'] .tw-json-hl .jhl-str,
-:host[data-theme='dark'] .tw-json-hl .jhl-str,
 :host([data-theme='dark']) .tw-json-hl .jhl-str,
 [data-theme='dark'] .tw-json-hl .jhl-str,
 :root[data-theme='dark'] .json-editor__hl .jhl-str,
-:host[data-theme='dark'] .json-editor__hl .jhl-str,
 :host([data-theme='dark']) .json-editor__hl .jhl-str,
 [data-theme='dark'] .json-editor__hl .jhl-str {
   color: hsl(142 70% 65%);
 }
 
 :root[data-theme='dark'] .tw-json-hl .jhl-num,
-:host[data-theme='dark'] .tw-json-hl .jhl-num,
 :host([data-theme='dark']) .tw-json-hl .jhl-num,
 [data-theme='dark'] .tw-json-hl .jhl-num,
 :root[data-theme='dark'] .json-editor__hl .jhl-num,
-:host[data-theme='dark'] .json-editor__hl .jhl-num,
 :host([data-theme='dark']) .json-editor__hl .jhl-num,
 [data-theme='dark'] .json-editor__hl .jhl-num {
   color: hsl(35 100% 70%);
 }
 
 :root[data-theme='dark'] .tw-json-hl .jhl-kw,
-:host[data-theme='dark'] .tw-json-hl .jhl-kw,
 :host([data-theme='dark']) .tw-json-hl .jhl-kw,
 [data-theme='dark'] .tw-json-hl .jhl-kw,
 :root[data-theme='dark'] .json-editor__hl .jhl-kw,
-:host[data-theme='dark'] .json-editor__hl .jhl-kw,
 :host([data-theme='dark']) .json-editor__hl .jhl-kw,
 [data-theme='dark'] .json-editor__hl .jhl-kw {
   color: hsl(270 90% 78%);

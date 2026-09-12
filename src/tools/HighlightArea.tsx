@@ -19,7 +19,10 @@ interface HighlightAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaEle
  *   彻底杜绝内层 textarea 产生原生滚动条导致的 17px 折行排版宽度偏差；
  * - CSS Grid 单槽同层对齐：pre 与 textarea 位于同一网格区域（1 / 1 / 2 / 2），共享完全相等的坐标系、宽度与字符折行点；
  * - 纯文字荧光笔涂层（box-decoration-break: clone）：多行自动折行时贴合字符笔触流动，不再呈现生硬错位的死方框；
- * - 零重影、零延迟、100% 保留原生选区与中文输入法体验；
+ * - 文字与底色都由涂层绘制（与 JSON 高亮编辑器 `.json-editor__hl` 同一套模式）：可见文字来自
+ *   `pre.tw-area-backdrop`，textarea 的文字透明、只保留光标 / 选区 / 输入法 —— 这样每个匹配项才能
+ *   各自带「浅色底 + 深色字」的成对配色，明暗两套主题都看得清（令牌见 theme.css，对比度由
+ *   theme.dom.test.ts 守住）；两层文本必须逐字一致，否则会出现错位重影；
  * - 激活联动滚动：切换解析结果时，自动将对应的高亮项平滑滚动至输入框可视居中区域。
  */
 export default function HighlightArea({

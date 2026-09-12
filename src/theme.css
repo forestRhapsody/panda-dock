@@ -59,9 +59,11 @@
   --tk-shadow-md: 0 4px 12px -2px rgb(24 24 27 / 0.08), 0 2px 6px -2px rgb(24 24 27 / 0.05);
   --tk-shadow-lg: 0 12px 26px -6px rgb(24 24 27 / 0.18);
 
-  /* —— 功能色：高亮标记（纯背景层；文字由上层 textarea 用 --tk-foreground 绘制，
-     所以高亮底色必须与前景色有足够对比） —— */
-  --tk-highlight: #fef9c3;
+  /* —— 功能色：高亮标记（在亮色与深色模式下统一使用明快浅黄色，搭配高对比深色文字） —— */
+  --tk-highlight: #fef08a;
+  --tk-highlight-foreground: #171717;
+  --tk-highlight-secondary: #fef9c3;
+  --tk-highlight-secondary-foreground: #171717;
 
   /* —— 字体 —— */
   --tk-font:
@@ -83,9 +85,14 @@
   --tk-control-h-lg: calc(38px * var(--tk-font-scale)); /* 强调按钮高（主操作按钮） */
 }
 
-/* —— 深色（冷调中性色反转，主色提亮为近白、文字转深） —— */
+/* —— 深色（冷调中性色反转，主色提亮为近白、文字转深） ——
+   ⚠️ Shadow DOM 里必须写**函数式** `:host([data-theme='dark'])`：按 css-scoping，非函数式 `:host`
+   只能单独成一个 compound，`:host[data-theme='dark']` 永远不匹配。曾经因为这么写，深色令牌在
+   抽屉 / 悬浮球里整块不生效，只剩 theme.ts 的内联兜底在生效；而兜底里漏了 `--tk-highlight`，
+   于是浅色主题的浅黄高亮被留在深色背景上、压着近白文字 —— 就是「高亮那段字看不清」。
+   两条防线现在都有守卫：theme.dom.test.ts 的「Shadow DOM 主题选择器」与「内联兜底完整性」。 */
 :root[data-theme='dark'],
-:host[data-theme='dark'] {
+:host([data-theme='dark']) {
   color-scheme: dark;
 
   --tk-background: hsl(240 10% 4%);
@@ -119,10 +126,12 @@
   --tk-shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
   --tk-shadow-lg: 0 12px 26px -6px rgb(0 0 0 / 0.6);
 
-  /* 深色主题下高亮必须**比文字暗**：高亮只是背景层，文字由上层 textarea 用 --tk-foreground
-     （深色下接近白色）绘制 —— 原来是半透明浅黄，浅色字压上去看不清。这里改用不透明的深琥珀色，
-     既保留"黄色高亮"的语义，又让浅色文字有足够对比（由 theme.dom.test.ts 的对比度断言守住）。 */
-  --tk-highlight: hsl(45 70% 18%);
+  /* 深色主题下激活项高亮统一使用明快浅黄色配深色字；次级高亮采用清晰暖暗金底色配高对比白字，
+     既在暗色背景下清晰可辨候选区域，又与激活焦点形成鲜明的主次层级。 */
+  --tk-highlight: #fef08a;
+  --tk-highlight-foreground: #171717;
+  --tk-highlight-secondary: hsl(48 60% 25%);
+  --tk-highlight-secondary-foreground: hsl(0 0% 98%);
 }
 
 /* 字体缩放默认值只设在 :root 与 :host（两者是各场景的令牌宿主，页面取 :root、Shadow DOM 取

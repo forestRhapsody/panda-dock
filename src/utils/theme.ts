@@ -12,7 +12,15 @@ function isValidTheme(value: unknown): value is ThemeMode {
   return value === 'light' || value === 'dark' || value === 'system'
 }
 
-/** 主题配色（与 src/theme.css 合并一致）—— 供内联兜底，保证 Shadow DOM 里也换肤 */
+/**
+ * 主题配色 —— 内联兜底，保证 Shadow DOM 里也换肤。
+ *
+ * ⚠️ 这是 `src/theme.css` 的一份**副本**，存在的理由只有一个：Shadow DOM 里 `:host(...)` 规则的
+ * 级联曾经失效（非函数式 `:host[data-theme='dark']` 永远不匹配），深色令牌会整块落空。内联样式
+ * 优先级最高，所以**凡是 theme.css 在深色块里改过值的令牌，这里两个主题都必须各有一份**，否则该
+ * 令牌会退回浅色值。历史上漏了 `--tk-highlight`，结果深色主题下浅黄底压着浅色字 —— 看不清。
+ * 这条不变量现在由 `theme.dom.test.ts` 的「内联兜底完整性」用例守住，不靠人记。
+ */
 const THEME_PALETTES: Record<'light' | 'dark', Record<string, string>> = {
   light: {
     '--tk-background': 'hsl(0 0% 99%)',
@@ -36,6 +44,11 @@ const THEME_PALETTES: Record<'light' | 'dark', Record<string, string>> = {
     '--tk-border': 'hsl(240 6% 90%)',
     '--tk-border-strong': 'hsl(240 5% 82%)',
     '--tk-input': 'hsl(240 6% 90%)',
+    '--tk-highlight': '#fef08a',
+    '--tk-highlight-foreground': '#171717',
+    '--tk-highlight-secondary': '#fef9c3',
+    '--tk-highlight-secondary-foreground': '#171717',
+    '--tk-shadow-xs': '0 1px 1px 0 rgb(24 24 27 / 0.06)',
     '--tk-shadow-sm': '0 1px 2px 0 rgb(24 24 27 / 0.05), 0 1px 3px 0 rgb(24 24 27 / 0.05)',
     '--tk-shadow-md': '0 4px 12px -2px rgb(24 24 27 / 0.08), 0 2px 6px -2px rgb(24 24 27 / 0.05)',
     '--tk-shadow-lg': '0 12px 26px -6px rgb(24 24 27 / 0.18)',
@@ -62,6 +75,11 @@ const THEME_PALETTES: Record<'light' | 'dark', Record<string, string>> = {
     '--tk-border': 'hsl(240 4% 18%)',
     '--tk-border-strong': 'hsl(240 4% 28%)',
     '--tk-input': 'hsl(240 4% 18%)',
+    '--tk-highlight': '#fef08a',
+    '--tk-highlight-foreground': '#171717',
+    '--tk-highlight-secondary': 'hsl(48 60% 25%)',
+    '--tk-highlight-secondary-foreground': 'hsl(0 0% 98%)',
+    '--tk-shadow-xs': '0 1px 1px 0 rgb(0 0 0 / 0.3)',
     '--tk-shadow-sm': '0 1px 2px 0 rgb(0 0 0 / 0.4)',
     '--tk-shadow-md': '0 4px 12px -2px rgb(0 0 0 / 0.5)',
     '--tk-shadow-lg': '0 12px 26px -6px rgb(0 0 0 / 0.6)',

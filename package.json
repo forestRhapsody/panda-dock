@@ -42,6 +42,8 @@
     "preinstall": "npx only-allow pnpm",
     "format": "prettier --write src/",
     "test": "vitest run",
+    "test:changed": "vitest run --changed",
+    "test:watch": "vitest",
     "type-check": "tsc -b"
   },
   "dependencies": {
