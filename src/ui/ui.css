@@ -123,42 +123,6 @@
   color: var(--tk-foreground);
 }
 
-/* —— shadcn/ui 风格 Badge 徽章 —— */
-
-.tk-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: var(--tk-radius-sm);
-  font-family: var(--tk-font);
-  font-size: calc(10px * var(--tk-font-scale));
-  font-weight: 500;
-  line-height: 1;
-  white-space: nowrap;
-  user-select: none;
-  box-sizing: border-box;
-}
-
-.tk-badge--default {
-  background: var(--tk-primary);
-  color: var(--tk-primary-foreground);
-  border: 1px solid transparent;
-}
-
-.tk-badge--secondary {
-  background: var(--tk-secondary);
-  color: var(--tk-secondary-foreground);
-  border: 1px solid transparent;
-}
-
-.tk-badge--outline {
-  background: transparent;
-  color: var(--tk-foreground);
-  border: 1px solid var(--tk-border-strong);
-}
-
 /* —— 自定义下拉（tk-select）：对齐 shadcn/ui 风格，完全脱离原生 select —— */
 
 /* Trigger 按钮 */

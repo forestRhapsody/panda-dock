@@ -22,8 +22,5 @@
     "^(?!.*[.](css|less)$)[./].*$",
     "",
     ".*\\.(css|less)$"
-  ],
-  "importOrderSeparation": true,
-  "importOrderSortSpecifiers": true,
-  "importOrderCombineTypeAndValueImports": true
+  ]
 }

@@ -45,7 +45,6 @@
     "type-check": "tsc -b"
   },
   "dependencies": {
-    "@types/qs": "^6.15.1",
     "i18next": "^26.4.1",
     "jsonc-parser": "^3.3.1",
     "jsqr": "^1.4.0",
@@ -61,9 +60,9 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@eslint/js": "^9.33.0",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
-    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/chrome": "^0.2.8",
     "@types/qrcode": "^1.5.6",
+    "@types/qs": "^6.15.1",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react-swc": "^4.0.0",

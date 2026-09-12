@@ -3,15 +3,23 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
-import type { BallPreset, BallShape, BallSize } from '@/utils/settings'
-import { BALL_PRESET_OPTIONS, BALL_SIZE_PX, ballAssetUrl } from '@/utils/settings'
+import type { BallDockMode, BallPreset, BallShape, BallSize } from '@/utils/settings'
+import {
+  BALL_PRESET_OPTIONS,
+  BALL_SIZE_PX,
+  ballAssetUrl,
+  DEFAULT_BOTTOM_RIGHT_OFFSET_X,
+  DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
+} from '@/utils/settings'
 
-export const DOCK_H = BALL_SIZE_PX.md // 默认（中）直径，供定位兜底
 const EDGE_MARGIN = 8
+/** 固定右下角模式的默认视口边距：右侧 60px、底部 60px */
+export const DOCK_BOTTOM_RIGHT_OFFSET_X = DEFAULT_BOTTOM_RIGHT_OFFSET_X
+export const DOCK_BOTTOM_RIGHT_OFFSET_Y = DEFAULT_BOTTOM_RIGHT_OFFSET_Y
 /** 拖拽多少像素以上视为「拖动」，否则视为「点击」 */
 const DRAG_THRESHOLD = 6
 /** 悬浮球 z-index：无论吸边还是自由模式，始终最高，高于抽屉(2147483010)与轻提示(2147483012) */
-export const Z_BALL = 2147483020
+const Z_BALL = 2147483020
 
 export interface BallPos {
   /** 球左上角（视口坐标） */
@@ -25,7 +33,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** 纵向位置限制在视口内（d = 悬浮球直径） */
-export function clampDockTop(topPx: number, d: number): number {
+function clampDockTop(topPx: number, d: number): number {
   return clamp(topPx, EDGE_MARGIN, Math.max(EDGE_MARGIN, window.innerHeight - d - EDGE_MARGIN))
 }
 
@@ -34,29 +42,29 @@ function clampX(x: number, d: number): number {
   return clamp(x, 0, Math.max(0, window.innerWidth - d))
 }
 
-/** 把位置夹回视口内（自由模式） */
+/** 限制在当前视口内（不可溢出屏幕） */
 export function clampBallPos(pos: BallPos, d: number): BallPos {
   return { x: clampX(pos.x, d), y: clampDockTop(pos.y, d) }
 }
 
-/** 吸边模式：按圆心归到最近一侧，返回贴边位置（d = 悬浮球直径） */
+/** 贴紧最近一侧（左或右缘），纵向留边 */
 export function snapToEdge(pos: BallPos, d: number): BallPos {
-  const c = clampBallPos(pos, d)
-  const centerX = c.x + d / 2
-  const side = centerX <= window.innerWidth / 2 ? 'left' : 'right'
-  return { x: side === 'left' ? 0 : Math.max(0, window.innerWidth - d), y: c.y }
+  const midX = window.innerWidth / 2
+  const targetX = pos.x + d / 2 < midX ? 0 : Math.max(0, window.innerWidth - d)
+  return { x: targetX, y: clampDockTop(pos.y, d) }
 }
 
 /** 根据形状/大小/图片计算球的外观样式（几何 + 背景），无图片时按预设填充 */
 function buildBallStyle(shape: BallShape, d: number, image?: string | null): CSSProperties {
-  const radius = shape === 'circle' ? '50%' : `${Math.round(d * 0.28)}px`
+  const radius =
+    shape === 'circle' ? '50%' : shape === 'rounded' ? `${Math.round(d * 0.28)}px` : '0px'
   const base: CSSProperties = { width: d, height: d, borderRadius: radius }
   if (image) {
     return {
       ...base,
-      // 垫一层背景色：避免透明角/资源加载失败时露出页面，也让透明 logo 不至于"整个球透明"
-      backgroundImage: `url("${image}")`,
+      backgroundImage: `url(${image})`,
       backgroundSize: 'cover',
+      backgroundRepeat: 'no-repeat',
       backgroundPosition: 'center',
       backgroundColor: 'var(--tk-card)',
     }
@@ -74,9 +82,13 @@ interface DownState {
 
 interface FloatingBallProps {
   pos: BallPos
-  /** 是否吸边：true 贴靠左右（含半隐）；false 可停留在任意位置 */
-  snap: boolean
-  /** 形状：圆形 / 带圆角方形 */
+  /** 停靠行为：edge 自动吸边（半隐）/ free 自由停靠 / bottomRight 固定右下角 */
+  dockMode?: BallDockMode
+  /** 固定右下角模式下的边距（px） */
+  bottomRightOffset?: { right: number; bottom: number }
+  /** 兼容旧字段：是否吸边（true 贴靠左右；false 可停留在任意位置） */
+  snap?: boolean
+  /** 形状：圆形 / 圆角矩形 / 矩形 */
   shape?: BallShape
   /** 大小档位 */
   size?: BallSize
@@ -92,20 +104,24 @@ interface FloatingBallProps {
 
 /**
  * 悬浮触发器（悬浮球，形状/大小/样式可配置）：
- * - 吸边模式：贴靠左右，鼠标移开只露一半、悬停完整滑出；拖动松手按最近一侧贴回。
- * - 自由模式：可拖到任意位置并停留，始终完整显示。
+ * - edge（吸边模式）：贴靠左右，鼠标移开只露一半、悬停完整滑出；拖动松手按最近一侧贴回。
+ * - free（自由模式）：可拖到任意位置并停留，始终完整显示。
+ * - bottomRight（固定右下角）：固定在屏幕右下角，不可拖拽，始终完整显示。
  * - 轻点（未位移）不产生定位变化，避免点击抽动。
  */
 export default function FloatingBall({
   pos,
+  dockMode,
+  bottomRightOffset,
   snap,
-  shape = 'circle',
+  shape = 'rounded',
   size = 'md',
   preset = 'primary',
   image,
   onDrop,
   onToggle,
 }: FloatingBallProps) {
+  const mode: BallDockMode = dockMode ?? (snap === false ? 'free' : 'edge')
   const { t } = useTranslation()
   const d = BALL_SIZE_PX[size]
   const r = d / 2
@@ -132,6 +148,7 @@ export default function FloatingBall({
   }
 
   function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (mode === 'bottomRight') return
     const down = downRef.current
     if (!down?.active) return
     const dx = e.clientX - down.startPX
@@ -159,7 +176,7 @@ export default function FloatingBall({
     setFloatXY(null)
 
     if (down.moved) {
-      onDrop(snap ? snapToEdge(lastXY.current, d) : clampBallPos(lastXY.current, d))
+      onDrop(mode === 'edge' ? snapToEdge(lastXY.current, d) : clampBallPos(lastXY.current, d))
     } else {
       onToggle()
     }
@@ -173,7 +190,17 @@ export default function FloatingBall({
   if (floatXY) {
     // 拖动：整圆跟随指针
     style = { ...style, left: floatXY.x, top: floatXY.y, transition: 'none' }
-  } else if (!snap) {
+  } else if (mode === 'bottomRight') {
+    // 固定右下角模式：固定在视口右下角，始终完整显示，指针手型
+    const offsetRight = bottomRightOffset?.right ?? DEFAULT_BOTTOM_RIGHT_OFFSET_X
+    const offsetBottom = bottomRightOffset?.bottom ?? DEFAULT_BOTTOM_RIGHT_OFFSET_Y
+    style = {
+      ...style,
+      right: offsetRight,
+      bottom: offsetBottom,
+      cursor: 'pointer',
+    }
+  } else if (mode === 'free') {
     // 自由模式：任意位置，始终完整显示
     style = { ...style, left: pos.x, top: pos.y }
   } else {

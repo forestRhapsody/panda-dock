@@ -169,4 +169,13 @@ describe('detect：输入防护', () => {
     expect(detect('200')).toBeNull()
     expect(detect('2025')).toBeNull()
   })
+
+  it('系统与软件版本信息不误判为时间戳', () => {
+    expect(detect('Debian GNU/Linux 12 (bookworm)')).toBeNull()
+    expect(detect('"Debian GNU/Linux 12 (bookworm)"')).toBeNull()
+    expect(detect('Ubuntu 22.04')).toBeNull()
+    expect(detect('Linux 12')).toBeNull()
+    expect(detect('Test 12')).toBeNull()
+    expect(detect('Page-12')).toBeNull()
+  })
 })

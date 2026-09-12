@@ -115,7 +115,7 @@ function areaStorage(area: WebStorageArea): Storage {
   return area === 'session' ? window.sessionStorage : window.localStorage
 }
 
-export function buildSnapshot(area: WebStorageArea): StorageSnapshot {
+function buildSnapshot(area: WebStorageArea): StorageSnapshot {
   const store = areaStorage(area)
   const origin = window.location.origin
   const totalCount = store.length

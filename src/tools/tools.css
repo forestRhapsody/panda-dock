@@ -410,8 +410,7 @@
 }
 
 /* —— JSON 工具：格式化 / 压缩（tab 切换，各自独立） —— */
-.tw-sec,
-.tw-json-sec {
+.tw-sec {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -709,11 +708,6 @@
   to {
     opacity: 1;
   }
-}
-
-/* 输入框默认高度更高 */
-.tw-area--tall {
-  min-height: 200px;
 }
 
 /* —— JSON 语法高亮（只读展示） —— */

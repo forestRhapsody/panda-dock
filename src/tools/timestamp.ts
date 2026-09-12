@@ -51,15 +51,111 @@ export function toRelative(date: Date): string {
   })
 }
 
-/** 解析日期文本：优先原生 Date 解析，失败时尝试兼容中文年月日时分秒与混合格式 */
-export function parseCustomDate(raw: string): Date | null {
-  const native = new Date(raw)
-  if (!Number.isNaN(native.getTime())) {
-    return native
-  }
+const VALID_DATE_WORDS = new Set([
+  'mon',
+  'monday',
+  'tue',
+  'tues',
+  'tuesday',
+  'wed',
+  'wednesday',
+  'thu',
+  'thur',
+  'thurs',
+  'thursday',
+  'fri',
+  'friday',
+  'sat',
+  'saturday',
+  'sun',
+  'sunday',
+  'jan',
+  'january',
+  'feb',
+  'february',
+  'mar',
+  'march',
+  'apr',
+  'april',
+  'may',
+  'jun',
+  'june',
+  'jul',
+  'july',
+  'aug',
+  'august',
+  'sep',
+  'sept',
+  'september',
+  'oct',
+  'october',
+  'nov',
+  'november',
+  'dec',
+  'december',
+  'gmt',
+  'utc',
+  'am',
+  'pm',
+  'z',
+  't',
+  'st',
+  'nd',
+  'rd',
+  'th',
+  'cst',
+  'est',
+  'pst',
+  'mst',
+  'edt',
+  'pdt',
+  'mdt',
+  'bst',
+  'cet',
+  'cest',
+])
 
-  // 匹配中文年月日：2025年1月1日 / 2025年01月01号，后跟可选时间部分
-  const cnDateMatch = raw.match(/^(\d{4})年(\d{1,2})月(\d{1,2})[日号]?(?:\s*(.*))?$/)
+const MONTH_WORDS = new Set([
+  'jan',
+  'january',
+  'feb',
+  'february',
+  'mar',
+  'march',
+  'apr',
+  'april',
+  'may',
+  'jun',
+  'june',
+  'jul',
+  'july',
+  'aug',
+  'august',
+  'sep',
+  'sept',
+  'september',
+  'oct',
+  'october',
+  'nov',
+  'november',
+  'dec',
+  'december',
+])
+
+// 标准纯数字日期（带可选时间与时区）：年-月-日 或 年/月/日 或 年.月.日
+const STD_DATE_RE =
+  /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}(?:[ T]\d{1,2}:\d{1,2}(?::\d{1,2}(?:\.\d{1,6})?)?(?:\s*(?:Z|[+-]\d{2}:?\d{2}))?)?$/
+// 月/日/年 或 日/月/年 或 月-日-年
+const US_DATE_RE =
+  /^\d{1,2}[-/.]\d{1,2}[-/.]\d{4}(?:[ T]\d{1,2}:\d{1,2}(?::\d{1,2}(?:\.\d{1,6})?)?(?:\s*(?:Z|[+-]\d{2}:?\d{2}))?)?$/
+
+/** 解析日期文本：严格校验格式（中文年月日、标准数字日期、英文月份日期），避免随意文本误判 */
+export function parseCustomDate(raw: string): Date | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+
+  // 1. 匹配中文年月日：2025年1月1日 / 2025年01月01号，后跟可选时间部分
+  const cnDateMatch = trimmed.match(/^(\d{4})年(\d{1,2})月(\d{1,2})[日号]?(?:\s*(.*))?$/)
   if (cnDateMatch) {
     const year = Number(cnDateMatch[1])
     const month = Number(cnDateMatch[2]) - 1
@@ -103,10 +199,11 @@ export function parseCustomDate(raw: string): Date | null {
       const d = new Date(year, month, day, hour, minute, second)
       if (!Number.isNaN(d.getTime())) return d
     }
+    return null
   }
 
-  // 混合格式：2025-01-01 15点30分 或 2025/01/01 15点30分20秒
-  const mixedMatch = raw.match(
+  // 2. 混合格式：2025-01-01 15点30分 或 2025/01/01 15点30分20秒
+  const mixedMatch = trimmed.match(
     /^(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})\s*(\d{1,2})[点时](?:(\d{1,2})分?(?:(\d{1,2})秒?)?)?$/,
   )
   if (mixedMatch) {
@@ -114,8 +211,61 @@ export function parseCustomDate(raw: string): Date | null {
     const hour = Number(mixedMatch[2])
     const minute = mixedMatch[3] ? Number(mixedMatch[3]) : 0
     const second = mixedMatch[4] ? Number(mixedMatch[4]) : 0
-    const d = new Date(`${datePrefix} ${pad(hour)}:${pad(minute)}:${pad(second)}`)
-    if (!Number.isNaN(d.getTime())) return d
+    if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60 && second >= 0 && second < 60) {
+      const d = new Date(`${datePrefix} ${pad(hour)}:${pad(minute)}:${pad(second)}`)
+      if (!Number.isNaN(d.getTime())) return d
+    }
+    return null
+  }
+
+  // 3. 包含中文但未命中上述中文规则的，直接判为非日期
+  if (/[\u4e00-\u9fa5]/.test(trimmed)) return null
+
+  // 4. 标准纯数字日期格式（YYYY-MM-DD / MM/DD/YYYY 等）
+  if (STD_DATE_RE.test(trimmed) || US_DATE_RE.test(trimmed)) {
+    const normalized = trimmed.replace(/^(\d{4})\.(\d{1,2})\.(\d{1,2})/, '$1-$2-$3')
+    const d = new Date(normalized)
+    if (!Number.isNaN(d.getTime())) {
+      const yearMatch = normalized.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)
+      if (yearMatch) {
+        const y = Number(yearMatch[1])
+        const m = Number(yearMatch[2]) - 1
+        const day = Number(yearMatch[3])
+        const hasTz = /(?:Z|[+-]\d{2}:?\d{2})$/.test(normalized)
+        const checkYear = hasTz ? d.getUTCFullYear() : d.getFullYear()
+        const checkMonth = hasTz ? d.getUTCMonth() : d.getMonth()
+        const checkDate = hasTz ? d.getUTCDate() : d.getDate()
+        if (checkYear !== y || checkMonth !== m || checkDate !== day) {
+          return null
+        }
+      }
+      if (d.getFullYear() >= 1900 && d.getFullYear() <= 2200) {
+        return d
+      }
+    }
+    return null
+  }
+
+  // 5. 英文月份日期（RFC 2822 / HTTP Date / 英文格式，如 Jan 01, 2025、Wed, 01 Jan 2025 00:00:00 GMT）
+  const words = trimmed.match(/[a-zA-Z]+/g)
+  if (words && words.length > 0) {
+    // 文本中所有英文单词必须在合法白名单内，坚决拒绝非日期单词（如 Debian, Linux, bookworm 等）
+    const allValid = words.every((w) => VALID_DATE_WORDS.has(w.toLowerCase()))
+    if (!allValid) return null
+
+    // 必须包含至少一个合法英文月份单词
+    const hasMonth = words.some((w) => MONTH_WORDS.has(w.toLowerCase()))
+    if (!hasMonth) return null
+
+    // 必须包含 4 位年份数字（1900-2200）
+    const numbers = trimmed.match(/\d+/g) || []
+    const hasYear = numbers.some((n) => n.length === 4 && Number(n) >= 1900 && Number(n) <= 2200)
+    if (!hasYear) return null
+
+    const d = new Date(trimmed)
+    if (!Number.isNaN(d.getTime()) && d.getFullYear() >= 1900 && d.getFullYear() <= 2200) {
+      return d
+    }
   }
 
   return null

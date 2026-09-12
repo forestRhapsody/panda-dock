@@ -19,7 +19,7 @@ export type CodecScope = 'component' | 'full'
 export const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'ftp:', 'ws:', 'wss:', 'file:'])
 
 /** 当前页 origin，用作相对路径的解析基准 */
-export function currentBase(): string {
+function currentBase(): string {
   return (typeof window !== 'undefined' && window.location.href) || 'http://localhost/'
 }
 
@@ -74,7 +74,7 @@ export function buildUrl(source: string, base: string = currentBase()): URL {
   throw new Error('invalid')
 }
 
-export function isPlainObject(value: unknown): value is Record<string, unknown> {
+function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
@@ -104,7 +104,7 @@ export function flattenParams(query: Record<string, unknown>): UrlPart[] {
 }
 
 /** 只保留「有实际值」的组成部分，避免展示无用空列 */
-export function collectParts(url: URL): UrlPart[] {
+function collectParts(url: URL): UrlPart[] {
   const parts: UrlPart[] = []
   if (url.protocol) parts.push({ key: 'protocol', value: url.protocol })
   if (url.origin && url.origin !== 'null') parts.push({ key: 'origin', value: url.origin })

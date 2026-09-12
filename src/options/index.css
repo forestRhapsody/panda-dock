@@ -153,24 +153,6 @@ body {
   background: color-mix(in srgb, var(--tk-primary) 12%, var(--tk-card));
 }
 
-/* Toggle Switch —— 改用 src/ui/ui.css 的 .tk-switch 共享组件 */
-
-.opt__saved {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 4px 0 0;
-  height: 16px;
-  font-size: var(--tk-text-sm);
-  color: var(--tk-success);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.opt__saved--show {
-  opacity: 1;
-}
-
 /* —— 工具箱能力配置：显隐开关 + 拖拽排序 —— */
 
 .opt__card-head {
@@ -248,12 +230,6 @@ body {
   min-width: 0;
   font-size: var(--tk-text-base);
   font-weight: 600;
-}
-
-.opt-tools__hint {
-  flex: none;
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
 }
 
 .opt__env--hint {
@@ -373,4 +349,44 @@ body {
   margin-top: 6px;
   font-size: var(--tk-text-xs);
   color: var(--tk-muted-foreground);
+}
+
+.opt__offset-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.opt__offset-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--tk-text-sm);
+  color: var(--tk-foreground);
+}
+
+.opt__offset-input {
+  width: 72px;
+  height: var(--tk-control-h);
+  padding: 0 8px;
+  border: 1px solid var(--tk-input);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-card);
+  color: var(--tk-foreground);
+  font-size: var(--tk-text-sm);
+  outline: none;
+  box-sizing: border-box;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.opt__offset-input:focus {
+  border-color: var(--tk-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+}
+
+.opt__offset-unit {
+  color: var(--tk-muted-foreground);
+  font-size: var(--tk-text-xs);
 }

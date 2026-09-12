@@ -151,4 +151,40 @@ body {
   color: var(--tk-secondary-foreground);
 }
 
+.pop__offset-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pop__offset-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--tk-text-xs);
+  color: var(--tk-muted-foreground);
+}
+
+.pop__offset-input {
+  width: 52px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--tk-input);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-card);
+  color: var(--tk-foreground);
+  font-size: var(--tk-text-xs);
+  outline: none;
+  box-sizing: border-box;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.pop__offset-input:focus {
+  border-color: var(--tk-ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+}
+
 /* Toggle Switch —— 改用 src/ui/ui.css 的 .tk-switch 共享组件 */

@@ -17,6 +17,7 @@ import { DEFAULT_TOOLS, defaultToolLayout } from '@/tools/registry'
 import AppLogo from '@/ui/AppLogo'
 import ConfirmDialog from '@/ui/ConfirmDialog'
 import Icon from '@/ui/Icon'
+import NumberInput from '@/ui/NumberInput'
 import TkSelect from '@/ui/TkSelect'
 import { toast } from '@/ui/toast'
 import Toaster from '@/ui/Toaster'
@@ -27,6 +28,7 @@ import { isExtension, storageGet } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
 import type { BallAction } from '@/utils/messages'
 import {
+  BALL_DOCK_MODE_OPTIONS,
   BALL_IMAGE_MAX_BYTES,
   BALL_PRESET_OPTIONS,
   BALL_SHAPE_OPTIONS,
@@ -42,6 +44,7 @@ import {
   THEME_OPTIONS,
 } from '@/utils/settings'
 import type {
+  BallDockMode,
   BallPreset,
   BallShape,
   BallSize,
@@ -61,7 +64,7 @@ import { useTheme } from '@/utils/theme'
 import './index.css'
 
 interface ToggleField {
-  key: 'quickOpen' | 'ballSnap'
+  key: 'quickOpen'
   titleKey: string
   descKey: string
 }
@@ -73,11 +76,6 @@ const TOGGLE_FIELDS: ToggleField[] = [
     key: 'quickOpen',
     titleKey: 'settings.quickOpen',
     descKey: 'settings.quickOpenDesc',
-  },
-  {
-    key: 'ballSnap',
-    titleKey: 'settings.ballSnap',
-    descKey: 'settings.ballSnapDesc',
   },
 ]
 
@@ -212,8 +210,12 @@ export default function OptionsPage() {
     })
   }
 
-  function toggle(key: 'quickOpen' | 'ballSnap') {
+  function toggle(key: 'quickOpen') {
     persist({ ...settings, [key]: !settings[key] })
+  }
+
+  function setBallDockMode(ballDockMode: BallDockMode) {
+    persist({ ...settings, ballDockMode, ballSnap: ballDockMode === 'edge' })
   }
 
   function setBallAction(ballAction: BallAction) {
@@ -323,13 +325,16 @@ export default function OptionsPage() {
     setWhitelistText('')
   }
 
-  /** 恢复「悬浮球与唤起方式」这块到默认（显示、吸边、点击动作） */
+  /** 恢复「悬浮球与唤起方式」这块到默认（显示、停靠行为、点击动作） */
   function resetBallSection() {
     const base = defaultSettings()
     persist({
       ...settings,
       quickOpen: base.quickOpen,
       ballSnap: base.ballSnap,
+      ballDockMode: base.ballDockMode,
+      ballBottomRightRight: base.ballBottomRightRight,
+      ballBottomRightBottom: base.ballBottomRightBottom,
       ballAction: base.ballAction,
     })
   }
@@ -539,6 +544,61 @@ export default function OptionsPage() {
                 </button>
               </li>
             ))}
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.ballDockMode')}</strong>
+                <p>{t('settings.ballDockModeDesc')}</p>
+              </div>
+              <TkSelect
+                value={settings.ballDockMode}
+                onChange={(e) => setBallDockMode(e.target.value as BallDockMode)}
+                aria-label={t('settings.ballDockMode')}
+              >
+                {BALL_DOCK_MODE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {t(o.labelKey)}
+                  </option>
+                ))}
+              </TkSelect>
+            </li>
+            {settings.ballDockMode === 'bottomRight' && (
+              <li className='opt__item'>
+                <div className='opt__item-text'>
+                  <strong>{t('settings.ballBottomRightOffset')}</strong>
+                  <p>{t('settings.ballBottomRightOffsetDesc')}</p>
+                </div>
+                <div className='opt__offset-group'>
+                  <label className='opt__offset-item'>
+                    <span>{t('settings.offsetRight')}</span>
+                    <NumberInput
+                      min={0}
+                      max={800}
+                      value={settings.ballBottomRightRight}
+                      onChange={(val) => {
+                        persist({ ...settings, ballBottomRightRight: val })
+                      }}
+                      className='opt__offset-input'
+                      aria-label={t('settings.offsetRight')}
+                    />
+                    <span className='opt__offset-unit'>px</span>
+                  </label>
+                  <label className='opt__offset-item'>
+                    <span>{t('settings.offsetBottom')}</span>
+                    <NumberInput
+                      min={0}
+                      max={800}
+                      value={settings.ballBottomRightBottom}
+                      onChange={(val) => {
+                        persist({ ...settings, ballBottomRightBottom: val })
+                      }}
+                      className='opt__offset-input'
+                      aria-label={t('settings.offsetBottom')}
+                    />
+                    <span className='opt__offset-unit'>px</span>
+                  </label>
+                </div>
+              </li>
+            )}
             <li className='opt__item'>
               <div className='opt__item-text'>
                 <strong>{t('settings.ballAction')}</strong>
@@ -865,8 +925,6 @@ export default function OptionsPage() {
               </ul>
             </SortableContext>
           </DndContext>
-
-          <p className='opt__env opt__env--hint'>{t('settings.toolboxHint')}</p>
         </div>
 
         <div className='opt__card'>

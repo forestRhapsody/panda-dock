@@ -75,7 +75,7 @@ function applyPalette(el: HTMLElement, theme: 'light' | 'dark'): void {
 }
 
 /** 把主题模式解析成最终生效的 'light' | 'dark'（system 按系统偏好） */
-export function resolveTheme(mode: ThemeMode): 'light' | 'dark' {
+function resolveTheme(mode: ThemeMode): 'light' | 'dark' {
   if (mode === 'system') {
     if (typeof window === 'undefined') return 'light'
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'

@@ -45,15 +45,27 @@ describe('parseCustomDate', () => {
     expect(d?.getMinutes()).toBe(30)
   })
 
+  it('标准纯数字与英文 RFC 2822 / HTTP Date 正常解析', () => {
+    expect(parseCustomDate('2025-01-01 15:30:00')?.getFullYear()).toBe(2025)
+    expect(parseCustomDate('2025/01/01 15:30:00')?.getFullYear()).toBe(2025)
+    expect(parseCustomDate('2025.01.01 15:30:00')?.getFullYear()).toBe(2025)
+    expect(parseCustomDate('Wed, 01 Jan 2025 00:00:00 GMT')?.getFullYear()).toBe(2025)
+    expect(parseCustomDate('Jan 01, 2025')?.getFullYear()).toBe(2025)
+  })
+
   it('越界数值一律判为无法解析，不做日期滚动', () => {
     expect(parseCustomDate('2025年13月1日')).toBeNull()
     expect(parseCustomDate('2025年1月32日')).toBeNull()
+    expect(parseCustomDate('2025-02-31')).toBeNull()
     expect(parseCustomDate('2025年1月1日 25点00分')).toBeNull()
     expect(parseCustomDate('2025年1月1日 15点70分')).toBeNull()
   })
 
   it('完全无法识别的文本返回 null', () => {
     expect(parseCustomDate('不是日期')).toBeNull()
+    expect(parseCustomDate('Debian GNU/Linux 12 (bookworm)')).toBeNull()
+    expect(parseCustomDate('Ubuntu 22.04')).toBeNull()
+    expect(parseCustomDate('Test 12')).toBeNull()
   })
 })
 

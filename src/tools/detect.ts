@@ -238,15 +238,9 @@ function detectTimestamp(s: string): DetectResult | null {
       date = d
     }
   } else {
-    // 文本日期：必须具备日期间隔符（-、/、.、年、T 等）或 RFC 2822 格式
-    // 避免普通英文单词或代码标识符产生假阳性
-    const hasDateIndicator =
-      /[-/.T年]/.test(trimmed) || /^[A-Za-z]{3},\s*\d{1,2}\s+[A-Za-z]{3}/.test(trimmed)
-    if (hasDateIndicator) {
-      const parsed = parseCustomDate(trimmed)
-      if (parsed && !Number.isNaN(parsed.getTime())) {
-        date = parsed
-      }
+    const parsed = parseCustomDate(trimmed)
+    if (parsed && !Number.isNaN(parsed.getTime())) {
+      date = parsed
     }
   }
 

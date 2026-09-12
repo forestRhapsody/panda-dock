@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import NumberInput from '@/ui/NumberInput'
 import TkSelect from '@/ui/TkSelect'
 import { toast } from '@/ui/toast'
 import Tooltip from '@/ui/Tooltip'
@@ -9,8 +10,14 @@ import { isDomainMatched, shouldShowFloatingBall } from '@/utils/domainMatch'
 import { isExtension, storageGet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
 import { getCurrentPageUrl } from '@/utils/pageUrl'
-import { LOCALE_OPTIONS, normalizeSettings, saveSettings, THEME_OPTIONS } from '@/utils/settings'
-import type { LocaleSetting, Settings, ThemeMode } from '@/utils/settings'
+import {
+  BALL_DOCK_MODE_OPTIONS,
+  LOCALE_OPTIONS,
+  normalizeSettings,
+  saveSettings,
+  THEME_OPTIONS,
+} from '@/utils/settings'
+import type { BallDockMode, LocaleSetting, Settings, ThemeMode } from '@/utils/settings'
 
 const SETTINGS_KEY = 'settings'
 
@@ -131,12 +138,6 @@ export default function QuickSettings() {
       descKey: 'settings.quickOpenDesc',
       set: (v) => update({ quickOpen: v }),
     },
-    {
-      value: settings.ballSnap,
-      labelKey: 'settings.ballSnap',
-      descKey: 'settings.ballSnapDesc',
-      set: (v) => update({ ballSnap: v }),
-    },
   ]
 
   return (
@@ -186,6 +187,71 @@ export default function QuickSettings() {
                 <span className='tk-switch__knob' />
               </button>
             </Tooltip>
+          </li>
+        )}
+        <li className='pop__setting'>
+          <div className='pop__setting-text'>
+            <strong>{t('settings.ballDockMode')}</strong>
+            <p>
+              {t(
+                BALL_DOCK_MODE_OPTIONS.find((o) => o.value === settings.ballDockMode)?.labelKey ??
+                  'settings.ballDockModeEdge',
+              )}
+            </p>
+          </div>
+          <TkSelect
+            variant='sm'
+            value={settings.ballDockMode}
+            onChange={(e) => {
+              const mode = e.target.value as BallDockMode
+              update({ ballDockMode: mode, ballSnap: mode === 'edge' })
+            }}
+            aria-label={t('settings.ballDockMode')}
+          >
+            {BALL_DOCK_MODE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {t(o.labelKey)}
+              </option>
+            ))}
+          </TkSelect>
+        </li>
+        {settings.ballDockMode === 'bottomRight' && (
+          <li className='pop__setting'>
+            <div className='pop__setting-text'>
+              <strong>{t('settings.ballBottomRightOffset')}</strong>
+              <p>
+                {t('settings.offsetRight')}: {settings.ballBottomRightRight}px ·{' '}
+                {t('settings.offsetBottom')}: {settings.ballBottomRightBottom}px
+              </p>
+            </div>
+            <div className='pop__offset-group'>
+              <label className='pop__offset-item'>
+                <span>{t('settings.offsetRightShort')}</span>
+                <NumberInput
+                  min={0}
+                  max={800}
+                  value={settings.ballBottomRightRight}
+                  onChange={(val) => {
+                    update({ ballBottomRightRight: val })
+                  }}
+                  className='pop__offset-input'
+                  aria-label={t('settings.offsetRight')}
+                />
+              </label>
+              <label className='pop__offset-item'>
+                <span>{t('settings.offsetBottomShort')}</span>
+                <NumberInput
+                  min={0}
+                  max={800}
+                  value={settings.ballBottomRightBottom}
+                  onChange={(val) => {
+                    update({ ballBottomRightBottom: val })
+                  }}
+                  className='pop__offset-input'
+                  aria-label={t('settings.offsetBottom')}
+                />
+              </label>
+            </div>
           </li>
         )}
         <li className='pop__setting'>

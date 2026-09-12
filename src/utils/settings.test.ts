@@ -31,12 +31,55 @@ describe('defaultSettings / normalizeSettings', () => {
   })
 
   it('悬浮球形状 / 预设 / 大小非法值回退', () => {
+    expect(normalizeSettings({ ballShape: 'circle' }).ballShape).toBe('circle')
     expect(normalizeSettings({ ballShape: 'rounded' }).ballShape).toBe('rounded')
-    expect(normalizeSettings({ ballShape: '三角' as never }).ballShape).toBe('circle')
+    expect(normalizeSettings({ ballShape: 'square' }).ballShape).toBe('square')
+    expect(normalizeSettings({ ballShape: '三角' as never }).ballShape).toBe('rounded')
     expect(normalizeSettings({ ballPreset: 'soft' }).ballPreset).toBe('soft')
     expect(normalizeSettings({ ballPreset: 'nope' as never }).ballPreset).toBe('primary')
     expect(normalizeSettings({ ballSize: 'lg' }).ballSize).toBe('lg')
     expect(normalizeSettings({ ballSize: 'xl' as never }).ballSize).toBe('md')
+  })
+
+  it('悬浮球停靠行为及旧 ballSnap 字段兼容', () => {
+    expect(normalizeSettings({ ballDockMode: 'edge' }).ballDockMode).toBe('edge')
+    expect(normalizeSettings({ ballDockMode: 'free' }).ballDockMode).toBe('free')
+    expect(normalizeSettings({ ballDockMode: 'bottomRight' }).ballDockMode).toBe('bottomRight')
+    expect(normalizeSettings({ ballDockMode: 'invalid' as never }).ballDockMode).toBe('edge')
+
+    // 兼容旧数据：旧 ballSnap: false 迁移为 free
+    const legacyFree = normalizeSettings({ ballSnap: false })
+    expect(legacyFree.ballDockMode).toBe('free')
+    expect(legacyFree.ballSnap).toBe(false)
+
+    // 兼容旧数据：旧 ballSnap: true 迁移为 edge
+    const legacyEdge = normalizeSettings({ ballSnap: true })
+    expect(legacyEdge.ballDockMode).toBe('edge')
+    expect(legacyEdge.ballSnap).toBe(true)
+
+    // ballDockMode 优先于旧 ballSnap
+    const override = normalizeSettings({ ballDockMode: 'bottomRight', ballSnap: false })
+    expect(override.ballDockMode).toBe('bottomRight')
+    expect(override.ballSnap).toBe(false)
+  })
+
+  it('固定右下角边距规范化及非法值回退', () => {
+    expect(normalizeSettings({ ballBottomRightRight: 80 }).ballBottomRightRight).toBe(80)
+    expect(normalizeSettings({ ballBottomRightBottom: 100 }).ballBottomRightBottom).toBe(100)
+    // 字符串数字解析
+    expect(normalizeSettings({ ballBottomRightRight: '120' as never }).ballBottomRightRight).toBe(
+      120,
+    )
+    // 范围限制 0 ~ 800
+    expect(normalizeSettings({ ballBottomRightRight: -10 }).ballBottomRightRight).toBe(0)
+    expect(normalizeSettings({ ballBottomRightBottom: 1000 }).ballBottomRightBottom).toBe(800)
+    // 非法值回退到默认 80
+    expect(
+      normalizeSettings({ ballBottomRightRight: 'invalid' as never }).ballBottomRightRight,
+    ).toBe(80)
+    expect(normalizeSettings({ ballBottomRightBottom: null as never }).ballBottomRightBottom).toBe(
+      80,
+    )
   })
 
   it('点击行为 / 主题 / 语言 / 字号 / 域名模式非法值回退', () => {

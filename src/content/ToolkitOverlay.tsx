@@ -18,8 +18,20 @@ import {
   MSG_TOGGLE_DETECT,
   MSG_TOGGLE_DRAWER,
 } from '@/utils/messages'
-import type { BallPreset, BallShape, BallSize, DomainMatchMode } from '@/utils/settings'
-import { BALL_IMAGE_KEY, BALL_SIZE_PX, getBallImage } from '@/utils/settings'
+import type {
+  BallDockMode,
+  BallPreset,
+  BallShape,
+  BallSize,
+  DomainMatchMode,
+} from '@/utils/settings'
+import {
+  BALL_IMAGE_KEY,
+  BALL_SIZE_PX,
+  DEFAULT_BOTTOM_RIGHT_OFFSET_X,
+  DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
+  getBallImage,
+} from '@/utils/settings'
 import { useTheme } from '@/utils/theme'
 
 import Drawer from './Drawer'
@@ -34,9 +46,22 @@ const EDGE_MARGIN = 8
 const DEFAULT_Y_FRAC = 0.45
 const DEFAULT_BALL_ACTION: BallAction = 'drawer'
 
-/** 默认位置：吸边时为左缘；自由模式为右缘（完整显示）。d = 悬浮球直径 */
-function defaultPos(snap: boolean, d: number): BallPos {
-  return snap
+/** 默认位置：吸边时为左缘；自由模式为右缘；固定右下角为右下角 */
+function defaultPos(
+  dockMode: BallDockMode,
+  d: number,
+  offset: { right: number; bottom: number } = {
+    right: DEFAULT_BOTTOM_RIGHT_OFFSET_X,
+    bottom: DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
+  },
+): BallPos {
+  if (dockMode === 'bottomRight') {
+    return {
+      x: Math.max(0, window.innerWidth - d - offset.right),
+      y: Math.max(0, window.innerHeight - d - offset.bottom),
+    }
+  }
+  return dockMode === 'edge'
     ? { x: 0, y: fracToTop(DEFAULT_Y_FRAC, d) }
     : { x: Math.max(0, window.innerWidth - d - EDGE_MARGIN), y: fracToTop(DEFAULT_Y_FRAC, d) }
 }
@@ -54,8 +79,12 @@ interface SavedPos {
 interface StoredSettings {
   quickOpen?: boolean
   ballAction?: BallAction
-  /** 悬浮球是否吸边（默认 true） */
+  /** 悬浮球是否吸边（默认 true，向后兼容） */
   ballSnap?: boolean
+  /** 悬浮球停靠行为 */
+  ballDockMode?: BallDockMode
+  ballBottomRightRight?: number
+  ballBottomRightBottom?: number
   ballShape?: BallShape
   ballPreset?: BallPreset
   ballSize?: BallSize
@@ -73,8 +102,22 @@ function fracToTop(yFrac: number, d: number): number {
   return EDGE_MARGIN + clamp01(yFrac) * range
 }
 
-/** 根据存档（含旧格式）与吸边开关解析出位置（d = 悬浮球直径） */
-function resolvePos(saved: SavedPos | null, snap: boolean, d: number): BallPos {
+/** 根据存档（含旧格式）与停靠行为解析出位置（d = 悬浮球直径） */
+function resolvePos(
+  saved: SavedPos | null,
+  dockMode: BallDockMode,
+  d: number,
+  offset: { right: number; bottom: number } = {
+    right: DEFAULT_BOTTOM_RIGHT_OFFSET_X,
+    bottom: DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
+  },
+): BallPos {
+  if (dockMode === 'bottomRight') {
+    return {
+      x: Math.max(0, window.innerWidth - d - offset.right),
+      y: Math.max(0, window.innerHeight - d - offset.bottom),
+    }
+  }
   let pos: BallPos
   if (saved?.x != null && saved?.y != null) {
     pos = { x: saved.x, y: saved.y }
@@ -86,7 +129,7 @@ function resolvePos(saved: SavedPos | null, snap: boolean, d: number): BallPos {
       y: fracToTop(saved?.yFrac ?? DEFAULT_Y_FRAC, d),
     }
   }
-  return snap ? snapToEdge(pos, d) : clampBallPos(pos, d)
+  return dockMode === 'edge' ? snapToEdge(pos, d) : clampBallPos(pos, d)
 }
 
 /** 请 background 尽力唤起浏览器原生侧边栏（受用户手势限制，可能失败） */
@@ -222,15 +265,19 @@ export default function ToolkitOverlay() {
   const [ready, setReady] = useState(!inExt)
   const [quickOpen, setQuickOpen] = useState(true)
   const [ballAction, setBallAction] = useState<BallAction>(DEFAULT_BALL_ACTION)
-  const [ballSnap, setBallSnap] = useState(true)
-  const [ballShape, setBallShape] = useState<BallShape>('circle')
+  const [ballDockMode, setBallDockMode] = useState<BallDockMode>('edge')
+  const [ballBottomRightOffset, setBallBottomRightOffset] = useState({
+    right: DEFAULT_BOTTOM_RIGHT_OFFSET_X,
+    bottom: DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
+  })
+  const [ballShape, setBallShape] = useState<BallShape>('rounded')
   const [ballPreset, setBallPreset] = useState<BallPreset>('primary')
   const [ballSize, setBallSize] = useState<BallSize>('md')
   const [ballImage, setBallImage] = useState<string | null>(null)
   const [ballDomainMode, setBallDomainMode] = useState<DomainMatchMode>('blacklist')
   const [ballBlacklist, setBallBlacklist] = useState<string[]>([])
   const [ballWhitelist, setBallWhitelist] = useState<string[]>([])
-  const [pos, setPos] = useState<BallPos>(() => defaultPos(true, BALL_SIZE_PX.md))
+  const [pos, setPos] = useState<BallPos>(() => defaultPos('edge', BALL_SIZE_PX.md))
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [selectionDetect, setSelectionDetect] = useState<{
@@ -347,9 +394,15 @@ export default function ToolkitOverlay() {
       if (settings?.ballDomainMode != null) setBallDomainMode(settings.ballDomainMode)
       if (settings?.ballBlacklist != null) setBallBlacklist(settings.ballBlacklist)
       if (settings?.ballWhitelist != null) setBallWhitelist(settings.ballWhitelist)
-      const snap = settings?.ballSnap !== false
-      setBallSnap(snap)
-      setPos(resolvePos(saved, snap, BALL_SIZE_PX[settings?.ballSize ?? 'md']))
+      const offset = {
+        right: settings?.ballBottomRightRight ?? DEFAULT_BOTTOM_RIGHT_OFFSET_X,
+        bottom: settings?.ballBottomRightBottom ?? DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
+      }
+      setBallBottomRightOffset(offset)
+      const dockMode: BallDockMode =
+        settings?.ballDockMode ?? (settings?.ballSnap === false ? 'free' : 'edge')
+      setBallDockMode(dockMode)
+      setPos(resolvePos(saved, dockMode, BALL_SIZE_PX[settings?.ballSize ?? 'md'], offset))
       setReady(true)
     })
 
@@ -358,14 +411,24 @@ export default function ToolkitOverlay() {
     }
   }, [inExt])
 
-  // 窗口尺寸变化时把球夹回视口内（随当前吸附与大小）
+  // 窗口尺寸变化时把球夹回视口内（随当前停靠行为与大小）
   useEffect(() => {
     if (!inExt) return
     const d = BALL_SIZE_PX[ballSize]
-    const onResize = () => setPos((p) => (ballSnap ? snapToEdge(p, d) : clampBallPos(p, d)))
+    const onResize = () =>
+      setPos((p) =>
+        ballDockMode === 'bottomRight'
+          ? {
+              x: Math.max(0, window.innerWidth - d - ballBottomRightOffset.right),
+              y: Math.max(0, window.innerHeight - d - ballBottomRightOffset.bottom),
+            }
+          : ballDockMode === 'edge'
+            ? snapToEdge(p, d)
+            : clampBallPos(p, d),
+      )
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [inExt, ballSnap, ballSize])
+  }, [inExt, ballDockMode, ballSize, ballBottomRightOffset])
 
   // 配置即时同步：Options 修改后已打开的页面无需刷新即可生效
   useEffect(() => {
@@ -378,17 +441,50 @@ export default function ToolkitOverlay() {
       if (s?.ballSize != null) {
         const prev = s.ballSize
         setBallSize(prev)
+        const d = BALL_SIZE_PX[prev]
         setPos((p) =>
-          ballSnap ? snapToEdge(p, BALL_SIZE_PX[prev]) : clampBallPos(p, BALL_SIZE_PX[prev]),
+          ballDockMode === 'bottomRight'
+            ? {
+                x: Math.max(0, window.innerWidth - d - ballBottomRightOffset.right),
+                y: Math.max(0, window.innerHeight - d - ballBottomRightOffset.bottom),
+              }
+            : ballDockMode === 'edge'
+              ? snapToEdge(p, d)
+              : clampBallPos(p, d),
         )
       }
       if (s?.ballDomainMode != null) setBallDomainMode(s.ballDomainMode)
       if (s?.ballBlacklist != null) setBallBlacklist(s.ballBlacklist)
       if (s?.ballWhitelist != null) setBallWhitelist(s.ballWhitelist)
-      if (s?.ballSnap != null) {
-        setBallSnap(s.ballSnap)
-        // 切到吸边时立刻把当前球贴回最近一侧
-        if (s.ballSnap) setPos((p) => snapToEdge(p, BALL_SIZE_PX[ballSize]))
+      let currentOffset = ballBottomRightOffset
+      if (s?.ballBottomRightRight != null || s?.ballBottomRightBottom != null) {
+        currentOffset = {
+          right: s?.ballBottomRightRight ?? ballBottomRightOffset.right,
+          bottom: s?.ballBottomRightBottom ?? ballBottomRightOffset.bottom,
+        }
+        setBallBottomRightOffset(currentOffset)
+      }
+      if (s?.ballDockMode != null || s?.ballSnap != null) {
+        const nextMode: BallDockMode = s?.ballDockMode ?? (s?.ballSnap === false ? 'free' : 'edge')
+        setBallDockMode(nextMode)
+        const d = BALL_SIZE_PX[ballSize]
+        if (nextMode === 'bottomRight') {
+          setPos({
+            x: Math.max(0, window.innerWidth - d - currentOffset.right),
+            y: Math.max(0, window.innerHeight - d - currentOffset.bottom),
+          })
+        } else if (nextMode === 'edge') {
+          setPos((p) => snapToEdge(p, d))
+        }
+      } else if (
+        ballDockMode === 'bottomRight' &&
+        (s?.ballBottomRightRight != null || s?.ballBottomRightBottom != null)
+      ) {
+        const d = BALL_SIZE_PX[ballSize]
+        setPos({
+          x: Math.max(0, window.innerWidth - d - currentOffset.right),
+          y: Math.max(0, window.innerHeight - d - currentOffset.bottom),
+        })
       }
     }
     const reRead = () => {
@@ -404,7 +500,7 @@ export default function ToolkitOverlay() {
       chrome.storage.onChanged.removeListener(onChange)
       window.removeEventListener('focus', reRead)
     }
-  }, [inExt, ballSnap, ballSize])
+  }, [inExt, ballDockMode, ballSize, ballBottomRightOffset])
 
   // 自定义悬浮球图片（chrome.storage.local）变更即时同步
   useEffect(() => {
@@ -558,13 +654,13 @@ export default function ToolkitOverlay() {
   const handleDrop = useCallback(
     (next: BallPos) => {
       const d = BALL_SIZE_PX[ballSize]
-      const clamped = ballSnap ? snapToEdge(next, d) : clampBallPos(next, d)
+      const clamped = ballDockMode === 'edge' ? snapToEdge(next, d) : clampBallPos(next, d)
       setPos(clamped)
-      if (inExt) {
+      if (inExt && ballDockMode !== 'bottomRight') {
         void storageSet('local', POS_KEY, { x: clamped.x, y: clamped.y })
       }
     },
-    [inExt, ballSnap, ballSize],
+    [inExt, ballDockMode, ballSize],
   )
 
   // 悬浮球点击复用 toggleToolkit
@@ -626,7 +722,9 @@ export default function ToolkitOverlay() {
       {showBall && (
         <FloatingBall
           pos={pos}
-          snap={ballSnap}
+          dockMode={ballDockMode}
+          bottomRightOffset={ballBottomRightOffset}
+          snap={ballDockMode === 'edge'}
           shape={ballShape}
           size={ballSize}
           preset={ballPreset}

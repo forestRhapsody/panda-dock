@@ -35,8 +35,21 @@ export const FONT_SCALE_OPTIONS: { label: string; value: number }[] = [
 
 export type DomainMatchMode = 'blacklist' | 'whitelist'
 
-/** 悬浮球形状：圆形 / 带圆角方形 */
-export type BallShape = 'circle' | 'rounded'
+/** 悬浮球停靠行为：自动吸边 / 自由停靠 / 固定右下角 */
+export type BallDockMode = 'edge' | 'free' | 'bottomRight'
+
+export const BALL_DOCK_MODE_OPTIONS: { labelKey: string; value: BallDockMode }[] = [
+  { labelKey: 'settings.ballDockModeEdge', value: 'edge' },
+  { labelKey: 'settings.ballDockModeFree', value: 'free' },
+  { labelKey: 'settings.ballDockModeBottomRight', value: 'bottomRight' },
+]
+
+/** 固定右下角模式的默认边距（px） */
+export const DEFAULT_BOTTOM_RIGHT_OFFSET_X = 80
+export const DEFAULT_BOTTOM_RIGHT_OFFSET_Y = 80
+
+/** 悬浮球形状：圆形 / 圆角矩形 / 矩形 */
+export type BallShape = 'circle' | 'rounded' | 'square'
 
 /** 悬浮球预设样式（无自定义图片时的外观）：主题色实心 / 描边 / 柔和 */
 export type BallPreset = 'primary' | 'outline' | 'soft'
@@ -47,6 +60,7 @@ export type BallSize = 'sm' | 'md' | 'lg'
 export const BALL_SHAPE_OPTIONS: { labelKey: string; value: BallShape }[] = [
   { labelKey: 'settings.ballShapeCircle', value: 'circle' },
   { labelKey: 'settings.ballShapeRounded', value: 'rounded' },
+  { labelKey: 'settings.ballShapeSquare', value: 'square' },
 ]
 
 export const BALL_PRESET_OPTIONS: {
@@ -102,7 +116,7 @@ export const BALL_IMAGE_MAX_BYTES = 128 * 1024
 export const BALL_IMAGE_MAX_DATA_URL_LENGTH = Math.ceil((BALL_IMAGE_MAX_BYTES * 4) / 3) + 512
 
 function normalizeBallShape(value: unknown): BallShape {
-  return value === 'rounded' ? 'rounded' : 'circle'
+  return value === 'circle' || value === 'square' ? value : 'rounded'
 }
 
 function normalizeBallPreset(value: unknown): BallPreset {
@@ -146,9 +160,15 @@ export async function saveSettings(settings: Settings): Promise<boolean> {
 export interface Settings {
   /** 是否在网页上显示悬浮球 */
   quickOpen: boolean
-  /** 悬浮球是否吸边（true=贴靠左右；false=可自由停留） */
+  /** 悬浮球是否吸边（true=贴靠左右；false=可自由停留）——向后兼容保留，与 ballDockMode 同步 */
   ballSnap: boolean
-  /** 悬浮球形状：圆形 / 带圆角方形 */
+  /** 悬浮球停靠与吸附行为：自动吸边 / 自由停靠 / 固定右下角 */
+  ballDockMode: BallDockMode
+  /** 固定右下角模式：右侧边距（px，默认 60） */
+  ballBottomRightRight: number
+  /** 固定右下角模式：底部边距（px，默认 60） */
+  ballBottomRightBottom: number
+  /** 悬浮球形状：圆形 / 圆角方形 / 矩形 */
   ballShape: BallShape
   /** 悬浮球预设样式（无自定义图片时） */
   ballPreset: BallPreset
@@ -202,12 +222,38 @@ function normalizeDomainList(value: unknown): string[] {
   return Array.from(set)
 }
 
+function normalizeBallDockMode(value: unknown, fallbackSnap?: unknown): BallDockMode {
+  if (value === 'edge' || value === 'free' || value === 'bottomRight') {
+    return value
+  }
+  if (fallbackSnap === false) {
+    return 'free'
+  }
+  return 'edge'
+}
+
+function normalizeOffset(value: unknown, fallback: number): number {
+  if (typeof value === 'number' && !Number.isNaN(value)) {
+    return Math.max(0, Math.min(Math.round(value), 800))
+  }
+  if (typeof value === 'string') {
+    const parsed = parseInt(value, 10)
+    if (!Number.isNaN(parsed)) {
+      return Math.max(0, Math.min(parsed, 800))
+    }
+  }
+  return fallback
+}
+
 export function defaultSettings(): Settings {
   const layout = defaultToolLayout()
   return {
     quickOpen: true,
     ballSnap: true,
-    ballShape: 'circle',
+    ballDockMode: 'edge',
+    ballBottomRightRight: DEFAULT_BOTTOM_RIGHT_OFFSET_X,
+    ballBottomRightBottom: DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
+    ballShape: 'rounded',
     ballPreset: 'primary',
     ballSize: 'md',
     ballAction: 'drawer',
@@ -226,9 +272,13 @@ export function defaultSettings(): Settings {
 export function normalizeSettings(raw: Partial<Settings> | null | undefined): Settings {
   const base = defaultSettings()
   const layout = normalizeToolLayout(raw?.toolOrder, raw?.toolEnabled)
+  const ballDockMode = normalizeBallDockMode(raw?.ballDockMode, raw?.ballSnap)
   return {
     quickOpen: raw?.quickOpen ?? base.quickOpen,
-    ballSnap: raw?.ballSnap !== false,
+    ballSnap: ballDockMode === 'edge',
+    ballDockMode,
+    ballBottomRightRight: normalizeOffset(raw?.ballBottomRightRight, base.ballBottomRightRight),
+    ballBottomRightBottom: normalizeOffset(raw?.ballBottomRightBottom, base.ballBottomRightBottom),
     ballShape: normalizeBallShape(raw?.ballShape),
     ballPreset: normalizeBallPreset(raw?.ballPreset),
     ballSize: normalizeBallSize(raw?.ballSize),

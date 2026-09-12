@@ -46,7 +46,7 @@ export async function openShortcutsPage(): Promise<boolean> {
 }
 
 /** 判断当前运行平台是否为 macOS */
-export function isMac(): boolean {
+function isMac(): boolean {
   if (typeof navigator === 'undefined') return false
   const p =
     navigator.platform ||

@@ -66,7 +66,7 @@ function pathRoundRect(
 /**
  * 生成超清、零锯齿的高精度二维码合成 Canvas
  */
-export async function generateQrCanvas(
+async function generateQrCanvas(
   text: string,
   options: GenerateQrOptions = {},
 ): Promise<HTMLCanvasElement> {
@@ -249,15 +249,6 @@ export async function generateQrCodeResult(
   }
 }
 
-/** 生成二维码 PNG 的超清 Data URL */
-export async function generateQrCodeDataUrl(
-  text: string,
-  options: GenerateQrOptions = {},
-): Promise<string> {
-  const canvas = await generateQrCanvas(text, options)
-  return canvas.toDataURL('image/png')
-}
-
 /** 生成二维码 PNG 的超清二进制 Blob */
 export async function generateQrCodeBlob(
   text: string,
@@ -273,7 +264,7 @@ export async function generateQrCodeBlob(
 }
 
 /** 从图像 ImageData 数据中解码二维码文本 */
-export function decodeQrCodeFromImageData(imageData: ImageData): string | null {
+function decodeQrCodeFromImageData(imageData: ImageData): string | null {
   const code = jsQR(imageData.data, imageData.width, imageData.height, {
     inversionAttempts: 'attemptBoth',
   })

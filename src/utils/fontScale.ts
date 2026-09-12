@@ -4,7 +4,7 @@ import { isExtension, storageGet } from '@/utils/env'
 import { HOST_ID } from '@/utils/theme'
 
 /** 把字体缩放应用到各入口：扩展页面设到 :root，content script 设到 Shadow DOM 宿主 */
-export function applyFontScale(scale: number): void {
+function applyFontScale(scale: number): void {
   if (typeof document === 'undefined') return
   const v = String(scale)
   // 与 applyTheme 一致：content script（有 shadow 宿主）只写宿主，绝不动页面 <html>；

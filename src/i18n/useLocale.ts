@@ -8,7 +8,7 @@ import i18n from './index'
 const SETTINGS_KEY = 'settings'
 
 /** 把语言设置解析成实际语言：system 按浏览器语言（zh → 中文，否则英文） */
-export function resolveLocale(setting: LocaleSetting): 'zh' | 'en' {
+function resolveLocale(setting: LocaleSetting): 'zh' | 'en' {
   if (setting === 'zh' || setting === 'en') return setting
   const lang = (typeof navigator !== 'undefined' && navigator.language) || 'en'
   return lang.toLowerCase().startsWith('zh') ? 'zh' : 'en'

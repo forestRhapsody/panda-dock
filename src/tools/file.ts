@@ -36,7 +36,7 @@ const MIME_EXT: Record<string, string> = {
   'application/vnd.sqlite3': 'sqlite',
 }
 
-export function mimeExt(mime: string): string {
+function mimeExt(mime: string): string {
   return MIME_EXT[mime] ?? 'bin'
 }
 
