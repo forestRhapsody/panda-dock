@@ -245,22 +245,70 @@ export async function computeTextHash(text: string, options?: ComputeOptions): P
   return formatResult({ md5: m5, sha1: s1, sha256: s256, sha512: s512 }, options?.uppercase)
 }
 
-/** 计算文件二进制哈希 */
+/**
+ * 文件哈希的体积上限：超过直接拒绝。
+ * 原因：`crypto.subtle` 没有流式接口、`file.arrayBuffer()` 必须整块读入，
+ * 因此体积上限实际就是「一次能安全放进内存的字节数」。牺牲的是超大文件（如数 GB 镜像）
+ * 的校验能力——那种场景请改用系统自带的 sha256sum / md5sum。
+ */
+export const HASH_FILE_MAX_BYTES = 256 * 1024 * 1024
+
+/**
+ * 超过该体积则跳过纯 JS 实现的 MD5，只保留 Web Crypto 的原生 SHA 系列。
+ * 依据实测：本机（现代桌面 CPU）JS MD5 吞吐约 80 MB/s，32 MB 约需 0.4 s，
+ * 低端机按 2~4 倍估算约 0.8~1.6 s——再大就会明显阻塞主线程（原生 SHA 由浏览器在别的线程完成）。
+ */
+export const HASH_FILE_MD5_SKIP_BYTES = 32 * 1024 * 1024
+
+export type FileHashOutcome =
+  | {
+      ok: true
+      hashes: HashResult
+      /** 文件超过 HASH_FILE_MD5_SKIP_BYTES，MD5（hashes.md5 为空串）未计算 */
+      md5Skipped: boolean
+    }
+  | {
+      ok: false
+      reason: 'too-large'
+      sizeBytes: number
+      maxBytes: number
+    }
+
+/**
+ * 计算文件二进制哈希。
+ * - 超过 {@link HASH_FILE_MAX_BYTES}：拒绝计算（返回 ok:false），避免一次性读入导致内存暴涨；
+ * - 超过 {@link HASH_FILE_MD5_SKIP_BYTES}：跳过纯 JS 的 MD5，只算原生 SHA，避免长时间占用主线程；
+ * - 先发起三个原生 SHA（浏览器侧执行），MD5 放在其后同步计算，避免 MD5 先把主线程占满。
+ */
 export async function computeFileHash(
   file: File,
   options?: { uppercase?: boolean },
-): Promise<HashResult> {
+): Promise<FileHashOutcome> {
+  if (file.size > HASH_FILE_MAX_BYTES) {
+    return {
+      ok: false,
+      reason: 'too-large',
+      sizeBytes: file.size,
+      maxBytes: HASH_FILE_MAX_BYTES,
+    }
+  }
+
   const buffer = await file.arrayBuffer()
   const data = new Uint8Array(buffer)
+  const md5Skipped = file.size > HASH_FILE_MD5_SKIP_BYTES
 
-  const [m5, s1, s256, s512] = await Promise.all([
-    Promise.resolve(md5(data)),
+  const [s1, s256, s512] = await Promise.all([
     digestSubtle('SHA-1', data),
     digestSubtle('SHA-256', data),
     digestSubtle('SHA-512', data),
   ])
+  const m5 = md5Skipped ? '' : md5(data)
 
-  return formatResult({ md5: m5, sha1: s1, sha256: s256, sha512: s512 }, options?.uppercase)
+  return {
+    ok: true,
+    md5Skipped,
+    hashes: formatResult({ md5: m5, sha1: s1, sha256: s256, sha512: s512 }, options?.uppercase),
+  }
 }
 
 /* ==========================================================================
@@ -269,7 +317,7 @@ export async function computeFileHash(
 
 /**
  * 校验和智能比对：比对用户输入的期望值与各算法的实际结果
- * 自动去除首尾空格，不区分大小写
+ * 自动去除首尾空格，不区分大小写；空哈希（如超限时跳过的 MD5）不参与比对。
  */
 export function matchChecksum(expected: string, hashes: HashResult | null): MatchResult {
   const trimmed = expected.trim().toLowerCase()
@@ -277,17 +325,16 @@ export function matchChecksum(expected: string, hashes: HashResult | null): Matc
     return { matched: false, expected: '' }
   }
 
-  if (hashes.md5.toLowerCase() === trimmed) {
-    return { matched: true, algorithm: 'MD5', expected: trimmed }
-  }
-  if (hashes.sha1.toLowerCase() === trimmed) {
-    return { matched: true, algorithm: 'SHA-1', expected: trimmed }
-  }
-  if (hashes.sha256.toLowerCase() === trimmed) {
-    return { matched: true, algorithm: 'SHA-256', expected: trimmed }
-  }
-  if (hashes.sha512.toLowerCase() === trimmed) {
-    return { matched: true, algorithm: 'SHA-512', expected: trimmed }
+  const candidates: [HashAlgorithmName, string][] = [
+    ['MD5', hashes.md5],
+    ['SHA-1', hashes.sha1],
+    ['SHA-256', hashes.sha256],
+    ['SHA-512', hashes.sha512],
+  ]
+  for (const [algorithm, value] of candidates) {
+    if (value && value.toLowerCase() === trimmed) {
+      return { matched: true, algorithm, expected: trimmed }
+    }
   }
 
   return { matched: false, expected: trimmed }

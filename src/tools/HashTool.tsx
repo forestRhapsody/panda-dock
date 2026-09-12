@@ -9,7 +9,7 @@ import { useToolDraft } from '@/utils/draft'
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import { fmtSize } from './file'
-import { computeFileHash, computeTextHash, matchChecksum } from './hash'
+import { computeFileHash, computeTextHash, HASH_FILE_MD5_SKIP_BYTES, matchChecksum } from './hash'
 import type { HashAlgorithmName, HashResult } from './hash'
 import { StatusText } from './StatusText'
 import ToolTabs from './ToolTabs'
@@ -61,6 +61,8 @@ export default function HashTool() {
   const [fileResult, setFileResult] = useState<HashResult | null>(null)
   const [fileLoading, setFileLoading] = useState(false)
   const [fileError, setFileError] = useState('')
+  /** 文件超过 MD5 阈值：只算了原生 SHA，MD5 一栏为空 */
+  const [fileMd5Skipped, setFileMd5Skipped] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const dragCount = useRef(0)
 
@@ -144,12 +146,25 @@ export default function HashTool() {
       setFileLoading(true)
       setFileError('')
       try {
-        const res = await computeFileHash(targetFile, { uppercase: isUpper })
-        setFileResult(res)
+        const outcome = await computeFileHash(targetFile, { uppercase: isUpper })
+        if (!outcome.ok) {
+          setFileError(
+            t('tool.hash.fileTooLarge', {
+              size: fmtSize(outcome.sizeBytes),
+              max: fmtSize(outcome.maxBytes),
+            }),
+          )
+          setFileResult(null)
+          setFileMd5Skipped(false)
+          return
+        }
+        setFileResult(outcome.hashes)
+        setFileMd5Skipped(outcome.md5Skipped)
       } catch (err) {
         console.error('[HashTool] file hash error:', err)
         setFileError(err instanceof Error ? err.message : t('tool.hash.fileReadError'))
         setFileResult(null)
+        setFileMd5Skipped(false)
       } finally {
         setFileLoading(false)
       }
@@ -162,6 +177,7 @@ export default function HashTool() {
       handleCalculateFile(file, uppercaseRef.current)
     } else {
       setFileResult(null)
+      setFileMd5Skipped(false)
       setFileLoading(false)
     }
   }, [file, handleCalculateFile])
@@ -216,17 +232,19 @@ export default function HashTool() {
     setFile(null)
     setFileResult(null)
     setFileError('')
+    setFileMd5Skipped(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const formatAllHashes = (res: HashResult | null, title?: string) => {
     if (!res) return ''
+    // 跳过计算（超限的 MD5）的算法不写入，避免复制到空值行
     return [
       title ? `# ${title}` : '',
-      `MD5:    ${res.md5}`,
-      `SHA-1:  ${res.sha1}`,
-      `SHA256: ${res.sha256}`,
-      `SHA512: ${res.sha512}`,
+      res.md5 && `MD5:    ${res.md5}`,
+      res.sha1 && `SHA-1:  ${res.sha1}`,
+      res.sha256 && `SHA256: ${res.sha256}`,
+      res.sha512 && `SHA512: ${res.sha512}`,
     ]
       .filter(Boolean)
       .join('\n')
@@ -405,6 +423,12 @@ export default function HashTool() {
 
         {fileError && <StatusText kind='err'>{fileError}</StatusText>}
 
+        {fileMd5Skipped && !fileLoading && (
+          <StatusText kind='info'>
+            {t('tool.hash.md5SkippedNotice', { limit: fmtSize(HASH_FILE_MD5_SKIP_BYTES) })}
+          </StatusText>
+        )}
+
         {fileLoading && (
           <StatusText kind='info'>
             <Icon name='refresh' className='tw-spin' size={14} /> {t('tool.hash.computingFile')}
@@ -465,6 +489,7 @@ export default function HashTool() {
               <div className='tw-detect__fields'>
                 {ALGORITHMS.map(({ name, key }) => {
                   const val = fileResult[key]
+                  const skipped = key === 'md5' && fileMd5Skipped
                   const isMatched = matchInfo?.matched && matchInfo.algorithm === name
 
                   return (
@@ -473,10 +498,16 @@ export default function HashTool() {
                       className={`tw-detect__field${isMatched ? ' tw-detect__field--matched' : ''}`}
                     >
                       <span className='tw-detect__field-label'>{name}</span>
-                      <code className='tw-detect__field-value tw-detect__field-value--mono'>
-                        {val}
-                      </code>
-                      <CopyButton text={val} icon className='tw-detect__copy' />
+                      {skipped ? (
+                        <span className='tw-detect__field-value tw-note'>
+                          {t('tool.hash.md5SkippedShort')}
+                        </span>
+                      ) : (
+                        <code className='tw-detect__field-value tw-detect__field-value--mono'>
+                          {val}
+                        </code>
+                      )}
+                      {!skipped && <CopyButton text={val} icon className='tw-detect__copy' />}
                     </div>
                   )
                 })}
