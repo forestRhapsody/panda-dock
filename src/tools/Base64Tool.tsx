@@ -14,6 +14,7 @@ import { detectMimeFromBytes, fmtSize } from './file'
 import { StatusText } from './StatusText'
 import type { ToolStatus } from './StatusText'
 import ToolTabs from './ToolTabs'
+import { useEmptyError } from './useEmptyError'
 
 export type Base64Mode = 'decode' | 'encode' | 'file-encode' | 'file-decode'
 
@@ -91,13 +92,21 @@ export default function Base64Tool() {
 
   // —— 独立状态：文本解码 ——
   const [decodeStatus, setDecodeStatus] = useState<ToolStatus | null>(null)
-  const [decodeEmptyErr, setDecodeEmptyErr] = useState(false)
-  const decodeInputRef = useRef<HTMLTextAreaElement>(null)
+  const {
+    emptyErr: decodeEmptyErr,
+    areaRef: decodeInputRef,
+    triggerEmpty: triggerDecodeEmpty,
+    clearEmpty: clearDecodeEmpty,
+  } = useEmptyError()
 
   // —— 独立状态：文本编码 ——
   const [encodeStatus, setEncodeStatus] = useState<ToolStatus | null>(null)
-  const [encodeEmptyErr, setEncodeEmptyErr] = useState(false)
-  const encodeInputRef = useRef<HTMLTextAreaElement>(null)
+  const {
+    emptyErr: encodeEmptyErr,
+    areaRef: encodeInputRef,
+    triggerEmpty: triggerEncodeEmpty,
+    clearEmpty: clearEncodeEmpty,
+  } = useEmptyError()
 
   // —— 独立状态：文件 → Base64 ——
   const [file, setFile] = useState<File | null>(null)
@@ -117,18 +126,17 @@ export default function Base64Tool() {
 
   function switchTab(next: Base64Mode) {
     setDraft((prev) => ({ ...prev, tab: next }))
-    setDecodeEmptyErr(false)
-    setEncodeEmptyErr(false)
+    clearDecodeEmpty()
+    clearEncodeEmpty()
   }
 
   // —— 文本解码独立操作 ——
   function runDecode() {
     const text = decodeInput.trim()
     if (!text) {
-      setDecodeEmptyErr(true)
+      triggerDecodeEmpty()
       setDraft((prev) => ({ ...prev, decodeOutput: '' }))
       setDecodeStatus(null)
-      decodeInputRef.current?.focus()
       return
     }
     if (!isLikelyBase64(text)) {
@@ -155,17 +163,16 @@ export default function Base64Tool() {
   function clearDecode() {
     setDraft((prev) => ({ ...prev, decodeInput: '', decodeOutput: '' }))
     setDecodeStatus(null)
-    setDecodeEmptyErr(false)
+    clearDecodeEmpty()
   }
 
   // —— 文本编码独立操作 ——
   function runEncode() {
     const text = encodeInput.trim()
     if (!text) {
-      setEncodeEmptyErr(true)
+      triggerEncodeEmpty()
       setDraft((prev) => ({ ...prev, encodeOutput: '' }))
       setEncodeStatus(null)
-      encodeInputRef.current?.focus()
       return
     }
     try {
@@ -187,7 +194,7 @@ export default function Base64Tool() {
   function clearEncode() {
     setDraft((prev) => ({ ...prev, encodeInput: '', encodeOutput: '' }))
     setEncodeStatus(null)
-    setEncodeEmptyErr(false)
+    clearEncodeEmpty()
   }
 
   // —— 文件转 Base64 独立操作 ——
@@ -352,7 +359,7 @@ export default function Base64Tool() {
             onChange={(e) => {
               const val = e.target.value
               setDraft((prev) => ({ ...prev, decodeInput: val, decodeOutput: '' }))
-              if (decodeEmptyErr) setDecodeEmptyErr(false)
+              if (decodeEmptyErr) clearDecodeEmpty()
               setDecodeStatus(null)
             }}
             spellCheck={false}
@@ -404,7 +411,7 @@ export default function Base64Tool() {
             onChange={(e) => {
               const val = e.target.value
               setDraft((prev) => ({ ...prev, encodeInput: val, encodeOutput: '' }))
-              if (encodeEmptyErr) setEncodeEmptyErr(false)
+              if (encodeEmptyErr) clearEncodeEmpty()
               setEncodeStatus(null)
             }}
             spellCheck={false}

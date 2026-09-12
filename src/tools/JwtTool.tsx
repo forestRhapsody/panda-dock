@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -10,6 +10,7 @@ import { decodeJwt, SAMPLE_JWT } from './jwt'
 import type { JwtDecoded } from './jwt'
 import { StatusText } from './StatusText'
 import type { ToolStatus } from './StatusText'
+import { useEmptyError } from './useEmptyError'
 
 /** JWT 解码工具：解码 header / payload，展示签名与标准声明 */
 export default function JwtTool() {
@@ -17,8 +18,7 @@ export default function JwtTool() {
   const [token, setToken, clearToken] = useToolDraft<string>('jwt.token', '')
   const [decoded, setDecoded] = useState<JwtDecoded | null>(null)
   const [status, setStatus] = useState<ToolStatus | null>(null)
-  const [emptyErr, setEmptyErr] = useState(false)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const { emptyErr, areaRef: inputRef, triggerEmpty, clearEmpty } = useEmptyError()
 
   function run(text = token) {
     const raw = text
@@ -28,8 +28,7 @@ export default function JwtTool() {
     if (!raw) {
       setDecoded(null)
       setStatus(null)
-      setEmptyErr(true)
-      inputRef.current?.focus()
+      triggerEmpty()
       return
     }
     const result = decodeJwt(raw)
@@ -46,11 +45,11 @@ export default function JwtTool() {
     clearToken()
     setDecoded(null)
     setStatus(null)
-    setEmptyErr(false)
+    clearEmpty()
   }
 
   function fillSample() {
-    setEmptyErr(false)
+    clearEmpty()
     setToken(SAMPLE_JWT)
     run(SAMPLE_JWT)
   }
@@ -71,7 +70,7 @@ export default function JwtTool() {
           placeholder={t('tool.jwt.placeholder')}
           onChange={(e) => {
             setToken(e.target.value)
-            if (emptyErr) setEmptyErr(false)
+            if (emptyErr) clearEmpty()
             if (status) setStatus(null)
           }}
           onKeyDown={(e) => {

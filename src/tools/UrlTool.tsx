@@ -12,6 +12,7 @@ import { StatusText } from './StatusText'
 import type { ToolStatus } from './StatusText'
 import ToolTabs from './ToolTabs'
 import { decodeUrl, encodeUrl, parseUrl, type CodecScope, type ParsedUrl } from './url'
+import { useEmptyError } from './useEmptyError'
 
 type MainTab = 'parse' | 'codec'
 
@@ -172,8 +173,7 @@ function UrlCodecPanel() {
   const [status, setStatus] = useState<ToolStatus | null>(null)
   const [fetching, setFetching] = useState(false)
   const [lastAction, setLastAction] = useState<'encode' | 'decode' | null>(null)
-  const [emptyErr, setEmptyErr] = useState(false)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const { emptyErr, areaRef: inputRef, triggerEmpty, clearEmpty } = useEmptyError()
 
   function setScope(nextScope: CodecScope) {
     setDraft((prev) => ({ ...prev, scope: nextScope }))
@@ -181,7 +181,7 @@ function UrlCodecPanel() {
 
   function setInput(val: string) {
     setDraft((prev) => ({ ...prev, input: val, output: '' }))
-    if (emptyErr) setEmptyErr(false)
+    if (emptyErr) clearEmpty()
     setStatus(null)
   }
 
@@ -189,8 +189,7 @@ function UrlCodecPanel() {
     if (!rawText.trim()) {
       setDraft((prev) => ({ ...prev, output: '' }))
       setStatus(null)
-      setEmptyErr(true)
-      inputRef.current?.focus()
+      triggerEmpty()
       return
     }
     setLastAction('encode')
@@ -211,8 +210,7 @@ function UrlCodecPanel() {
     if (!rawText.trim()) {
       setDraft((prev) => ({ ...prev, output: '' }))
       setStatus(null)
-      setEmptyErr(true)
-      inputRef.current?.focus()
+      triggerEmpty()
       return
     }
     setLastAction('decode')
@@ -247,7 +245,7 @@ function UrlCodecPanel() {
     clearDraft()
     setStatus(null)
     setLastAction(null)
-    setEmptyErr(false)
+    clearEmpty()
   }
 
   return (

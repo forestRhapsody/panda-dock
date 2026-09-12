@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -8,6 +8,7 @@ import CopyButton from './CopyButton'
 import { StatusText } from './StatusText'
 import { parseStamp } from './timestamp'
 import type { StampResult, StampSource } from './timestamp'
+import { useEmptyError } from './useEmptyError'
 
 const SOURCE_KEY: Record<StampSource, string> = {
   secs: 'tool.timestamp.sourceSeconds',
@@ -21,16 +22,14 @@ export default function TimestampTool() {
   const [input, setInput, clearInput] = useToolDraft<string>('timestamp.input', '')
   const [result, setResult] = useState<StampResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [emptyErr, setEmptyErr] = useState(false)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const { emptyErr, areaRef: inputRef, triggerEmpty, clearEmpty } = useEmptyError()
 
   function run(text = input) {
     const raw = text.trim()
     if (!raw) {
       setResult(null)
       setError(null)
-      setEmptyErr(true)
-      inputRef.current?.focus()
+      triggerEmpty()
       return
     }
     const res = parseStamp(raw)
@@ -44,7 +43,7 @@ export default function TimestampTool() {
   }
 
   function fillNow() {
-    setEmptyErr(false)
+    clearEmpty()
     const nowStr = String(Date.now())
     setInput(nowStr)
     run(nowStr)
@@ -54,7 +53,7 @@ export default function TimestampTool() {
     clearInput()
     setResult(null)
     setError(null)
-    setEmptyErr(false)
+    clearEmpty()
   }
 
   return (
@@ -69,7 +68,7 @@ export default function TimestampTool() {
           placeholder={t('tool.timestamp.placeholder')}
           onChange={(e) => {
             setInput(e.target.value)
-            if (emptyErr) setEmptyErr(false)
+            if (emptyErr) clearEmpty()
             if (error) setError(null)
           }}
           onKeyDown={(e) => {

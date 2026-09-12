@@ -82,21 +82,21 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 1. **构建顺序**：`pnpm build` 按 content → background → 页面 串行，content 会先清空 `dist/`；单独跑某个 vite 配置会产出残缺产物。
 2. **content / background 必须是 IIFE**（`format:'iife'` + `inlineDynamicImports:true`）：manifest 不支持 ESM。
 3. **content 的样式只能内联进 Shadow DOM**（`theme.css` / `ui.css` / `tools.css` / `content.css` 都以 `?inline` 导入）；直接 `import './x.css'` 会污染宿主页。
-4. **`chrome.*` 的用法**：通用能力用 `utils/env.ts` 封装（`isExtension` / `storageGet` / `storageSet` / `storageRemove` / `openOptionsPage` / `extVersion`）；其余 API 可直接调用，但**必须先判 `isExtension()`**——`pnpm dev` 预览与测试环境里没有 `chrome`。
-5. **新工具要登记两处**：`tools/registry.ts`（`ToolId` + `DEFAULT_TOOLS`）与 `ToolsApp.tsx` 的 `TOOL_COMPONENTS`，否则工具不可见或渲染空白。
-6. **跨端通信**：`action` 只能引用 `utils/messages.ts` 的常量；失败响应只回 `{ ok:false, code }`（`ERROR_CODES`），**文案由 UI 侧按当前语言生成**，禁止在 background 里硬编码面向用户的字符串。
+4. **`chrome.*` 的用法**：`utils/env.ts` 封装了最常用的 6 个通用能力（`isExtension` / `storageGet` / `storageSet` / `storageRemove` / `openOptionsPage` / `extVersion`），优先使用封装；其余 API 可直接调用，但**必须在 `if (!isExtension()) return` 守卫块内**（或等价的 `if (typeof chrome === 'undefined')` 判断后），不能裸调——`pnpm dev` 预览与测试环境里没有 `chrome`。典型模式：`if (!inExt) return; /* 块内可直接用 chrome.storage.onChanged 等 */`。
+5. **新工具要登记两处**：`tools/registry.ts`（`ToolId` + `DEFAULT_TOOLS`）与 `ToolsApp.tsx` 的 `TOOL_COMPONENTS`，否则工具不可见或渲染空白。`TOOL_COMPONENTS` 类型是 `Record<ToolId, ...>`，漏登记时 **TypeScript 编译会报错**，这是自动守卫。
+6. **跨端通信**：`action` 只能引用 `utils/messages.ts` 的常量；失败响应只回 `{ ok:false, code }`（`ERROR_CODES`），**文案由 UI 侧按当前语言生成**，禁止在 background 里硬编码面向用户的字符串；成功响应建议结构：`{ ok:true, data?: T }`——裸值返回仅存在于历史遗留 handler，新增 handler 统一走 ok 结构。
 7. **设置读写**：读取一律过 `normalizeSettings` / `normalizeToolLayout`（旧数据、残缺数据必须能兼容）；写入用 `saveSettings()` 并检查返回值，失败要提示用户（`chrome.storage.sync` 是静默失败）。
 8. **content 打开扩展页 / 侧边栏必须经 background 中转**：`sidePanel.open` 依赖用户手势，失败要回退到网页抽屉。
 9. **类型零错误**：`strict` + `noUnusedLocals` + `noUnusedParameters` 全开，改完必须过 `pnpm type-check`。
-10. **行为改动要带测试**：`tools/*.ts`、`utils/*.ts` 这类纯逻辑模块必须配同目录 `*.test.ts`；文案 key 的完整性由 `src/i18n/i18n.test.ts` 守卫。
+10. **行为改动要带测试**：`tools/*.ts`、`utils/*.ts` 这类纯逻辑模块必须配同目录 `*.test.ts`；`content/` 下的纯逻辑（存储桥、域名匹配）同样适用，Shadow DOM 相关可参考 `ToolErrorBoundary.dom.test.tsx` 的 happy-dom 写法；文案 key 的完整性由 `src/i18n/i18n.test.ts` 守卫。
 
 **UI 与文案**
 
 11. **文案一律走 key 且中英同步**：按钮、选项卡与区域标签、下拉选项、状态与错误提示、占位符、空状态引导、`aria-label` / `title` / Tooltip 都算文案。两套语言包都要补（应用内 `src/i18n/locales/{zh,en}.json`、清单级 `public/_locales/{zh_CN,en}/messages.json`）。**「中英同形」也要登记 key**（`localStorage`、`Base64` 这类专有名词同理）；**单复数按语义判断**（指集合用复数如 `Cookies`，指单个实体用单数）；纯技术示例值（`example.com`、`1780000000`、`/`）可直接写字面量。
 12. **只用设计令牌**：颜色 / 字号 / 控件高 / 圆角 / 阴影统统走 `theme.css` 的 `--tk-*`，主题靠 `data-theme`；不要写死色值。
 13. **类名前缀分域**：`tk-*` 通用组件（`ui/ui.css`）、`tw-*` 工具箱（`tools/tools.css`）、`tek-*` content 悬浮层（`content/content.css`）、`pop-*` / `opt-*` / `sp-*` 各宿主页。
-14. **复用现成组件**：`TkSelect`（禁用原生 `select`）、`ConfirmDialog`（禁用 `window.confirm`——它在 content script 里被 Chrome 禁用）、`Tooltip`（禁用原生 `title`）、`Icon`（禁用 emoji）、`CopyButton` / `DownloadButton` / `StatusText` / `Toaster` / `ToolErrorBoundary`。
-15. **统一交互流**：`输入源 ➔ 操作栏 ➔ 状态/错误反馈 ➔ 结果与视图配置`；状态与报错紧贴操作按钮下方按需展示（不要被空结果框隔开），无状态时不保留空白占位；空输入点操作按钮时输入框变红（`.tw-area--empty-err`）+ 自动聚焦，不弹文字横幅。
+14. **复用现成组件**：`TkSelect`（禁用原生 `select`）、`ConfirmDialog`（禁用 `window.confirm`——它在 content script 里被 Chrome 禁用；在 Options/Popup 等扩展页里虽可用，但统一走 `ConfirmDialog` 保持风格一致）、`Tooltip`（禁用原生 `title`）、`Icon`（禁用 emoji；新图标在 `ui/Icon.tsx` 里注册 SVG path，通过 `size` prop 控制大小）、`CopyButton` / `DownloadButton` / `StatusText` / `Toaster` / `ToolErrorBoundary`。
+15. **统一交互流**：`输入源 ➔ 操作栏 ➔ 状态/错误反馈 ➔ 结果与视图配置`；状态与报错紧贴操作按钮下方按需展示（不要被空结果框隔开），无状态时不保留空白占位；**空输入检测统一用 `useEmptyError` hook**（`src/tools/useEmptyError.ts`）：`triggerEmpty()` 触发红框+聚焦，`clearEmpty()` 清除，不要手动维护 `emptyErr` state + `inputRef`，不弹文字横幅。
 16. **结果区只读**：解析 / 解码结果只做展示与复制，不要改成可编辑表单（只有 JSON 工作台与 Cookie 编辑弹窗是编辑态）。
 
 ## 5 关键机制与陷阱
@@ -104,7 +104,17 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 - **两套 i18n 并存**：应用内文案是 i18next（`src/i18n/locales/{zh,en}.json`），跟随用户在 Options 里选的语言；清单级文案是 Chrome 原生 `_locales`（`public/_locales/{zh_CN,en}/messages.json`），**只能跟随浏览器界面语言**——扩展无权自选清单 locale。改文案前先判断属于哪一层。
 - **会话草稿有两个坑**：
   1. `utils/draft.ts` 的 `memoryCache` 是**模块级常驻**的，`useToolDraft` 的初始值优先取它。所以**从外部写草稿必须用 `setDraftValue()`**（同时更新缓存与存储）；只写 `chrome.storage.session` 会让同一会话内先前用过该工具的用户读到旧值。
-  2. 草稿结构**不统一**：多数工具是字符串；`json.workbench` 与 `base64` 是对象；URL 还额外有 `url.tab`。写之前先看目标工具怎么读。
+  2. 草稿结构**不统一**，写之前先看目标工具怎么读：
+
+  | 工具 key | 值类型 | 说明 |
+  | --- | --- | --- |
+  | `base64` | `{ tab, decodeInput, decodeOutput, encodeInput, encodeOutput, fileB64Input }` | 对象，各 tab 独立 |
+  | `json.workbench` | 对象 | JSON 工作台单独存 |
+  | `url.tab` | `'parse' \| 'codec'` | URL 工具额外有 tab 草稿 |
+  | `url.parse.input` | `string` | URL 解析输入 |
+  | `url.codec` | `{ scope, input, output }` | URL 编解码 |
+  | 其余工具（timestamp / jwt / hash / …） | `string` | 单一字符串 |
+
 - **跨端错误码**：background 没有语言上下文，因此只回 `{ ok:false, code }`；文案由 UI 侧 `resolveStorageError()` 按当前语言映射。**在 background 里写文案不会生效**（那里本来就不该有文案）。
 - **存储桥接**：扩展页（侧边栏 / Options）无法直接读网页 `localStorage`，由 content 的 `installStorageBridge()` 代读代写。因此侧边栏的网页存储**依赖当前标签页已注入 content script**——特权页或未注入的页面取不到数据是正常现象，不是 bug。
 - **抽屉与原生侧边栏互斥**：靠 `MSG_*` 消息 + 侧边栏 Port 长连接实现，开一个要关掉另一个。`chrome.sidePanel.open` 必须由用户手势触发，快捷键路径已在 background 首帧同步调用（任何前置 `await` 都会让手势令牌失效）。
@@ -112,6 +122,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 - **错误边界只兜渲染期**：`ToolErrorBoundary` 拦不住事件回调与异步 Promise 里的异常——那些要各自 catch（storage 层统一转成 `{ ok:false }` 结果返回）。
 - **工具顺序与显隐是用户配置**：`DEFAULT_TOOLS` / `DEFAULT_HIDDEN_TOOLS` 只决定默认值，运行时一律用 `visibleTools(layout)` 计算；默认激活项 = 第一个可见工具，不要写死某个 id。
 - **`pnpm dev` 与扩展环境不等价**：dev 下没有 `chrome`，走 `env.ts` 的降级实现（含 mock 数据）。「dev 里正常」不能证明扩展里正常，涉及 `chrome.*` 的改动要用 `pnpm build` 后在浏览器里验证。
+- **`settings` 存储配额**：`chrome.storage.sync` 单条 8KB 上限，**新增字段前估算 JSON 体积**（尤其是字符串数组如 `ballBlacklist`）；大体积或敏感数据（图片 base64 等）强制走 `chrome.storage.local`（参考 `BALL_IMAGE_KEY`，上限 128KB），不要塞进 sync。
 
 ## 6 三个常见流程
 
@@ -120,7 +131,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 1. `tools/registry.ts`：`ToolId` 加 `'foo'`；`DEFAULT_TOOLS` 加 `{ id:'foo', label:'Foo' }`——Options 列表与工具箱选项卡会自动出现。
 2. `tools/foo.ts`：纯逻辑，不依赖 React，文案用 `i18n.t()`。
 3. `tools/foo.test.ts`：补纯逻辑测试（见 §4 第 10 条）。
-4. `tools/FooTool.tsx`：`default export`，复用 `AutoArea` / `ToolTabs` / `CopyButton` / `StatusText` 等，遵守 §4 的 UI 约定。
+4. `tools/FooTool.tsx`：`default export`，复用 `AutoArea` / `ToolTabs` / `CopyButton` / `StatusText` / **`useEmptyError`** 等，遵守 §4 的 UI 约定。
 5. `tools/ToolsApp.tsx`：`TOOL_COMPONENTS` 加 `foo: () => <FooTool />`。
 6. `src/i18n/locales/{zh,en}.json`：补 `tool.registry.foo` 与工具内全部文案（两套都要）。
 7. 样式写进 `tools/tools.css`（`tw-*` + 设计令牌）。
