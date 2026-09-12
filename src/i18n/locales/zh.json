@@ -178,6 +178,7 @@
       "title": "智能解析",
       "openInSidePanel": "在侧边栏中打开",
       "openInTool": "在{{tool}}工具中打开",
+      "openInToolFailed": "无法启用「{{tool}}」工具，请到设置页手动开启。",
       "pin": "钉住面板",
       "unpin": "取消钉住",
       "sourceLabel": "选中文本",

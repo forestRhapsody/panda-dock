@@ -14,12 +14,16 @@ type Store = Record<string, Record<string, unknown>>
 
 const globalWithChrome = globalThis as unknown as { chrome?: unknown }
 
-function stubChrome(initial: Store = {}) {
+function stubChrome(initial: Store = {}, options: { failSyncSet?: boolean } = {}) {
   const store: Store = { session: {}, sync: {}, local: {}, ...initial }
 
   const area = (name: string) => ({
     get: async (key: string) => (key in store[name] ? { [key]: store[name][key] } : {}),
     set: async (obj: Record<string, unknown>) => {
+      if (name === 'sync' && options.failSyncSet) {
+        // 模拟 chrome.storage.sync 配额写满：静默失败（reject 被 env.storageSet 吃掉并返回 false）
+        throw new Error('QUOTA_BYTES_PER_ITEM quota exceeded')
+      }
       Object.assign(store[name], obj)
     },
     remove: async (key: string) => {
@@ -123,20 +127,45 @@ describe('prepareToolHandoff', () => {
       },
     })
 
-    await prepareToolHandoff('json', '{}')
-    expect(store.sync.settings).toEqual({
-      toolEnabled: { json: true, url: true },
-      theme: 'dark',
-    })
+    await expect(prepareToolHandoff('json', '{}')).resolves.toEqual({ ok: true })
+
+    const saved = store.sync.settings as {
+      theme?: string
+      toolEnabled: Record<string, boolean>
+    }
+    expect(saved.toolEnabled.json).toBe(true)
+    expect(saved.toolEnabled.url).toBe(true)
+    // 写入经过 normalizeSettings：残缺数据被补齐成完整 Settings，而不是原样写回
+    expect(Object.keys(saved.toolEnabled)).toHaveLength(9)
+    expect(saved.theme).toBe('dark')
 
     const before = JSON.stringify(store.sync.settings)
     await prepareToolHandoff('url', '[1]')
+    // url 本来就已启用，不应产生多余的设置写入
     expect(JSON.stringify(store.sync.settings)).toBe(before)
   })
 
-  it('没有映射的工具不做任何写入', async () => {
+  it('未接入跳转的工具返回 unsupported 且不做任何写入', async () => {
     const store = stubChrome()
-    await prepareToolHandoff('hash', 'abc')
+    await expect(prepareToolHandoff('hash', 'abc')).resolves.toEqual({
+      ok: false,
+      reason: 'unsupported',
+    })
+    expect(store.session).toEqual({})
+  })
+
+  it('启用写入失败时返回 enable-failed，且**不写**任何草稿与激活项（顺序保证）', async () => {
+    const store = stubChrome(
+      { sync: { settings: { toolEnabled: { json: false } } } },
+      { failSyncSet: true },
+    )
+
+    await expect(prepareToolHandoff('json', '{"a":1}')).resolves.toEqual({
+      ok: false,
+      reason: 'enable-failed',
+    })
+
+    // 关键：没有半途写入，否则 activeToolTab 会指向不可见的工具，用户静默落到别的 Tab
     expect(store.session).toEqual({})
   })
 })

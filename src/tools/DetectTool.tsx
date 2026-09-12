@@ -2,6 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 
 import { useTranslation } from 'react-i18next'
 
+import { toast } from '@/ui/toast'
 import Tooltip from '@/ui/Tooltip'
 import { useToolDraft } from '@/utils/draft'
 
@@ -81,9 +82,17 @@ export default function DetectTool() {
    * 因此只需准备草稿并激活该 Tab——`activeToolTab` 的草稿变化会被 ToolsApp 的
    * useToolDraft 监听到，Tab 随之切换。
    */
-  const handleOpenInTool = useCallback((tool: ToolId, text: string) => {
-    void prepareToolHandoff(tool, text)
-  }, [])
+  const handleOpenInTool = useCallback(
+    (tool: ToolId, text: string) => {
+      void prepareToolHandoff(tool, text).then((res) => {
+        // 目标工具被禁用且启用失败时，Tab 不会切过去，必须告知用户
+        if (!res.ok && res.reason === 'enable-failed') {
+          toast.error(t('tool.detect.openInToolFailed', { tool: t(`tool.registry.${tool}`) }))
+        }
+      })
+    },
+    [t],
+  )
 
   const currentResult = useMemo<DetectResult | null>(() => {
     if (!result) return null

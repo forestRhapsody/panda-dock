@@ -1,5 +1,7 @@
 import { getDraftValue, setDraftValue } from '@/utils/draft'
-import { storageGet, storageSet } from '@/utils/env'
+import { storageGet } from '@/utils/env'
+import { normalizeSettings, saveSettings } from '@/utils/settings'
+import type { Settings } from '@/utils/settings'
 
 import type { DetectKind } from './detect'
 import { DEFAULT_JSON_DRAFT, JSON_DRAFT_KEY } from './JsonTool'
@@ -28,12 +30,40 @@ const URL_PARSE_INPUT_KEY = 'url.parse.input'
 const URL_TAB_KEY = 'url.tab'
 const ACTIVE_TAB_KEY = 'activeToolTab'
 
+/** 支持被跳转过去的工具（`detect` 用于划选面板的「在侧边栏中打开」） */
+const SUPPORTED_TOOLS: ToolId[] = ['detect', 'json', 'url']
+
+export type HandoffResult =
+  | { ok: true }
+  | {
+      ok: false
+      /** `unsupported`：该工具没有接入跳转；`enable-failed`：目标工具被禁用且启用写入失败 */
+      reason: 'unsupported' | 'enable-failed'
+    }
+
 /**
  * 把文本写进目标工具的输入草稿，并激活该工具（必要时自动启用）。
  * 只负责「让目标工具就位」，不负责打开宿主——各宿主（侧边栏 / 网页抽屉 / 已在工具箱内）
  * 自行决定唤起方式。
+ *
+ * 顺序很关键：**先确保工具可见，再写草稿与激活项**。否则一旦启用失败，
+ * `activeToolTab` 会指向一个不可见的工具，用户落在别的 Tab 上却没有任何提示。
  */
-export async function prepareToolHandoff(tool: ToolId, text: string): Promise<void> {
+export async function prepareToolHandoff(tool: ToolId, text: string): Promise<HandoffResult> {
+  if (!SUPPORTED_TOOLS.includes(tool)) {
+    return { ok: false, reason: 'unsupported' }
+  }
+
+  // 1) 目标工具被禁用时先启用；启用写入失败就整体放弃（调用方据此提示用户）
+  const cur = await storageGet<Partial<Settings>>('sync', 'settings')
+  if (cur?.toolEnabled && cur.toolEnabled[tool] === false) {
+    const saved = await saveSettings(
+      normalizeSettings({ ...cur, toolEnabled: { ...cur.toolEnabled, [tool]: true } }),
+    )
+    if (!saved) return { ok: false, reason: 'enable-failed' }
+  }
+
+  // 2) 写入输入草稿
   if (tool === 'detect') {
     // 划选面板的「在侧边栏中打开」走这里：把选中文本带回智能解析工具
     await setDraftValue(DETECT_INPUT_KEY, text)
@@ -46,22 +76,13 @@ export async function prepareToolHandoff(tool: ToolId, text: string): Promise<vo
       output: '',
       lastAction: null,
     })
-  } else if (tool === 'url') {
+  } else {
     await setDraftValue(URL_PARSE_INPUT_KEY, text)
     // 用户上次若停在「网址编解码」页，送进来的网址应回到解析页
     await setDraftValue(URL_TAB_KEY, 'parse')
-  } else {
-    return
   }
 
+  // 3) 激活目标工具（ToolsApp 监听该草稿变化后切换 Tab）
   await setDraftValue(ACTIVE_TAB_KEY, tool)
-
-  // 工具被禁用时自动启用，否则切换过去会落到别的 Tab（与 T49 带入侧边栏的行为保持一致）
-  const cur = await storageGet<{ toolEnabled?: Record<string, boolean> }>('sync', 'settings')
-  if (cur?.toolEnabled && cur.toolEnabled[tool] === false) {
-    await storageSet('sync', 'settings', {
-      ...cur,
-      toolEnabled: { ...cur.toolEnabled, [tool]: true },
-    })
-  }
+  return { ok: true }
 }

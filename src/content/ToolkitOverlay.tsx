@@ -572,13 +572,20 @@ export default function ToolkitOverlay() {
 
   /**
    * 把文本交给目标工具并在扩展宿主里打开：
-   * 1) 先写好会话草稿、激活目标 Tab、必要时启用该工具（见 handoff.ts）；
+   * 1) 先让目标工具就位（写会话草稿、激活 Tab、必要时启用——见 handoff.ts）；
    * 2) 原生侧边栏优先（forceOpen 避免误收起已开的侧边栏），受限时回退网页内抽屉；
    * 3) 关闭网页内的选区悬浮面板。
+   * 工具没能就位（如启用写入失败）时直接返回：不能打开一个会显示错工具的宿主。
    */
   const openToolInHost = useCallback(
     async (tool: ToolId, text: string) => {
-      await prepareToolHandoff(tool, text)
+      const res = await prepareToolHandoff(tool, text)
+      if (!res.ok) {
+        if (res.reason === 'enable-failed') {
+          showNotice(t('tool.detect.openInToolFailed', { tool: t(`tool.registry.${tool}`) }))
+        }
+        return
+      }
 
       if (inExt) {
         const ok = await requestNativeSidePanel(true)
