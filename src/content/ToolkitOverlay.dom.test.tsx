@@ -322,20 +322,80 @@ describe('抽屉的开合入口', () => {
     expect(ballEl()).not.toBeNull()
   })
 
-  it('源码当前没有遮罩与 Escape 处理：Escape / 点击抽屉外都不会关闭抽屉', async () => {
+  it('Escape 关闭抽屉，但点击抽屉外不会关闭（没有遮罩层）', async () => {
     await renderOverlay()
     await flush()
     await openDrawer()
     expect(drawerEl()).not.toBeNull()
 
+    // 只加键盘关闭，不加遮罩：点击抽屉外（宿主网页 / 挂载点）不应收起
     act(() => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
       document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
       container.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     })
-
-    // 如实记录当前实现：抽屉只能由关闭按钮 / 消息 / 快捷键收起
     expect(drawerEl()).not.toBeNull()
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    act(() => {
+      document.dispatchEvent(event)
+    })
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(drawerEl()).toBeNull()
+  })
+
+  it('影子根里存在 .tk-modal 内层弹窗时 Escape 不关抽屉，交给内层弹窗', async () => {
+    await renderOverlay()
+    await flush()
+    await openDrawer()
+    expect(drawerEl()).not.toBeNull()
+
+    // happy-dom 里直接往影子根塞一个 .tk-modal，构造「内层弹窗还开着」的场景
+    const modal = document.createElement('div')
+    modal.className = 'tk-modal'
+    shadowRoot().appendChild(modal)
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+    expect(drawerEl()).not.toBeNull()
+
+    // 内层弹窗关掉后，Escape 才轮到抽屉
+    modal.remove()
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    })
+    expect(drawerEl()).toBeNull()
+  })
+
+  it('影子根里存在 .tek-detect-panel 划选面板时 Escape 不关抽屉，也不 preventDefault', async () => {
+    await renderOverlay()
+    await flush()
+    await openDrawer()
+    expect(drawerEl()).not.toBeNull()
+
+    // 划选解析面板与抽屉同在影子根里，且自带 Escape 关闭：它更内层，按键必须先让给它，
+    // 否则一次 Escape 会把面板和抽屉一起关掉。
+    const panel = document.createElement('div')
+    panel.className = 'tek-detect-panel'
+    shadowRoot().appendChild(panel)
+
+    const blocked = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    act(() => {
+      document.dispatchEvent(blocked)
+    })
+    expect(drawerEl()).not.toBeNull()
+    // 让行时不消费按键：面板自己的 Escape 处理仍然拿得到
+    expect(blocked.defaultPrevented).toBe(false)
+
+    // 面板关掉后，Escape 才轮到抽屉
+    panel.remove()
+    const closing = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    act(() => {
+      document.dispatchEvent(closing)
+    })
+    expect(closing.defaultPrevented).toBe(true)
+    expect(drawerEl()).toBeNull()
   })
 
   it('Alt+Shift+D 打开 / 关闭抽屉，300ms 内重复触发被节流', async () => {

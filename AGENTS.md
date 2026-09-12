@@ -126,7 +126,9 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 - **跨端错误码**：background 没有语言上下文，因此只回 `{ ok:false, code }`；文案由 UI 侧 `resolveStorageError()` 按当前语言映射。**在 background 里写文案不会生效**（那里本来就不该有文案）。
 - **存储桥接**：扩展页（侧边栏 / Options）无法直接读网页 `localStorage`，由 content 的 `installStorageBridge()` 代读代写。因此侧边栏的网页存储**依赖当前标签页已注入 content script**——特权页或未注入的页面取不到数据是正常现象，不是 bug。
 - **抽屉与原生侧边栏互斥**：靠 `MSG_*` 消息 + 侧边栏 Port 长连接实现，开一个要关掉另一个。`chrome.sidePanel.open` 必须由用户手势触发，快捷键路径已在 background 首帧同步调用（任何前置 `await` 都会让手势令牌失效）。
-- **不要在 `setState` 更新器里写存储**：updater 必须是纯函数（StrictMode 下会被调用两次，等于写两遍）。设置写入用「脏标记 + `useEffect`」模式（见 `src/popup/QuickSettings.tsx`）。
+- **不要在 `setState` 更新器里写存储**：updater 必须是纯函数（StrictMode 下会被调用两次，等于写两遍）。两种合法写法，按场景选：
+  - **高频输入用「脏标记 + `useEffect`」**（见 `src/popup/QuickSettings.tsx`）：滑块、连点开关这类会连续变化的控件，合并成一次写入，避免 `storage.sync` 写入频率配额。
+  - **显式表单操作可直接写入**（见 `src/options/OptionsPage.tsx` 的 `persist`）：Options 页每次改动都是一次明确的用户操作，事件回调里立即 `saveSettings()` 语义更直接；此时依然要检查返回值并提示失败。
 - **错误边界只兜渲染期**：`ToolErrorBoundary` 拦不住事件回调与异步 Promise 里的异常——那些要各自 catch（storage 层统一转成 `{ ok:false }` 结果返回）。
 - **工具顺序与显隐是用户配置**：`DEFAULT_TOOLS` / `DEFAULT_HIDDEN_TOOLS` 只决定默认值，运行时一律用 `visibleTools(layout)` 计算；默认激活项 = 第一个可见工具，不要写死某个 id。
 - **`pnpm dev` 与扩展环境不等价**：dev 下没有 `chrome`，走 `env.ts` 的降级实现（含 mock 数据）。「dev 里正常」不能证明扩展里正常，涉及 `chrome.*` 的改动要用 `pnpm build` 后在浏览器里验证。

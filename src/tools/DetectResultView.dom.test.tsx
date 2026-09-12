@@ -128,15 +128,16 @@ describe('DetectResultView 的类型标签与整体骨架', () => {
     }
   })
 
-  it('未知类型（运行时脏数据）不崩溃，但类型名处什么也不显示 —— 源码无兜底标签', () => {
+  it('未知类型（运行时脏数据）不崩溃，类型名处显示兜底文案', () => {
     const dirty = result({ kind: 'nope' as DetectResult['kind'] })
     expect(() => render({ result: dirty })).not.toThrow()
 
-    // KIND_LABEL 是 Record<kind,string>，脏 kind 取到 undefined，插值后只留前缀
+    // KIND_LABEL 取不到脏 kind 时回退到 tool.detect.unknown，而不是渲染成空白
     expect(q('.tw-status--ok')?.textContent).toBe(
-      i18n.t('tool.detect.detected', { kind: undefined }),
+      i18n.t('tool.detect.detected', { kind: i18n.t('tool.detect.unknown') }),
     )
     expect(text()).not.toContain('undefined')
+    expectNoBareI18nKey()
   })
 
   it('空结果（无 field / 无 block）只渲染头部，不出现空的字段区与内容块', () => {
@@ -401,6 +402,20 @@ describe('DetectResultView 的多结果 Tab', () => {
     expect(qa('.tw-detect__tab')[0].getAttribute('aria-selected')).toBe('false')
     expect(qa('.tw-detect__tab--active')).toHaveLength(1)
     expect(q('.tw-detect__tab--active')?.getAttribute('aria-label')).toBe('2 · URL')
+  })
+
+  it('脏 kind 的 Tab 标签同样回退到兜底文案（tab-kind 与 aria-label）', () => {
+    render({
+      result: result({ kind: 'base64' }),
+      items: [items[0], makeItem('nope' as DetectItem['kind'], 'x')],
+      activeMatchIndex: 1,
+      onSelectMatch: () => {},
+    })
+
+    expect(textsOf('.tw-detect__tab-kind')).toEqual(['Base64', i18n.t('tool.detect.unknown')])
+    expect(q('.tw-detect__tab--active')?.getAttribute('aria-label')).toBe(
+      `2 · ${i18n.t('tool.detect.unknown')}`,
+    )
   })
 
   it('点击 Tab 回调索引；只有单项或没有回调时不渲染 Tab', () => {

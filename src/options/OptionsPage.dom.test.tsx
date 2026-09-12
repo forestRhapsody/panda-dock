@@ -117,6 +117,24 @@ let root: Root
 
 const settle = (ms = 0) => act(async () => new Promise((resolve) => setTimeout(resolve, ms)))
 
+/**
+ * 条件轮询等待：`settle(ms)` 是固定 sleep，而 `pickFile` 之后的
+ * FileReader → chrome.storage → setState 异步链在负载下可能超过 10ms（实测偶发红）。
+ * 这里改成「断言成立即返回」，超时后抛出最后一次断言错误，报错信息与直接断言一致。
+ */
+async function waitFor(assert: () => void, timeoutMs = 2000) {
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
+    try {
+      assert()
+      return
+    } catch (err) {
+      if (Date.now() >= deadline) throw err
+      await settle(1)
+    }
+  }
+}
+
 /** 挂载 OptionsPage 并等待首屏的异步读取（设置 / 图片 / 快捷键）落定 */
 async function mount(stored?: unknown) {
   stubChrome(stored === undefined ? {} : { settings: stored })
@@ -741,12 +759,13 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
   it('选择合法图片：写 local、不写 sync，并显示预览与移除按钮', async () => {
     await mount(BASE())
     pickFile(imageInput(), new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
-    await settle(10)
 
-    expect(String(chromeState.local.ballImage)).toMatch(/^data:image\/png;base64,/)
+    await waitFor(() => {
+      expect(String(chromeState.local.ballImage)).toMatch(/^data:image\/png;base64,/)
+      expect(container.querySelector('img[src^="data:image/"]')).not.toBeNull()
+    })
     // 图片绝不能塞进 sync（8KB 配额，§5）
     expect(syncCalls()).toHaveLength(0)
-    expect(container.querySelector('img[src^="data:image/"]')).not.toBeNull()
     expect(
       [...container.querySelectorAll<HTMLButtonElement>('button')].some(
         (b) => b.textContent === i18n.t('settings.ballImageRemove'),
@@ -761,10 +780,10 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
       imageInput(),
       new File([new Uint8Array(BALL_IMAGE_MAX_BYTES + 1)], 'big.png', { type: 'image/png' }),
     )
-    await settle(10)
-
-    expect(container.querySelector('.opt__env--error')?.textContent).toBe(
-      i18n.t('settings.ballImageTooLarge'),
+    await waitFor(() =>
+      expect(container.querySelector('.opt__env--error')?.textContent).toBe(
+        i18n.t('settings.ballImageTooLarge'),
+      ),
     )
     expect(chromeState.local.ballImage).toBeUndefined()
     expect(syncCalls()).toHaveLength(0)
@@ -773,10 +792,11 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
   it('非图片类型被拒绝并提示', async () => {
     await mount(BASE())
     pickFile(imageInput(), new File(['hello'], 'note.txt', { type: 'text/plain' }))
-    await settle(10)
 
-    expect(container.querySelector('.opt__env--error')?.textContent).toBe(
-      i18n.t('settings.ballImageTypeError'),
+    await waitFor(() =>
+      expect(container.querySelector('.opt__env--error')?.textContent).toBe(
+        i18n.t('settings.ballImageTypeError'),
+      ),
     )
     expect(chromeState.local.ballImage).toBeUndefined()
   })
@@ -785,10 +805,11 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
     await mount(BASE())
     chromeState.failLocalSet = true
     pickFile(imageInput(), new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
-    await settle(10)
 
-    expect(container.querySelector('.opt__env--error')?.textContent).toBe(
-      i18n.t('settings.ballImageSaveFailed'),
+    await waitFor(() =>
+      expect(container.querySelector('.opt__env--error')?.textContent).toBe(
+        i18n.t('settings.ballImageSaveFailed'),
+      ),
     )
     expect(chromeState.local.ballImage).toBeUndefined()
   })
@@ -796,8 +817,7 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
   it('移除图片需先确认：取消不删、确认才把 local 置空并撤掉预览', async () => {
     await mount(BASE())
     pickFile(imageInput(), new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
-    await settle(10)
-    expect(container.querySelector('img[src^="data:image/"]')).not.toBeNull()
+    await waitFor(() => expect(container.querySelector('img[src^="data:image/"]')).not.toBeNull())
 
     const removeButton = () =>
       [...container.querySelectorAll<HTMLButtonElement>('button')].find(
@@ -833,7 +853,7 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
   it('有自定义图片时恢复悬浮球样式需确认；确认后形状回默认并清空图片', async () => {
     await mount({ ...BASE(), ballShape: 'circle' })
     pickFile(imageInput(), new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
-    await settle(10)
+    await waitFor(() => expect(container.querySelector('img[src^="data:image/"]')).not.toBeNull())
 
     fire(resetButtonOf('悬浮球样式'), 'click')
     const dialog = container.querySelector<HTMLElement>('.tk-modal')
@@ -908,12 +928,13 @@ describe('OptionsPage 配置备份：导入 / 导出', () => {
     await mount(BASE())
 
     pickFile(importInput(), new File(['{}'], 'backup.json', { type: 'application/json' }))
-    await settle(10)
 
-    expect(vi.mocked(applyBackup)).toHaveBeenCalledWith({
-      settings: imported,
-      ballImage: 'data:image/png;base64,AAAA',
-    })
+    await waitFor(() =>
+      expect(vi.mocked(applyBackup)).toHaveBeenCalledWith({
+        settings: imported,
+        ballImage: 'data:image/png;base64,AAAA',
+      }),
+    )
     // 导入后 UI 即时同步
     expect(selectText('主题')).toBe('深色')
     expect(ballToggle().getAttribute('aria-checked')).toBe('false')
@@ -935,10 +956,11 @@ describe('OptionsPage 配置备份：导入 / 导出', () => {
     await mount(BASE())
 
     pickFile(importInput(), new File(['not json'], 'backup.json', { type: 'application/json' }))
-    await settle(10)
 
-    expect(container.querySelector('.tk-toast__title')?.textContent).toBe(
-      i18n.t('settings.importInvalidJson'),
+    await waitFor(() =>
+      expect(container.querySelector('.tk-toast__title')?.textContent).toBe(
+        i18n.t('settings.importInvalidJson'),
+      ),
     )
     expect(vi.mocked(applyBackup)).not.toHaveBeenCalled()
     expect(container.querySelector('.tk-modal')).toBeNull()
@@ -954,10 +976,11 @@ describe('OptionsPage 配置备份：导入 / 导出', () => {
     await mount(BASE())
 
     pickFile(importInput(), new File(['{}'], 'backup.json', { type: 'application/json' }))
-    await settle(10)
 
-    expect(container.querySelector('.tk-toast__title')?.textContent).toBe(
-      i18n.t('settings.saveFailed'),
+    await waitFor(() =>
+      expect(container.querySelector('.tk-toast__title')?.textContent).toBe(
+        i18n.t('settings.saveFailed'),
+      ),
     )
     expect(container.querySelector('.tk-modal')).toBeNull()
   })
@@ -972,10 +995,11 @@ describe('OptionsPage 配置备份：导入 / 导出', () => {
     await mount(BASE())
 
     pickFile(importInput(), new File(['{}'], 'backup.json', { type: 'application/json' }))
-    await settle(10)
 
-    expect(container.querySelector('.tk-toast__title')?.textContent).toBe(
-      i18n.t('settings.ballImageSaveFailed'),
+    await waitFor(() =>
+      expect(container.querySelector('.tk-toast__title')?.textContent).toBe(
+        i18n.t('settings.ballImageSaveFailed'),
+      ),
     )
     expect(container.querySelector('.tk-modal')).toBeNull()
   })

@@ -78,7 +78,8 @@ export interface DetectResult {
   items?: DetectItem[]
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+// 版本段允许 1–8：v6/v7 是 RFC 9562 现行标准，v8 也已存在；variant 仍是 [89ab]。
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const HEX_RE = /^[0-9a-fA-F]+$/
 const B64_RE = /^[A-Za-z0-9+/]+={0,2}$/
 /** 形如英文单词的 4 字符全小写串：4 字符 Base64 只有 3 字节信息量，无法与这类单词区分（见 detectBase64） */

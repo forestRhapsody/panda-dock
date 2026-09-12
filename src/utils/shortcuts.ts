@@ -78,5 +78,7 @@ export function formatShortcutForDisplay(rawShortcut: string): string {
       })
       .join(' ')
   }
-  return parts.join(' + ')
+  // 非 mac 不做符号化，但每段首字母大写、其余保持原样，与 mac 分支的键名规范对齐；
+  // 不能整体大写，否则多字符键名（如 PageUp）会变成 PAGEUP。
+  return parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' + ')
 }

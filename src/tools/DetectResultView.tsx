@@ -13,7 +13,9 @@ import JsonHighlight from './JsonHighlight'
 import type { ToolId } from './registry'
 import { StatusText } from './StatusText'
 
-const KIND_LABEL: Record<DetectResult['kind'], string> = {
+// 值类型含 undefined：kind 在类型层是联合类型，但运行时可能拿到旧草稿 / 跨端消息里的脏值，
+// 取不到标签时必须走 tool.detect.unknown 兜底，而不是渲染成空白。
+const KIND_LABEL: Record<string, string | undefined> = {
   json: 'JSON',
   jwt: 'JWT',
   url: 'URL',
@@ -208,7 +210,9 @@ export default function DetectResultView({
     <div className='tw-detect'>
       <div className='tw-detect__head'>
         <StatusText kind='ok'>
-          {t('tool.detect.detected', { kind: KIND_LABEL[result.kind] })}
+          {t('tool.detect.detected', {
+            kind: KIND_LABEL[result.kind] ?? t('tool.detect.unknown'),
+          })}
         </StatusText>
 
         {hasMultiple && (
@@ -233,7 +237,9 @@ export default function DetectResultView({
         <div ref={tabsRef} className='tw-detect__tabs' role='tablist'>
           {items!.map((it, idx) => {
             const isActive = idx === activeMatchIndex
-            const label = `${idx + 1} · ${KIND_LABEL[it.kind]}`
+            // 脏 kind 的 Tab 也要有可读标签，否则只剩编号与分隔符
+            const kindText = KIND_LABEL[it.kind] ?? t('tool.detect.unknown')
+            const label = `${idx + 1} · ${kindText}`
             return (
               <button
                 key={idx}
@@ -250,7 +256,7 @@ export default function DetectResultView({
               >
                 <span className='tw-detect__tab-num'>{idx + 1}</span>
                 <span className='tw-detect__tab-sep'>·</span>
-                <span className='tw-detect__tab-kind'>{KIND_LABEL[it.kind]}</span>
+                <span className='tw-detect__tab-kind'>{kindText}</span>
               </button>
             )
           })}

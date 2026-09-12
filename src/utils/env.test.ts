@@ -103,8 +103,8 @@ describe('isExtension 的环境判定', () => {
 })
 
 /**
- * 版本号会显示在 UI 上，任何取不到的情况都必须给占位值；同时要记录 `??` 的语义——
- * 它只兜 null/undefined，不兜空串，这是与 `||` 不同的可观察行为。
+ * 版本号会显示在 UI 上，任何取不到的情况都必须给占位值；
+ * 空串与 null/undefined 一样属于「取不到」，不能把空白版本号渲染给用户。
  */
 describe('extVersion 的取值与降级', () => {
   it('无 chrome 时返回占位版本号', () => {
@@ -139,9 +139,9 @@ describe('extVersion 的取值与降级', () => {
     expect(extVersion()).toBe('0.2.0')
   })
 
-  it('version 为空串时原样返回（?? 只兜 null/undefined，此处记录现状）', () => {
+  it('version 为空串时同样回退占位版本号（空串视为取不到）', () => {
     globalWithChrome.chrome = { runtime: { getManifest: () => ({ version: '' }) } }
-    expect(extVersion()).toBe('')
+    expect(extVersion()).toBe('0.2.0')
   })
 })
 

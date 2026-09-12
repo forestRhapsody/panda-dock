@@ -201,6 +201,7 @@
       "supportedFormats": "支持格式：",
       "clickToFillSample": "点击填入示例",
       "detected": "解析为：{{kind}}",
+      "unknown": "未知类型",
       "totalMatches": "共 {{count}} 项结果",
       "none": "未识别出可解析的格式",
       "resultPlaceholder": "解析结果会显示在这里…",

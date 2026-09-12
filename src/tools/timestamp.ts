@@ -115,32 +115,35 @@ const VALID_DATE_WORDS = new Set([
   'cest',
 ])
 
-const MONTH_WORDS = new Set([
-  'jan',
-  'january',
-  'feb',
-  'february',
-  'mar',
-  'march',
-  'apr',
-  'april',
-  'may',
-  'jun',
-  'june',
-  'jul',
-  'july',
-  'aug',
-  'august',
-  'sep',
-  'sept',
-  'september',
-  'oct',
-  'october',
-  'nov',
-  'november',
-  'dec',
-  'december',
-])
+/** 英文月份缩写 / 全称 → 0 基月份下标：既当白名单，也当滚动校验的期望月份 */
+const MONTH_INDEX: Record<string, number> = {
+  jan: 0,
+  january: 0,
+  feb: 1,
+  february: 1,
+  mar: 2,
+  march: 2,
+  apr: 3,
+  april: 3,
+  may: 4,
+  jun: 5,
+  june: 5,
+  jul: 6,
+  july: 6,
+  aug: 7,
+  august: 7,
+  sep: 8,
+  sept: 8,
+  september: 8,
+  oct: 9,
+  october: 9,
+  nov: 10,
+  november: 10,
+  dec: 11,
+  december: 11,
+}
+
+const MONTH_WORDS = new Set(Object.keys(MONTH_INDEX))
 
 // 标准纯数字日期（带可选时间与时区）：年-月-日 或 年/月/日 或 年.月.日
 const STD_DATE_RE =
@@ -148,6 +151,22 @@ const STD_DATE_RE =
 // 月/日/年 或 日/月/年 或 月-日-年
 const US_DATE_RE =
   /^\d{1,2}[-/.]\d{1,2}[-/.]\d{4}(?:[ T]\d{1,2}:\d{1,2}(?::\d{1,2}(?:\.\d{1,6})?)?(?:\s*(?:Z|[+-]\d{2}:?\d{2}))?)?$/
+
+/**
+ * 用输入里的年月日反查 Date 字段，拒绝「非法日历日静默进位」。
+ * `new Date` 会把 2 月 31 日滚到 3 月，日期是否合法只能靠字段比对得出；
+ * 输入带显式时区时按 UTC 字段比对（与 4b 的既有写法一致），否则按本地字段。
+ */
+function matchesCalendarDate(date: Date, year: number, month: number, day: number, hasTz: boolean) {
+  const checkYear = hasTz ? date.getUTCFullYear() : date.getFullYear()
+  const checkMonth = hasTz ? date.getUTCMonth() : date.getMonth()
+  const checkDate = hasTz ? date.getUTCDate() : date.getDate()
+  return checkYear === year && checkMonth === month && checkDate === day
+}
+
+/** 英文日期里的显式时区标记（含 RFC 2822 的命名时区），用于决定字段比对按 UTC 还是本地 */
+const EN_TZ_RE =
+  /(?:z$|[+-]\d{2}:?\d{2}$|\b(?:gmt|utc|est|edt|cst|mst|mdt|pst|pdt|bst|cet|cest)\b)/i
 
 /** 解析日期文本：严格校验格式（中文年月日、标准数字日期、英文月份日期），避免随意文本误判 */
 export function parseCustomDate(raw: string): Date | null {
@@ -197,7 +216,8 @@ export function parseCustomDate(raw: string): Date | null {
       second < 60
     ) {
       const d = new Date(year, month, day, hour, minute, second)
-      if (!Number.isNaN(d.getTime())) return d
+      // 中文分支没有时区信息：`new Date` 会把 2 月 31 日进位到 3 月，字段对不上即非法
+      if (!Number.isNaN(d.getTime()) && matchesCalendarDate(d, year, month, day, false)) return d
     }
     return null
   }
@@ -213,7 +233,15 @@ export function parseCustomDate(raw: string): Date | null {
     const second = mixedMatch[4] ? Number(mixedMatch[4]) : 0
     if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60 && second >= 0 && second < 60) {
       const d = new Date(`${datePrefix} ${pad(hour)}:${pad(minute)}:${pad(second)}`)
-      if (!Number.isNaN(d.getTime())) return d
+      const parts = datePrefix.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+      // 混合写法同样按本地字段比对，拒绝 2025-02-31 15点30分 这类静默进位
+      if (
+        parts &&
+        !Number.isNaN(d.getTime()) &&
+        matchesCalendarDate(d, Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]), false)
+      ) {
+        return d
+      }
     }
     return null
   }
@@ -246,16 +274,17 @@ export function parseCustomDate(raw: string): Date | null {
 
     const d = new Date(normalized)
     if (!Number.isNaN(d.getTime())) {
-      const yearMatch = normalized.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)
-      if (yearMatch) {
-        const y = Number(yearMatch[1])
-        const m = Number(yearMatch[2]) - 1
-        const day = Number(yearMatch[3])
+      const isoParts = normalized.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)
+      const usParts = normalized.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/)
+      const expected = isoParts
+        ? { y: Number(isoParts[1]), m: Number(isoParts[2]) - 1, day: Number(isoParts[3]) }
+        : usParts
+          ? { y: Number(usParts[3]), m: Number(usParts[1]) - 1, day: Number(usParts[2]) }
+          : null
+      // 带时间的数字日期也按字段比对：US 风格（月在前）此前漏掉校验，02/31/2025 会静默滚到 3 月
+      if (expected) {
         const hasTz = /(?:Z|[+-]\d{2}:?\d{2})$/.test(normalized)
-        const checkYear = hasTz ? d.getUTCFullYear() : d.getFullYear()
-        const checkMonth = hasTz ? d.getUTCMonth() : d.getMonth()
-        const checkDate = hasTz ? d.getUTCDate() : d.getDate()
-        if (checkYear !== y || checkMonth !== m || checkDate !== day) {
+        if (!matchesCalendarDate(d, expected.y, expected.m, expected.day, hasTz)) {
           return null
         }
       }
@@ -284,6 +313,27 @@ export function parseCustomDate(raw: string): Date | null {
 
     const d = new Date(trimmed)
     if (!Number.isNaN(d.getTime()) && d.getFullYear() >= 1900 && d.getFullYear() <= 2200) {
+      // 英文分支同样要防静默进位（Feb 30 会被 Date 滚到 3 月）。
+      // 先把时间部分剥掉，否则 HH:MM 与 AM/PM 小时里的数字会被误当成「日」。
+      const datePart = trimmed
+        .replace(/\d{1,2}:\d{1,2}(?::\d{1,2})?(?:\.\d+)?/g, ' ')
+        .replace(/\b\d{1,2}\s*(?:am|pm)\b/gi, ' ')
+      const dayMatch = datePart.match(/\b\d{1,2}\b/)
+      const monthWord = words.find((w) => MONTH_WORDS.has(w.toLowerCase()))
+      const yearWord = numbers.find((n) => n.length === 4 && Number(n) >= 1900 && Number(n) <= 2200)
+      const expectedMonth = monthWord ? MONTH_INDEX[monthWord.toLowerCase()] : undefined
+      if (expectedMonth !== undefined) {
+        // 没写「日」时 Date 默认 1 号（如 Jan 2025），按 1 号比对即可。
+        // 年份优先取输入里的 4 位年份；没有时回填 Date 自己选定的年份（带命名时区要用 UTC 字段），
+        // 这样校验只关注「月 / 日是否被滚动」，不依赖上方 hasYear 守卫的当前写法。
+        const expectedDay = dayMatch ? Number(dayMatch[0]) : 1
+        const hasTz = EN_TZ_RE.test(trimmed)
+        const ownYear = hasTz ? d.getUTCFullYear() : d.getFullYear()
+        const expectedYear = yearWord ? Number(yearWord) : ownYear
+        if (!matchesCalendarDate(d, expectedYear, expectedMonth, expectedDay, hasTz)) {
+          return null
+        }
+      }
       return d
     }
   }

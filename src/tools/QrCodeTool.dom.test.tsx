@@ -574,7 +574,7 @@ describe('QrCodeTool：Logo 上传、裁剪与移除', () => {
     expect(mockedGenerate).not.toHaveBeenCalled()
   })
 
-  it('确认裁剪：写入 Logo 与形状并锁定纠错等级为 H，移除后恢复可调', async () => {
+  it('确认裁剪：写入 Logo 与形状并锁定纠错等级为 H，移除后回落到用户原等级', async () => {
     await renderTool()
     await generateFrom('hello')
     openCustomize()
@@ -604,12 +604,41 @@ describe('QrCodeTool：Logo 上传、裁剪与移除', () => {
     clickButton(i18n.t('tool.qrcode.removeLogo'))
     await flush()
 
+    // 移除后不能把强制 H 留在原地：必须回落到应用 Logo 前的默认等级 M
     expect(mockedGenerate).toHaveBeenLastCalledWith(
       'hello',
-      expect.objectContaining({ logoUrl: null, logoSizeRatio: 0.18 }),
+      expect.objectContaining({ errorCorrectionLevel: 'M', logoUrl: null, logoSizeRatio: 0.18 }),
     )
     expect(container.querySelector('.tw-qr__logo-thumb')).toBeNull()
     expect(selectById('tw-qr-ec').disabled).toBe(false)
+  })
+
+  it('移除 Logo 回落的是用户手动改过的等级（Q），而不是默认 M', async () => {
+    await renderTool()
+    await generateFrom('hello')
+
+    // 上传 Logo 前用户把纠错等级手动改成 Q
+    chooseOption(selectById('tw-qr-ec'), 'Q (25%)')
+    await flush()
+    expect(mockedGenerate).toHaveBeenLastCalledWith(
+      'hello',
+      expect.objectContaining({ errorCorrectionLevel: 'Q' }),
+    )
+
+    openCustomize()
+    await uploadLogoAndConfirm()
+    expect(mockedGenerate).toHaveBeenLastCalledWith(
+      'hello',
+      expect.objectContaining({ errorCorrectionLevel: 'H' }),
+    )
+
+    clickButton(i18n.t('tool.qrcode.removeLogo'))
+    await flush()
+
+    expect(mockedGenerate).toHaveBeenLastCalledWith(
+      'hello',
+      expect.objectContaining({ errorCorrectionLevel: 'Q', logoUrl: null }),
+    )
   })
 
   it('「重新裁剪」用已有的裁剪源重新打开弹窗', async () => {

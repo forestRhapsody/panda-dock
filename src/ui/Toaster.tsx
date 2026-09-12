@@ -23,8 +23,9 @@ export default function Toaster({ position = 'bottom' }: ToasterProps) {
     return toast.subscribe(setItems)
   }, [])
 
-  if (items.length === 0) return null
-
+  // 空列表也必须常驻 live region 容器：若容器随内容一起创建销毁，读屏可能在
+  // 第一次公告发出前还没订阅到该区域，导致首条通知漏播。空容器是 flex 布局且
+  // pointer-events: none，内部无通知时不占位、不遮挡交互，故不改变现有定位/类名契约。
   return (
     <div
       className={`tk-toaster tk-toaster--${position}`}

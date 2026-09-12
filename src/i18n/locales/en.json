@@ -201,6 +201,7 @@
       "supportedFormats": "Supported:",
       "clickToFillSample": "Click to fill sample",
       "detected": "Parsed as: {{kind}}",
+      "unknown": "Unknown type",
       "totalMatches": "{{count}} results",
       "none": "No parsable format detected",
       "resultPlaceholder": "Parsed result appears here…",

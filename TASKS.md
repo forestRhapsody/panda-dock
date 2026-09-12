@@ -21,44 +21,46 @@
 | `[!]` | 阻塞（需人介入） |
 | `[?]` | 待确认 |
 
-## 遗留复验（来自已完成任务，均已在提交 `6edba37` 中落地，但**未做真实浏览器实测**）
+## 遗留复验（来自已完成任务，**未做真实浏览器实测**或受测试环境限制）
 
 - `A5` 入口缺 `#root` 的兜底：已通过反混淆构建产物确认 `console.error` 分支进入 `dist`；浏览器无法自然触发（入口 HTML 必然带 `#root`）。
 - `A6` `toast` 的非法 duration 回落与定时器清理：可观测性有限，仅由 `toast.test.ts` 覆盖。
-- `A8` 裁剪导出的失败提示：正常路径已实测；失败路径需 DevTools 覆盖 `getContext` 才能触发（当时未能作用于应用 realm），仅由单测覆盖。
-- `A13` handoff 自动格式化：仅单测覆盖。复核方式：智能解析粘贴 `{"b":2,"a":1}` →「在 JSON 工具中打开」→ 结果区应直接显示格式化好的 JSON。
+- `A8` 裁剪导出的失败提示：正常路径已实测；失败路径需 DevTools 覆盖 `getContext` 才能触发，仅由单测覆盖。
+- T4 `#11`（抽屉 Escape 与内层浮层让行）、`#12`（划选面板 resize/scroll 重定位）：机制由 happy-dom 覆盖，真实浏览器里「划选面板与抽屉同开时 Escape 只关面板」「滚动时浮层跟随」未实测。
+- T4 `#15`（live region 改动）：读屏实际播报行为需在真实辅助技术下确认。
 - 测试侧限制（happy-dom 无排版）：真实像素高度/滚动条、dnd-kit 真实拖拽序列、真实文件选择与 `FileReader.onerror`、canvas 真实栅格；相关用例只断言可确定的分支。
 
 ## 任务列表
 
-- [~] **T4 B 类疑点：需产品/交互拍板（17 条，已完成 4 条）**
-  - 描述：这些改动的「修法」取决于产品语义或交互策略，没有唯一正确答案。每条给出「建议」供直接采纳或覆盖；决定后按既有纪律执行（改源码 + 同步被锁定的断言 + 补会在旧代码上变红的回归用例 + 满门禁）。
-  - 验收标准：每条先记录决定，再改代码；改完 `pnpm format && pnpm lint && pnpm type-check && pnpm test && pnpm build` 全绿。
-  - 依赖：无（前置的测试补齐与 A 类修复已完成并提交）
-  - 决定记录：**进行中**——首批按用户决定「先做前 3 条大的」执行完毕（原第 1 / 3 / 7 条），第 7 条顺带解决了原第 8 条；其余 13 条待拍板
-  - 已完成（首批）：
+- [x] **T4 B 类疑点：需产品/交互拍板（17 条，全部完成）**
+  - 描述：这些改动的「修法」取决于产品语义或交互策略，没有唯一正确答案。逐条先记录决定，再按既有纪律执行：改源码 + 同步被锁定的断言 + 补会在旧代码上变红的回归用例 + 满门禁。
+  - 验收标准：`pnpm format && pnpm lint && pnpm type-check && pnpm test && pnpm build` 全绿。
+  - 依赖：无
+  - 结果：**17 条全部落地**（首批 4 条见提交 `ed5cbe2`，其余见后续提交），测试 1841 → **1856 例**；门禁 `format / lint / type-check / test(76 files / 1856) / build` 全绿。
 
-    | 原编号 | 文件 | 决定与实现 | 测试变更 |
-    | --- | --- | --- | --- |
-    | 1 | `src/tools/timestamp.ts` | date-only（`YYYY-MM-DD`）按**本地零点**解析：新增 4a 分支，用 `new Date(0)` + `setHours(0,0,0,0)` + `setFullYear(y, m, d)` 构造，并保留本地字段比对（仍拒绝 2 月 31 日）。修复负 UTC 偏移时区把 `2025-01-01` 误判为非法的问题 | `timestamp.test.ts` 改为断言本地日历字段且与 `new Date(2025,0,1)` 等时；`detect.test.ts` 两个 date-only 用例由「UTC 零点 / 时区相关分支」改为本地零点 |
-    | 3 | `src/tools/cookieRaw.ts`（原清单误写为 `src/utils/`，已纠正） | 新增 `splitCookieSegments()`：按 `;` 切分但**跳过双引号内**的分号；`parseSetCookieLine` 与 `parseRawCookie` 的文本分支都改用它。引号原样保留在值里，Raw 模式可原样往返 | `cookieRaw.test.ts`：新增 3 例（截断回归、带属性的完整行、序列化↔解析往返），并把原「引号内的分号会被误切（现状限制）」改为断言完整值 |
-    | 7 | `src/tools/detect.ts` | 新增 `KNOWN_TLDS` 白名单 + `isKnownBareDomain()`，在**两条**裸域名路径上生效：`extractUrls` 的裸域名循环、以及 `detectUrl` 的纯输入分支（后者是关键——只改前者时 `README.md` 仍会被判成网址） | `detect.test.ts`：新增「常见文件名不再被当成网址」（同时断言 `example.com` 仍识别），并更新两段式 token / payload 非 JSON 两个用例 |
-    | 8（顺带解决） | `src/tools/detect.ts` | 原「自由文本中的 JWT 会额外产出重叠的伪 URL 项」被第 7 条一并解决：base64 片段不再被当成 TLD，伪 URL 消失 | 「句子中的 JWT 不再额外产生重叠的伪 URL 项」断言不再出现 url 项、且 jwt 项仍在 |
+    | 原编号 | 决定 | 实现 / 验证 |
+    | --- | --- | --- |
+    | 1 | date-only 按**本地零点**解析 | 新增 4a 分支（`setHours(0,0,0,0)` + `setFullYear`），保留字段比对拒绝 `2025-02-31`；负 UTC 偏移时区不再误判。**浏览器已实测** |
+    | 3 | cookie **引号感知切分** | `splitCookieSegments()` 跳过双引号内的 `;`，引号原样保留以支持 Raw 往返。**浏览器已实测** |
+    | 7 | 裸域名 **TLD 白名单** | `KNOWN_TLDS` + `isKnownBareDomain()`，在 `extractUrls` 与 `detectUrl` **两处**生效（只改前者时 `README.md` 仍误判）。**浏览器已实测**。取舍：漏报冷门后缀（`example.zip`/`example.md`） |
+    | 8 | （由 7 顺带解决） | base64 片段不再被当成 TLD，自由文本中的 JWT 不再产生重叠伪 URL 项 |
+    | 2 | 三个分支**统一拒绝日期滚动** | 新增 `matchesCalendarDate()` 复用到中文/混合/US/英文月份分支；`MONTH_WORDS` 改由 `MONTH_INDEX` 派生。顺带覆盖混合写法 `2025-02-31 15点30分`。红→绿：旧代码 5 例失败 |
+    | 4 | cookie 序列化**闭环** | 空 name → 返回 `''`（不再产出 parse 端必拒的 `=value`）；`expirationDate != null && !Number.isNaN()`，`0` 照常输出 1970 的 Expires。红→绿：3 例 |
+    | 5 | 移除 Logo 后**回落用户原等级** | `ecLevelBeforeLogoRef` 仅在未记录时记录一次，`removeLogo` 回落并清空；避免重复上传后记录被 H 覆盖。红→绿：2 例 |
+    | 6 | `cropSourceUrl` **保持现状** | 仅在 `handleCropConfirm` 补注释：刻意复用同一 objectURL 支持「重新裁剪」，属有界驻留（下次上传/移除/卸载时 revoke）。无行为改动 |
+    | 9 | UUID 补 **v6/v7** | `UUID_RE` 版本段 `[1-5]` → `[1-8]`，variant 仍 `[89ab]`。红→绿：2 例 |
+    | 10 | 未知 kind **兜底文案** | `KIND_LABEL` 放宽为 `Record<string, string \| undefined>` + 两处 `?? t('tool.detect.unknown')`，zh/en 各加 key。红→绿：2 例 |
+    | 11 | 抽屉 **Escape 关闭**（带内层浮层守卫） | `INNER_LAYER_SELECTOR = '.tk-modal, .tk-select-popup, .tek-detect-panel'`；`document` **捕获阶段**监听（TkSelect 会在冒泡时同步卸载下拉，冒泡阶段查不到）；命中守卫时不 `preventDefault`，把按键让给内层。反转 2 条「现状」断言 + 新增 3 条守卫用例 |
+    | 12 | 划选面板 **resize/scroll 重定位** | 抽出 `anchorPos()` 供挂载/重定位共用；`draggedRef` 区分「跟随锚点」与「只夹回视口」；rAF 节流；`scroll` 用捕获阶段并忽略面板内部滚动。新增 3 条回归（先红后绿） |
+    | 13 | `onResizeEnd` **改读 ref** | `widthRef` 成为宽度的单一数据源（读取/收敛/拖拽/方向键都写入），消除同批次事件写旧值的隐患。新增「同批次 pointermove+pointerup 写最终宽度」 |
+    | 14 | Options **保持立即写入** | 不引入脏标记；改 `AGENTS.md` §5 为两种合法写法（高频控件用脏标记、显式表单操作可直接 `saveSettings`），消除规则与实现的矛盾 |
+    | 15 | 补 **live region** | `Toaster` 空列表也常驻容器（避免首条公告漏播）；`StatusText` 加 `role="status"`。更新 4 条冲突断言（先红后绿） |
+    | 16 | `extVersion` 空串回退 | `??` → `||`，`version === ''` 也返回占位 `'0.2.0'`。红→绿：1 例 |
+    | 17 | 快捷键非 mac **首字母大写** | `alt+shift+d` → `Alt + Shift + D`；多字符键名（`PageUp`）保持原样；mac 分支不动。红→绿：2 例 |
 
-    - 验证：上述 11 条新增/改写的断言在**旧代码上全部变红**（实测确认），新代码全绿；门禁 `format / lint / type-check / test(76 files / 1841 tests) / build` 全绿。
-    - 浏览器复验（维护者实测）：✅ 三条均符合预期——`2025-01-01` 正常识别为时间戳；Cookie Raw 模式输入 `note="a;b"; theme=dark` 解析出**两个** Cookie 且 `note` 的值为 `"a;b"`（修复前被截成 `"a`）；`README.md` 不再识别为网址，`example.com` 仍识别。
-    - 取舍备注（第 7 条）：白名单意味着**漏报冷门后缀**（如 `example.zip`、`example.md` 不再识别为网址）。这是刻意选择——宁可漏报，也不把 `README.md` 这类文件名当网址；需要新后缀时在 `KNOWN_TLDS` 补充。
-  - 待拍板（13 条，编号沿用原清单以便追溯）：
-    2. `src/tools/timestamp.ts:199` — 中文 / US / 英文月份分支不校验滚动（`2025年2月31日`→3月3日、`Feb 30, 2025`→3月2日），而 `YYYY-MM-DD` 分支会拒绝。（建议：**统一为拒绝**，静默进位是数据错误）
-    4. `src/tools/cookieRaw.ts` 序列化 — `expirationDate === 0` 被省略、空 name 输出 `=1`（parse 端拒绝），序列化↔解析不闭环。（建议：**`0` 视为合法时间戳照常输出 Expires；空 name 返回空串表示不可序列化**）
-    5. `src/tools/QrCodeTool.tsx:216` vs `232-243` — 应用 Logo 时强制 `ecLevel='H'`，移除 Logo 后不回落。（建议：**回落到用户原等级**，用 ref 记住强制 H 之前的值）
-    6. `src/tools/QrCodeTool.tsx:211-218` — `handleCropConfirm` 不清理 `cropSourceUrl`（为支持「重新裁剪」复用同一 objectURL）。（建议：**保持现状**，属有界驻留且会在下次上传/移除/卸载时回收；只补注释）
-    9. `src/tools/detect.ts` — UUID 只认 v1–v5（v6/v7 退化为 hex 候选）；`kind:'urls'` 只存在于类型与 `KIND_LABEL`、`detect` 从不产出。（建议：**补 v6/v7 正则**；`kind:'urls'` **保留**，删它属纯清理、收益低）
-    10. `src/tools/DetectResultView.tsx:16` — `KIND_LABEL` 是 `Record<DetectResult['kind'], string>`，运行时脏 kind 渲染成「解析为：」+ 空白。（建议：**加兜底文案**，新增 `tool.detect.unknown`）
-    11. `src/content/Drawer.tsx` / `src/content/ToolkitOverlay.tsx` — 抽屉无 Escape / 遮罩关闭，目前只有关闭按钮、消息、`Alt+Shift+D`。（建议：**加 Escape 关闭，但仅当没有 `.tk-modal` 内层弹窗时**；不加遮罩）
-    12. `src/content/SelectionDetectPanel.tsx` — 定位只在挂载/选区变化时执行，resize/滚动不重定位，面板可能被挤出视口。（建议：**加 resize/scroll 重定位**，带节流）
-    13. `src/content/Drawer.tsx` `onResizeEnd` — 用闭包 `width` 持久化，同批次事件下可能写旧值。（建议：**改 ref 读取**）
-    14. `src/options/OptionsPage.tsx` `persist` — 每次改动立即 `saveSettings(完整 Settings)`，未用 §5「脏标记 + useEffect」。（建议：**保持立即写入**，并给 AGENTS §5 补一句「设置页表单控件可直接写入」）
-    15. `src/ui/Toaster.tsx`（空列表 `return null`，live region 随内容销毁）+ `src/tools/StatusText.tsx`（无 `role="status"`/`aria-live`）。（建议：**补**——Toaster 改为常驻 live region，StatusText 加 `role="status"`）
-    16. `src/utils/env.ts` `extVersion` — 用 `??`，`version === ''` 时返回空串而非占位 `0.2.0`。（建议：**改**，空串也回退占位值）
-    17. `src/utils/shortcuts.ts` `formatShortcutForDisplay` — 非 mac 分支不改大小写（`alt+shift+d`），mac 分支会大写。（建议：**非 mac 统一大写**为 `Alt + Shift + D`）
+  - 额外交付（本轮发现并修掉）：**`OptionsPage.dom.test.tsx` 偶发红**——`pickFile` 之后的 `FileReader → chrome.storage → setState` 异步链在负载下会超过固定 `settle(10)`。新增 `waitFor()` 条件轮询并替换 10 处固定等待。验证：全量连跑 4 轮 + 3 个并发单文件，均全绿。
+  - 后续可选项（本轮**刻意未做**，需要时再拍板）：
+    1. 无年份英文日期（`Feb 28`）仍返回 `null`：英文分支有「必须含 4 位年份（1900–2200）」守卫，删掉会让 `Feb 28` 静默落到 2001 年、并让 `Jan 01, 25` 变合法。**决定：保留严格校验**。
+    2. `CookieEditModal` 表单态 name 为空时切到 Raw 得到空串（原为 `=value`）：属 `#4` 的预期结果（`=value` 在 Raw 解析端必被拒）；若要更友好可禁用 Raw 页签或给提示。
+    3. 裸域名白名单的漏报面：`example.zip` / `example.md` 不再识别为网址；需要时在 `KNOWN_TLDS` 补充。
+    4. `detect` 的 `kind:'urls'` 仍只存在于类型与 `KIND_LABEL`、从不产出（`#9` 决定保留，删它属纯清理）。

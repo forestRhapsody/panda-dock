@@ -94,6 +94,10 @@ export default function QrCodeTool() {
   const logoUrlRef = useRef<string | null>(null)
   const cropSourceUrlRef = useRef<string | null>(null)
   const imagePreviewUrlRef = useRef<string | null>(null)
+  // 记住「应用 Logo 强制纠错等级 H 之前」的用户等级，移除 Logo 时回落。
+  // 只在尚未记录时记录一次：若每次都覆盖，重新上传 Logo（等级仍被锁定为 H）会把
+  // 记录改写成 H，移除后就再也回不到用户原本的等级了。
+  const ecLevelBeforeLogoRef = useRef<QrErrorCorrectionLevel | null>(null)
 
   // —— 解析模式状态 ——
   const [decodeLoading, setDecodeLoading] = useState(false)
@@ -208,11 +212,14 @@ export default function QrCodeTool() {
   }
 
   // 生成：确认裁剪完成
+  // 刻意不清理 cropSourceUrl：保留同一个 objectURL，用户点「重新裁剪」时可直接复用，
+  // 无需重新读文件。它会在下次上传 / 移除 Logo / 组件卸载时被 revoke，属有界驻留。
   function handleCropConfirm(croppedDataUrl: string, selectedShape: QrLogoShape) {
     if (logoUrlRef.current) URL.revokeObjectURL(logoUrlRef.current)
     logoUrlRef.current = null
     setLogoUrl(croppedDataUrl)
     setLogoShape(selectedShape)
+    if (ecLevelBeforeLogoRef.current === null) ecLevelBeforeLogoRef.current = ecLevel
     setEcLevel('H')
     setShowCropModal(false)
   }
@@ -240,6 +247,10 @@ export default function QrCodeTool() {
     }
     setCropSourceUrl(null)
     setLogoUrl(null)
+    // 回落到应用 Logo 前的用户等级（从未记录过则视为默认 M），并清空记录，
+    // 让下次上传 Logo 重新记住当时的等级，而不是一直沿用陈旧值。
+    setEcLevel(ecLevelBeforeLogoRef.current ?? 'M')
+    ecLevelBeforeLogoRef.current = null
   }
 
   // 生成：下载图片

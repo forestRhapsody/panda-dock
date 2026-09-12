@@ -15,7 +15,8 @@ export function isExtension(): boolean {
 export function extVersion(): string {
   if (typeof chrome === 'undefined') return '0.2.0'
   try {
-    return chrome.runtime.getManifest().version ?? '0.2.0'
+    // 用 || 而非 ??：旧内核可能返回空串 version，空串同样视为「取不到」，回退占位值
+    return chrome.runtime.getManifest().version || '0.2.0'
   } catch {
     return '0.2.0'
   }

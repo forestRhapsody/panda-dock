@@ -227,13 +227,20 @@ function errorOf(raw: string): string {
 }
 
 describe('serializeCookieToRaw：属性组合与格式边界', () => {
-  it('Expires 用 UTC 字符串；expirationDate 为 0 视为会话 Cookie 被省略', () => {
+  it('Expires 用 UTC 字符串；非法值（NaN）不输出', () => {
     const exp = Date.UTC(2031, 5, 15, 12, 30, 45) / 1000
     expect(serializeCookieToRaw({ name: 't', value: '1', expirationDate: exp })).toBe(
       `t=1; Expires=${new Date(exp * 1000).toUTCString()}`,
     )
-    // 0 是 falsy：`if (cookie.expirationDate)` 会跳过，导致会话 Cookie（现状，往返会丢 0）
-    expect(serializeCookieToRaw({ name: 't', value: '1', expirationDate: 0 })).toBe('t=1')
+    // 非法时间戳仍不产出 Expires（保留原有护栏）
+    expect(serializeCookieToRaw({ name: 't', value: '1', expirationDate: Number.NaN })).toBe('t=1')
+  })
+
+  it('expirationDate: 0（1970-01-01）是合法时间戳，照常输出 1970 的 Expires', () => {
+    // 旧代码用 `if (cookie.expirationDate)` 的真值判断，会把 0 静默省略成会话 Cookie
+    expect(serializeCookieToRaw({ name: 't', value: '1', expirationDate: 0 })).toBe(
+      't=1; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+    )
   })
 
   it('SameSite 三档首字母大写，unspecified 不输出', () => {
@@ -279,11 +286,14 @@ describe('serializeCookieToRaw：属性组合与格式边界', () => {
     expect(serializeCookieToRaw({ name: 't', value: 'x;y' })).toBe('t=x;y')
   })
 
-  it('只有 name 或只有 value 时仍输出半残串（现状；parse 端会拒绝这种串）', () => {
+  it('name 为空时返回空串（不产出 parse 端会拒绝的 =value），value 为空仍可序列化', () => {
+    // 旧代码只看「name 与 value 同时为空」，name 空而 value 非空时会输出 `=1`；
+    // parse 端的 eqIdx <= 0 会拒绝它 —— 序列化↔解析不闭环。
+    expect(serializeCookieToRaw({ name: '', value: '1' }, 'header')).toBe('')
+    expect(serializeCookieToRaw({ name: '', value: '1' })).toBe('')
+    expect(serializeCookieToRaw({ name: '  ', value: '1' })).toBe('')
+    // value 为空但 name 合法仍可序列化，parse 端也能读回
     expect(serializeCookieToRaw({ name: 't', value: '' }, 'header')).toBe('t=')
-    expect(serializeCookieToRaw({ name: '', value: '1' }, 'header')).toBe('=1')
-    // 全空才走空串分支
-    expect(serializeCookieToRaw({ name: '  ', value: '' }, 'header')).toBe('')
   })
 
   it('header 格式忽略所有属性，只保留 name=value', () => {
@@ -338,13 +348,15 @@ describe('serializeCookieToRaw：属性组合与格式边界', () => {
     })
   })
 
-  it('往返的两处已知损失：unspecified 退化成 lax、expirationDate=0 退化成会话 Cookie', () => {
+  it('往返：expirationDate=0 不再丢失，unspecified 仍退化成 lax', () => {
+    // 0 输出 Expires 后能原样解析回 0（旧代码序列化时丢掉，读回是会话 Cookie）
+    const zeroExp = cookiesOf(serializeCookieToRaw({ name: 't', value: '1', expirationDate: 0 }))
+    expect(zeroExp[0].expirationDate).toBe(0)
+
     const unspecified = cookiesOf(
       serializeCookieToRaw({ name: 't', value: '1', sameSite: 'unspecified' }),
     )
     expect(unspecified[0].sameSite).toBe('lax')
-    const zeroExp = cookiesOf(serializeCookieToRaw({ name: 't', value: '1', expirationDate: 0 }))
-    expect(zeroExp[0].expirationDate).toBeUndefined()
 
     // SameSite=None 没带 Secure 时，解析端会补上 Secure（安全的保守行为）
     const none = cookiesOf(

@@ -98,27 +98,45 @@ function closeButton(): HTMLButtonElement {
   return btn
 }
 
+function makePointerEvent(
+  type: string,
+  init: { x: number; y?: number; button?: number },
+): PointerEvent {
+  return new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    clientX: init.x,
+    clientY: init.y ?? 300,
+    button: init.button ?? 0,
+    buttons: 1,
+    pointerId: 1,
+    pointerType: 'mouse',
+    isPrimary: true,
+  })
+}
+
 function dispatchPointer(
   el: Element,
   type: string,
   init: { x: number; y?: number; button?: number },
 ) {
   act(() => {
-    el.dispatchEvent(
-      new PointerEvent(type, {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        clientX: init.x,
-        clientY: init.y ?? 300,
-        button: init.button ?? 0,
-        buttons: 1,
-        pointerId: 1,
-        pointerType: 'mouse',
-        isPrimary: true,
-      }),
-    )
+    el.dispatchEvent(makePointerEvent(type, init))
   })
+}
+
+function pressEscape(): KeyboardEvent {
+  const event = new KeyboardEvent('keydown', {
+    key: 'Escape',
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+  })
+  act(() => {
+    document.dispatchEvent(event)
+  })
+  return event
 }
 
 function pressKey(key: string, shiftKey = false) {
@@ -213,17 +231,51 @@ describe('Drawer 关闭', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('Escape 不会由 Drawer 自身关闭（当前实现没有键盘关闭逻辑，记录现状）', async () => {
+  it('Escape 关闭抽屉（监听只在抽屉开启期间生效）', async () => {
     const onClose = vi.fn()
     await mount(onClose)
 
-    act(() => {
-      document.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
-      )
-    })
+    const event = pressEscape()
 
+    expect(onClose).toHaveBeenCalledTimes(1)
+    // 关掉后不再让宿主页面继续处理这个按键
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('抽屉内存在 .tk-modal 内层弹窗时 Escape 不关抽屉，把按键让给内层弹窗', async () => {
+    const onClose = vi.fn()
+    await mount(onClose)
+
+    // 构造内层弹窗（ConfirmDialog / 裁剪弹窗都用 .tk-modal）
+    const modal = document.createElement('div')
+    modal.className = 'tk-modal'
+    container.appendChild(modal)
+
+    pressEscape()
     expect(onClose).not.toHaveBeenCalled()
+
+    // 弹窗关掉后 Escape 恢复关闭抽屉
+    modal.remove()
+    pressEscape()
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('TkSelect 下拉展开时 Escape 先关下拉，不关抽屉', async () => {
+    const onClose = vi.fn()
+    await mount(onClose)
+
+    // TkSelect 下拉是 portal 到抽屉所在 root 的 .tk-select-popup
+    const popup = document.createElement('div')
+    popup.className = 'tk-select-popup'
+    container.appendChild(popup)
+
+    pressEscape()
+    expect(onClose).not.toHaveBeenCalled()
+
+    // 下拉收起后 Escape 才轮到抽屉：证明上面的「不关」确实是下拉守卫生效，而不是没监听
+    popup.remove()
+    pressEscape()
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -292,6 +344,24 @@ describe('Drawer 宽度记忆与夹取', () => {
     // 向左拖 50px → 400 + 50 = 450
     expect(drawerEl().style.width).toBe('450px')
     expect(store[WIDTH_KEY]).toBe(450)
+  })
+
+  it('同一批次内连续 resize 事件后持久化的是最终宽度（经 ref 读取，不受未提交渲染影响）', async () => {
+    await mount()
+    const handle = handleEl()
+
+    dispatchPointer(handle, 'pointerdown', { x: 500 })
+    // pointermove 与 pointerup 放在同一个 act 批次：React 还没提交 pointermove 的 setState，
+    // 若 onResizeEnd 从事件闭包读 width 会拿到 400，持久化就会写回旧值。
+    act(() => {
+      handle.dispatchEvent(makePointerEvent('pointermove', { x: 420 }))
+      handle.dispatchEvent(makePointerEvent('pointerup', { x: 420 }))
+    })
+    await flush()
+
+    // 向左拖 80px → 400 + (500 - 420) = 480
+    expect(drawerEl().style.width).toBe('480px')
+    expect(store[WIDTH_KEY]).toBe(480)
   })
 
   it('非左键按下不启动拖拽（不会误改宽度）', async () => {

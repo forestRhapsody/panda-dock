@@ -221,10 +221,17 @@ describe('formatShortcutForDisplay 的平台差异', () => {
     expect(formatShortcutForDisplay('Alt+Shift+D')).toBe('Alt + Shift + D')
   })
 
-  it('非 mac 不做符号化、也不改大小写', () => {
+  it('非 mac 不做符号化，但每段首字母大写（与 mac 的键名大小写规范对齐）', () => {
     stubNavigator({ platform: 'Win32', userAgent: '' })
-    expect(formatShortcutForDisplay('alt+shift+d')).toBe('alt + shift + d')
-    expect(formatShortcutForDisplay('Meta+Option+K')).toBe('Meta + Option + K')
+    expect(formatShortcutForDisplay('alt+shift+d')).toBe('Alt + Shift + D')
+    expect(formatShortcutForDisplay('meta+option+k')).toBe('Meta + Option + K')
+  })
+
+  it('非 mac 只大写首字母，多字符键名保持原样（PageUp 不能变成 PAGEUP）', () => {
+    stubNavigator({ platform: 'Win32', userAgent: '' })
+    expect(formatShortcutForDisplay('PageUp')).toBe('PageUp')
+    expect(formatShortcutForDisplay('ctrl+PageDown')).toBe('Ctrl + PageDown')
+    expect(formatShortcutForDisplay('f5')).toBe('F5')
   })
 
   it('非 mac 同样去掉部件两侧空格', () => {

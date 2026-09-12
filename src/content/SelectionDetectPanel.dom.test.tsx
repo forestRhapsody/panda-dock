@@ -101,6 +101,64 @@ function pointerDownOutside() {
   })
 }
 
+/**
+ * resize/scroll 的重定位走 requestAnimationFrame 节流；happy-dom 的 rAF 是宏任务，
+ * 所以必须再等一帧才能观察到定位结果。链式等待保证排在源码回调之后（FIFO）。
+ */
+async function flushReflow() {
+  await act(async () => {
+    await new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => resolve())
+    })
+  })
+}
+
+/** 触发一次窗口 resize 并等节流后的重定位落地 */
+async function fireResize() {
+  act(() => {
+    window.dispatchEvent(new Event('resize'))
+  })
+  await flushReflow()
+}
+
+/** 触发一次页面滚动（源码在捕获阶段监听，scroll 事件本身不冒泡）并等重定位落地 */
+async function fireScroll() {
+  act(() => {
+    window.dispatchEvent(new Event('scroll'))
+  })
+  await flushReflow()
+}
+
+/** 模拟左键按住标题栏从 (fromX, fromY) 拖到 (toX, toY) */
+function dragPanel(fromX: number, fromY: number, toX: number, toY: number) {
+  const head = container.querySelector<HTMLElement>('.tek-detect-panel__head')
+  if (!head) throw new Error('未找到面板标题栏')
+  const fire = (type: string, clientX: number, clientY: number) => {
+    act(() => {
+      head.dispatchEvent(
+        new PointerEvent(type, {
+          button: 0,
+          buttons: 1,
+          bubbles: true,
+          composed: true,
+          pointerId: 1,
+          clientX,
+          clientY,
+        }),
+      )
+    })
+  }
+  fire('pointerdown', fromX, fromY)
+  fire('pointermove', toX, toY)
+  fire('pointerup', toX, toY)
+}
+
+/** happy-dom 不排版，offsetWidth/Height 恒为 0；用受控几何让 clampPos 走与真实布局一致的分支 */
+function patchPanelSize(el: HTMLElement, width: number, height: number) {
+  Object.defineProperty(el, 'offsetWidth', { configurable: true, get: () => width })
+  Object.defineProperty(el, 'offsetHeight', { configurable: true, get: () => height })
+}
+
 beforeEach(() => {
   originalWidth = window.innerWidth
   originalHeight = window.innerHeight
@@ -342,6 +400,57 @@ describe('SelectionDetectPanel 定位', () => {
     const panel = renderPanel({ text: 'hello world', targetRect, onClose: () => {} })
 
     expect(panel.style.left).toBe(`${PAD}px`)
+  })
+
+  it('窗口 resize 后按锚点重新定位，不再停留在挂载时的旧位置（回归）', async () => {
+    const targetRect = { left: 400, top: 100, right: 500, bottom: 120, width: 100, height: 20 }
+    const panel = renderPanel({ text: 'hello world', targetRect, onClose: () => {} })
+    // 挂载时选区下方空间充足：120 + GAP
+    expect(panel.style.top).toBe(`${120 + GAP}px`)
+
+    // 视口变矮到 200 后上下都放不下面板，按锚点重算会夹到顶部 PAD
+    setViewport(1024, 200)
+    await fireResize()
+
+    expect(panel.style.top).toBe(`${PAD}px`)
+  })
+
+  it('页面滚动时同样按锚点重新定位（回归）', async () => {
+    const panel = renderPanel({ text: '', position: 'top-right', onClose: () => {} })
+    expect(panel.style.left).toBe(`${1024 - FALLBACK_W - 24}px`)
+
+    // happy-dom 既无排版也无真实滚动位移，选区矩形不会随滚动平移，
+    // 无法直接构造「锚点移动」；这里改视口宽度，让「有没有重算」产生可观测差异，
+    // 从而只断言 scroll 路径确实触发了重定位这条确定的分支。
+    setViewport(800, 768)
+    await fireScroll()
+
+    expect(panel.style.left).toBe(`${800 - FALLBACK_W - 24}px`)
+  })
+
+  it('拖动过之后 resize 只把面板夹回视口内，不覆盖用户摆放的位置（回归）', async () => {
+    const targetRect = { left: 400, top: 100, right: 500, bottom: 120, width: 100, height: 20 }
+    const panel = renderPanel({ text: 'hello world', targetRect, onClose: () => {} })
+    // 初始按锚点定位：选区中心 450 - 480/2
+    expect(panel.style.left).toBe('210px')
+
+    // happy-dom 不排版，offsetWidth/Height 恒为 0；补上受控几何，让 clampPos 用 480x300
+    patchPanelSize(panel, FALLBACK_W, FALLBACK_H)
+    dragPanel(300, 200, 700, 400)
+    // 拖到 (700,400)：扣掉按下偏移 (90,72) 后为 610/328，再夹到 left = 1024-480-10
+    expect(panel.style.left).toBe('534px')
+    expect(panel.style.top).toBe('328px')
+
+    // 视口不变时 resize：若按锚点重算会跳回 210/128，但用户拖动过，只做夹取（位置不变）
+    await fireResize()
+    expect(panel.style.left).toBe('534px')
+    expect(panel.style.top).toBe('328px')
+
+    // 视口缩小到 900 宽后原位置出界：夹取到 900-480-10 = 410，而不是回到锚点的 210
+    setViewport(900, 768)
+    await fireResize()
+    expect(panel.style.left).toBe('410px')
+    expect(panel.style.top).toBe('328px')
   })
 })
 

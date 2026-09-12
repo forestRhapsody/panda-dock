@@ -10,8 +10,9 @@ import type { ToolStatusKind } from './StatusText'
 
 /**
  * StatusText 是各工具共用的状态提示行，外观完全由 `.tw-status--{kind}` 决定。
- * 这里断言渲染出的标签、类名拼接规则与子节点行为，并如实记录它**不带**任何
- * status/aria-live 语义（源码就是这么写的，测试只描述现状，不改源码）。
+ * 这里断言渲染出的标签、类名拼接规则与子节点行为，并锁定它的**可访问性语义**：
+ * 带 `role="status"`（隐式 aria-live=polite），使错误与状态变化能被读屏播报，
+ * 不再只靠 CSS 类表达。
  */
 
 // React 19 的 act 需要该标记
@@ -122,13 +123,14 @@ describe('StatusText：children 与空文本', () => {
     expect(el?.children).toHaveLength(0)
   })
 
-  it('源码未附加 role="status" / aria-live（如实断言现状）', () => {
+  it('带 role="status"，错误与状态变化能被读屏播报（回归）', () => {
     act(() => {
       root.render(<StatusText kind='err'>出错了</StatusText>)
     })
 
     const el = status()
-    expect(el?.getAttribute('role')).toBeNull()
+    expect(el?.getAttribute('role')).toBe('status')
+    // role="status" 已隐含 aria-live="polite"，无需再写显式属性，故如实断言它为空
     expect(el?.getAttribute('aria-live')).toBeNull()
   })
 })

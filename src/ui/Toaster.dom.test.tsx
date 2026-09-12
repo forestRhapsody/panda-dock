@@ -44,12 +44,18 @@ afterEach(() => {
 })
 
 describe('Toaster 渲染与语义', () => {
-  it('没有通知时不渲染任何 DOM', () => {
+  it('空列表时仍渲染 live region 容器，保证首次公告前读屏已订阅（回归）', () => {
     act(() => {
       root.render(<Toaster />)
     })
 
-    expect(container.innerHTML).toBe('')
+    const region = container.querySelector('.tk-toaster')
+    expect(region).not.toBeNull()
+    expect(region?.getAttribute('role')).toBe('region')
+    expect(region?.getAttribute('aria-live')).toBe('polite')
+    // 常驻容器不能残留任何通知节点或可见文本（空 flex 容器不占位、pointer-events: none）
+    expect(toasts()).toHaveLength(0)
+    expect(container.textContent).toBe('')
   })
 
   it('toast.success 后把消息渲染进真实 DOM，并带 region/aria-live 语义', () => {
@@ -139,7 +145,7 @@ describe('Toaster 的堆叠数量与清空', () => {
     expect(container.textContent).not.toContain('第一条')
   })
 
-  it('toast.dismiss() 后 DOM 完全清空', () => {
+  it('toast.dismiss() 后通知节点全部清空，但 live region 容器常驻', () => {
     act(() => {
       root.render(<Toaster />)
     })
@@ -152,7 +158,9 @@ describe('Toaster 的堆叠数量与清空', () => {
     act(() => {
       toast.dismiss()
     })
-    expect(container.innerHTML).toBe('')
+    expect(toasts()).toHaveLength(0)
+    // 容器若随内容销毁，读屏会丢掉公告区域，故空列表也要保留
+    expect(container.querySelector('.tk-toaster')).not.toBeNull()
   })
 
   it('toast.dismiss(id) 只让对应那一条从 DOM 消失', () => {
@@ -262,6 +270,8 @@ describe('Toaster 的订阅生命周期与定时消失', () => {
     await act(async () => {
       vi.advanceTimersByTime(2000)
     })
-    expect(container.innerHTML).toBe('')
+    expect(toasts()).toHaveLength(0)
+    // 定时消失只移除通知，live region 容器仍在
+    expect(container.querySelector('.tk-toaster')).not.toBeNull()
   })
 })

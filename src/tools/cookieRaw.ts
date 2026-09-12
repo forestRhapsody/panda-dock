@@ -49,7 +49,9 @@ export function serializeCookieToRaw(
 
   const name = cookie.name?.trim() || ''
   const val = cookie.value || ''
-  if (!name && !val) {
+  // name 为空就构不成合法的 `name=value`：parse 端对 `=value` 会直接拒绝（eqIdx <= 0），
+  // 序列化必须同样不可产出，否则序列化↔解析不闭环。
+  if (!name) {
     return ''
   }
   if (format === 'header') {
@@ -59,7 +61,9 @@ export function serializeCookieToRaw(
   const parts = [`${name}=${val}`]
   if (cookie.domain) parts.push(`Domain=${cookie.domain}`)
   if (cookie.path) parts.push(`Path=${cookie.path}`)
-  if (cookie.expirationDate) {
+  // 0 是合法时间戳（1970-01-01），不能用真值判断，否则会被静默当成会话 Cookie 丢掉；
+  // 只把非法值（NaN）挡在外面。
+  if (cookie.expirationDate != null && !Number.isNaN(cookie.expirationDate)) {
     parts.push(`Expires=${new Date(cookie.expirationDate * 1000).toUTCString()}`)
   }
   if (cookie.sameSite && cookie.sameSite !== 'unspecified') {

@@ -72,6 +72,9 @@ export default function SelectionDetectPanel({
   const [pinned, setPinned] = useState(false)
   const [shown, setShown] = useState(false)
   const positionedRef = useRef(false)
+  // 是否被用户手动拖动过：拖动过之后 resize/scroll 只做「夹回视口」，
+  // 不能按锚点重算，否则会覆盖用户刚摆放好的位置。
+  const draggedRef = useRef(false)
   const pinnedRef = useRef(false)
   pinnedRef.current = pinned
 
@@ -129,16 +132,13 @@ export default function SelectionDetectPanel({
     }
   }, [])
 
-  // 挂载与选区变化时定位：
-  // 核心预期：在高度足够的情况下，精准出现在选中文本正下方（GAP = 8px）
-  useLayoutEffect(() => {
+  // 依据当前锚点（选区矩形，降级到右键坐标）算出完整位置。
+  // 挂载 / 选区变化 / 未拖动时的 resize·scroll 重定位共用这一套逻辑，避免两处算法漂移。
+  const anchorPos = useCallback(() => {
     const el = ref.current
-    if (!el) return
-    if (positionedRef.current && pinnedRef.current) return
-
-    const r = el.getBoundingClientRect()
-    const w = r.width || 480
-    const h = r.height || 300
+    const r = el?.getBoundingClientRect()
+    const w = r?.width || 480
+    const h = r?.height || 300
     const vw = window.innerWidth
     const vh = window.innerHeight
 
@@ -146,12 +146,10 @@ export default function SelectionDetectPanel({
       // 未选中文字时：直接出现在浏览器右上角（距右侧与顶部各 24px）
       const rightPad = 24
       const topPad = 24
-      const left = Math.max(PAD, vw - w - rightPad)
-      const top = Math.min(topPad, vh - h - PAD)
-      setPos({ left, top })
-      positionedRef.current = true
-      setShown(true)
-      return
+      return {
+        left: Math.max(PAD, vw - w - rightPad),
+        top: Math.min(topPad, vh - h - PAD),
+      }
     }
 
     // 锚点基准坐标：优先取选区包围矩形，降级取点击坐标点
@@ -186,10 +184,55 @@ export default function SelectionDetectPanel({
     const idealLeft = anchorCenterX - w / 2
     const left = Math.max(PAD, Math.min(idealLeft, vw - w - PAD))
 
-    setPos({ left, top })
+    return { left, top }
+  }, [position, targetRect, x, y])
+
+  // 挂载与选区变化时定位：
+  // 核心预期：在高度足够的情况下，精准出现在选中文本正下方（GAP = 8px）
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (positionedRef.current && pinnedRef.current) return
+
+    setPos(anchorPos())
+    // 落回锚点意味着进入一次新的定位上下文，此前的拖动不再阻止后续 resize/scroll 跟随锚点
+    draggedRef.current = false
     positionedRef.current = true
     setShown(true)
-  }, [x, y, targetRect, position])
+  }, [anchorPos])
+
+  // 窗口 resize / 页面滚动后浮层可能被挤出视口：用 requestAnimationFrame 节流地重定位。
+  // - 用户没拖动过：按当前锚点重算完整位置（复用上面的 anchorPos）；
+  // - 用户拖动过：只用 clampPos 夹回视口，绝不覆盖手动摆放的位置。
+  useEffect(() => {
+    let frame = 0
+    const reposition = () => {
+      frame = 0
+      if (draggedRef.current) {
+        setPos((p) => clampPos(p.left, p.top))
+        return
+      }
+      setPos(anchorPos())
+    }
+    const schedule = () => {
+      if (frame) return
+      frame = window.requestAnimationFrame(reposition)
+    }
+    const onScroll = (e: Event) => {
+      // 忽略面板内部（输入框 / 结果区）自身的滚动，避免用户滚动内容时整卡跳动
+      const target = e.target
+      if (ref.current && target instanceof Node && ref.current.contains(target)) return
+      schedule()
+    }
+    window.addEventListener('resize', schedule)
+    // scroll 事件不冒泡，必须用捕获阶段才能覆盖嵌套滚动容器
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame)
+      window.removeEventListener('resize', schedule)
+      window.removeEventListener('scroll', onScroll, true)
+    }
+  }, [anchorPos, clampPos])
 
   // 拖动：按住 header（非按钮部分）移动整卡
   const startDrag = useCallback(
@@ -206,6 +249,8 @@ export default function SelectionDetectPanel({
     (e: ReactPointerEvent<HTMLDivElement>) => {
       const d = dragRef.current
       if (!d) return
+      // 一旦真正移动过，后续 resize/scroll 就不能再按锚点覆盖这个位置
+      draggedRef.current = true
       setPos(clampPos(e.clientX - d.dx, e.clientY - d.dy))
     },
     [clampPos],

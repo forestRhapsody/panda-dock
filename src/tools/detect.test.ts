@@ -478,8 +478,8 @@ describe('detect：时间戳（秒 / 毫秒 / 日期文本）', () => {
 })
 
 describe('detect：UUID', () => {
-  it('v1~v5 均识别，并给出版本与有效标记', () => {
-    for (const version of ['1', '2', '3', '4', '5']) {
+  it('v1~v8 均识别，并给出版本与有效标记', () => {
+    for (const version of ['1', '2', '3', '4', '5', '6', '7', '8']) {
       const input = `550e8400-e29b-${version}1d4-a716-446655440000`
       const res = expectKind(input, 'uuid')
       expect(res.fields).toEqual([
@@ -500,12 +500,12 @@ describe('detect：UUID', () => {
     expect(detect('550e8400-e29b-41d4-c716-446655440000')?.kind).not.toBe('uuid')
   })
 
-  it('v6/v7（正则只允许 [1-5]）不被识别为 UUID，会退化到 hex 候选（现状记录）', () => {
-    const v6 = detect('550e8400-e29b-61d4-b716-446655440000')
-    expect(v6?.kind).not.toBe('uuid')
-    expect(v6?.kind).toBe('hex')
-    const v7 = detect('018f6b1e-9c1a-7c3b-8b4d-2f1e3a4b5c6d')
-    expect(v7?.kind).not.toBe('uuid')
+  it('v6/v7（RFC 9562 现行版本）也识别为 UUID，并给出对应版本号', () => {
+    // 旧正则只允许 [1-5]，v6/v7 会退化成 hex 候选
+    const v6 = expectKind('550e8400-e29b-61d4-b716-446655440000', 'uuid')
+    expect(fieldMap(v6).version).toBe('v6')
+    const v7 = expectKind('018f6b1e-9c1a-7c3b-8b4d-2f1e3a4b5c6d', 'uuid')
+    expect(fieldMap(v7).version).toBe('v7')
   })
 
   it('夹在文本中的 UUID 目前不会被识别为 uuid（现状记录，源码疑点）', () => {

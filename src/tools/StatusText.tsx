@@ -18,7 +18,11 @@ export function StatusText({
   className?: string
   children: ReactNode
 }) {
+  // role="status" 自带隐式 aria-live="polite"：状态/错误出现时读屏会播报，
+  // 不再只靠 `.tw-status--{kind}` 的 CSS 类表达。
   return (
-    <p className={`tw-status tw-status--${kind}${className ? ` ${className}` : ''}`}>{children}</p>
+    <p role='status' className={`tw-status tw-status--${kind}${className ? ` ${className}` : ''}`}>
+      {children}
+    </p>
   )
 }

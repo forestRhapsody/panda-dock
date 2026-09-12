@@ -123,11 +123,13 @@ describe('parseCustomDate 中文日期', () => {
     expect(parseCustomDate('2025年1月1日 15:30:60')).toBeNull()
   })
 
-  it('中文分支不校验日期滚动：2 月 31 日会滚动到 3 月（记录现状，见源码疑点）', () => {
-    const d = parseCustomDate('2025年2月31日')
-    expect(d).not.toBeNull()
-    expect(d?.getMonth()).toBe(2)
-    expect(d?.getDate()).toBe(3)
+  it('中文分支拒绝 2 月 31 日这类非法日历日，不再静默进位到 3 月', () => {
+    expect(parseCustomDate('2025年2月31日')).toBeNull()
+    expect(parseCustomDate('2025年4月31日')).toBeNull()
+    expect(parseCustomDate('2025年2月29日')).toBeNull() // 平年
+    // 合法日期不受影响（3 月 1 日确实是 3 月）
+    expect(parseCustomDate('2025年3月1日')?.getMonth()).toBe(2)
+    expect(parseCustomDate('2025年3月1日')?.getDate()).toBe(1)
   })
 
   it('包含中文但不符合中文日期规则时返回 null', () => {
@@ -148,6 +150,8 @@ describe('parseCustomDate 中文日期', () => {
       expect(d?.getHours(), text).toBe(15)
       expect(d?.getMinutes(), text).toBe(30)
     }
+    // 混合写法同样不能静默进位：2 月 31 日非法
+    expect(parseCustomDate('2025-02-31 15点30分')).toBeNull()
   })
 })
 
@@ -215,13 +219,13 @@ describe('parseCustomDate 标准数字日期', () => {
     expect(parseCustomDate('2025-01-01 25:00:00')).toBeNull()
   })
 
-  it('月-日-年 格式不参与滚动校验：02/31/2025 会滚动到 3 月（记录现状，见源码疑点）', () => {
-    // 源码的字段比对正则只匹配「4 位年在最前」的写法，US 风格因此漏掉滚动检查
-    const d = parseCustomDate('02/31/2025')
-    expect(d).not.toBeNull()
-    expect(d?.getFullYear()).toBe(2025)
-    expect(d?.getMonth()).toBe(2)
-    expect(d?.getDate()).toBe(3)
+  it('月-日-年 格式也按字段比对拒绝滚动：02/31/2025 不再进位到 3 月', () => {
+    expect(parseCustomDate('02/31/2025')).toBeNull()
+    expect(parseCustomDate('02/29/2025')).toBeNull() // 平年
+    // 合法的 US 日期保持原有「月在前」解析
+    const ok = parseCustomDate('02/28/2025')
+    expect(ok?.getMonth()).toBe(1)
+    expect(ok?.getDate()).toBe(28)
   })
 
   it('闰年 2 月 29 日合法，平年 / 百年不闰为 null，四百年闰合法', () => {
@@ -289,10 +293,13 @@ describe('parseCustomDate 英文月份日期', () => {
     expect(parseCustomDate('Dec 31, 2200')?.getFullYear()).toBe(2200)
   })
 
-  it('英文分支不校验日期滚动：Feb 30 会滚动到 3 月（记录现状，见源码疑点）', () => {
-    const d = parseCustomDate('Feb 30, 2025')
-    expect(d?.getMonth()).toBe(2)
-    expect(d?.getDate()).toBe(2)
+  it('英文分支拒绝 Feb 30 这类非法日历日，不再静默进位', () => {
+    expect(parseCustomDate('Feb 30, 2025')).toBeNull()
+    expect(parseCustomDate('February 29, 2025')).toBeNull() // 平年
+    expect(parseCustomDate('Apr 31, 2025')).toBeNull()
+    // 时间里的数字不应被误当成「日」：带时间的合法英文日期照常解析
+    expect(parseCustomDate('January 31, 2025 3:04:05 PM')?.getHours()).toBe(15)
+    expect(parseCustomDate('Wed, 31 Jan 2025 00:00:00 GMT')?.getUTCDate()).toBe(31)
   })
 
   it('白名单单词但 Date 解析不了（如序数词 1st）返回 null', () => {
@@ -302,6 +309,35 @@ describe('parseCustomDate 英文月份日期', () => {
   it('白名单内、Date 可解析的宽松写法按 Date 结果返回', () => {
     expect(parseCustomDate('Jan 2025')?.getMonth()).toBe(0)
     expect(parseCustomDate('Jan 2025')?.getDate()).toBe(1)
+  })
+})
+
+describe('parseCustomDate 非法日历日（三个分支统一拒绝滚动）', () => {
+  it('闰年 2 月 29 日在所有分支都仍然合法', () => {
+    expect(parseCustomDate('2024年2月29日')?.getDate()).toBe(29)
+    expect(parseCustomDate('02/29/2024')?.getDate()).toBe(29)
+    expect(parseCustomDate('Feb 29, 2024')?.getDate()).toBe(29)
+    expect(parseCustomDate('2024-02-29')?.getDate()).toBe(29)
+    expect(parseCustomDate('2024/02/29 00:00:00')?.getDate()).toBe(29)
+  })
+
+  it('各分支的非法日期都返回 null，与 YYYY-MM-DD 分支行为一致', () => {
+    // 中文 / US / 英文月份 / 混合中文时间 / 数字日期
+    expect(parseCustomDate('2025年2月31日')).toBeNull()
+    expect(parseCustomDate('02/31/2025')).toBeNull()
+    expect(parseCustomDate('Feb 30, 2025')).toBeNull()
+    expect(parseCustomDate('2025-02-31 15点30分')).toBeNull()
+    expect(parseCustomDate('2025-02-31 00:00:00')).toBeNull()
+  })
+
+  it('无年份的英文月份日期更早被判空：不会以 Date 默认年份 2001 静默进位', () => {
+    // `new Date('Feb 30')` 本身会得到 2001-03-02，但英文分支要求 4 位年份，在构造 Date 之前就返回 null
+    expect(parseCustomDate('Feb 30')).toBeNull()
+    expect(parseCustomDate('April 31')).toBeNull()
+    // 合法月日同样因为缺 4 位年份而被拒（本工具只解析含年份的绝对日期，避免落到 2001 年）
+    expect(parseCustomDate('Feb 28')).toBeNull()
+    // 带 4 位年份的合法输入不受影响
+    expect(parseCustomDate('Jan 2025')?.getFullYear()).toBe(2025)
   })
 })
 
