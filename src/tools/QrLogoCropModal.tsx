@@ -36,8 +36,11 @@ export default function QrLogoCropModal({
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [imgLoaded, setImgLoaded] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  /** 导出阶段失败（如环境不提供 canvas 2D 上下文）：必须显式提示，不能静默无响应 */
+  const [exportError, setExportError] = useState(false)
 
   const imgRef = useRef<HTMLImageElement | null>(null)
+  const viewportRef = useRef<HTMLDivElement | null>(null)
   const draggingRef = useRef(false)
   const dragStartRef = useRef({ x: 0, y: 0 })
   const offsetStartRef = useRef({ x: 0, y: 0 })
@@ -133,14 +136,30 @@ export default function QrLogoCropModal({
   }
 
   // 滚轮缩放处理
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault()
-    const delta = e.deltaY < 0 ? 0.08 : -0.08
-    const nextZoom = Math.min(3, Math.max(1, Number((zoom + delta).toFixed(2))))
-    if (nextZoom === zoom) return
-    setZoom(nextZoom)
-    setOffset((prev) => clampOffset(prev.x, prev.y, nextZoom))
-  }
+  const handleWheel = useCallback(
+    (e: WheelEvent) => {
+      // 必须能拦住默认滚动：否则缩放的同时背后页面会跟着滚（见下方非 passive 注册）
+      e.preventDefault()
+      const delta = e.deltaY < 0 ? 0.08 : -0.08
+      const nextZoom = Math.min(3, Math.max(1, Number((zoom + delta).toFixed(2))))
+      if (nextZoom === zoom) return
+      setZoom(nextZoom)
+      setOffset((prev) => clampOffset(prev.x, prev.y, nextZoom))
+    },
+    [zoom, clampOffset],
+  )
+
+  /**
+   * React 对 `wheel` 是**被动（passive）注册**的：`onWheel` 里的 preventDefault() 既无效，
+   * 又会打印 "Unable to preventDefault inside passive event listener invocation"，
+   * 结果是滚轮缩放时背后页面一起滚动。改为手动注册非 passive 监听（与 DetectResultView 的 Tab 横滚同一写法）。
+   */
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+    el.addEventListener('wheel', handleWheel, { passive: false })
+    return () => el.removeEventListener('wheel', handleWheel)
+  }, [handleWheel])
 
   // 滑块缩放
   const handleZoomSlider = (val: number) => {
@@ -171,7 +190,12 @@ export default function QrLogoCropModal({
     canvas.width = EXPORT_SIZE
     canvas.height = EXPORT_SIZE
     const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {
+      // 2D 上下文不可用（环境限制 / 被策略禁用）：静默 return 会让用户以为按钮坏了
+      setExportError(true)
+      return
+    }
+    setExportError(false)
 
     const scaleFactor = baseScaleRef.current * zoom
     // 裁剪框在原图坐标系中的起始与截取尺寸
@@ -222,12 +246,12 @@ export default function QrLogoCropModal({
 
         {/* 裁剪视口 */}
         <div
+          ref={viewportRef}
           className='tw-crop-modal__viewport'
           style={{ width: VIEWPORT_SIZE, height: VIEWPORT_SIZE }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onWheel={handleWheel}
         >
           {loadError ? (
             <div
@@ -320,6 +344,20 @@ export default function QrLogoCropModal({
             <span className='tw-crop-modal__zoom-val'>{Math.round(zoom * 100)}%</span>
           </div>
         </div>
+
+        {/* 导出失败提示：与图片加载失败一样贴在图区下方，点确认后立刻可见 */}
+        {exportError && (
+          <p
+            style={{
+              color: 'var(--tk-destructive, #ef4444)',
+              fontSize: 13,
+              margin: '8px 0 0',
+              textAlign: 'center',
+            }}
+          >
+            {t('tool.qrcode.cropExportError')}
+          </p>
+        )}
 
         {/* 底部操作按钮 */}
         <div className='tk-modal__actions tw-crop-modal__actions'>

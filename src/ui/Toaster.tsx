@@ -38,7 +38,7 @@ export default function Toaster({ position = 'bottom' }: ToasterProps) {
             <Icon
               name={
                 item.icon ??
-                (item.kind === 'err' ? 'alert' : item.kind === 'info' ? 'alert' : 'check')
+                (item.kind === 'err' ? 'alert' : item.kind === 'info' ? 'info' : 'check')
               }
               size={13}
             />

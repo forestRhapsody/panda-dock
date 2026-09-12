@@ -74,8 +74,14 @@ function DevPreview() {
   )
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <DevPreview />
-  </StrictMode>,
-)
+const container = document.getElementById('root')
+if (!container) {
+  // dev 预览入口同样只在 #root 存在时挂载，避免 createRoot(null) 的裸 TypeError
+  console.error('[PandaDock] #root container not found; dev preview was not mounted')
+} else {
+  createRoot(container).render(
+    <StrictMode>
+      <DevPreview />
+    </StrictMode>,
+  )
+}

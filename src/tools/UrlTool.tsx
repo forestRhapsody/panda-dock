@@ -161,14 +161,17 @@ interface CodecDraft {
   output: string
 }
 
+/**
+ * `useToolDraft` 的默认值必须来自**模块级常量**：Hook 的挂载 effect 以 `initialValue` 为依赖，
+ * 传内联对象字面量会让依赖每帧变化 → cleanup 每帧 clearTimeout 掉 200ms 的草稿写入，
+ * 且存储里的旧值会在重跑时覆盖用户刚输入的内容。
+ */
+const DEFAULT_CODEC_DRAFT: CodecDraft = { scope: 'component', input: '', output: '' }
+
 /** 网址编解码面板：URL Encode / Decode，直接提供编码网址与解码网址操作按钮 */
 function UrlCodecPanel() {
   const { t } = useTranslation()
-  const [draft, setDraft, clearDraft] = useToolDraft<CodecDraft>('url.codec', {
-    scope: 'component',
-    input: '',
-    output: '',
-  })
+  const [draft, setDraft, clearDraft] = useToolDraft<CodecDraft>('url.codec', DEFAULT_CODEC_DRAFT)
   const { scope, input, output } = draft
   const [status, setStatus] = useState<ToolStatus | null>(null)
   const [fetching, setFetching] = useState(false)

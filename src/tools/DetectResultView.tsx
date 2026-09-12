@@ -208,7 +208,7 @@ export default function DetectResultView({
     <div className='tw-detect'>
       <div className='tw-detect__head'>
         <StatusText kind='ok'>
-          {t('tool.detect.detected')}：{KIND_LABEL[result.kind]}
+          {t('tool.detect.detected', { kind: KIND_LABEL[result.kind] })}
         </StatusText>
 
         {hasMultiple && (

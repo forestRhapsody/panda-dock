@@ -223,19 +223,13 @@ export default function StorageTool() {
   const [formError, setFormError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
 
-  /** 高优先级：自定义弹窗；仅极端情况（自定义弹窗无法渲染）下降级到 window.confirm */
+  /**
+   * 破坏性操作一律走自定义 ConfirmDialog。
+   * 这里**不再**降级到 window.confirm：它在 content script（网页内抽屉）里被 Chrome 禁用，
+   * 而且 AGENTS §4 第 14 条统一要求走 ConfirmDialog（setState 本身不会抛错，旧 catch 分支也不可达）。
+   */
   function requestConfirm(opts: ConfirmState): void {
-    try {
-      setConfirm(opts)
-      return
-    } catch {
-      // 自定义弹窗不可用时，退回浏览器原生 confirm（侧边栏可用；content script 里会被禁）
-    }
-    try {
-      if (window.confirm(opts.message)) opts.onConfirm()
-    } catch {
-      // 忽略
-    }
+    setConfirm(opts)
   }
 
   const load = useCallback(async () => {

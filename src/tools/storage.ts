@@ -79,9 +79,24 @@ const ERROR_KEYS: Record<ErrorCode, string> = {
   ERR_UNEXPECTED: 'tool.storage.errorUnexpected',
 }
 
+/**
+ * 支持 `detail` 插值的错误码 → 「带详情」文案 key。
+ * 这些 key 的模板里含 `{{detail}}`；基础 key（ERROR_KEYS）不含占位符，
+ * 因此**没有 detail 时必须回落到基础 key**，否则用户会看到字面量 `{{detail}}`（历史缺陷）。
+ */
+const ERROR_DETAIL_KEYS: Partial<Record<ErrorCode, string>> = {
+  ERR_COOKIE_SET_FAILED: 'tool.storage.errorCookieSetFailedDetail',
+  ERR_UNEXPECTED: 'tool.storage.errorUnexpectedDetail',
+}
+
 /** 供测试断言映射完备性（见 storage.test.ts） */
 export function storageErrorKey(code: ErrorCode): string {
   return ERROR_KEYS[code]
+}
+
+/** 「带详情」文案 key（该码没有详情版本时返回 undefined）；供测试断言映射完备性 */
+export function storageErrorDetailKey(code: ErrorCode): string | undefined {
+  return ERROR_DETAIL_KEYS[code]
 }
 
 /**
@@ -94,9 +109,9 @@ export function resolveStorageError(res: unknown, fallbackKey: string): string {
   const payload = res as { code?: unknown; detail?: unknown; error?: unknown } | null | undefined
   if (isErrorCode(payload?.code)) {
     const detail = typeof payload?.detail === 'string' && payload.detail ? payload.detail : ''
-    if (payload.code === 'ERR_COOKIE_SET_FAILED' && detail) {
-      return i18n.t('tool.storage.errorCookieSetFailedDetail', { detail })
-    }
+    const detailKey = ERROR_DETAIL_KEYS[payload.code]
+    // 只有拿得到 detail 且该码登记了带详情模板时才插值；否则用不含占位符的基础文案
+    if (detail && detailKey) return i18n.t(detailKey, { detail })
     return i18n.t(ERROR_KEYS[payload.code])
   }
   if (typeof payload?.error === 'string' && payload.error) return payload.error
@@ -141,7 +156,9 @@ function buildSnapshot(area: WebStorageArea): StorageSnapshot {
 async function askActiveTab(message: unknown): Promise<StorageResult | SimpleResult> {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    if (tab?.id == null) throw new Error(i18n.t('tool.storage.errorNoActiveTab'))
+    // 直接返回失败结果：这里若 `throw`，会被本函数自己的 catch 吞掉并统一变成 errorUnreadable，
+    // 使 errorNoActiveTab 成为永远不会出现在界面上的死文案
+    if (tab?.id == null) return { ok: false, error: i18n.t('tool.storage.errorNoActiveTab') }
     const res = await chrome.tabs.sendMessage(tab.id, message)
     if (res?.ok) return res
     return { ok: false, error: res?.error ?? i18n.t('tool.storage.errorNoResponse') }

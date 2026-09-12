@@ -30,11 +30,17 @@ export async function getDetectShortcut(): Promise<string> {
 
 /** 打开 Chrome 扩展快捷键配置页面（chrome://extensions/shortcuts） */
 export async function openShortcutsPage(): Promise<boolean> {
-  try {
-    if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+  // 扩展页面有 chrome.tabs：直接开新标签；失败（或 content script 无 tabs）时回退到 background，
+  // 与 utils/env.ts 的 openOptionsPage 保持同一套降级顺序。
+  if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+    try {
       await chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })
       return true
+    } catch {
+      // 落到 background
     }
+  }
+  try {
     if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
       const res = (await chrome.runtime.sendMessage({ action: MSG_OPEN_SHORTCUTS })) as boolean
       return Boolean(res)

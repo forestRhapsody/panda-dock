@@ -194,6 +194,8 @@ export default function SelectionDetectPanel({
   // 拖动：按住 header（非按钮部分）移动整卡
   const startDrag = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
+      // 只响应左键：与 FloatingBall / Drawer 的拖拽守卫保持一致，避免右键菜单拖拽时整卡乱跑
+      if (e.button !== 0) return
       if ((e.target as HTMLElement).closest('button')) return
       dragRef.current = { dx: e.clientX - pos.left, dy: e.clientY - pos.top }
       e.currentTarget.setPointerCapture(e.pointerId)

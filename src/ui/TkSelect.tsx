@@ -91,6 +91,13 @@ export default function TkSelect({
   const [open, setOpen] = useState(false)
   const [focusedIdx, setFocusedIdx] = useState(0)
   const [popupPos, setPopupPos] = useState<PopupPosition>({ left: 0, minWidth: 0 })
+  /**
+   * 位置是否已由**实测**校正过。
+   * 初值 `popupPos.left = 0` 只在 `calcPosition()` 成功执行时才会被覆盖，
+   * 一旦它提前 return（拿不到 trigger ref）或估算与实际布局有偏差，
+   * 弹层就会先在 `left: 0`（屏幕最左侧）露一帧。挂载后先隐藏、实测校正完再显示。
+   */
+  const [popupReady, setPopupReady] = useState(false)
 
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupRef = useRef<HTMLDivElement>(null)
@@ -151,6 +158,7 @@ export default function TkSelect({
 
   function openDropdown() {
     if (disabled) return
+    setPopupReady(false)
     calcPosition()
     setOpen(true)
     setFocusedIdx(selectedIdx >= 0 ? selectedIdx : 0)
@@ -205,23 +213,20 @@ export default function TkSelect({
     const items = popupRef.current.querySelectorAll<HTMLElement>('[data-tks-item]')
     items[focusedIdx]?.scrollIntoView({ block: 'nearest' })
 
-    // 真实 DOM 渲染后兜底校验：若仍超出视口右边界，立即修正贴边
+    // 真实 DOM 渲染后兜底校验：用**实测尺寸**把弹层夹在视口内 —— 左右两边都要夹。
+    // 只夹右边界不够：右对齐分支用的是 `window.innerWidth - triggerRect.right`，
+    // 一旦 `innerWidth` 与最终布局不一致（抽屉/侧边栏宽度变化、滚动条出现/消失导致视口宽度跳变），
+    // 算出的 right 会把弹层推到左边界之外，表现为「下拉跑到屏幕最左侧」。
     const popupEl = popupRef.current
-    const triggerEl = triggerRef.current
-    if (popupEl && triggerEl) {
-      const popupRect = popupEl.getBoundingClientRect()
-      const triggerRect = triggerEl.getBoundingClientRect()
-      const VIEWPORT_PAD = 8
-
-      if (popupRect.right > window.innerWidth - VIEWPORT_PAD) {
-        const rightOffset = Math.max(VIEWPORT_PAD, window.innerWidth - triggerRect.right)
-        popupEl.style.left = 'auto'
-        popupEl.style.right = `${rightOffset}px`
-      } else if (popupRect.left < VIEWPORT_PAD) {
-        popupEl.style.left = `${VIEWPORT_PAD}px`
-        popupEl.style.right = 'auto'
-      }
+    const VIEWPORT_PAD = 8
+    const rect = popupEl.getBoundingClientRect()
+    const maxLeft = Math.max(VIEWPORT_PAD, window.innerWidth - rect.width - VIEWPORT_PAD)
+    const clampedLeft = Math.min(Math.max(rect.left, VIEWPORT_PAD), maxLeft)
+    if (Math.abs(clampedLeft - rect.left) > 0.5) {
+      // 通过 state 修正而不是直接改 DOM：避免与 React 的 style 出现两套真相
+      setPopupPos((prev) => ({ ...prev, left: clampedLeft, right: undefined }))
     }
+    setPopupReady(true)
   }, [focusedIdx, open, popupPos.top])
 
   // —— 键盘 ——
@@ -302,6 +307,8 @@ export default function TkSelect({
     ...(popupPos.top !== undefined ? { top: popupPos.top } : {}),
     ...(popupPos.bottom !== undefined ? { bottom: popupPos.bottom } : {}),
     transformOrigin: `${isBottomAligned ? 'bottom' : 'top'} ${isRightAligned ? 'right' : 'left'}`,
+    // 实测校正完成前先隐藏：否则初始的 left:0 会以「弹层出现在屏幕最左侧」的形式闪出来
+    ...(popupReady ? {} : { visibility: 'hidden' as const }),
   }
 
   // 选择渲染挂载点：

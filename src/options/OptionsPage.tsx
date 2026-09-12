@@ -137,6 +137,8 @@ export default function OptionsPage() {
   const [blacklistText, setBlacklistText] = useState('')
   const [whitelistText, setWhitelistText] = useState('')
   const [showGlobalConfirm, setShowGlobalConfirm] = useState(false)
+  /** 悬浮球自定义图片的破坏性操作确认（移除 / 恢复默认样式会连带删图） */
+  const [imageConfirm, setImageConfirm] = useState<'remove' | 'reset-style' | null>(null)
   const [showImportSuccessDialog, setShowImportSuccessDialog] = useState(false)
   const [ballImage, setBallImageState] = useState<string | null>(null)
   const [ballImageError, setBallImageError] = useState<string | null>(null)
@@ -283,10 +285,17 @@ export default function OptionsPage() {
     reader.readAsDataURL(file)
   }
 
+  /** 移除自定义图片：属于破坏性写操作（local 存储不可恢复），必须经 ConfirmDialog 二次确认 */
   function removeBallImage() {
+    if (!ballImage) return
+    setImageConfirm('remove')
+  }
+
+  function performRemoveBallImage() {
     setBallImageError(null)
     setBallImageState(null)
     persistBallImage(null)
+    setImageConfirm(null)
   }
 
   function toggleTool(id: ToolId) {
@@ -341,6 +350,15 @@ export default function OptionsPage() {
 
   /** 恢复「悬浮球样式」到默认（形状、预设、大小、自定义图片） */
   function resetBallStyle() {
+    // 有自定义图片时本操作会删除它（local 存储不可恢复）→ 先二次确认
+    if (ballImage) {
+      setImageConfirm('reset-style')
+      return
+    }
+    performResetBallStyle()
+  }
+
+  function performResetBallStyle() {
     const base = defaultSettings()
     persist({
       ...settings,
@@ -351,6 +369,7 @@ export default function OptionsPage() {
     setBallImageState(null)
     setBallImageError(null)
     persistBallImage(null)
+    setImageConfirm(null)
   }
 
   /** 恢复「外观与显示」到默认（主题、语言、字号） */
@@ -996,6 +1015,27 @@ export default function OptionsPage() {
           danger
           onCancel={() => setShowGlobalConfirm(false)}
           onConfirm={doGlobalReset}
+        />
+      )}
+
+      {imageConfirm && (
+        <ConfirmDialog
+          title={t(
+            imageConfirm === 'remove'
+              ? 'settings.ballImageRemoveConfirmTitle'
+              : 'settings.ballStyleResetConfirmTitle',
+          )}
+          message={t(
+            imageConfirm === 'remove'
+              ? 'settings.ballImageRemoveConfirmMsg'
+              : 'settings.ballStyleResetConfirmMsg',
+          )}
+          confirmLabel={t(
+            imageConfirm === 'remove' ? 'settings.ballImageRemove' : 'settings.resetDefault',
+          )}
+          danger
+          onCancel={() => setImageConfirm(null)}
+          onConfirm={imageConfirm === 'remove' ? performRemoveBallImage : performResetBallStyle}
         />
       )}
 

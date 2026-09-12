@@ -13,7 +13,7 @@ import {
 } from '@/utils/settings'
 
 const EDGE_MARGIN = 8
-/** 固定右下角模式的默认视口边距：右侧 60px、底部 60px */
+/** 固定右下角模式的默认视口边距：右侧 80px、底部 80px（与 settings.ts 的 DEFAULT_BOTTOM_RIGHT_OFFSET_* 一致） */
 export const DOCK_BOTTOM_RIGHT_OFFSET_X = DEFAULT_BOTTOM_RIGHT_OFFSET_X
 export const DOCK_BOTTOM_RIGHT_OFFSET_Y = DEFAULT_BOTTOM_RIGHT_OFFSET_Y
 /** 拖拽多少像素以上视为「拖动」，否则视为「点击」 */

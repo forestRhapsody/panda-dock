@@ -59,6 +59,14 @@ export default function Tooltip({
 }: TooltipProps) {
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState<Position>({ top: 0, left: 0, actualSide: side })
+  /**
+   * 是否已经拿到**有效**测量结果。
+   * 初值 position 是 (0,0)，而 `calcPosition()` 开头 `if (!triggerRef.current) return`；
+   * 只要有一次拿不到触发元素、或拿到的是 0×0 的**退化矩形**（节点已脱离文档 / 布局未就绪），
+   * 交叉轴公式 `left + (width - tooltipW)/2` 会算出负数并被夹到 8px ——
+   * 表现就是「tooltip 贴在屏幕最左侧、垂直位置却正常」。宁可先不显示，也不显示错位置。
+   */
+  const [positioned, setPositioned] = useState(false)
 
   const triggerRef = useRef<HTMLElement | null>(null)
   const tooltipRef = useRef<HTMLDivElement | null>(null)
@@ -67,9 +75,11 @@ export default function Tooltip({
 
   const shouldRender = !disabled && Boolean(content)
 
-  const calcPosition = useCallback(() => {
-    if (!triggerRef.current) return
+  const calcPosition = useCallback((): boolean => {
+    if (!triggerRef.current) return false
     const triggerRect = triggerRef.current.getBoundingClientRect()
+    // 退化矩形（0×0）：按它算出的位置会把气泡甩到视口左缘，直接判定为「本次无法定位」
+    if (triggerRect.width === 0 && triggerRect.height === 0) return false
     const tooltipEl = tooltipRef.current
     const tooltipW = tooltipEl?.offsetWidth ?? 80
     const tooltipH = tooltipEl?.offsetHeight ?? 26
@@ -144,13 +154,15 @@ export default function Tooltip({
       left: Math.round(left),
       actualSide: targetSide,
     })
+    return true
   }, [align, side, sideOffset])
 
   function showTooltip() {
     if (!shouldRender) return
     window.clearTimeout(timerRef.current)
     timerRef.current = window.setTimeout(() => {
-      calcPosition()
+      // 先置 open，具体位置由下方的 layoutEffect 在**绘制前**用真实尺寸测出来；
+      // 未测到（positioned=false）时 portal 不渲染，因此不会闪出 (0,0)
       setOpen(true)
     }, delayDuration)
   }
@@ -158,6 +170,8 @@ export default function Tooltip({
   function hideTooltip() {
     window.clearTimeout(timerRef.current)
     setOpen(false)
+    // 复位定位状态：下次显示必须重新测量，避免复用上一次的旧坐标
+    setPositioned(false)
   }
 
   // 监听滚动与窗口尺寸变动实时同步位置
@@ -182,12 +196,11 @@ export default function Tooltip({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [open])
 
-  // 气泡挂载后根据真实 DOM 宽度精确微调一次
+  // 气泡挂载后根据真实 DOM 宽度精确微调一次。
+  // 依赖 positioned：positioned 从 false 变 true 后 portal 才挂载，这一轮再用真实元素测一次宽度。
   useLayoutEffect(() => {
-    if (open) {
-      calcPosition()
-    }
-  }, [open, calcPosition])
+    if (open) setPositioned(calcPosition())
+  }, [open, positioned, calcPosition])
 
   // 卸载时清理定时器
   useEffect(() => {
@@ -288,7 +301,7 @@ export default function Tooltip({
   }
 
   const tooltipPortal =
-    open && portalTarget
+    open && positioned && portalTarget
       ? createPortal(
           <div
             ref={tooltipRef}

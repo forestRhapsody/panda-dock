@@ -494,13 +494,15 @@ chrome.commands.onCommand.addListener((command, tab) => {
   const tabId = tab?.id
 
   if (cachedBallAction === 'drawer') {
-    // 抽屉模式：
-    // 1. 关闭原生侧边栏（保持互斥）
+    // 1. 原生侧边栏已开：本次按键**只作「收起」**，与 native 模式的 toggle 语义对齐。
+    //    否则用户按一次快捷键会看到「侧边栏关了、网页抽屉却弹出来」——直觉上这是「换了个形态」而不是「收起」。
+    //    代价：想从侧边栏切到网页抽屉需要按两次（先收起、再打开），这是刻意选择的确定性。
     if (isSidePanelOpen(windowId)) {
       closeSidePanel(windowId)
+      return
     }
 
-    // 2. 尝试向当前标签页发送 TOGGLE_DRAWER 切换抽屉开合
+    // 2. 侧边栏未开：尝试向当前标签页发送 TOGGLE_DRAWER 切换抽屉开合
     if (tabId != null) {
       chrome.tabs.sendMessage(tabId, { action: MSG_TOGGLE_DRAWER }).catch(() => {
         // 当前标签页无法注入/响应抽屉（如 chrome://、chrome-extension:// 等特权页），自动降级打开原生侧边栏

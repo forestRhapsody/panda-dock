@@ -71,7 +71,8 @@ export function detectMimeFromBytes(base64: string): string | null {
     if (ascii(0, 5) === '%PDF-') return 'application/pdf'
     if (ascii(0, 4) === 'PK\x03\x04' || ascii(0, 4) === 'PK\x05\x06') return 'application/zip'
     if (starts([0x1f, 0x8b])) return 'application/gzip'
-    if (ascii(0, 7) === 'Rar!\x1a\x07') return 'application/vnd.rar'
+    // RAR 4 的规范签名是 7 字节 `52 61 72 21 1A 07 00`：比较串必须与 ascii(0, 7) 等长，否则分支永不命中
+    if (ascii(0, 7) === 'Rar!\x1a\x07\x00') return 'application/vnd.rar'
     if (ascii(0, 6) === '7z\xbc\xaf\x27\x1c') return 'application/x-7z-compressed'
     if (ascii(0, 3) === 'ID3') return 'audio/mpeg'
     if (ascii(4, 4) === 'ftyp') return 'video/mp4'
@@ -79,7 +80,8 @@ export function detectMimeFromBytes(base64: string): string | null {
     if (starts([0x1a, 0x45, 0xdf, 0xa3])) return 'video/webm'
     if (ascii(0, 4) === 'OggS') return 'audio/ogg'
     if (ascii(0, 4) === '\x00asm') return 'application/wasm'
-    if (ascii(0, 15) === 'SQLite format 3\x00') return 'application/vnd.sqlite3'
+    // SQLite 头是 16 字节 `"SQLite format 3\0"`：必须取 16 字节，取 15 会永远比不中
+    if (ascii(0, 16) === 'SQLite format 3\x00') return 'application/vnd.sqlite3'
     return null
   } catch {
     return null

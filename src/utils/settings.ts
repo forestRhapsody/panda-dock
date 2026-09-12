@@ -164,9 +164,9 @@ export interface Settings {
   ballSnap: boolean
   /** 悬浮球停靠与吸附行为：自动吸边 / 自由停靠 / 固定右下角 */
   ballDockMode: BallDockMode
-  /** 固定右下角模式：右侧边距（px，默认 60） */
+  /** 固定右下角模式：右侧边距（px，默认 80，见 DEFAULT_BOTTOM_RIGHT_OFFSET_X） */
   ballBottomRightRight: number
-  /** 固定右下角模式：底部边距（px，默认 60） */
+  /** 固定右下角模式：底部边距（px，默认 80，见 DEFAULT_BOTTOM_RIGHT_OFFSET_Y） */
   ballBottomRightBottom: number
   /** 悬浮球形状：圆形 / 圆角方形 / 矩形 */
   ballShape: BallShape

@@ -108,12 +108,20 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 
   | 工具 key | 值类型 | 说明 |
   | --- | --- | --- |
+  | `activeToolTab` | `ToolId \| null` | 工具箱当前激活项（`ToolsApp`） |
   | `base64` | `{ tab, decodeInput, decodeOutput, encodeInput, encodeOutput, fileB64Input }` | 对象，各 tab 独立 |
-  | `json.workbench` | 对象 | JSON 工作台单独存 |
+  | `detect.input` | `string` | 智能解析输入 |
+  | `hash` | `{ tab, textInput, hmacKey, showHmac, uppercase, expectedChecksum }` | 对象，文本 / 文件两个 tab 共用字段 |
+  | `json.workbench` | `JsonDraft` 对象 | `input` / `output` / `indent` / `sortKeys` / `minify` / `lastAction` / `splitRatio` |
+  | `jwt.token` | `string` | JWT 输入 |
+  | `qrcode.input` | `string` | 二维码生成输入 |
+  | `timestamp.input` | `string` | 时间戳输入 |
   | `url.tab` | `'parse' \| 'codec'` | URL 工具额外有 tab 草稿 |
   | `url.parse.input` | `string` | URL 解析输入 |
   | `url.codec` | `{ scope, input, output }` | URL 编解码 |
-  | 其余工具（timestamp / jwt / hash / …） | `string` | 单一字符串 |
+  | 其余新增工具 | `string` | 单一字符串（新增工具时在本表登记） |
+
+  注：表里是传给 `useToolDraft` 的**逻辑 key**，实际存储键由 `draft.ts` 统一加前缀 `toolkit.draft.`；值类型是 `useToolDraft<T>` 的 `T`，`useToolDraft` 不做校验，读取方要自己容错。
 
 - **跨端错误码**：background 没有语言上下文，因此只回 `{ ok:false, code }`；文案由 UI 侧 `resolveStorageError()` 按当前语言映射。**在 background 里写文案不会生效**（那里本来就不该有文案）。
 - **存储桥接**：扩展页（侧边栏 / Options）无法直接读网页 `localStorage`，由 content 的 `installStorageBridge()` 代读代写。因此侧边栏的网页存储**依赖当前标签页已注入 content script**——特权页或未注入的页面取不到数据是正常现象，不是 bug。

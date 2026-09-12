@@ -4,6 +4,7 @@ import { normalizeSettings, saveSettings } from '@/utils/settings'
 import type { Settings } from '@/utils/settings'
 
 import type { DetectKind } from './detect'
+import { formatJson, minifyJson } from './json'
 import { DEFAULT_JSON_DRAFT, JSON_DRAFT_KEY } from './JsonTool'
 import type { ToolId } from './registry'
 
@@ -68,13 +69,21 @@ export async function prepareToolHandoff(tool: ToolId, text: string): Promise<Ha
     // 划选面板的「在侧边栏中打开」走这里：把选中文本带回智能解析工具
     await setDraftValue(DETECT_INPUT_KEY, text)
   } else if (tool === 'json') {
-    // JSON 工具用的是**对象草稿**：保留用户已有的缩进 / 排序 / 分屏偏好，只替换输入并清空上次输出
+    // JSON 工具用的是**对象草稿**：保留用户已有的缩进 / 排序 / 单行偏好。
+    // 必须先铺默认值再铺存量：历史草稿缺字段时靠默认值补齐，避免写出结构不完整的对象。
     const stored = await getDraftValue<typeof DEFAULT_JSON_DRAFT>(JSON_DRAFT_KEY)
+    const draft = { ...DEFAULT_JSON_DRAFT, ...(stored ?? {}) }
+    // 智能解析送来的就是已识别通过的 JSON：这里**顺手执行一次「格式化」**（与工具里那颗按钮同一套偏好：
+    // minify 偏好决定单行还是展开），把结果一并写进草稿，用户打开就在结果区看到内容，不必再点一下。
+    // 解析失败（理论上不该发生）则保持 output 为空、lastAction 为 null，不写入来路不明的结果。
+    const formatted = draft.minify
+      ? minifyJson(text, { sortKeys: draft.sortKeys })
+      : formatJson(text, { indent: draft.indent, sortKeys: draft.sortKeys })
     await setDraftValue(JSON_DRAFT_KEY, {
-      ...(stored ?? DEFAULT_JSON_DRAFT),
+      ...draft,
       input: text,
-      output: '',
-      lastAction: null,
+      output: formatted.ok ? (formatted.text ?? '') : '',
+      lastAction: formatted.ok ? (draft.minify ? 'minify' : 'format') : null,
     })
   } else {
     await setDraftValue(URL_PARSE_INPUT_KEY, text)

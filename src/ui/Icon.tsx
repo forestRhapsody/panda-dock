@@ -25,6 +25,7 @@ export type IconName =
   | 'chevron-left' // 左箭头
   | 'pin' // 图钉（钉住）
   | 'alert' // 警告 / 错误提示
+  | 'info' // 信息 / 中性提示
   | 'refresh' // 刷新 / 重新载入
   | 'swap' // 交换 / 双向转换
   | 'search' // 搜索放大镜
@@ -147,6 +148,14 @@ const GLYPHS: Record<IconName, ReactNode> = {
       <circle cx='12' cy='12' r='10' />
       <line x1='12' y1='8' x2='12' y2='12' />
       <line x1='12' y1='16' x2='12.01' y2='16' />
+    </>
+  ),
+  // 与 alert 同为圆形轮廓，但惊叹号倒置（上点下竖），语义是「信息」而非「警告」
+  info: (
+    <>
+      <circle cx='12' cy='12' r='10' />
+      <line x1='12' y1='16' x2='12' y2='12' />
+      <line x1='12' y1='8' x2='12.01' y2='8' />
     </>
   ),
   refresh: (
