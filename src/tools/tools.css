@@ -2516,3 +2516,58 @@
   max-height: 140px;
   overflow-y: auto;
 }
+
+/* —— 工具级错误边界降级卡片（T128） —— */
+
+.tw-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: var(--tk-card);
+  box-shadow: var(--tk-shadow-xs);
+}
+
+.tw-error__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--tk-destructive);
+}
+
+.tw-error__title {
+  font-size: var(--tk-text-sm);
+  font-weight: 600;
+}
+
+.tw-error__desc {
+  margin: 0;
+  font-size: var(--tk-text-xs);
+  line-height: 1.6;
+  color: var(--tk-muted-foreground);
+}
+
+.tw-error__detail {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: 140px;
+  overflow: auto;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-secondary);
+  color: var(--tk-secondary-foreground);
+  font-family: var(--tk-font-mono);
+  font-size: var(--tk-text-xs);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

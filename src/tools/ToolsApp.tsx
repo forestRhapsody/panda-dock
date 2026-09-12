@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 
 import AppLogo from '@/ui/AppLogo'
 import Toaster from '@/ui/Toaster'
+import ToolErrorBoundary from '@/ui/ToolErrorBoundary'
 import { useToolDraft } from '@/utils/draft'
 import { extVersion, isExtension, openOptionsPage, storageGet, storageSet } from '@/utils/env'
 import { normalizeSettings } from '@/utils/settings'
@@ -274,7 +275,8 @@ export default function ToolsApp({ headerActions, showHeader = true }: ToolsAppP
       </nav>
 
       <main className={`tw__body tw__body--${active}`} role='tabpanel'>
-        {TOOL_COMPONENTS[active]?.() ?? null}
+        {/* key={active}：切换工具即重建边界，错误状态随之清空；边界只包裹工具面板本身，不影响布局 */}
+        <ToolErrorBoundary key={active}>{TOOL_COMPONENTS[active]?.() ?? null}</ToolErrorBoundary>
       </main>
 
       <Toaster position='bottom' />
