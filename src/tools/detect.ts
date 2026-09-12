@@ -81,6 +81,8 @@ export interface DetectResult {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const HEX_RE = /^[0-9a-fA-F]+$/
 const B64_RE = /^[A-Za-z0-9+/]+={0,2}$/
+/** 形如英文单词的 4 字符全小写串：4 字符 Base64 只有 3 字节信息量，无法与这类单词区分（见 detectBase64） */
+const B64_SHORT_WORD_RE = /^[a-z]{4}$/
 const DATA_URL_RE = /^data:([^;,]+)(?:;charset=[^;,]+)?;base64,(.+)$/i
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'ftp:', 'ws:', 'wss:', 'file:'])
 
@@ -310,6 +312,11 @@ function detectBase64(s: string): DetectResult | null {
   if (/[ \t]/.test(s)) return null
   const clean = s.replace(/\s+/g, '')
   if (clean.length < 4 || clean.length % 4 !== 0 || !B64_RE.test(clean)) return null
+  // 长度恰为 4 是最小 Base64 单元，仅含 3 字节信息量：全小写纯字母（file / edit / aced）
+  // 几乎必然是被误当密文的英文单词，而其解码结果又恰好是合法 UTF-8 可打印文本，
+  // 后续「canonical + UTF-8 + 无控制字符」护栏无法区分，故在此直接排除。
+  // 含大写、数字或 padding 的 4 字符短密文（YWFh → aaa、YQ== → a、5L2g → 你）不受影响。
+  if (clean.length === 4 && B64_SHORT_WORD_RE.test(clean)) return null
   try {
     const canonical = btoa(atob(clean)) === clean
     if (!canonical) return null

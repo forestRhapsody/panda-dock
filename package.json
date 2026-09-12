@@ -9,9 +9,11 @@
     "icons": "node scripts/generate-icons.mjs",
     "build": "tsc -b && vite build --config vite.content.config.ts && vite build --config vite.background.config.ts && vite build",
     "lint": "eslint . --fix",
+    "lint:check": "eslint .",
     "preview": "vite preview",
     "preinstall": "npx only-allow pnpm",
     "format": "prettier --write src/",
+    "test": "vitest run",
     "type-check": "tsc -b"
   },
   "dependencies": {
@@ -44,12 +46,14 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
+    "happy-dom": "^20.14.5",
     "prettier": "^3.6.2",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
     "vite": "^7.1.2",
     "vite-plugin-checker": "^0.10.3",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^5.0.0"
   },
   "volta": {
     "node": "24.8.0"
