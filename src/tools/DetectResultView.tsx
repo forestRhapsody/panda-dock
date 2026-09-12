@@ -2,11 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import Icon from '@/ui/Icon'
+
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import type { DetectBlock, DetectField, DetectItem, DetectResult } from './detect'
 import DownloadButton from './DownloadButton'
+import { toolForDetectKind } from './handoff'
 import JsonHighlight from './JsonHighlight'
+import type { ToolId } from './registry'
 import { StatusText } from './StatusText'
 
 const KIND_LABEL: Record<DetectResult['kind'], string> = {
@@ -128,6 +132,11 @@ export interface DetectResultViewProps {
   activeMatchIndex?: number
   /** 点击选中某个结果项的回调 */
   onSelectMatch?: (index: number) => void
+  /**
+   * 「在 XX 工具中打开」：把当前激活匹配的原文本交给目标工具继续加工（T134）。
+   * 宿主负责唤起方式：工具箱内直接切 Tab；网页内抽屉 / 侧边栏则先准备草稿再唤起。
+   */
+  onOpenInTool?: (tool: ToolId, text: string) => void
 }
 
 /** 智能解析结果视图：识别徽标 + Tab 选项卡 + 短字段/长文本块。供 Detect 工具与选中文字悬浮面板共用。 */
@@ -137,10 +146,15 @@ export default function DetectResultView({
   items,
   activeMatchIndex = 0,
   onSelectMatch,
+  onOpenInTool,
 }: DetectResultViewProps) {
   const { t } = useTranslation()
   const hasMultiple = Boolean(items && items.length > 1 && onSelectMatch)
   const tabsRef = useRef<HTMLDivElement>(null)
+  // 「在 XX 工具中打开」：只对目标工具确有额外能力的类型显示入口（见 handoff.ts 的评估结论）
+  const targetTool = toolForDetectKind(result.kind)
+  // 交给目标工具的是**当前激活匹配的原文**；纯净输入没有匹配区间时退回复制内容
+  const handoffText = result.sourceMatches?.find((m) => m.active)?.text ?? result.copy
 
   /** 把激活的选项卡平滑滚动到容器水平居中（与能力 Tab 居中行为完全对齐） */
   const revealActiveTab = useCallback((index: number, smooth = true) => {
@@ -201,6 +215,17 @@ export default function DetectResultView({
           <span className='tw-detect__total-badge'>
             {t('tool.detect.totalMatches', { count: items!.length })}
           </span>
+        )}
+
+        {targetTool && onOpenInTool && (
+          <button
+            type='button'
+            className='tw-link tw-detect__head-action'
+            onClick={() => onOpenInTool(targetTool, handoffText)}
+          >
+            {t('tool.detect.openInTool', { tool: t(`tool.registry.${targetTool}`) })}
+            <Icon name='chevron-right' size={12} />
+          </button>
         )}
       </div>
 

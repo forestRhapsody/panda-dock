@@ -16,6 +16,7 @@ import { detect } from '@/tools/detect'
 import type { DetectResult } from '@/tools/detect'
 import DetectResultView from '@/tools/DetectResultView'
 import HighlightArea from '@/tools/HighlightArea'
+import type { ToolId } from '@/tools/registry'
 import { StatusText } from '@/tools/StatusText'
 import Icon from '@/ui/Icon'
 import Tooltip from '@/ui/Tooltip'
@@ -41,6 +42,8 @@ export interface SelectionDetectPanelProps {
   onClose: () => void
   /** 一键将当前文本带入原生侧边栏并打开智能解析 */
   onOpenInSidePanel?: (text: string) => void
+  /** 「在 XX 工具中打开」：交由宿主准备草稿并唤起（T134） */
+  onOpenInTool?: (tool: ToolId, text: string) => void
 }
 
 const PAD = 10
@@ -60,6 +63,7 @@ export default function SelectionDetectPanel({
   position = 'selection',
   onClose,
   onOpenInSidePanel,
+  onOpenInTool,
 }: SelectionDetectPanelProps) {
   const { t } = useTranslation()
   const ref = useRef<HTMLDivElement>(null)
@@ -350,6 +354,7 @@ export default function SelectionDetectPanel({
             items={items}
             activeMatchIndex={safeActiveIndex}
             onSelectMatch={setActiveMatchIndex}
+            onOpenInTool={onOpenInTool}
           />
         ) : input.trim() ? (
           <StatusText kind='info'>{t('tool.detect.none')}</StatusText>

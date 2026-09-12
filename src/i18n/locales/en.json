@@ -177,6 +177,7 @@
     "detect": {
       "title": "Smart Parse",
       "openInSidePanel": "Open in Side Panel",
+      "openInTool": "Open in the {{tool}} tool",
       "pin": "Pin panel",
       "unpin": "Unpin panel",
       "sourceLabel": "Selected Text",

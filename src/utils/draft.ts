@@ -6,6 +6,27 @@ const DRAFT_PREFIX = 'toolkit.draft.'
 const memoryCache = new Map<string, unknown>()
 
 /**
+ * 读取某个草稿（优先内存缓存，回退会话存储）。
+ * 供「写入前先保留用户其它偏好」的场景使用（如智能解析送数据给 JSON 工具时保留其缩进/排序设置）。
+ */
+export async function getDraftValue<T>(key: string): Promise<T | null> {
+  const fullKey = `${DRAFT_PREFIX}${key}`
+  if (memoryCache.has(fullKey)) return memoryCache.get(fullKey) as T
+  return storageGet<T>('session', fullKey)
+}
+
+/**
+ * 从外部写入某个草稿（如智能解析的「在 XX 工具中打开」）。
+ * 必须**同时**更新内存缓存与会话存储：`useToolDraft` 的初始状态优先取内存缓存，
+ * 只写存储会让同一会话内先前用过该工具的用户看到一帧旧值（甚至误以为没带过去）。
+ */
+export async function setDraftValue<T>(key: string, value: T): Promise<void> {
+  const fullKey = `${DRAFT_PREFIX}${key}`
+  memoryCache.set(fullKey, value)
+  await storageSet('session', fullKey, value)
+}
+
+/**
  * 工具草稿状态持久化 Hook（基于浏览器会话存储，关抽屉/刷页面/切换侧边栏不丢失，关浏览器自动清空）
  * - 结合内存同步缓存：切换 Tab 或重新挂载时零延迟、无白屏/闪烁
  * - 防抖自动同步到 chrome.storage.session

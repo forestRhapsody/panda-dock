@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useLocale } from '@/i18n/useLocale'
+import { prepareToolHandoff } from '@/tools/handoff'
+import type { ToolId } from '@/tools/registry'
 import { shouldShowFloatingBall } from '@/utils/domainMatch'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
@@ -568,30 +570,21 @@ export default function ToolkitOverlay() {
   // 悬浮球点击复用 toggleToolkit
   const handleBallClick = toggleToolkit
 
-  // 划选弹窗点击「带入侧边栏并解析」
-  const handleOpenInSidePanel = useCallback(
-    async (text: string) => {
-      // 1. 设置会话草稿与激活 tab 为 detect（无论侧边栏还是抽屉都会通过 onChanged 或首屏恢复）
-      await storageSet('session', 'toolkit.draft.detect.input', text)
-      await storageSet('session', 'toolkit.draft.activeToolTab', 'detect')
+  /**
+   * 把文本交给目标工具并在扩展宿主里打开：
+   * 1) 先写好会话草稿、激活目标 Tab、必要时启用该工具（见 handoff.ts）；
+   * 2) 原生侧边栏优先（forceOpen 避免误收起已开的侧边栏），受限时回退网页内抽屉；
+   * 3) 关闭网页内的选区悬浮面板。
+   */
+  const openToolInHost = useCallback(
+    async (tool: ToolId, text: string) => {
+      await prepareToolHandoff(tool, text)
 
-      // 2. 保证 detect 工具处于启用状态（若用户曾禁用则自动恢复）
-      void storageGet<{ toolEnabled?: Record<string, boolean> }>('sync', 'settings').then((cur) => {
-        if (cur?.toolEnabled && cur.toolEnabled.detect === false) {
-          void storageSet('sync', 'settings', {
-            ...cur,
-            toolEnabled: { ...cur.toolEnabled, detect: true },
-          })
-        }
-      })
-
-      // 3. 尝试唤起原生侧边栏（forceOpen: true 避免意外收起已开的侧边栏）
       if (inExt) {
         const ok = await requestNativeSidePanel(true)
         if (ok) {
           setDrawerOpen(false)
         } else {
-          // 若浏览器不支持原生侧边栏或唤起受限，友好回退打开网页内抽屉
           showNotice(t('toast.nativeSidePanelFallback'))
           setDrawerOpen(true)
         }
@@ -599,7 +592,6 @@ export default function ToolkitOverlay() {
         setDrawerOpen(true)
       }
 
-      // 4. 关闭网页内悬浮选区面板
       setSelectionDetect(null)
     },
     [inExt, showNotice, t],
@@ -644,7 +636,8 @@ export default function ToolkitOverlay() {
           targetRect={selectionDetect.targetRect}
           position={selectionDetect.position}
           onClose={() => setSelectionDetect(null)}
-          onOpenInSidePanel={handleOpenInSidePanel}
+          onOpenInSidePanel={(text) => void openToolInHost('detect', text)}
+          onOpenInTool={(tool, text) => void openToolInHost(tool, text)}
         />
       )}
       {notice && inExt && (

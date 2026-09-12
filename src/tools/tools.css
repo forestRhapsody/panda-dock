@@ -1075,6 +1075,13 @@
   user-select: none;
 }
 
+/* 「在 XX 工具中打开」：始终贴右，避免与识别徽标、计数徽章挤在一起 */
+.tw-detect__head-action {
+  margin-left: auto;
+  font-size: var(--tk-text-xs);
+  white-space: nowrap;
+}
+
 .tw-detect__tabs {
   display: flex;
   align-items: center;

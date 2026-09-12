@@ -33,7 +33,10 @@ interface JsonDraft {
   splitRatio?: number
 }
 
-const DEFAULT_DRAFT: JsonDraft = {
+/** JSON 工具的草稿 key：新增/改动时必须同步 `handoff.ts`（智能解析据此把文本送进来） */
+export const JSON_DRAFT_KEY = 'json.workbench'
+
+export const DEFAULT_JSON_DRAFT: JsonDraft = {
   input: '',
   output: '',
   indent: 2,
@@ -51,7 +54,7 @@ const DEFAULT_DRAFT: JsonDraft = {
  */
 export default function JsonTool() {
   const { t } = useTranslation()
-  const [draft, setDraft] = useToolDraft<JsonDraft>('json.workbench', DEFAULT_DRAFT)
+  const [draft, setDraft] = useToolDraft<JsonDraft>(JSON_DRAFT_KEY, DEFAULT_JSON_DRAFT)
   const { input, output, indent, sortKeys, minify = false } = draft
   const [status, setStatus] = useState<ToolStatus | null>(null)
 

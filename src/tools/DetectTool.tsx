@@ -8,7 +8,9 @@ import { useToolDraft } from '@/utils/draft'
 import { detect } from './detect'
 import type { DetectResult } from './detect'
 import DetectResultView from './DetectResultView'
+import { prepareToolHandoff } from './handoff'
 import HighlightArea from './HighlightArea'
+import type { ToolId } from './registry'
 import { StatusText } from './StatusText'
 
 interface FormatPreset {
@@ -73,6 +75,15 @@ export default function DetectTool() {
   const items = result?.items
   const totalMatches = items?.length ?? 1
   const safeActiveIndex = activeMatchIndex >= totalMatches ? 0 : activeMatchIndex
+
+  /**
+   * 「在 XX 工具中打开」：检测工具与目标工具本来就同处一个宿主（侧边栏 / 抽屉），
+   * 因此只需准备草稿并激活该 Tab——`activeToolTab` 的草稿变化会被 ToolsApp 的
+   * useToolDraft 监听到，Tab 随之切换。
+   */
+  const handleOpenInTool = useCallback((tool: ToolId, text: string) => {
+    void prepareToolHandoff(tool, text)
+  }, [])
 
   const currentResult = useMemo<DetectResult | null>(() => {
     if (!result) return null
@@ -148,6 +159,7 @@ export default function DetectTool() {
           items={items}
           activeMatchIndex={safeActiveIndex}
           onSelectMatch={setActiveMatchIndex}
+          onOpenInTool={handleOpenInTool}
         />
       )}
 
