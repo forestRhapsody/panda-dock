@@ -36,8 +36,9 @@
   --tk-primary-foreground: #ffffff;
   --tk-ring: #171717;
 
-  /* —— 功能色（对齐 shadcn/ui） —— */
-  --tk-destructive: hsl(0 84.2% 60.2%);
+  /* —— 功能色（shadcn/ui 基础上按实际观感微调；与 theme.ts 的内联兜底保持逐字一致，
+        兜底优先级更高，所以这里写的就是「实际生效值」，由 theme.dom.test.ts 守住） —— */
+  --tk-destructive: hsl(0 66% 48%);
   --tk-destructive-foreground: hsl(0 0% 98%);
   --tk-success: hsl(149 46% 34%);
   --tk-warning: hsl(36 78% 38%);
@@ -59,11 +60,13 @@
   --tk-shadow-md: 0 4px 12px -2px rgb(24 24 27 / 0.08), 0 2px 6px -2px rgb(24 24 27 / 0.05);
   --tk-shadow-lg: 0 12px 26px -6px rgb(24 24 27 / 0.18);
 
-  /* —— 功能色：高亮标记（在亮色与深色模式下统一使用明快浅黄色，搭配高对比深色文字） —— */
+  /* —— 功能色：高亮标记（激活项在明暗两套里都是「明快浅黄 + 深色字」） —— */
   --tk-highlight: #fef08a;
   --tk-highlight-foreground: #171717;
-  --tk-highlight-secondary: #fef9c3;
-  --tk-highlight-secondary-foreground: #171717;
+  /* 待切换项用**极浅中性灰**（#f3f4f6），与激活项的荧光黄靠饱和度拉开 —— 原先用同色系浅黄
+     （#fef9c3）深浅太接近，用户反馈「区分不够明显」。 */
+  --tk-highlight-secondary: #f3f4f6;
+  --tk-highlight-secondary-foreground: hsl(240 9% 9%);
 
   /* —— 字体 —— */
   --tk-font:
@@ -83,6 +86,9 @@
   --tk-control-h: calc(32px * var(--tk-font-scale)); /* 标准控件高 */
   --tk-control-h-sm: calc(26px * var(--tk-font-scale)); /* 紧凑控件高（头部动作区） */
   --tk-control-h-lg: calc(38px * var(--tk-font-scale)); /* 强调按钮高（主操作按钮） */
+  /* 行内小胶囊高（格式预设 / 智能解析的结果 tab）：比 --tk-control-h-sm 再矮一档，
+     自带缩放 —— 固定 px 时字体缩放调大后文字会顶出胶囊 */
+  --tk-control-h-xs: calc(22px * var(--tk-font-scale));
 }
 
 /* —— 深色（冷调中性色反转，主色提亮为近白、文字转深） ——
@@ -111,7 +117,10 @@
   --tk-primary-foreground: hsl(240 10% 4%);
   --tk-ring: hsl(0 0% 83%);
 
-  --tk-destructive: hsl(0 62.8% 30.6%);
+  /* 与 theme.ts 的内联兜底保持一致：兜底里这一支是提亮过的 55%（近黑底上 30.6% 太暗、几乎看不出是
+     「红」），内联样式优先级更高，所以**实际生效的一直是 55%**；这里同步过来，免得 CSS 与兜底各说各话
+     （由 theme.dom.test.ts 的「内联兜底一致性」逐字守住）。 */
+  --tk-destructive: hsl(0 62% 55%);
   --tk-destructive-foreground: hsl(0 0% 98%);
   --tk-success: hsl(149 50% 45%);
   --tk-warning: hsl(36 80% 50%);
@@ -126,11 +135,11 @@
   --tk-shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
   --tk-shadow-lg: 0 12px 26px -6px rgb(0 0 0 / 0.6);
 
-  /* 深色主题下激活项高亮统一使用明快浅黄色配深色字；次级高亮采用清晰暖暗金底色配高对比白字，
-     既在暗色背景下清晰可辨候选区域，又与激活焦点形成鲜明的主次层级。 */
+  /* 深色主题下激活项同为明快浅黄 + 深色字；待切换项仍是**中性灰底**，只是这里不能沿用浅色主题的
+     #f3f4f6 —— 那是近乎白的浅灰，在深色卡片上会变成刺眼的亮块、也不再是「次级」。 */
   --tk-highlight: #fef08a;
   --tk-highlight-foreground: #171717;
-  --tk-highlight-secondary: hsl(48 60% 25%);
+  --tk-highlight-secondary: hsl(240 5% 28%);
   --tk-highlight-secondary-foreground: hsl(0 0% 98%);
 }
 

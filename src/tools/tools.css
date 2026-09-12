@@ -369,11 +369,7 @@
   opacity: 0.7;
 }
 
-.tw-area-input::selection {
-  background: color-mix(in srgb, var(--tk-ring) 30%, transparent);
-  /* 显式透明：否则 UA 的 ::selection 文字色会压上来，与涂层文字叠成重影 */
-  color: transparent;
-}
+/* 选区不自定义配色：交给浏览器默认的选区底色 + 选区文字色，观感与系统一致 */
 
 /* 匹配标记涂抹层：紧密跟随字符自然流动，换行独立克隆。
    沿用 T24 的扁平样式（无圆角、无描边，只靠颜色区分）；底色与文字色成对使用
@@ -912,10 +908,7 @@
     box-shadow 0.15s;
 }
 
-.json-editor__input::selection {
-  background: color-mix(in srgb, var(--tk-ring) 30%, transparent);
-  color: transparent;
-}
+/* 同智能解析输入框：选区不自定义配色，交给浏览器默认（原先自定义的选区块会与语法高亮抢色） */
 
 .json-editor__input:focus {
   border-color: var(--tk-ring);
@@ -1032,7 +1025,7 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  height: 22px;
+  height: var(--tk-control-h-xs);
   padding: 0 8px;
   font-size: var(--tk-text-xs);
   font-family: var(--tk-font);
@@ -1108,8 +1101,9 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  height: 26px;
-  padding: 0 10px;
+  /* 与同级「支持格式」胶囊同高（曾用 26px，比旁边的胶囊胖一圈，用户反馈「太大」） */
+  height: var(--tk-control-h-xs);
+  padding: 0 8px;
   font-size: var(--tk-text-xs);
   font-family: var(--tk-font);
   line-height: 1;

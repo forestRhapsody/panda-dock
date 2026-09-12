@@ -33,18 +33,19 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 | 命令 | 作用与注意 |
 | --- | --- |
 | `pnpm dev` | 浏览器预览 UI，无需扩展环境（`chrome.*` 自动降级） |
+| `pnpm gate` | **交付门禁一条命令**：`format && lint && test && build`（四步的静音版）。只在用户要求交付时跑，见 §7.2 |
 | `pnpm build` | 类型检查（内含 `tsc -b`）+ 打包，顺序 content → background → 页面。**顺序不可乱**（content 先清空 `dist/`）；**不跑测试**；只在交付门禁或要装进浏览器实测时跑（§7） |
 | `pnpm type-check` | 仅 `tsc -b`（实测 ~5s）；`pnpm build` 已包含它 |
 | `pnpm lint` | ESLint **自动修复**（只覆盖 ts/tsx/js/jsx；css/json 的格式化归 `pnpm format`） |
 | `pnpm lint:check` | 只读校验；**CI 用这个**——`lint` 会改写工作区 |
 | `pnpm test <文件名片段>` | **过程验证的默认手段**：只跑匹配到的测试文件（`pnpm test theme`、`pnpm test HighlightArea`），实测 ~1s |
-| `pnpm test` | 全量单测（76 files / ~1900 例 / 实测 ~11s）。**默认不跑**，只在交付门禁或改动基础全局逻辑时跑（§7） |
-| `pnpm test:changed` | 只跑与当前 git 改动有依赖关系的测试（`vitest run --changed`）。成本随波及面走（工作区改了 20+ 文件时实测 ≈ 全量）；筛选不到任何文件会直接失败 |
+| `pnpm test` | 全量单测（76 files / ~1900 例 / 实测 ~11s，dot reporter）。**默认不跑**，只在交付门禁时跑（§7.2）；输出量见 §7.1 第 2 条 |
+| `pnpm test:changed` | 只跑与当前 git 改动有依赖关系的测试。成本随波及面走（工作区改了 20+ 文件时实测 ≈ 全量）；筛选不到任何文件会直接失败 |
 | `pnpm test:watch` | 交互式监听；**人类专用，代理禁用**（会一直挂住会话） |
-| `pnpm format` | Prettier **只覆盖 `src/`**；根配置（`vite*.config.ts`、`vitest.config.ts`、`eslint.config.js`）要手动格式化 |
+| `pnpm format` | Prettier **只覆盖 `src/`**（`--log-level warn`，绿时几乎无输出）；根配置（`vite*.config.ts`、`vitest.config.ts`、`eslint.config.js`）要手动格式化 |
 | `pnpm icons` | 生成 `public/icons/*.png` |
 
-**验证级别**：迭代时默认只做过程验证——「改了什么 → 跑哪条命令」见 §7.1；全量门禁只在收尾时跑一次（§7.2）。
+**验证级别**：迭代时默认只做过程验证——「改了什么 → 跑哪条命令」见 §7.1；全量门禁由**用户显式要求交付**触发（§7.2），不要自己顺手跑。
 
 装载扩展：`pnpm build` 后在 `chrome://extensions` 开启开发者模式 → 加载 `dist/`。
 
@@ -175,7 +176,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 
 ## 7 验证分级与完工定义
 
-验证分两级：**过程验证**（每次改动都做，默认级别）与**交付门禁**（只在收尾时跑一次）。
+验证分两级：**过程验证**（每次改动都做，默认级别）与**交付门禁**（只在用户要求交付时跑一次）。
 不默认跑全量的理由不是"图省事"：改一个颜色跑全量单测既**证明不了颜色对不对**（没有任何测试断言视觉），又要等、还会把几十个文件的输出灌进上下文。
 
 ### 7.1 过程验证（默认）
@@ -196,29 +197,28 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 三条纪律：
 
 1. **粒度从最小开始**：先跑单个文件/关键词，绿了就停，不要"顺手"再跑全量。
-2. **输出卫生**：全量单测默认 reporter 会列出全部文件；只想看总数就加 `--reporter=dot`，长输出命令一律 `| tail -n 20`。**不要把整段测试 / 构建输出贴进上下文**——这是最大的一笔 token 开销。
+2. **输出卫生是硬约束**：任何命令输出 > 30 行都算违规。脚本侧已经收口（`format` 静音、`test` 走 dot reporter、`build` 只留告警），剩下的靠执行者：长输出一律 `| tail -n 20` 或 `| grep -E "Test Files|Tests |FAIL"`，**不要把整段测试 / 构建输出贴进上下文**。
+   - 本机与 CI 设了代理变量时，76 个测试 worker 每个喷 2 行 undici 警告（实测占 150+ 行）：跑测试时前缀 `NODE_OPTIONS=--no-warnings`（如 `NODE_OPTIONS=--no-warnings pnpm test`）。它只治这个环境问题，**不要写进脚本**——内联 env 在 Windows 上会直接报错。
 3. **红了再聚焦**：失败时单独重跑那个文件看完整报错，不要在全量输出里翻。
 
-### 7.2 交付门禁（收尾时跑一次）
+### 7.2 交付门禁（由用户触发，不是每轮都跑）
 
-满足下列任一条才跑全量：
-
-- 用户明确要求收尾 / 交付 / 提交 / 发版；
-- 改动触及**公共契约**（`registry.ts`、`messages.ts`、`settings.ts`、`theme.css` 里令牌的**增删改名**（只调值不算）、`manifest.json`、任一 vite / tsconfig / eslint 配置）；
-- 本次任务累计改了 ≥ 3 个模块，或过程验证出现过没吃透的信号。
+**默认不跑全量。** 只有用户明确说要交付（提交 / 交付 / 发版 / 推送）时才跑：
 
 ```
-pnpm format && pnpm lint && pnpm test && pnpm build
+pnpm gate        # = format && lint && test && build
 ```
 
-- `pnpm build` 内含 `tsc -b`（即 `pnpm type-check`），所以链里**不再单跑** `type-check`。
-- `pnpm build` **不跑测试**、`pnpm lint` 只做静态检查，两者不能互相替代。
-- 全量链一轮只跑一次：跑过 `pnpm test` 就不要再顺手跑 `pnpm test:changed`。
-- CI 在 push / PR 上跑 `type-check + lint:check + test + build`（只读版），是最终兜底；本地全量是交付前自查，**不必每轮都跑**。
+- 用户没要求交付时：只做 §7.1 的过程验证，报告里写明「未跑全量门禁」——**不要自己顺手补一次全量**（一次全量 ≈ 500 行输出 ≈ 8k tokens，是最大的单项开销）。
+- **纯视觉 / 令牌值改动**（改颜色、间距、尺寸；不新增或改名令牌）：交付时 `pnpm test theme && pnpm build` 即可，不必 `pnpm gate`。只有逻辑、公共契约（§3 的「唯一来源」文件、构建配置）与令牌增删改名才需要全量。
+- 公共契约改动但用户还没要求交付：过程中用 `pnpm test:changed`，报告里提示「交付前建议跑 `pnpm gate`」交给用户决定。
+- `pnpm gate` 的 `build` 内含 `tsc -b`（= `pnpm type-check`），链里**不再单跑** `type-check`；`build` **不跑测试**、`lint` 只做静态检查，两者不能互相替代。
+- 一轮只跑一次：跑过 `test` 就不要再顺手跑 `test:changed`。
+- CI 在 push / PR 上跑 `type-check + lint:check + test + build`（只读版），是最终兜底——本地漏跑不会让坏代码进主干。
 - 涉及 `chrome.*`、content script、快捷键、抽屉/侧边栏互斥的改动，**必须 `pnpm build` 后在浏览器里实测**——`pnpm dev` 没有 `chrome`，这些路径根本跑不到。
 - 报告纪律：说清**做了哪一级验证、跑了哪几条命令、结果如何**；只做了过程验证就明说"未跑全量门禁"；没验证的部分要明说，不要让人以为已验过。
 
-> 耗时为本机实测：全量单测 76 files / 1902 例 ≈ 11s、`type-check` ≈ 5s、`lint:check` ≈ 7s、`build` ≈ 14s、全量链 ≈ 35s。换机器会有出入，量级只用来判断"该不该跑"。
+> 实测：定向单测 ~1s；`pnpm gate` ≈ 35s（全量单测 76 files / 1900+ 例 ≈ 11s、`build` ≈ 14s）。耗时不是瓶颈，**输出体量**才是。
 
 ## 8 红线
 
@@ -229,3 +229,13 @@ pnpm format && pnpm lint && pnpm test && pnpm build
 - **新增依赖要克制**：能用平台 API 就用平台 API（文本加解密用 Web Crypto 而非 crypto-js；测试用 Vitest + happy-dom）。加了依赖要说明用途与体积影响。
 - **不静默毁数据**：`chrome.storage` / 网页存储 / Cookie 的破坏性写操作必须走 `ConfirmDialog` 二次确认。
 - **不提交 `dist/`、`node_modules/`、`.pnpm-store/`**（`.gitignore` 已忽略，不要用 `-f` 强推）。
+
+## 9 上下文与输出纪律
+
+上下文是这里最贵的资源：`AGENTS.md` 每个用户回合都会注入（≈6.5k tokens/轮）；一次全量门禁的原始输出 32 KB ≈ 8k tokens，脚本静音 + `NODE_OPTIONS=--no-warnings` 后 ≈ 5 KB（1.3k tokens）。以下五条按硬约束执行：
+
+1. **先定位再取窗**：`grep -n` 找到行号，再 `read` 一个 ≤ 80 行的窗口；不要整文件读（`tools.css` 已 2500+ 行）。同一处改动不要反复整读同一文件——改完用 `git diff -- <file>` 看差异。
+2. **输出 ≤ 30 行**：见 §7.1 第 2 条。超了先收口再看；只贴关键几行，不贴整段。
+3. **不重复劳动**：同一条命令（尤其 `test` / `build`）一轮只跑一次；文件没变就不重跑；绿了不要"为了安心"再跑一遍。
+4. **写完就停**：一条断言能守住的不变量不要写三条；新守卫必须做过变异验证（改坏能变红）才算数，否则是装饰。
+5. **文档有预算**：`AGENTS.md` 每轮都进上下文——加约定前先看能否并进已有条目（新增 10 行 ≈ +150 tokens/轮）；`TASKS.md` 每条 ≤ 6 行（描述 / 结果 / 门禁），已完成批次压成一行归档，不贴过程细节。

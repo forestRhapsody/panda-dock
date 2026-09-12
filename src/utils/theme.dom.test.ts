@@ -24,17 +24,8 @@ import { applyTheme, HOST_ID, useTheme } from './theme'
 type ChangeListener = (changes: Record<string, { newValue?: unknown }>, area: string) => void
 const globalWithChrome = globalThis as unknown as { chrome?: unknown }
 
-/** light / dark 两套令牌里的代表值，用来验证「配色真的按主题换了一套」 */
-const LIGHT_BACKGROUND = 'hsl(0 0% 99%)'
-const DARK_BACKGROUND = 'hsl(240 10% 4%)'
-const LIGHT_FOREGROUND = 'hsl(240 9% 9%)'
-const DARK_FOREGROUND = 'hsl(0 0% 98%)'
-const LIGHT_PRIMARY = '#171717'
-const DARK_PRIMARY = 'hsl(0 0% 96%)'
-const LIGHT_HIGHLIGHT = '#fef08a'
-const DARK_HIGHLIGHT = '#fef08a'
-const LIGHT_HIGHLIGHT_SECONDARY = '#fef9c3'
-const DARK_HIGHLIGHT_SECONDARY = 'hsl(48 60% 25%)'
+// 令牌值的期望不在这里写死：一律以 `src/theme.css` 为准逐字比对（见 `expectInlined`），
+// 否则测试自己就成了第二个「会漂移的副本」—— 本文件曾经因为抄死的 `#fef9c3` 而变红。
 
 let changeListeners: ChangeListener[]
 let syncStore: Record<string, unknown>
@@ -159,13 +150,7 @@ describe('applyTheme 的落点与令牌内联', () => {
     applyTheme('light')
 
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(LIGHT_BACKGROUND)
-    expect(cssVar(document.documentElement, '--tk-foreground')).toBe(LIGHT_FOREGROUND)
-    expect(cssVar(document.documentElement, '--tk-primary')).toBe(LIGHT_PRIMARY)
-    expect(cssVar(document.documentElement, '--tk-highlight')).toBe(LIGHT_HIGHLIGHT)
-    expect(cssVar(document.documentElement, '--tk-highlight-secondary')).toBe(
-      LIGHT_HIGHLIGHT_SECONDARY,
-    )
+    expectInlined(document.documentElement, 'light')
   })
 
   it('无宿主且非扩展：dark 直接生效，内联的是 dark 一套令牌', () => {
@@ -174,13 +159,7 @@ describe('applyTheme 的落点与令牌内联', () => {
     applyTheme('dark')
 
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(DARK_BACKGROUND)
-    expect(cssVar(document.documentElement, '--tk-foreground')).toBe(DARK_FOREGROUND)
-    expect(cssVar(document.documentElement, '--tk-primary')).toBe(DARK_PRIMARY)
-    expect(cssVar(document.documentElement, '--tk-highlight')).toBe(DARK_HIGHLIGHT)
-    expect(cssVar(document.documentElement, '--tk-highlight-secondary')).toBe(
-      DARK_HIGHLIGHT_SECONDARY,
-    )
+    expectInlined(document.documentElement, 'dark')
   })
 
   it('存在宿主且处于扩展环境（content script）：只写宿主，绝不碰 documentElement', () => {
@@ -191,11 +170,7 @@ describe('applyTheme 的落点与令牌内联', () => {
     applyTheme('dark')
 
     expect(host.dataset.theme).toBe('dark')
-    expect(cssVar(host, '--tk-background')).toBe(DARK_BACKGROUND)
-    expect(cssVar(host, '--tk-foreground')).toBe(DARK_FOREGROUND)
-    expect(cssVar(host, '--tk-primary')).toBe(DARK_PRIMARY)
-    expect(cssVar(host, '--tk-highlight')).toBe(DARK_HIGHLIGHT)
-    expect(cssVar(host, '--tk-highlight-secondary')).toBe(DARK_HIGHLIGHT_SECONDARY)
+    expectInlined(host, 'dark')
 
     // 宿主网页的 <html> 必须保持原样，否则内容是「泄漏」到宿主页面上
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
@@ -209,9 +184,11 @@ describe('applyTheme 的落点与令牌内联', () => {
     applyTheme('light')
 
     expect(host.dataset.theme).toBe('light')
-    expect(cssVar(host, '--tk-background')).toBe(LIGHT_BACKGROUND)
+    expect(cssVar(host, '--tk-background')).toBe(tokenValue('light', '--tk-background'))
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(LIGHT_BACKGROUND)
+    expect(cssVar(document.documentElement, '--tk-background')).toBe(
+      tokenValue('light', '--tk-background'),
+    )
   })
 
   it('system 走 matchMedia：matches=true → dark，matches=false → light', () => {
@@ -219,12 +196,16 @@ describe('applyTheme 的落点与令牌内联', () => {
 
     applyTheme('system')
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(DARK_BACKGROUND)
+    expect(cssVar(document.documentElement, '--tk-background')).toBe(
+      tokenValue('dark', '--tk-background'),
+    )
 
     media.setMatches(false)
     applyTheme('system')
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(LIGHT_BACKGROUND)
+    expect(cssVar(document.documentElement, '--tk-background')).toBe(
+      tokenValue('light', '--tk-background'),
+    )
   })
 
   it('反复调用幂等，mode 变化时旧令牌被新主题覆盖', () => {
@@ -233,12 +214,18 @@ describe('applyTheme 的落点与令牌内联', () => {
     applyTheme('dark')
     applyTheme('dark')
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(cssVar(document.documentElement, '--tk-primary')).toBe(DARK_PRIMARY)
+    expect(cssVar(document.documentElement, '--tk-primary')).toBe(
+      tokenValue('dark', '--tk-primary'),
+    )
 
     applyTheme('light')
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(cssVar(document.documentElement, '--tk-primary')).toBe(LIGHT_PRIMARY)
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(LIGHT_BACKGROUND)
+    expect(cssVar(document.documentElement, '--tk-primary')).toBe(
+      tokenValue('light', '--tk-primary'),
+    )
+    expect(cssVar(document.documentElement, '--tk-background')).toBe(
+      tokenValue('light', '--tk-background'),
+    )
   })
 
   it('存在宿主时反复应用不会把宿主令牌留在旧主题上', () => {
@@ -250,8 +237,8 @@ describe('applyTheme 的落点与令牌内联', () => {
     applyTheme('light')
 
     expect(host.dataset.theme).toBe('light')
-    expect(cssVar(host, '--tk-background')).toBe(LIGHT_BACKGROUND)
-    expect(cssVar(host, '--tk-primary')).toBe(LIGHT_PRIMARY)
+    expect(cssVar(host, '--tk-background')).toBe(tokenValue('light', '--tk-background'))
+    expect(cssVar(host, '--tk-primary')).toBe(tokenValue('light', '--tk-primary'))
   })
 })
 
@@ -285,7 +272,9 @@ describe('useTheme 读取设置与实时切换', () => {
 
     await flush()
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(DARK_BACKGROUND)
+    expect(cssVar(document.documentElement, '--tk-background')).toBe(
+      tokenValue('dark', '--tk-background'),
+    )
   })
 
   it('存在宿主时读到 dark：宿主变 dark 且不写 documentElement', async () => {
@@ -299,7 +288,7 @@ describe('useTheme 读取设置与实时切换', () => {
     await flush()
 
     expect(host.dataset.theme).toBe('dark')
-    expect(cssVar(host, '--tk-background')).toBe(DARK_BACKGROUND)
+    expect(cssVar(host, '--tk-background')).toBe(tokenValue('dark', '--tk-background'))
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
   })
 
@@ -315,11 +304,15 @@ describe('useTheme 读取设置与实时切换', () => {
 
     emitChange({ theme: 'dark' })
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(DARK_BACKGROUND)
+    expect(cssVar(document.documentElement, '--tk-background')).toBe(
+      tokenValue('dark', '--tk-background'),
+    )
 
     emitChange({ theme: 'light' })
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(LIGHT_BACKGROUND)
+    expect(cssVar(document.documentElement, '--tk-background')).toBe(
+      tokenValue('light', '--tk-background'),
+    )
   })
 
   it('onChanged 里的非法主题（blue / 缺失）被忽略，保持当前主题', async () => {
@@ -465,6 +458,19 @@ function tokenValue(theme: 'light' | 'dark', name: string): string {
   return value
 }
 
+/** 主题相关令牌 = 深色块里改过值的那些（两套值相同的令牌漏了也无害） */
+const themeDependent = [...darkTokens].filter(([name, value]) => lightTokens.get(name) !== value)
+
+/** 断言 `el` 上内联的每个主题相关令牌都与 theme.css 里该主题的值逐字一致 */
+function expectInlined(el: HTMLElement, theme: 'light' | 'dark'): void {
+  const expected = theme === 'dark' ? darkTokens : lightTokens
+  const mismatched = themeDependent
+    .map(([name]) => [name, cssVar(el, name), expected.get(name) ?? '(theme.css 里没有)'] as const)
+    .filter(([, actual, want]) => actual !== want)
+    .map(([name, actual, want]) => `${name}: 内联=${actual || '(空)'} / css=${want}`)
+  expect(mismatched).toEqual([])
+}
+
 /** 解析 `#rrggbb` / `hsl(h s% l%)`；半透明写法（color-mix、rgb(… / 0.3)）无法参与对比度计算 */
 function toRgb(value: string): [number, number, number] {
   const hex = value.match(/^#([0-9a-f]{6})$/i)
@@ -505,6 +511,16 @@ function contrastRatio(foreground: string, background: string): number {
 const textOn = (theme: 'light' | 'dark', background: string) =>
   contrastRatio(tokenValue(theme, '--tk-foreground'), tokenValue(theme, background))
 
+/** HSL 饱和度（0–1）：激活项与待切换项靠饱和度区分，而不是同色系深浅 */
+function saturationOf(value: string): number {
+  const [r, g, b] = toRgb(value)
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  if (max === min) return 0
+  const lightness = (max + min) / 2
+  return lightness > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min)
+}
+
 describe('高亮标记的可读性', () => {
   for (const theme of ['light', 'dark'] as const) {
     it(`${theme} 主题：激活项高亮（--tk-highlight）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
@@ -527,36 +543,43 @@ describe('高亮标记的可读性', () => {
     it(`${theme} 主题：通用次要背景（--tk-secondary）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
       expect(textOn(theme, '--tk-secondary')).toBeGreaterThanOrEqual(MIN_CONTRAST)
     })
+
+    /**
+     * 用户反馈「区分不够明显」：原先待切换项用的是同色系浅黄（`#fef9c3` vs 激活项 `#fef08a`），
+     * 深浅太接近，肉眼几乎分不出哪一段是当前项。约定改为**靠饱和度拉开** —— 激活项是饱和荧光色，
+     * 待切换项是中性底；谁要把 idle 改回浅黄，这条会立刻变红。
+     */
+    it(`${theme} 主题：激活项饱和、待切换项中性（靠饱和度区分，不是同色系深浅）`, () => {
+      expect(saturationOf(tokenValue(theme, '--tk-highlight'))).toBeGreaterThanOrEqual(0.6)
+      expect(saturationOf(tokenValue(theme, '--tk-highlight-secondary'))).toBeLessThanOrEqual(0.2)
+    })
   }
 })
 
 /**
  * 深色令牌有两条送达路径：theme.css 的 `:host([data-theme='dark'])`（Shadow DOM 用）与 theme.ts 的
- * 内联兜底 `THEME_PALETTES`（内联样式优先级最高，实际值以它为准）。任何一条漏掉一个「主题相关令牌」，
- * 该令牌在深色下就会悄悄退回浅色值 —— 高亮标记正是这么漏过一次（`--tk-highlight` 不在兜底里，
- * 于是深色主题拿到浅色主题的浅黄底，压在近白文字上）。
+ * 内联兜底 `THEME_PALETTES`（内联样式优先级最高，实际生效值以它为准）。兜底是 theme.css 的一份副本，
+ * 一旦漏掉某个主题相关令牌、或写了不一样的值，深浅两套就会各说各话 —— 高亮标记正是这么漏过一次
+ * （`--tk-highlight` 不在兜底里，深色主题拿到浅色主题的浅黄底，压在近白文字上）。
+ * 这里把「两份必须逐字一致」钉死，顺带也就守住了「漏令牌」这一类问题。
  */
-describe('内联兜底完整性（theme.css ↔ theme.ts 调色板）', () => {
-  /** 主题相关令牌 = 深色块里改过值的令牌（两套值相同的令牌漏了也无害） */
-  const themeDependent = [...darkTokens].filter(([name, value]) => lightTokens.get(name) !== value)
+describe('内联兜底一致性（theme.css ↔ theme.ts 调色板）', () => {
+  it('前提：深色块里的令牌在浅色块里都有基准值', () => {
+    expect([...darkTokens.keys()].filter((name) => !lightTokens.has(name))).toEqual([])
+  })
 
-  it('theme.css 里确实有一批主题相关令牌（守卫自身的前提，防它退化成空转）', () => {
+  it('前提：主题相关令牌不止个位数（防止守卫退化成空转）', () => {
     expect(themeDependent.length).toBeGreaterThan(10)
   })
 
   for (const theme of ['light', 'dark'] as const) {
-    it(`${theme} 主题：每个主题相关令牌都被内联到 Shadow DOM 宿主上`, () => {
+    it(`${theme} 主题：每个主题相关令牌都与 theme.css 逐字一致`, () => {
       stubExtension()
-      createHost()
+      const host = createHost()
 
       applyTheme(theme)
 
-      const host = document.getElementById(HOST_ID)
-      if (!host) throw new Error('未创建宿主')
-      const missing = themeDependent
-        .filter(([name]) => cssVar(host, name) === '')
-        .map(([name]) => name)
-      expect(missing).toEqual([])
+      expectInlined(host, theme)
     })
   }
 })
@@ -625,5 +648,35 @@ describe('高亮文字层契约（tools.css）', () => {
     const idle = ruleBody(toolsCssText, '.tw-area-mark--idle')
     expect(idle).toMatch(/color:\s*var\(--tk-highlight-secondary-foreground\)/)
     expect(idle).toMatch(/background:\s*var\(--tk-highlight-secondary\)/)
+  })
+})
+
+/**
+ * 选区配色**不自定义**（产品决定，T28）：textarea 的文字是透明的，自定义的选区底色会与涂层的高亮
+ * 抢色（曾经 30% 近黑把荧光黄糊成橄榄泥色，用户反馈「选文字的颜色也很难看」），选区的底色与文字色
+ * 一律交回浏览器默认。这条守卫拦住「再手痒加 ::selection」。
+ */
+describe('选区不自定义配色', () => {
+  const toolsCssText = readCss('tools/tools.css')
+
+  it('两个高亮编辑框都没有 ::selection 规则', () => {
+    for (const selector of ['.tw-area-input::selection', '.json-editor__input::selection']) {
+      expect(() => ruleBody(toolsCssText, selector)).toThrow()
+    }
+  })
+})
+
+/**
+ * 智能解析里两种行内胶囊（「支持格式」的预设 chip 与结果 tab）必须共用同一个高度令牌：
+ * 结果 tab 曾经自己写死 26px，比旁边的胶囊胖一圈，用户反馈「太大」。尺寸类样式没有排版引擎可断言，
+ * 这里守的是那条不变式 —— 同一种视觉元素只认一个令牌（顺带保证字体缩放时两个一起变）。
+ */
+describe('行内胶囊尺寸一致（tools.css）', () => {
+  const toolsCssText = readCss('tools/tools.css')
+
+  it('格式预设 chip 与结果 tab 同高，且都走 --tk-control-h-xs', () => {
+    for (const selector of ['.tw-detect__format-chip', '.tw-detect__tab']) {
+      expect(ruleBody(toolsCssText, selector)).toMatch(/height:\s*var\(--tk-control-h-xs\)/)
+    }
   })
 })
