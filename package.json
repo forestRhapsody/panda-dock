@@ -2,8 +2,36 @@
   "name": "panda-dock",
   "private": true,
   "version": "0.2.0",
+  "description": "Panda Dock：现代、高效的 Chrome 开发者日常工具箱，内置智能解析、网页存储、Base64、JSON、网址、时间戳与二维码等常用工具。",
+  "license": "MIT",
+  "author": "forest rhapsody",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/forestRhapsody/dev-box.git"
+  },
+  "homepage": "https://github.com/forestRhapsody/dev-box#readme",
+  "bugs": {
+    "url": "https://github.com/forestRhapsody/dev-box/issues"
+  },
+  "keywords": [
+    "chrome-extension",
+    "manifest-v3",
+    "developer-tools",
+    "toolbox",
+    "react",
+    "typescript",
+    "vite",
+    "base64",
+    "json",
+    "jwt",
+    "qrcode",
+    "i18n"
+  ],
   "type": "module",
   "packageManager": "pnpm@10.17.0",
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "icons": "node scripts/generate-icons.mjs",
