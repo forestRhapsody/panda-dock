@@ -480,12 +480,12 @@ describe('QuickSettings 其余快捷项', () => {
     expect(container.querySelector('.pop__setting-tip--active')?.textContent).toContain(
       '数据仅在当前标签页内有效',
     )
-    expect(container.textContent).toContain('所有页面共用同一份数据')
+    expect(container.textContent).toContain('所有标签页共用同一份数据')
 
     choose('默认唤起方式', '浏览器原生侧边栏')
     expect(writtenSettings()).toEqual({ ...BASE(), ballAction: 'native' })
     expect(container.querySelector('.pop__setting-tip--active')?.textContent).toContain(
-      '所有页面共用同一份数据',
+      '所有标签页共用同一份数据',
     )
     expect(container.textContent).toContain('数据仅在当前标签页内有效')
 
