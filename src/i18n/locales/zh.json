@@ -90,7 +90,7 @@
     "ballStyleResetConfirmTitle": "恢复默认样式？",
     "ballStyleResetConfirmMsg": "恢复默认样式会同时移除自定义图片，且无法恢复。",
     "saveFailed": "设置未能保存：同步存储空间可能已满，请精简域名规则后重试。",
-    "domainSection": "域名显示规则",
+    "domainSection": "悬浮球显示范围",
     "domainMode": "规则模式",
     "domainModeDesc": "按黑名单或白名单规则生效。",
     "domainModeBlacklist": "黑名单模式（在名单内的网站中隐藏悬浮球）",

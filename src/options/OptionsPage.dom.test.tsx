@@ -614,7 +614,7 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
       ballAction: 'native',
     })
 
-    fire(resetButtonOf('域名显示规则'), 'click')
+    fire(resetButtonOf(i18n.t('settings.domainSection')), 'click')
     const afterDomain = writtenSettings()
     expect(afterDomain.ballDomainMode).toBe('blacklist')
     expect(afterDomain.ballBlacklist).toEqual([])

@@ -90,7 +90,7 @@
     "ballStyleResetConfirmTitle": "Reset to default style?",
     "ballStyleResetConfirmMsg": "Resetting the style also removes the custom image, and it cannot be restored.",
     "saveFailed": "Settings were not saved: the sync storage may be full. Try trimming the domain rules and retry.",
-    "domainSection": "Domain Display Rules",
+    "domainSection": "Floating Ball Visibility",
     "domainMode": "Rule mode",
     "domainModeDesc": "Apply the domain list as a blacklist or whitelist.",
     "domainModeBlacklist": "Blacklist mode (hide floating ball on listed sites)",
