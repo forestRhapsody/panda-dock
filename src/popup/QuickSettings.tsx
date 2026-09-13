@@ -271,14 +271,15 @@ export default function QuickSettings() {
             <p
               className={`pop__setting-tip${settings.ballAction === 'drawer' ? ' pop__setting-tip--active' : ''}`}
             >
+              <strong>{t('settings.ballActionDrawerTitle')}</strong>
               {t('settings.ballActionDrawerTip')}
             </p>
             <p
               className={`pop__setting-tip${settings.ballAction === 'native' ? ' pop__setting-tip--active' : ''}`}
             >
+              <strong>{t('settings.ballActionNativeTitle')}</strong>
               {t('settings.ballActionNativeTip')}
             </p>
-            <p className='pop__setting-tip-note'>{t('settings.ballActionIsolatedTip')}</p>
           </div>
         </li>
         <li className='pop__setting'>

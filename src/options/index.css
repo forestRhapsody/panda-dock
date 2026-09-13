@@ -120,16 +120,14 @@ body {
   transition: color 0.15s ease;
 }
 
+.opt__item-tip strong {
+  font-weight: 600;
+  color: inherit;
+}
+
 .opt__item-tip--active {
   color: var(--tk-foreground);
   font-weight: 500;
-}
-
-.opt__item-tip-note {
-  margin: 2px 0 0;
-  font-size: var(--tk-text-xs);
-  line-height: 1.5;
-  color: var(--tk-secondary-foreground);
 }
 
 .opt__shortcut-group {

@@ -637,14 +637,15 @@ export default function OptionsPage() {
                 <p
                   className={`opt__item-tip${settings.ballAction === 'drawer' ? ' opt__item-tip--active' : ''}`}
                 >
+                  <strong>{t('settings.ballActionDrawerTitle')}</strong>
                   {t('settings.ballActionDrawerTip')}
                 </p>
                 <p
                   className={`opt__item-tip${settings.ballAction === 'native' ? ' opt__item-tip--active' : ''}`}
                 >
+                  <strong>{t('settings.ballActionNativeTitle')}</strong>
                   {t('settings.ballActionNativeTip')}
                 </p>
-                <p className='opt__item-tip-note'>{t('settings.ballActionIsolatedTip')}</p>
               </div>
             </li>
           </ul>

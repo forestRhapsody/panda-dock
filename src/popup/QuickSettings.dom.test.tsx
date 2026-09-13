@@ -478,17 +478,17 @@ describe('QuickSettings 其余快捷项', () => {
   it('点击动作 / 主题 / 语言：逐项写入完整对象', async () => {
     await mount(BASE())
     expect(container.querySelector('.pop__setting-tip--active')?.textContent).toContain(
-      '数据仅在当前标签页内有效',
+      '数据仅限当前标签页使用',
     )
-    expect(container.textContent).toContain('所有标签页共用同一份数据')
-    expect(container.textContent).toContain('两处面板的数据各自独立，互不互通')
+    expect(container.textContent).toContain('数据保留至浏览器关闭')
+    expect(container.textContent).toContain('与网页抽屉数据相互独立')
 
     choose('默认唤起方式', '浏览器原生侧边栏')
     expect(writtenSettings()).toEqual({ ...BASE(), ballAction: 'native' })
     expect(container.querySelector('.pop__setting-tip--active')?.textContent).toContain(
-      '所有标签页共用同一份数据',
+      '数据保留至浏览器关闭',
     )
-    expect(container.textContent).toContain('数据仅在当前标签页内有效')
+    expect(container.textContent).toContain('数据仅限当前标签页使用')
 
     choose('主题', '深色')
     expect(writtenSettings()).toEqual({ ...BASE(), ballAction: 'native', theme: 'dark' })
