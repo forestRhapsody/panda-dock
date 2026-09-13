@@ -7,6 +7,7 @@ import {
   MSG_COOKIE_REMOVE,
   MSG_COOKIE_SET,
   MSG_DETECT_SELECTION,
+  MSG_GET_TAB_ID,
   MSG_GET_WINDOW_ID,
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_OPEN_OPTIONS,
@@ -152,6 +153,22 @@ chrome.runtime?.onConnect?.addListener((port) => {
       sidePanelPorts.delete(boundWindowId)
     }
   })
+})
+
+// 监听标签页关闭，自动清理该标签页作用域内的全部会话草稿，释放 storage.session 配额
+chrome.tabs?.onRemoved?.addListener(async (closedTabId) => {
+  try {
+    const prefix = `toolkit.draft.t${closedTabId}.`
+    const sessionArea = chrome.storage?.session
+    if (!sessionArea?.get || !sessionArea?.remove) return
+    const all = await sessionArea.get(null)
+    const keysToRemove = Object.keys(all).filter((k) => k.startsWith(prefix))
+    if (keysToRemove.length > 0) {
+      await sessionArea.remove(keysToRemove)
+    }
+  } catch {
+    // 忽略异常
+  }
 })
 
 // 监听窗口关闭，自动清理该窗口作用域内的全部会话草稿，释放 storage.session 配额
@@ -448,6 +465,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse(errorResponse('ERR_UNEXPECTED', e instanceof Error ? e.message : String(e)))
       }
     })()
+    return true
+  }
+
+  if (action === MSG_GET_TAB_ID) {
+    const tabId = sender?.tab?.id ?? null
+    sendResponse({ ok: true, data: tabId })
     return true
   }
 

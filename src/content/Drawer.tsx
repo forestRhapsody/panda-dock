@@ -6,9 +6,9 @@ import { useTranslation } from 'react-i18next'
 import ToolsApp from '@/tools/ToolsApp'
 import Icon from '@/ui/Icon'
 import Tooltip from '@/ui/Tooltip'
-import { WindowScopeContext } from '@/utils/draft'
+import { TabScopeContext } from '@/utils/draft'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
-import { MSG_GET_WINDOW_ID } from '@/utils/messages'
+import { MSG_GET_TAB_ID } from '@/utils/messages'
 
 const WIDTH_KEY = 'toolkit.drawerWidth'
 const MIN_WIDTH = 280
@@ -65,7 +65,7 @@ export default function Drawer({ onClose }: DrawerProps) {
   const { t } = useTranslation()
   const inExt = isExtension()
   const [width, setWidth] = useState(DEFAULT_WIDTH)
-  const [windowId, setWindowId] = useState<number | null>(() => (inExt ? null : 0))
+  const [tabId, setTabId] = useState<number | null>(() => (inExt ? null : 0))
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
   const [dragging, setDragging] = useState(false)
   // 宽度最新值的镜像：拖拽期间 pointermove → pointerup 可能落在同一批次，
@@ -73,14 +73,14 @@ export default function Drawer({ onClose }: DrawerProps) {
   const widthRef = useRef(width)
   const rootRef = useRef<HTMLDivElement>(null)
 
-  // 获取当前网页所在的 windowId，使网页抽屉与同窗口原生侧边栏处于同一工作区
+  // 获取当前网页所属的 tabId，使网页抽屉与同标签页原生侧边栏处于同一工作区
   useEffect(() => {
     if (!inExt) return
     let alive = true
     void (async () => {
       let resolvedId: number | null = null
       try {
-        const res = await chrome.runtime?.sendMessage?.({ action: MSG_GET_WINDOW_ID })
+        const res = await chrome.runtime?.sendMessage?.({ action: MSG_GET_TAB_ID })
         if (res?.ok && typeof res.data === 'number') {
           resolvedId = res.data
         }
@@ -88,7 +88,7 @@ export default function Drawer({ onClose }: DrawerProps) {
         // 忽略
       }
       if (alive) {
-        setWindowId(resolvedId ?? 0)
+        setTabId(resolvedId ?? 0)
       }
     })()
     return () => {
@@ -210,10 +210,10 @@ export default function Drawer({ onClose }: DrawerProps) {
         onPointerCancel={onResizeEnd}
         onKeyDown={onResizeKey}
       />
-      {windowId !== null && (
-        <WindowScopeContext.Provider value={windowId > 0 ? windowId : null}>
+      {tabId !== null && (
+        <TabScopeContext.Provider value={tabId > 0 ? tabId : null}>
           <ToolsApp
-            key={windowId}
+            key={tabId}
             headerActions={
               <Tooltip content={t('drawer.ariaClose')} side='bottom'>
                 <button
@@ -227,7 +227,7 @@ export default function Drawer({ onClose }: DrawerProps) {
               </Tooltip>
             }
           />
-        </WindowScopeContext.Provider>
+        </TabScopeContext.Provider>
       )}
     </div>
   )

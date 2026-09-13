@@ -39,10 +39,13 @@ let port: {
 let closeSpy: ReturnType<typeof vi.fn>
 let stores: Record<'sync' | 'session' | 'local', Record<string, unknown>>
 
+let tabActivatedListeners: Array<(info: { tabId: number; windowId: number }) => void> = []
+
 /** 内存版 chrome：Port 用 callback 风格的 windows.getCurrent，与 SidePanelPage 的调用方式一致 */
 function stubChrome() {
   changeListeners = []
   runtimeMessageListeners = []
+  tabActivatedListeners = []
   stores = { sync: {}, session: {}, local: {} }
   port = {
     postMessage: vi.fn(),
@@ -87,6 +90,19 @@ function stubChrome() {
       },
     },
     windows: { getCurrent: vi.fn((cb: (win: { id: number }) => void) => cb({ id: 42 })) },
+    tabs: {
+      query: vi.fn((_info: unknown, cb: (tabs: Array<{ id: number }>) => void) =>
+        cb([{ id: 101 }]),
+      ),
+      onActivated: {
+        addListener: (listener: (activeInfo: { tabId: number; windowId: number }) => void) => {
+          tabActivatedListeners.push(listener)
+        },
+        removeListener: (listener: (activeInfo: { tabId: number; windowId: number }) => void) => {
+          tabActivatedListeners = tabActivatedListeners.filter((item) => item !== listener)
+        },
+      },
+    },
   }
   globalWithChrome.chrome = chromeStub
 }
@@ -173,6 +189,30 @@ describe('SidePanelPage：渲染共享工具箱', () => {
     })
 
     // 成功挂载 ToolsApp
+    expect(container.querySelector('.tw')).not.toBeNull()
+  })
+
+  it('当前窗口内切换标签页时，自动切换到新激活的标签页工作区', async () => {
+    await render()
+    expect(container.querySelector('.tw')).not.toBeNull()
+
+    // 初始查询绑定的 tabId 为 101，写入草稿
+    await act(async () => {
+      await setDraftValue('activeToolTab', 'json', 101)
+    })
+
+    // 触发当前窗口切换到 tab 102
+    await act(async () => {
+      tabActivatedListeners[0]?.({ tabId: 102, windowId: 42 })
+    })
+
+    // 切到 102 后，重新挂载全新的 ToolsApp
+    expect(container.querySelector('.tw')).not.toBeNull()
+
+    // 触发其他窗口切换 tab（windowId = 99），当前侧边栏不受影响
+    await act(async () => {
+      tabActivatedListeners[0]?.({ tabId: 999, windowId: 99 })
+    })
     expect(container.querySelector('.tw')).not.toBeNull()
   })
 })

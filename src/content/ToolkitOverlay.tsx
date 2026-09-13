@@ -13,7 +13,7 @@ import {
   MSG_CLOSE_DRAWER,
   MSG_CLOSE_NATIVE_SIDE_PANEL,
   MSG_DETECT_SELECTION,
-  MSG_GET_WINDOW_ID,
+  MSG_GET_TAB_ID,
   MSG_OPEN_DRAWER,
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_TOGGLE_DETECT,
@@ -696,20 +696,20 @@ export default function ToolkitOverlay() {
    */
   const openToolInHost = useCallback(
     async (tool: ToolId, text: string) => {
-      let windowId: number | null = null
+      let tabId: number | null = null
       if (inExt) {
         try {
-          const winRes = await chrome.runtime?.sendMessage?.({ action: MSG_GET_WINDOW_ID })
-          if (winRes?.ok && typeof winRes.data === 'number') {
-            windowId = winRes.data
+          const tabRes = await chrome.runtime?.sendMessage?.({ action: MSG_GET_TAB_ID })
+          if (tabRes?.ok && typeof tabRes.data === 'number') {
+            tabId = tabRes.data
           }
         } catch {
           // 忽略
         }
       }
       const res =
-        windowId != null
-          ? await prepareToolHandoff(tool, text, windowId)
+        tabId != null
+          ? await prepareToolHandoff(tool, text, tabId)
           : await prepareToolHandoff(tool, text)
       if (!res.ok) {
         if (res.reason === 'enable-failed') {

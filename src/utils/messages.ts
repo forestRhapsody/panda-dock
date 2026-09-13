@@ -57,6 +57,9 @@ export const MSG_OPEN_SHORTCUTS = 'OPEN_SHORTCUTS_PAGE'
 /** content → background：获取当前 Tab 所属的 windowId（用于窗口级工作区隔离） */
 export const MSG_GET_WINDOW_ID = 'TOOLKIT_GET_WINDOW_ID'
 
+/** content → background：获取当前 Tab 的 tabId（用于标签页级工作区草稿隔离） */
+export const MSG_GET_TAB_ID = 'TOOLKIT_GET_TAB_ID'
+
 /** 悬浮球点击行为配置 */
 export type BallAction = 'drawer' | 'native'
 

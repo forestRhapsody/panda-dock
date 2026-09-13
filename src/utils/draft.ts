@@ -6,17 +6,20 @@ const DRAFT_PREFIX = 'toolkit.draft.'
 const memoryCache = new Map<string, unknown>()
 
 /**
- * 窗口作用域 Context：向子树提供当前宿主所属的 windowId。
- * 原生侧边栏与同窗口网页抽屉拥有相同 windowId，实现同窗口内无缝连续；
- * 不同独立窗口间 windowId 互不相同，彻底杜绝跨窗口草稿打架与 Tab 抢占。
+ * 标签页作用域 Context：向子树提供当前宿主所属的 tabId。
+ * 每个 Tab（标签页）拥有独立的草稿工作区，不同标签页之间（如 a.com 与 b.com）互不干扰；
+ * 同一 Tab 内的网页抽屉与原生侧边栏拥有相同 tabId，实现同标签页内无缝连续与实时同步；
+ * 标签页关闭时自动清理该 tabId 的所有草稿，释放存储配额。
  * 未提供（如 happy-dom 单测或 dev 预览）时为 null，自动回退到无前缀全局 key。
  */
-export const WindowScopeContext = createContext<number | null>(null)
+export const TabScopeContext = createContext<number | null>(null)
+/** 兼容历史命名的别名 */
+export const WindowScopeContext = TabScopeContext
 
-/** 根据可选的 windowId 计算实际的草稿存储键 */
-export function getScopedDraftKey(key: string, windowId?: number | null): string {
-  if (typeof windowId === 'number' && windowId > 0) {
-    return `${DRAFT_PREFIX}w${windowId}.${key}`
+/** 根据可选的 tabId 计算实际的草稿存储键 */
+export function getScopedDraftKey(key: string, tabId?: number | null): string {
+  if (typeof tabId === 'number' && tabId > 0) {
+    return `${DRAFT_PREFIX}t${tabId}.${key}`
   }
   return `${DRAFT_PREFIX}${key}`
 }
@@ -32,8 +35,8 @@ const locallyDirty = new Set<string>()
  * 读取某个草稿（优先内存缓存，回退会话存储）。
  * 供「写入前先保留用户其它偏好」的场景使用（如智能解析送数据给 JSON 工具时保留其缩进/排序设置）。
  */
-export async function getDraftValue<T>(key: string, windowId?: number | null): Promise<T | null> {
-  const fullKey = getScopedDraftKey(key, windowId)
+export async function getDraftValue<T>(key: string, tabId?: number | null): Promise<T | null> {
+  const fullKey = getScopedDraftKey(key, tabId)
   if (memoryCache.has(fullKey)) return memoryCache.get(fullKey) as T
   return storageGet<T>('session', fullKey)
 }
@@ -46,9 +49,9 @@ export async function getDraftValue<T>(key: string, windowId?: number | null): P
 export async function setDraftValue<T>(
   key: string,
   value: T,
-  windowId?: number | null,
+  tabId?: number | null,
 ): Promise<void> {
-  const fullKey = getScopedDraftKey(key, windowId)
+  const fullKey = getScopedDraftKey(key, tabId)
   memoryCache.set(fullKey, value)
   locallyDirty.add(fullKey)
   await storageSet('session', fullKey, value)
@@ -56,9 +59,9 @@ export async function setDraftValue<T>(
 }
 
 /**
- * 工具草稿状态持久化 Hook（基于浏览器会话存储，关抽屉/刷页面/切换侧边栏不丢失，关浏览器自动清空）
+ * 工具草稿状态持久化 Hook（基于浏览器会话存储，关抽屉/刷页面/切换侧边栏不丢失，关标签页或关浏览器自动清空）
  * - 结合内存同步缓存：切换 Tab 或重新挂载时零延迟、无白屏/闪烁
- * - 支持 WindowScopeContext：窗口级工作区隔离，不同窗口互不干扰
+ * - 支持 TabScopeContext：标签页级工作区隔离，不同标签页（如 a.com 与 b.com）互不干扰
  * - 防抖自动同步到 chrome.storage.session
  * - 提供 clearDraft 一键清空重置
  */
@@ -66,8 +69,8 @@ export function useToolDraft<T>(
   key: string,
   initialValue: T,
 ): [T, (val: T | ((prev: T) => T)) => void, () => void, boolean] {
-  const windowId = useContext(WindowScopeContext)
-  const fullKey = getScopedDraftKey(key, windowId)
+  const tabId = useContext(TabScopeContext)
+  const fullKey = getScopedDraftKey(key, tabId)
   const [value, setValue] = useState<T>(() => {
     if (memoryCache.has(fullKey)) {
       return memoryCache.get(fullKey) as T

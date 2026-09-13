@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 
 import { useLocale } from '@/i18n/useLocale'
 import ToolsApp from '@/tools/ToolsApp'
-import { WindowScopeContext } from '@/utils/draft'
+import { TabScopeContext } from '@/utils/draft'
 import { isExtension } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
-import { MSG_CLOSE_NATIVE_SIDE_PANEL, MSG_GET_WINDOW_ID } from '@/utils/messages'
+import { MSG_CLOSE_NATIVE_SIDE_PANEL, MSG_GET_TAB_ID } from '@/utils/messages'
 import { useTheme } from '@/utils/theme'
 
 import './index.css'
@@ -21,9 +21,9 @@ export default function SidePanelPage() {
   useTheme()
 
   const inExt = isExtension()
-  // 扩展环境下初始为 null，等待异步获取到真实 windowId 后才挂载 ToolsApp；
-  // 避免首帧用 null 全局 key 脏读/回写上一个窗口的草稿，彻底杜绝跨窗口状态串扰。
-  const [windowId, setWindowId] = useState<number | null>(() => (inExt ? null : 0))
+  // 扩展环境下初始为 null，等待异步获取到当前激活标签页的 tabId 后才挂载 ToolsApp；
+  // 避免首帧用 null 全局 key 脏读/回写上一个 Tab 的草稿，彻底杜绝跨标签页状态串扰。
+  const [activeTabId, setActiveTabId] = useState<number | null>(() => (inExt ? null : 0))
 
   useEffect(() => {
     let alive = true
@@ -41,13 +41,59 @@ export default function SidePanelPage() {
       // 忽略
     }
 
+    let currentWindowId: number | null = null
     let resolved = false
+
+    const resolveActiveTab = (winId: number) => {
+      if (typeof chrome !== 'undefined' && chrome.tabs?.query) {
+        try {
+          const ret: unknown = chrome.tabs.query({ active: true, windowId: winId }, (tabs) => {
+            if (alive && tabs?.[0]?.id != null) {
+              resolved = true
+              setActiveTabId(tabs[0].id)
+            } else if (alive && !resolved) {
+              resolved = true
+              setActiveTabId(winId)
+            }
+          })
+          if (Boolean(ret) && typeof (ret as Promise<chrome.tabs.Tab[]>).then === 'function') {
+            void (ret as Promise<chrome.tabs.Tab[]>)
+              .then((tabs) => {
+                if (alive && tabs?.[0]?.id != null) {
+                  resolved = true
+                  setActiveTabId(tabs[0].id)
+                } else if (alive && !resolved) {
+                  resolved = true
+                  setActiveTabId(winId)
+                }
+              })
+              .catch(() => {
+                if (alive && !resolved) {
+                  resolved = true
+                  setActiveTabId(winId)
+                }
+              })
+          }
+        } catch {
+          if (alive && !resolved) {
+            resolved = true
+            setActiveTabId(winId)
+          }
+        }
+      } else {
+        if (alive && !resolved) {
+          resolved = true
+          setActiveTabId(winId)
+        }
+      }
+    }
+
     const reportWindow = (id: number) => {
-      resolved = true
-      setWindowId(id)
+      currentWindowId = id
       if (port) {
         port.postMessage({ type: 'SIDE_PANEL_INIT', windowId: id })
       }
+      resolveActiveTab(id)
     }
 
     try {
@@ -73,23 +119,35 @@ export default function SidePanelPage() {
 
     void (async () => {
       if (!inExt) return
-      // 若 60ms 内仍未通过 getCurrent 确定 windowId，向 background 请求备援
+      // 若 60ms 内仍未确定 activeTabId，尝试备援查询
       await new Promise((r) => setTimeout(r, 60))
       if (!alive || resolved) return
       if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
         try {
-          const res = await chrome.runtime.sendMessage({ action: MSG_GET_WINDOW_ID })
+          const res = await chrome.runtime.sendMessage({ action: MSG_GET_TAB_ID })
           if (alive && !resolved && res?.ok && typeof res.data === 'number') {
-            reportWindow(res.data)
+            resolved = true
+            setActiveTabId(res.data)
           }
         } catch {
           // 忽略
         }
       }
       if (alive && !resolved) {
-        setWindowId(0)
+        setActiveTabId(0)
       }
     })()
+
+    // 监听当前窗口内的活跃标签页切换：切 Tab 时原生侧边栏自动无缝切到对应 Tab 的工作区
+    const onTabActivated = (activeInfo: { tabId: number; windowId: number }) => {
+      if (!alive) return
+      if (currentWindowId == null || activeInfo.windowId === currentWindowId) {
+        setActiveTabId(activeInfo.tabId)
+      }
+    }
+    if (typeof chrome !== 'undefined' && chrome.tabs?.onActivated) {
+      chrome.tabs.onActivated.addListener(onTabActivated)
+    }
 
     const onRuntimeMessage = (msg: unknown) => {
       if ((msg as { action?: string })?.action === MSG_CLOSE_NATIVE_SIDE_PANEL) {
@@ -102,6 +160,9 @@ export default function SidePanelPage() {
 
     return () => {
       alive = false
+      if (typeof chrome !== 'undefined' && chrome.tabs?.onActivated) {
+        chrome.tabs.onActivated.removeListener(onTabActivated)
+      }
       if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
         chrome.runtime.onMessage.removeListener(onRuntimeMessage)
       }
@@ -113,15 +174,15 @@ export default function SidePanelPage() {
     }
   }, [inExt])
 
-  if (windowId === null) {
+  if (activeTabId === null) {
     return <div className='sp' />
   }
 
   return (
     <div className='sp'>
-      <WindowScopeContext.Provider value={windowId > 0 ? windowId : null}>
-        <ToolsApp key={windowId} showHeader={false} />
-      </WindowScopeContext.Provider>
+      <TabScopeContext.Provider value={activeTabId > 0 ? activeTabId : null}>
+        <ToolsApp key={activeTabId} showHeader={false} />
+      </TabScopeContext.Provider>
     </div>
   )
 }

@@ -9,6 +9,7 @@ import {
   MSG_COOKIE_REMOVE,
   MSG_COOKIE_SET,
   MSG_DETECT_SELECTION,
+  MSG_GET_TAB_ID,
   MSG_GET_WINDOW_ID,
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_OPEN_OPTIONS,
@@ -78,6 +79,7 @@ interface BackgroundHarness {
   storageChangedListeners: Array<(changes: unknown, areaName: string) => void>
   focusChangedListeners: Array<(windowId: number) => void>
   tabActivatedListeners: Array<(info: { windowId?: number }) => void>
+  tabRemovedListeners: Array<(tabId: number) => void>
   windowRemovedListeners: Array<(windowId: number) => void>
   getURL: Fn
   tabsCreate: Fn
@@ -106,6 +108,7 @@ function createHarness(options: StubOptions): BackgroundHarness {
   const storageChangedListeners: Array<(changes: unknown, areaName: string) => void> = []
   const focusChangedListeners: Array<(windowId: number) => void> = []
   const tabActivatedListeners: Array<(info: { windowId?: number }) => void> = []
+  const tabRemovedListeners: Array<(tabId: number) => void> = []
   const windowRemovedListeners: Array<(windowId: number) => void> = []
 
   const sessionGet = vi.fn(async (): Promise<Record<string, unknown>> => ({}))
@@ -191,6 +194,11 @@ function createHarness(options: StubOptions): BackgroundHarness {
           tabActivatedListeners.push(listener)
         }),
       },
+      onRemoved: {
+        addListener: vi.fn((listener: (tabId: number) => void) => {
+          tabRemovedListeners.push(listener)
+        }),
+      },
     },
     windows: {
       getCurrent: vi.fn(async (): Promise<unknown> => ({ id: 1 })),
@@ -238,6 +246,7 @@ function createHarness(options: StubOptions): BackgroundHarness {
     storageChangedListeners,
     focusChangedListeners,
     tabActivatedListeners,
+    tabRemovedListeners,
     windowRemovedListeners,
     getURL,
     tabsCreate,
@@ -325,6 +334,12 @@ function fireTabActivated(info: { windowId?: number }): void {
   const listener = harness.tabActivatedListeners[0]
   if (!listener) throw new Error('main.ts 未注册 tabs.onActivated 监听器')
   listener(info)
+}
+
+function fireTabRemoved(tabId: number): void {
+  const listener = harness.tabRemovedListeners[0]
+  if (!listener) throw new Error('main.ts 未注册 tabs.onRemoved 监听器')
+  listener(tabId)
 }
 
 function fireWindowRemoved(windowId: number): void {
@@ -1199,6 +1214,20 @@ describe('右键菜单（contextMenus）', () => {
   })
 })
 
+describe('MSG_GET_TAB_ID', () => {
+  it('优先从 sender.tab.id 获取所属标签页 ID', async () => {
+    await boot()
+    const res = await dispatch({ action: MSG_GET_TAB_ID }, { tab: { id: 77 } })
+    expect(res).toEqual({ ok: true, data: 77 })
+  })
+
+  it('sender 无 tab 时返回 null', async () => {
+    await boot()
+    const res = await dispatch({ action: MSG_GET_TAB_ID }, {})
+    expect(res).toEqual({ ok: true, data: null })
+  })
+})
+
 describe('MSG_GET_WINDOW_ID', () => {
   it('优先从 sender.tab.windowId 获取所属窗口 ID', async () => {
     await boot()
@@ -1214,6 +1243,40 @@ describe('MSG_GET_WINDOW_ID', () => {
     fireTabActivated({ windowId: 99 })
     const res2 = await dispatch({ action: MSG_GET_WINDOW_ID }, {})
     expect(res2).toEqual({ ok: true, data: 99 })
+  })
+})
+
+describe('chrome.tabs.onRemoved 标签页会话垃圾清理', () => {
+  it('关闭标签页时只清理以该 tabId 为前缀的草稿，保留其他标签页与非草稿数据', async () => {
+    const h = await boot()
+    h.sessionGet.mockResolvedValueOnce({
+      'toolkit.draft.t201.json': 'payload-tab201',
+      'toolkit.draft.t201.activeToolTab': 'json',
+      'toolkit.draft.t202.json': 'payload-tab202',
+      'toolkit.otherKey': 'keep-me',
+    })
+
+    fireTabRemoved(201)
+    await flush()
+
+    expect(h.sessionGet).toHaveBeenCalledWith(null)
+    expect(h.sessionRemove).toHaveBeenCalledWith([
+      'toolkit.draft.t201.json',
+      'toolkit.draft.t201.activeToolTab',
+    ])
+  })
+
+  it('关闭的标签页若无相关草稿，不调用 remove', async () => {
+    const h = await boot()
+    h.sessionGet.mockResolvedValueOnce({
+      'toolkit.draft.t202.json': 'payload-tab202',
+    })
+
+    fireTabRemoved(201)
+    await flush()
+
+    expect(h.sessionGet).toHaveBeenCalledWith(null)
+    expect(h.sessionRemove).not.toHaveBeenCalled()
   })
 })
 

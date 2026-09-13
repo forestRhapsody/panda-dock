@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next'
 
 import { toast } from '@/ui/toast'
 import Tooltip from '@/ui/Tooltip'
-import { useToolDraft, WindowScopeContext } from '@/utils/draft'
+import { TabScopeContext, useToolDraft } from '@/utils/draft'
 
 import { detect } from './detect'
 import type { DetectResult } from './detect'
@@ -91,7 +91,7 @@ export default function DetectTool() {
   const totalMatches = items?.length ?? 1
   const safeActiveIndex = activeMatchIndex >= totalMatches ? 0 : activeMatchIndex
 
-  const windowId = useContext(WindowScopeContext)
+  const tabId = useContext(TabScopeContext)
 
   /**
    * 「在 XX 工具中打开」：检测工具与目标工具本来就同处一个宿主（侧边栏 / 抽屉），
@@ -101,7 +101,7 @@ export default function DetectTool() {
   const handleOpenInTool = useCallback(
     (tool: ToolId, text: string) => {
       const promise =
-        windowId != null ? prepareToolHandoff(tool, text, windowId) : prepareToolHandoff(tool, text)
+        tabId != null ? prepareToolHandoff(tool, text, tabId) : prepareToolHandoff(tool, text)
       void promise.then((res) => {
         // 目标工具被禁用且启用失败时，Tab 不会切过去，必须告知用户
         if (!res.ok && res.reason === 'enable-failed') {
@@ -109,7 +109,7 @@ export default function DetectTool() {
         }
       })
     },
-    [t, windowId],
+    [t, tabId],
   )
 
   const currentResult = useMemo<DetectResult | null>(() => {

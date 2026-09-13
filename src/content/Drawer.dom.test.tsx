@@ -410,8 +410,8 @@ describe('Drawer 宽度记忆与夹取', () => {
   })
 })
 
-describe('Drawer 窗口作用域绑定', () => {
-  it('扩展环境下在 windowId 响应前不挂载 ToolsApp，响应后挂载带对应 windowId 的工具箱', async () => {
+describe('Drawer 标签页作用域绑定', () => {
+  it('扩展环境下在 tabId 响应前不挂载 ToolsApp，响应后挂载带对应 tabId 的工具箱', async () => {
     let resolveMessage: ((res: unknown) => void) | null = null
     const sendMessageMock = vi.fn(
       () =>
@@ -426,10 +426,10 @@ describe('Drawer 窗口作用域绑定', () => {
       root.render(<Drawer onClose={() => {}} />)
     })
 
-    // 尚未响应 windowId：不挂载 ToolsApp，避免首帧以无前缀 key 脏读全局草稿
+    // 尚未响应 tabId：不挂载 ToolsApp，避免首帧以无前缀 key 脏读全局草稿
     expect(container.querySelector('.tw')).toBeNull()
 
-    // 模拟 background 返回 windowId = 88
+    // 模拟 background 返回 tabId = 88
     await act(async () => {
       resolveMessage?.({ ok: true, data: 88 })
     })

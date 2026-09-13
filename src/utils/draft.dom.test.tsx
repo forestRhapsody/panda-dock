@@ -9,8 +9,8 @@ import {
   getDraftValue,
   getScopedDraftKey,
   setDraftValue,
+  TabScopeContext,
   useToolDraft,
-  WindowScopeContext,
 } from './draft'
 
 /**
@@ -227,75 +227,75 @@ describe('防抖写入 × 卸载 / 重挂载（切走工具的场景）', () => 
   })
 })
 
-describe('窗口作用域隔离（WindowScopeContext）', () => {
+describe('标签页作用域隔离（TabScopeContext）', () => {
   it('getScopedDraftKey 正确拼接或回退无前缀 key', () => {
-    expect(getScopedDraftKey('test', 101)).toBe('toolkit.draft.w101.test')
+    expect(getScopedDraftKey('test', 101)).toBe('toolkit.draft.t101.test')
     expect(getScopedDraftKey('test', null)).toBe('toolkit.draft.test')
     expect(getScopedDraftKey('test', undefined)).toBe('toolkit.draft.test')
     expect(getScopedDraftKey('test', 0)).toBe('toolkit.draft.test')
     expect(getScopedDraftKey('test', -1)).toBe('toolkit.draft.test')
   })
 
-  it('不同 windowId 的探针草稿互相隔离，互不干扰', async () => {
-    function MultiWindowHarness() {
+  it('不同 tabId 的探针草稿互相隔离，互不干扰', async () => {
+    function MultiTabHarness() {
       return (
         <div>
-          <WindowScopeContext.Provider value={101}>
-            <div data-testid='win-101'>
-              <EditableProbe draftKey='doc' next='窗口101专属内容' />
+          <TabScopeContext.Provider value={101}>
+            <div data-testid='tab-101'>
+              <EditableProbe draftKey='doc' next='标签页101专属内容' />
             </div>
-          </WindowScopeContext.Provider>
-          <WindowScopeContext.Provider value={102}>
-            <div data-testid='win-102'>
+          </TabScopeContext.Provider>
+          <TabScopeContext.Provider value={102}>
+            <div data-testid='tab-102'>
               <Probe draftKey='doc' />
             </div>
-          </WindowScopeContext.Provider>
+          </TabScopeContext.Provider>
         </div>
       )
     }
 
     await act(async () => {
-      root.render(<MultiWindowHarness />)
+      root.render(<MultiTabHarness />)
     })
 
-    const win101Btn = container.querySelector('[data-testid="win-101"] button') as HTMLButtonElement
-    const win102Text = () =>
-      container.querySelector('[data-testid="win-102"] [data-testid="value"]')?.textContent
+    const tab101Btn = container.querySelector('[data-testid="tab-101"] button') as HTMLButtonElement
+    const tab102Text = () =>
+      container.querySelector('[data-testid="tab-102"] [data-testid="value"]')?.textContent
 
-    expect(win101Btn.textContent).toBe('(empty)')
-    expect(win102Text()).toBe('(empty)')
+    expect(tab101Btn.textContent).toBe('(empty)')
+    expect(tab102Text()).toBe('(empty)')
 
-    // 窗口 101 点击改值
-    act(() => win101Btn.click())
-    expect(win101Btn.textContent).toBe('窗口101专属内容')
-    // 窗口 102 保持独立，完全不受影响
-    expect(win102Text()).toBe('(empty)')
+    // 标签页 101 点击改值
+    act(() => tab101Btn.click())
+    expect(tab101Btn.textContent).toBe('标签页101专属内容')
+    // 标签页 102 保持独立，完全不受影响
+    expect(tab102Text()).toBe('(empty)')
 
     // 等防抖 200ms 落盘
     await act(async () => new Promise((resolve) => setTimeout(resolve, 260)))
 
-    // 验证存储里写入的是带前缀的 w101
-    expect(store['toolkit.draft.w101.doc']).toBe('窗口101专属内容')
-    expect(store['toolkit.draft.w102.doc']).toBeUndefined()
-    expect(win102Text()).toBe('(empty)')
+    // 验证存储里写入的是带前缀的 t101
+    expect(store['toolkit.draft.t101.doc']).toBe('标签页101专属内容')
+    expect(store['toolkit.draft.t102.doc']).toBeUndefined()
+    expect(tab102Text()).toBe('(empty)')
   })
 
-  it('同 windowId 的组件（抽屉与侧边栏）实时共享草稿', async () => {
-    function SameWindowHarness() {
+  it('同 tabId 的组件（抽屉与侧边栏）实时共享草稿', async () => {
+    function SameTabHarness() {
       return (
-        <WindowScopeContext.Provider value={201}>
+        <TabScopeContext.Provider value={201}>
           <div data-testid='drawer'>
             <EditableProbe draftKey='shared' next='抽屉写入' />
           </div>
           <div data-testid='sidepanel'>
             <Probe draftKey='shared' />
           </div>
-        </WindowScopeContext.Provider>
+        </TabScopeContext.Provider>
       )
     }
 
     await act(async () => {
-      root.render(<SameWindowHarness />)
+      root.render(<SameTabHarness />)
     })
 
     const drawerBtn = container.querySelector('[data-testid="drawer"] button') as HTMLButtonElement
@@ -311,11 +311,11 @@ describe('窗口作用域隔离（WindowScopeContext）', () => {
     expect(sidepanelText()).toBe('抽屉写入')
   })
 
-  it('getDraftValue 与 setDraftValue 携带 windowId 定向存取', async () => {
-    await setDraftValue('testKey', 'hello-w301', 301)
-    expect(store['toolkit.draft.w301.testKey']).toBe('hello-w301')
+  it('getDraftValue 与 setDraftValue 携带 tabId 定向存取', async () => {
+    await setDraftValue('testKey', 'hello-t301', 301)
+    expect(store['toolkit.draft.t301.testKey']).toBe('hello-t301')
     const val = await getDraftValue('testKey', 301)
-    expect(val).toBe('hello-w301')
+    expect(val).toBe('hello-t301')
 
     const otherVal = await getDraftValue('testKey', 302)
     expect(otherVal).toBeNull()
