@@ -64,23 +64,23 @@
   background: var(--tk-primary-active);
 }
 
+/* 危险：shadcn 的柔和 destructive —— 淡红底 + 红字，无描边（hover / active 逐级加深） */
 .tk-btn--danger,
 .tk-btn--danger:disabled:hover {
   border-color: transparent;
-  background: var(--tk-destructive);
-  color: var(--tk-destructive-foreground);
-  box-shadow: var(--tk-shadow-sm);
+  background: color-mix(in srgb, var(--tk-destructive) 12%, transparent);
+  color: var(--tk-destructive);
 }
 
 .tk-btn--danger:hover {
   border-color: transparent;
-  background: color-mix(in srgb, var(--tk-destructive) 90%, transparent);
-  color: var(--tk-destructive-foreground);
+  background: color-mix(in srgb, var(--tk-destructive) 18%, transparent);
+  color: var(--tk-destructive);
 }
 
 .tk-btn--danger:active {
   border-color: transparent;
-  background: color-mix(in srgb, var(--tk-destructive) 80%, transparent);
+  background: color-mix(in srgb, var(--tk-destructive) 24%, transparent);
 }
 
 .tk-btn--sm {

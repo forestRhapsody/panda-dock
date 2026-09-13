@@ -86,30 +86,44 @@ body {
   color: var(--tk-muted-foreground);
 }
 
+/* 上下布局的条目：标题行左右分布，描述与说明各自单独成行 */
 .opt__item--col {
   flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: stretch;
+  gap: 4px;
 }
 
-.opt__item--col .opt__item-text {
+.opt__item-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   width: 100%;
+}
+
+.opt__item-desc {
+  margin: 0;
+  font-size: var(--tk-text-sm);
+  color: var(--tk-muted-foreground);
 }
 
 .opt__item-control {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .opt__item-control .tk-select {
   min-width: 220px;
 }
 
+/* 说明文案：纯文字两行，不额外加容器背景 / 内边距 / 边框 */
 .opt__item-tips {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   width: 100%;
+  margin-top: 6px;
 }
 
 .opt__item-tip {
@@ -275,10 +289,6 @@ body {
 }
 
 /* —— 恢复默认设置（全局） —— */
-.opt__card--danger {
-  border-color: color-mix(in srgb, var(--tk-destructive) 22%, var(--tk-border));
-}
-
 .opt__reset-row {
   display: flex;
   gap: 8px;

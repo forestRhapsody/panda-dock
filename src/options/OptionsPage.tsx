@@ -618,21 +618,24 @@ export default function OptionsPage() {
                 </div>
               </li>
             )}
+            {/* 上下布局：标题行左右分布（标题在左、控件在右），描述与说明各自单独成行 */}
             <li className='opt__item opt__item--col'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.ballAction')}</strong>
-                <p>{t('settings.ballActionDesc')}</p>
+              <div className='opt__item-main'>
+                <div className='opt__item-text'>
+                  <strong>{t('settings.ballAction')}</strong>
+                </div>
+                <div className='opt__item-control'>
+                  <TkSelect
+                    value={settings.ballAction}
+                    onChange={(e) => setBallAction(e.target.value as BallAction)}
+                    aria-label={t('settings.ballAction')}
+                  >
+                    <option value='drawer'>{t('settings.actionDrawer')}</option>
+                    <option value='native'>{t('settings.actionNative')}</option>
+                  </TkSelect>
+                </div>
               </div>
-              <div className='opt__item-control'>
-                <TkSelect
-                  value={settings.ballAction}
-                  onChange={(e) => setBallAction(e.target.value as BallAction)}
-                  aria-label={t('settings.ballAction')}
-                >
-                  <option value='drawer'>{t('settings.actionDrawer')}</option>
-                  <option value='native'>{t('settings.actionNative')}</option>
-                </TkSelect>
-              </div>
+              <p className='opt__item-desc'>{t('settings.ballActionDesc')}</p>
               <div className='opt__item-tips'>
                 <p className='opt__item-tip'>
                   <strong>{t('settings.ballActionDrawerTitle')}</strong>
@@ -1008,11 +1011,11 @@ export default function OptionsPage() {
           </ul>
         </div>
 
-        <div className='opt__card opt__card--danger'>
+        <div className='opt__card'>
           <h2>{t('settings.restoreDefaults')}</h2>
           <p className='opt__env'>{t('settings.restoreDefaultsDesc')}</p>
           <div className='opt__reset-row'>
-            <button type='button' className='tk-btn' onClick={requestGlobalReset}>
+            <button type='button' className='tk-btn tk-btn--danger' onClick={requestGlobalReset}>
               {t('settings.restoreDefaults')}
             </button>
           </div>
