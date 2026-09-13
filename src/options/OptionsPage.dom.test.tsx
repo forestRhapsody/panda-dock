@@ -494,10 +494,12 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
 
   it('点击动作 / 形状 / 预设 / 大小：逐项写入完整对象', async () => {
     await mount(BASE())
+    expect(container.textContent).toContain('单标签页专属沙箱，数据不持久化')
 
     choose('点击悬浮球的动作', '浏览器原生侧边栏')
     expect(writtenSettings()).toEqual({ ...BASE(), ballAction: 'native' })
     expectFullSettings(writtenSettings())
+    expect(container.textContent).toContain('全局共享工作台，切换标签页内容常驻')
 
     choose('形状', '圆形')
     expect(writtenSettings()).toEqual({ ...BASE(), ballAction: 'native', ballShape: 'circle' })

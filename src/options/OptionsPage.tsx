@@ -622,6 +622,11 @@ export default function OptionsPage() {
               <div className='opt__item-text'>
                 <strong>{t('settings.ballAction')}</strong>
                 <p>{t('settings.ballActionDesc')}</p>
+                <p className='opt__item-tip'>
+                  {settings.ballAction === 'drawer'
+                    ? t('settings.ballActionDrawerTip')
+                    : t('settings.ballActionNativeTip')}
+                </p>
               </div>
               <TkSelect
                 value={settings.ballAction}

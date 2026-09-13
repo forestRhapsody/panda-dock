@@ -86,6 +86,12 @@ body {
   color: var(--tk-muted-foreground);
 }
 
+.opt__item-text p.opt__item-tip {
+  font-size: var(--tk-text-xs);
+  line-height: 1.4;
+  color: var(--tk-secondary-foreground);
+}
+
 .opt__shortcut-group {
   display: flex;
   align-items: center;

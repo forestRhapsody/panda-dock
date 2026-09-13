@@ -258,7 +258,9 @@ export default function QuickSettings() {
           <div className='pop__setting-text'>
             <strong>{t('settings.ballAction')}</strong>
             <p>
-              {t('settings.actionDrawer')} / {t('settings.actionNative')}
+              {settings.ballAction === 'drawer'
+                ? t('settings.ballActionDrawerTip')
+                : t('settings.ballActionNativeTip')}
             </p>
           </div>
           <TkSelect
