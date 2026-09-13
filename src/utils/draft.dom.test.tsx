@@ -320,4 +320,51 @@ describe('标签页作用域隔离（TabScopeContext）', () => {
     const otherVal = await getDraftValue('testKey', 302)
     expect(otherVal).toBeNull()
   })
+
+  it('全局工作区（null）与标签页专属工作区（tabId）互相隔离不串扰', async () => {
+    function MixedHarness() {
+      return (
+        <div>
+          {/* 原生侧边栏使用的全局工作区 */}
+          <TabScopeContext.Provider value={null}>
+            <div data-testid='global-sidepanel'>
+              <EditableProbe draftKey='note' next='全局侧栏备忘' />
+            </div>
+          </TabScopeContext.Provider>
+          {/* 某网页抽屉使用的标签页沙箱 */}
+          <TabScopeContext.Provider value={303}>
+            <div data-testid='tab-drawer'>
+              <Probe draftKey='note' />
+            </div>
+          </TabScopeContext.Provider>
+        </div>
+      )
+    }
+
+    await act(async () => {
+      root.render(<MixedHarness />)
+    })
+
+    const globalBtn = container.querySelector(
+      '[data-testid="global-sidepanel"] button',
+    ) as HTMLButtonElement
+    const tabDrawerText = () =>
+      container.querySelector('[data-testid="tab-drawer"] [data-testid="value"]')?.textContent
+
+    expect(globalBtn.textContent).toBe('(empty)')
+    expect(tabDrawerText()).toBe('(empty)')
+
+    // 全局侧栏写入
+    act(() => globalBtn.click())
+    expect(globalBtn.textContent).toBe('全局侧栏备忘')
+    // 网页抽屉不受影响
+    expect(tabDrawerText()).toBe('(empty)')
+
+    // 200ms 防抖落盘
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 260)))
+
+    // 全局写入 toolkit.draft.note，标签页无此键
+    expect(store['toolkit.draft.note']).toBe('全局侧栏备忘')
+    expect(store['toolkit.draft.t303.note']).toBeUndefined()
+  })
 })

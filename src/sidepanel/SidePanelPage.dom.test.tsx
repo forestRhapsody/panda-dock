@@ -39,13 +39,10 @@ let port: {
 let closeSpy: ReturnType<typeof vi.fn>
 let stores: Record<'sync' | 'session' | 'local', Record<string, unknown>>
 
-let tabActivatedListeners: Array<(info: { tabId: number; windowId: number }) => void> = []
-
 /** 内存版 chrome：Port 用 callback 风格的 windows.getCurrent，与 SidePanelPage 的调用方式一致 */
 function stubChrome() {
   changeListeners = []
   runtimeMessageListeners = []
-  tabActivatedListeners = []
   stores = { sync: {}, session: {}, local: {} }
   port = {
     postMessage: vi.fn(),
@@ -90,19 +87,6 @@ function stubChrome() {
       },
     },
     windows: { getCurrent: vi.fn((cb: (win: { id: number }) => void) => cb({ id: 42 })) },
-    tabs: {
-      query: vi.fn((_info: unknown, cb: (tabs: Array<{ id: number }>) => void) =>
-        cb([{ id: 101 }]),
-      ),
-      onActivated: {
-        addListener: (listener: (activeInfo: { tabId: number; windowId: number }) => void) => {
-          tabActivatedListeners.push(listener)
-        },
-        removeListener: (listener: (activeInfo: { tabId: number; windowId: number }) => void) => {
-          tabActivatedListeners = tabActivatedListeners.filter((item) => item !== listener)
-        },
-      },
-    },
   }
   globalWithChrome.chrome = chromeStub
 }
@@ -169,51 +153,14 @@ describe('SidePanelPage：渲染共享工具箱', () => {
     expect(container.textContent).not.toContain('tool.registry.')
   })
 
-  it('windowId 尚未就位时首帧不挂载 ToolsApp，避免草稿脏读', async () => {
-    let resolveWin: ((win: { id: number }) => void) | null = null
-    chromeStub.windows.getCurrent = vi.fn((cb: (win: { id: number }) => void) => {
-      resolveWin = cb
-    })
-
-    await act(async () => {
-      root.render(<SidePanelPage />)
-    })
-
-    // 尚未返回 windowId：不挂载 ToolsApp，避免以无前缀 key 脏读全局草稿
-    expect(container.querySelector('.tw')).toBeNull()
-    expect(container.querySelector('.sp')).not.toBeNull()
-
-    // 模拟异步返回 windowId = 99
-    await act(async () => {
-      resolveWin?.({ id: 99 })
-    })
-
-    // 成功挂载 ToolsApp
-    expect(container.querySelector('.tw')).not.toBeNull()
-  })
-
-  it('当前窗口内切换标签页时，自动切换到新激活的标签页工作区', async () => {
+  it('侧边栏使用全局工作区草稿，不随特定 Tab 隔离', async () => {
+    // 写入全局草稿
+    await setDraftValue('activeToolTab', 'json', null)
     await render()
+
     expect(container.querySelector('.tw')).not.toBeNull()
-
-    // 初始查询绑定的 tabId 为 101，写入草稿
-    await act(async () => {
-      await setDraftValue('activeToolTab', 'json', 101)
-    })
-
-    // 触发当前窗口切换到 tab 102
-    await act(async () => {
-      tabActivatedListeners[0]?.({ tabId: 102, windowId: 42 })
-    })
-
-    // 切到 102 后，重新挂载全新的 ToolsApp
-    expect(container.querySelector('.tw')).not.toBeNull()
-
-    // 触发其他窗口切换 tab（windowId = 99），当前侧边栏不受影响
-    await act(async () => {
-      tabActivatedListeners[0]?.({ tabId: 999, windowId: 99 })
-    })
-    expect(container.querySelector('.tw')).not.toBeNull()
+    const activeTab = container.querySelector('[role="tab"][aria-selected="true"]')
+    expect(activeTab?.getAttribute('data-tool')).toBe('json')
   })
 })
 

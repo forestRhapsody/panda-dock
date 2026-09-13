@@ -707,10 +707,10 @@ export default function ToolkitOverlay() {
           // 忽略
         }
       }
-      const res =
-        tabId != null
-          ? await prepareToolHandoff(tool, text, tabId)
-          : await prepareToolHandoff(tool, text)
+      if (tabId != null) {
+        void prepareToolHandoff(tool, text, tabId)
+      }
+      const res = await prepareToolHandoff(tool, text, null)
       if (!res.ok) {
         if (res.reason === 'enable-failed') {
           showNotice(t('tool.detect.openInToolFailed', { tool: t(`tool.registry.${tool}`) }))
