@@ -125,19 +125,9 @@ body {
   transition: color 0.15s ease;
 }
 
-.opt__item-tip::before {
-  content: '• ';
-  margin-right: 4px;
-  color: var(--tk-muted-foreground);
-}
-
 .opt__item-tip--active {
   color: var(--tk-foreground);
   font-weight: 500;
-}
-
-.opt__item-tip--active::before {
-  color: var(--tk-primary);
 }
 
 .opt__shortcut-group {

@@ -183,19 +183,9 @@ body {
   transition: color 0.15s ease;
 }
 
-.pop__setting-tip::before {
-  content: '• ';
-  margin-right: 4px;
-  color: var(--tk-muted-foreground);
-}
-
 .pop__setting-tip--active {
   color: var(--tk-foreground);
   font-weight: 500;
-}
-
-.pop__setting-tip--active::before {
-  color: var(--tk-primary);
 }
 
 .pop__offset-group {
