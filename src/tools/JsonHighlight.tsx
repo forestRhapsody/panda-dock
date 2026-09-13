@@ -162,6 +162,8 @@ export default function JsonHighlight({
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
+    el.scrollTop = 0
+    el.scrollLeft = 0
     if (fill) {
       el.style.height = ''
       el.style.overflowY = 'auto'

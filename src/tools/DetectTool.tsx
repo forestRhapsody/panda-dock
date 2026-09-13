@@ -62,6 +62,12 @@ export default function DetectTool() {
   const result = useMemo(() => detect(deferredInput), [deferredInput])
 
   const [activeMatchIndex, setActiveMatchIndex] = useState(0)
+  const [scrollTrigger, setScrollTrigger] = useState(0)
+
+  const handleSelectMatch = useCallback((idx: number) => {
+    setActiveMatchIndex(idx)
+    setScrollTrigger((n) => n + 1)
+  }, [])
 
   // 当草稿文本变化时（例如从划选弹窗带入侧边栏），重置激活匹配项为第 1 项
   const prevInputRef = useRef(input)
@@ -133,6 +139,7 @@ export default function DetectTool() {
         <HighlightArea
           value={input}
           matches={currentResult?.sourceMatches}
+          scrollTrigger={scrollTrigger}
           onChange={(e) => {
             setInput(e.target.value)
             setActiveMatchIndex(0)
@@ -167,7 +174,7 @@ export default function DetectTool() {
           result={currentResult}
           items={items}
           activeMatchIndex={safeActiveIndex}
-          onSelectMatch={setActiveMatchIndex}
+          onSelectMatch={handleSelectMatch}
           onOpenInTool={handleOpenInTool}
         />
       )}

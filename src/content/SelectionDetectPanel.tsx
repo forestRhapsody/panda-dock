@@ -49,11 +49,10 @@ export interface SelectionDetectPanelProps {
 const PAD = 10
 const GAP = 8
 /**
- * 输入框的最大高度。刻意**与是否有解析结果无关**：曾按 `currentResult ? 220 : 320` 传值，
- * 结果「解析失败」时输入框反而比「有结果」时更高，面板整体也被撑大、与预期不符。
- * 输入框内部可滚动，压低上限不会让内容不可见。
+ * 输入框的最大高度（约 8 行文本高度，约 180px）。刻意**与是否有解析结果无关**：
+ * 输入框内部可滚动，压低上限不会让内容不可见，同时为下方结果区留出更多舒适的阅读空间。
  */
-const INPUT_MAX_HEIGHT = 220
+const INPUT_MAX_HEIGHT = 180
 
 /**
  * 右键「智能解析选中文字」或快捷键触发在网页内弹出的悬浮面板。
@@ -102,6 +101,12 @@ export default function SelectionDetectPanel({
   const result = useMemo<DetectResult | null>(() => detect(deferredInput), [deferredInput])
 
   const [activeMatchIndex, setActiveMatchIndex] = useState(0)
+  const [scrollTrigger, setScrollTrigger] = useState(0)
+
+  const handleSelectMatch = useCallback((idx: number) => {
+    setActiveMatchIndex(idx)
+    setScrollTrigger((n) => n + 1)
+  }, [])
 
   // 当 items 存在且数量 > 1 时，按当前索引切换解析结果与高亮焦点
   const items = result?.items
@@ -389,6 +394,7 @@ export default function SelectionDetectPanel({
             areaRef={inputRef}
             value={input}
             matches={currentResult?.sourceMatches}
+            scrollTrigger={scrollTrigger}
             onChange={(e) => {
               setInput(e.target.value)
               setActiveMatchIndex(0)
@@ -407,7 +413,7 @@ export default function SelectionDetectPanel({
               blockMaxHeight={260}
               items={items}
               activeMatchIndex={safeActiveIndex}
-              onSelectMatch={setActiveMatchIndex}
+              onSelectMatch={handleSelectMatch}
               onOpenInTool={onOpenInTool}
             />
           </div>

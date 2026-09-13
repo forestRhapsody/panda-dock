@@ -532,6 +532,49 @@ describe('DetectResultView 的多结果 Tab', () => {
     expect(horizontal.defaultPrevented).toBe(false)
     expect(tabsEl.scrollLeft).toBe(40)
   })
+
+  it('切换激活项时，结果字段容器与内容块以新 key 重新挂载，避免残留上一项的内部滚动位置与状态', () => {
+    const res0 = result({
+      kind: 'json',
+      fields: [field('k1', 'v1')],
+      blocks: [block('parsed', '{"a":1}', { json: true })],
+    })
+    const res1 = result({
+      kind: 'json',
+      fields: [field('k2', 'v2')],
+      blocks: [block('parsed', '{"b":2}', { json: true })],
+    })
+
+    render({
+      result: res0,
+      items: [makeItem('json', '{"a":1}'), makeItem('json', '{"b":2}')],
+      activeMatchIndex: 0,
+      onSelectMatch: () => {},
+    })
+
+    const initialFields = q('.tw-detect__fields')
+    const initialBlock = q('.tw-detect__block')
+    expect(initialFields).not.toBeNull()
+    expect(initialBlock).not.toBeNull()
+    // 模拟用户向下滚动了字段列表与高亮块
+    if (initialFields) initialFields.scrollTop = 120
+    const initialPre = q('pre.tw-json-hl')
+    if (initialPre) initialPre.scrollTop = 150
+
+    // 切换到第 2 项结果
+    render({
+      result: res1,
+      items: [makeItem('json', '{"a":1}'), makeItem('json', '{"b":2}')],
+      activeMatchIndex: 1,
+      onSelectMatch: () => {},
+    })
+
+    const newFields = q('.tw-detect__fields')
+    const newPre = q('pre.tw-json-hl')
+    expect(newFields).not.toBe(initialFields)
+    expect(newFields?.scrollTop).toBe(0)
+    expect(newPre?.scrollTop).toBe(0)
+  })
 })
 
 describe('DetectResultView 的「在 XX 工具中打开」手递手', () => {

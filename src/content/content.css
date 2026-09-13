@@ -155,7 +155,8 @@
   /* 盖过悬浮球(3011)/抽屉(3010)/轻提示(3012)，始终在网页内容之上 */
   box-sizing: border-box;
   width: min(500px, calc(100vw - 16px));
-  max-height: min(620px, calc(100vh - 24px));
+  /* 仅视口边界物理兜底，不再设置全局写死的固定最大高度，避免子元素互相挤压 */
+  max-height: calc(100vh - 24px);
   display: flex;
   flex-direction: column;
   padding: 12px 14px;
@@ -208,7 +209,6 @@
 
 .tek-detect-panel__body {
   min-height: 0;
-  overflow-y: auto;
   margin: -4px -6px;
   padding: 4px 6px;
   display: flex;
@@ -217,18 +217,21 @@
 }
 
 .tek-detect__editor {
+  /* 输入框独立定高/自适应：具有默认高度与最大高度，不参与 flex 压缩，高度绝不受结果集影响 */
+  flex: none;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  /* 允许在面板被 max-height 限制时被压缩：flex 的自动最小尺寸等于内容高度，
-     不置 0 会把面板外层撑出一条多余滚动条（输入框自身已有滚动 + min-height 兜底） */
-  min-height: 0;
 }
 
-/* 结果区按自身内容高度、不参与压缩：内部结果块是 JS 定高 + 内部滚动，被压扁会裁掉内容。
-   面板空间不足时改由输入框先让步 —— 避免「面板外层 / 输入框 / 结果块」三条滚动条叠在一起 */
 .tek-detect__result {
-  flex: 0 0 auto;
+  flex: none;
+}
+
+/* 字段列表较多时（如很多 URL Query 参数），在字段列表内部滚动，不出现外层重复滚动条 */
+.tek-detect__result .tw-detect__fields {
+  max-height: 260px;
+  overflow-y: auto;
 }
 
 .tek-detect__editor-head {

@@ -686,6 +686,75 @@ describe('划选解析面板（消息入口）', () => {
     sendContentMessage({ action: MSG_TOGGLE_DETECT })
     expect(query('.tek-detect-panel')).toBeNull()
   })
+
+  it('MSG_TOGGLE_DETECT 能穿透 ShadowRoot 抓取内部选区（如 JSON 结果文本）', async () => {
+    await renderOverlay()
+    await flush()
+
+    const mockRange = {
+      getBoundingClientRect: () => ({
+        left: 10,
+        top: 20,
+        right: 110,
+        bottom: 40,
+        width: 100,
+        height: 20,
+      }),
+    }
+    const mockSelection = {
+      rangeCount: 1,
+      isCollapsed: false,
+      toString: () => '{"name":"panda"}',
+      getRangeAt: () => mockRange,
+    }
+    ;(host.shadowRoot as unknown as { getSelection: () => unknown }).getSelection = () =>
+      mockSelection
+
+    sendContentMessage({ action: MSG_TOGGLE_DETECT })
+    expect(query('.tek-detect-panel')).not.toBeNull()
+    expect(query<HTMLTextAreaElement>('.tek-detect-panel textarea')?.value).toBe('{"name":"panda"}')
+  })
+
+  it('右键点击（contextmenu）同样穿透 ShadowRoot 捕获选区，接收 MSG_DETECT_SELECTION 正确定位与回显', async () => {
+    await renderOverlay()
+    await flush()
+
+    const mockRange = {
+      getBoundingClientRect: () => ({
+        left: 45,
+        top: 60,
+        right: 145,
+        bottom: 80,
+        width: 100,
+        height: 20,
+      }),
+    }
+    const mockSelection = {
+      rangeCount: 1,
+      isCollapsed: false,
+      toString: () => '{"ctx":"shadow"}',
+      getRangeAt: () => mockRange,
+    }
+    ;(host.shadowRoot as unknown as { getSelection: () => unknown }).getSelection = () =>
+      mockSelection
+
+    // 模拟在页面上触发 contextmenu 右键事件
+    act(() => {
+      window.dispatchEvent(
+        new MouseEvent('contextmenu', {
+          bubbles: true,
+          clientX: 50,
+          clientY: 70,
+        }),
+      )
+    })
+
+    // 模拟 background 发来右键菜单点击消息
+    sendContentMessage({ action: MSG_DETECT_SELECTION, text: '{"ctx":"shadow"}' })
+
+    expect(query('.tek-detect-panel')).not.toBeNull()
+    expect(query<HTMLTextAreaElement>('.tek-detect-panel textarea')?.value).toBe('{"ctx":"shadow"}')
+  })
 })
 
 describe('卸载清理', () => {

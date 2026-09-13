@@ -271,7 +271,7 @@ export default function DetectResultView({
       )}
 
       {result.fields.length > 0 && (
-        <div className='tw-detect__fields'>
+        <div key={`fields-${activeMatchIndex}`} className='tw-detect__fields'>
           {result.fields.map((field) => (
             <FieldRow key={field.key} field={field} />
           ))}
@@ -280,7 +280,7 @@ export default function DetectResultView({
 
       {result.blocks.map((block) => (
         <BlockRow
-          key={block.key}
+          key={`${activeMatchIndex}-${block.key}`}
           block={block}
           blockMaxHeight={blockMaxHeight}
           kind={result.kind}

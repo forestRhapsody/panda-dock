@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
-import type { RefObject, TextareaHTMLAttributes } from 'react'
+import type { ReactNode, RefObject, TextareaHTMLAttributes } from 'react'
 
 import type { DetectSourceMatch } from './detect'
 
@@ -11,6 +11,8 @@ interface HighlightAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaEle
   maxHeight?: number
   /** 允许外部获取底层 textarea DOM 实例（如一键清空后聚焦） */
   areaRef?: RefObject<HTMLTextAreaElement | null>
+  /** 显式触发滚动到激活高亮项的标记（用户点击结果 Tab 时变更，支持重复点击同 Tab 重新滚入） */
+  scrollTrigger?: number
 }
 
 /**
@@ -32,11 +34,13 @@ export default function HighlightArea({
   className = '',
   onChange,
   areaRef,
+  scrollTrigger,
   ...rest
 }: HighlightAreaProps) {
   const taRef = useRef<HTMLTextAreaElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const isFirstRender = useRef(true)
+  const prevTriggerRef = useRef(scrollTrigger)
 
   // 测量并撑开高度：textarea 自然跟随内容增高，推动外层 wrapper 滚动，内部绝不产生独立滚动条
   useLayoutEffect(() => {
@@ -49,17 +53,26 @@ export default function HighlightArea({
     el.style.height = `${el.scrollHeight}px`
   }, [value, areaRef])
 
-  // 当激活的高亮项变更（如点击不同结果 Tab）时，自动将其平滑滚动到输入框的可视区域内
+  // 当激活的高亮项变更或外部显式触发（如点击结果 Tab）时，自动将其平滑滚动到输入框的可视区域内
   useEffect(() => {
-    // 若当前输入框正处于打字聚焦状态，不干扰用户的原生光标与滚动
-    if (taRef.current?.matches(':focus')) {
+    const isExplicitTrigger =
+      scrollTrigger !== undefined && scrollTrigger !== prevTriggerRef.current
+    prevTriggerRef.current = scrollTrigger
+
+    // 若当前输入框正处于打字聚焦状态，且非外部显式点击触发，不干扰用户的原生光标与滚动
+    if (!isExplicitTrigger && taRef.current?.matches(':focus')) {
       return
     }
 
     const wrapper = wrapperRef.current
     if (!wrapper || wrapper.clientHeight <= 0) return
 
-    const markEl = wrapper.querySelector<HTMLElement>('.tw-area-mark')
+    // 必须精确定位当前激活的高亮项（.tw-area-mark--active），绝不能用通配 .tw-area-mark
+    // 否则多匹配项时只会永远抓到文本里的第一个标记（导致点击后方结果时根本不滚动）
+    const markEl =
+      wrapper.querySelector<HTMLElement>('.tw-area-mark--active') ??
+      wrapper.querySelector<HTMLElement>('.tw-area-mark:not(.tw-area-mark--idle)') ??
+      wrapper.querySelector<HTMLElement>('.tw-area-mark')
     if (!markEl) return
 
     const wrapperRect = wrapper.getBoundingClientRect()
@@ -78,7 +91,7 @@ export default function HighlightArea({
     const isVisible = relativeTop >= viewTop + PADDING && relativeBottom <= viewBottom - PADDING
 
     if (!isVisible) {
-      const smooth = !isFirstRender.current
+      const smooth = !isFirstRender.current || isExplicitTrigger
       isFirstRender.current = false
 
       let targetScrollTop: number
@@ -99,7 +112,7 @@ export default function HighlightArea({
     } else {
       isFirstRender.current = false
     }
-  }, [matches])
+  }, [matches, value, scrollTrigger])
 
   // 计算底层高亮节点：仅在 value 或 matches 变更时切片
   const backdropNodes = useMemo(() => {
@@ -116,7 +129,7 @@ export default function HighlightArea({
       return value
     }
 
-    const nodes: React.ReactNode[] = []
+    const nodes: (string | ReactNode)[] = []
     let lastIndex = 0
 
     validMatches.forEach((m, idx) => {
@@ -129,7 +142,10 @@ export default function HighlightArea({
         // 文本里还有别的匹配可以切过去。只靠背景色区分，不用边框/圆角（T24）
         const idle = m.active === false
         nodes.push(
-          <mark key={`hl-${idx}`} className={`tw-area-mark${idle ? ' tw-area-mark--idle' : ''}`}>
+          <mark
+            key={`hl-${idx}`}
+            className={`tw-area-mark${idle ? ' tw-area-mark--idle' : ' tw-area-mark--active'}`}
+          >
             {highlighted}
           </mark>,
         )

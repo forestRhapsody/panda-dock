@@ -236,4 +236,16 @@ describe('JsonHighlight 的行号与外观透传', () => {
     expect(pre2.style.height).toBe('0px')
     expect(pre2.style.overflowY).toBe('hidden')
   })
+
+  it('文本内容发生变化时，scrollTop 与 scrollLeft 自动重置到顶部 (0, 0)', () => {
+    const pre = render('{"first": 1}')
+    pre.scrollTop = 150
+    pre.scrollLeft = 80
+    expect(pre.scrollTop).toBe(150)
+    expect(pre.scrollLeft).toBe(80)
+
+    render('{"second": 2}')
+    expect(pre.scrollTop).toBe(0)
+    expect(pre.scrollLeft).toBe(0)
+  })
 })

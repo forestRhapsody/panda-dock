@@ -32,7 +32,7 @@ import {
   DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
   getBallImage,
 } from '@/utils/settings'
-import { useTheme } from '@/utils/theme'
+import { HOST_ID, useTheme } from '@/utils/theme'
 
 import Drawer from './Drawer'
 import FloatingBall, { clampBallPos, snapToEdge } from './FloatingBall'
@@ -196,30 +196,80 @@ function getInputElementRect(el: HTMLInputElement): SelectionRect {
 
 /**
  * 深度获取当前页面选中的文本与定位矩形：
- * 1. 深度穿透查找当前聚焦的 activeElement，优先检查可编辑元素（input / textarea）；
- * 2. 其次检查普通 DOM 节点选区（window.getSelection()）。
+ * 1. 深度穿透查找目标元素或当前聚焦的 activeElement，优先检查可编辑元素（input / textarea）；
+ * 2. 深度穿透查找 Shadow DOM 内部选区（如网页抽屉内的选区）；
+ * 3. 检查普通 DOM 节点选区（window.getSelection()）。
  */
-function getPageSelectionInfo(): { text: string; rect?: SelectionRect } | null {
-  let activeEl: Element | null = document.activeElement
-  while (activeEl?.shadowRoot?.activeElement) {
-    activeEl = activeEl.shadowRoot.activeElement
-  }
+function getPageSelectionInfo(
+  preferredEl?: Element | null,
+): { text: string; rect?: SelectionRect } | null {
+  const elementsToCheck: (Element | null)[] = [preferredEl ?? null, document.activeElement]
 
-  if (activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement) {
-    const start = activeEl.selectionStart
-    const end = activeEl.selectionEnd
-    if (typeof start === 'number' && typeof end === 'number' && start < end) {
-      const text = activeEl.value.slice(start, end).trim()
-      if (text) {
-        const rect =
-          activeEl instanceof HTMLTextAreaElement
-            ? getTextareaSelectionRect(activeEl, start)
-            : getInputElementRect(activeEl)
-        return { text, rect }
+  for (const el of elementsToCheck) {
+    let activeEl = el
+    while (activeEl?.shadowRoot?.activeElement) {
+      activeEl = activeEl.shadowRoot.activeElement
+    }
+
+    if (activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement) {
+      const start = activeEl.selectionStart
+      const end = activeEl.selectionEnd
+      if (typeof start === 'number' && typeof end === 'number' && start < end) {
+        const text = activeEl.value.slice(start, end).trim()
+        if (text) {
+          const rect =
+            activeEl instanceof HTMLTextAreaElement
+              ? getTextareaSelectionRect(activeEl, start)
+              : getInputElementRect(activeEl)
+          return { text, rect }
+        }
       }
     }
   }
 
+  // 2. 检查 Shadow DOM 内部选区（如网页抽屉内选中的 JSON 结果、文本块等）：
+  // 浏览器的 window.getSelection() 无法穿透 ShadowRoot 边界，必须通过 shadowRoot.getSelection() 读取
+  try {
+    const rootNode = (preferredEl ?? document.activeElement)?.getRootNode?.()
+    const activeShadow =
+      rootNode instanceof ShadowRoot
+        ? (rootNode as ShadowRoot & { getSelection?: () => Selection | null })
+        : null
+    const host = document.getElementById(HOST_ID)
+    const extShadow = host?.shadowRoot as
+      | (ShadowRoot & { getSelection?: () => Selection | null })
+      | null
+
+    const shadowRoots = [activeShadow, extShadow].filter(
+      (s): s is ShadowRoot & { getSelection?: () => Selection | null } =>
+        Boolean(s && typeof s.getSelection === 'function'),
+    )
+    for (const sr of shadowRoots) {
+      const sSel = sr.getSelection?.()
+      if (sSel && sSel.rangeCount > 0 && !sSel.isCollapsed) {
+        const text = sSel.toString().trim()
+        if (text) {
+          let rect: SelectionRect | undefined
+          const r = sSel.getRangeAt(0).getBoundingClientRect()
+          if (r.width > 0 || r.height > 0) {
+            rect = {
+              left: r.left,
+              top: r.top,
+              right: r.right,
+              bottom: r.bottom,
+              width: r.width,
+              height: r.height,
+            }
+          }
+          return { text, rect }
+        }
+      }
+    }
+  } catch {
+    // 忽略异常
+  }
+
+  // 3. 检查普通宿主 DOM 节点选区
   try {
     const sel = window.getSelection()
     if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
@@ -310,55 +360,25 @@ export default function ToolkitOverlay() {
       let rect: SelectionRect | undefined
       let selectedText = ''
 
-      // 1. 若右键目标为可编辑输入框，优先读取该输入框内的选区与定位
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        const start = e.target.selectionStart
-        const end = e.target.selectionEnd
-        if (typeof start === 'number' && typeof end === 'number' && start < end) {
-          selectedText = e.target.value.slice(start, end).trim()
-          rect =
-            e.target instanceof HTMLTextAreaElement
-              ? getTextareaSelectionRect(e.target, start)
-              : getInputElementRect(e.target)
-        } else {
-          rect =
-            e.target instanceof HTMLTextAreaElement
-              ? {
-                  left: e.target.getBoundingClientRect().left,
-                  top: e.clientY - 10,
-                  right: e.target.getBoundingClientRect().right,
-                  bottom: e.clientY + 10,
-                  width: e.target.getBoundingClientRect().width,
-                  height: 20,
-                }
-              : getInputElementRect(e.target)
-        }
-      }
-
-      // 2. 否则尝试从常规 DOM 选区读取
-      if (!selectedText) {
-        try {
-          const sel = window.getSelection()
-          if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-            const raw = sel.toString().trim()
-            if (raw) {
-              selectedText = raw
-              const r = sel.getRangeAt(0).getBoundingClientRect()
-              if (r.width > 0 || r.height > 0) {
-                rect = {
-                  left: r.left,
-                  top: r.top,
-                  right: r.right,
-                  bottom: r.bottom,
-                  width: r.width,
-                  height: r.height,
-                }
+      // 1. 深度检测选区（深度穿透支持 input / textarea / Shadow DOM / 普通 DOM 选区）
+      const targetEl = e.target instanceof Element ? e.target : null
+      const info = getPageSelectionInfo(targetEl)
+      if (info && info.text) {
+        selectedText = info.text
+        rect = info.rect
+      } else if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        // 未选中文本但右键点击了输入框：记录输入框当前右键行包围盒作为定位锚点
+        rect =
+          e.target instanceof HTMLTextAreaElement
+            ? {
+                left: e.target.getBoundingClientRect().left,
+                top: e.clientY - 10,
+                right: e.target.getBoundingClientRect().right,
+                bottom: e.clientY + 10,
+                width: e.target.getBoundingClientRect().width,
+                height: 20,
               }
-            }
-          }
-        } catch {
-          // 忽略跨域 iframe 或特殊选区异常
-        }
+            : getInputElementRect(e.target)
       }
 
       lastCtxPos.current = {

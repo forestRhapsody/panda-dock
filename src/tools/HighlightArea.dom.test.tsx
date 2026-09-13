@@ -48,6 +48,7 @@ type AreaProps = {
   placeholder?: string
   'aria-label'?: string
   maxLength?: number
+  scrollTrigger?: number
 }
 
 /** 每次都用新数组，确保 matches 依赖变化能真正触发滚动 effect */
@@ -383,5 +384,78 @@ describe('HighlightArea 的滚动同步（人造几何）', () => {
     // 理想目标 899-40=859，被 maxScroll=400 夹紧后为 400；与当前 399 只差 1px，
     // 属于「几乎没动」→ 不写 scrollTop，避免无意义的抖动（这就是 >2 阈值的作用）。
     expect(scrollTo).not.toHaveBeenCalled()
+  })
+
+  it('多匹配项切换时，准确找到激活项（.tw-area-mark--active）并滚动居中', () => {
+    // 首次渲染：第 1 项激活
+    render({
+      value: 'first-match and then second-match',
+      matches: [match('first-match', 0, 11, true), match('second-match', 21, 33, false)],
+    })
+
+    const w = wrapper()
+    const marks = container.querySelectorAll<HTMLElement>('.tw-area-mark')
+    expect(marks).toHaveLength(2)
+    expect(marks[0].classList.contains('tw-area-mark--active')).toBe(true)
+    expect(marks[1].classList.contains('tw-area-mark--idle')).toBe(true)
+
+    Object.defineProperty(w, 'clientHeight', { configurable: true, get: () => 100 })
+    Object.defineProperty(w, 'scrollHeight', { configurable: true, get: () => 1000 })
+    w.scrollTop = 0
+    w.getBoundingClientRect = () => rect(0, 100)
+    // 模拟 marks[0] 在顶部舒适区（30px），marks[1] 在下方 600px 处
+    marks[0].getBoundingClientRect = () => rect(30, 20)
+    marks[1].getBoundingClientRect = () => rect(600, 20)
+
+    const scrollTo = vi.fn()
+    w.scrollTo = scrollTo as unknown as HTMLElement['scrollTo']
+
+    // 重新渲染一次：第 1 项在可视范围内，消耗掉 isFirstRender 且不触发滚动
+    render({
+      value: 'first-match and then second-match',
+      matches: [match('first-match', 0, 11, true), match('second-match', 21, 33, false)],
+    })
+    expect(scrollTo).not.toHaveBeenCalled()
+
+    // 切换激活项到第 2 项（second-match）
+    render({
+      value: 'first-match and then second-match',
+      matches: [match('first-match', 0, 11, false), match('second-match', 21, 33, true)],
+    })
+
+    // 必须滚动到第 2 个匹配项（top: 600 - (100-20)/2 = 560），而不是停留在第 1 个匹配项（0px）
+    expect(scrollTo).toHaveBeenCalledWith({ top: 560, behavior: 'smooth' })
+  })
+
+  it('scrollTrigger 变化时，即使 matches 与 value 未变，移出视口后也能重新触发平滑滚动', () => {
+    const matches = [match('match', 6, 11, true)]
+    render({ value: 'hello match', matches, scrollTrigger: 0 })
+
+    const w = wrapper()
+    const mark = container.querySelector<HTMLElement>('.tw-area-mark--active')!
+    expect(mark).not.toBeNull()
+
+    Object.defineProperty(w, 'clientHeight', { configurable: true, get: () => 100 })
+    Object.defineProperty(w, 'scrollHeight', { configurable: true, get: () => 1000 })
+    w.scrollTop = 0
+    w.getBoundingClientRect = () => rect(0, 100)
+    mark.getBoundingClientRect = () => rect(30, 20)
+
+    const scrollTo = vi.fn()
+    w.scrollTo = scrollTo as unknown as HTMLElement['scrollTo']
+
+    // 消耗首挂载
+    render({ value: 'hello match', matches, scrollTrigger: 0 })
+    expect(scrollTo).not.toHaveBeenCalled()
+
+    // 模拟用户手动向下滚动了输入框（scrollTop = 500），高亮项移出视口
+    w.scrollTop = 500
+    mark.getBoundingClientRect = () => rect(-470, 20)
+
+    // 用户再次点击同一个激活的 Tab，触发 scrollTrigger 递增
+    render({ value: 'hello match', matches, scrollTrigger: 1 })
+
+    // 此时应当把该激活项重新滚回居中（relativeTop=30，居中 targetScrollTop = max(0, 30 - 40) = 0）
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
   })
 })
