@@ -71,6 +71,16 @@ function parseJson(text: string): { ok: true; value: unknown } | { ok: false; er
   }
 }
 
+/**
+ * 是否是「结构化 JSON」（对象 / 数组）。
+ * 裸标量（`1251`、`"abc"`、`true`、`null`）虽然也是合法 JSON，但对用户来说就是普通值：
+ * 把它们当 JSON 处理，既会莫名其妙弹出「JSON 格式正确，保存时自动压缩」，
+ * 又会在保存时静默改数据（`1e3` → `1000`、`"abc"` 被吃掉引号）。
+ */
+function isJsonDocument(value: unknown): boolean {
+  return typeof value === 'object' && value !== null
+}
+
 /** 去除换行（保留行内空格），把多行文本紧凑为单行（用于保存非法 JSON 时去掉换行） */
 function stripLineBreaks(text: string): string {
   return text.replace(/[ \t]*\r?\n[ \t]*/g, ' ').trim()
@@ -112,8 +122,8 @@ function EditorForm({
   const { t } = useTranslation()
   const keyInputRef = useRef<HTMLInputElement>(null)
   const draftJson = parseJson(draftValue)
-  // 原值是 JSON 则全程 JSON 编辑器；否则当前值一旦是 JSON 也切换到 JSON 编辑器
-  const showJson = useJson || draftJson.ok
+  // 原值是 JSON 文档则全程 JSON 编辑器；否则当前值构造成文档（对象 / 数组）才切换到 JSON 编辑器
+  const showJson = useJson || (draftJson.ok && isJsonDocument(draftJson.value))
 
   useEffect(() => {
     if (isNew) {
@@ -436,11 +446,13 @@ export default function StorageTool() {
       return
     }
     const parsed = parseJson(entry.value)
+    // 只有结构化 JSON（对象 / 数组）才用 JSON 编辑器与美化缩进；裸标量按普通值编辑
+    const isDoc = parsed.ok && isJsonDocument(parsed.value)
     setCreating(false)
     setEditingKey(entry.key)
     setDraftKey(entry.key)
-    setEditIsJson(parsed.ok)
-    setDraftValue(parsed.ok ? JSON.stringify(parsed.value, null, 2) : entry.value)
+    setEditIsJson(isDoc)
+    setDraftValue(isDoc ? JSON.stringify(parsed.value, null, 2) : entry.value)
     setFormError(null)
   }
 
@@ -499,7 +511,7 @@ export default function StorageTool() {
     void load()
   }
 
-  // 保存：合法 JSON 压缩；非法 JSON（且原值为 JSON）弹窗确认后去换行；其余按原文
+  // 保存：结构化 JSON 压缩；原值是 JSON 文档但当前解析不了，弹窗确认后去换行；其余按原文
   function saveEntry() {
     const key = draftKey.trim()
     if (!key) {
@@ -507,11 +519,11 @@ export default function StorageTool() {
       return
     }
     const parsed = parseJson(draftValue)
-    if (parsed.ok) {
+    if (parsed.ok && isJsonDocument(parsed.value)) {
       void commitEntry(key, JSON.stringify(parsed.value))
       return
     }
-    if (editIsJson) {
+    if (editIsJson && !parsed.ok) {
       requestConfirm({
         title: t('tool.storage.jsonInvalid'),
         message: t('tool.storage.invalidJsonSaveMessage'),
@@ -519,6 +531,7 @@ export default function StorageTool() {
       })
       return
     }
+    // 普通值 / 裸标量：按原文写入，绝不 stringify（否则 1e3 会被改写成 1000）
     void commitEntry(key, draftValue)
   }
 

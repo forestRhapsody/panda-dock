@@ -511,6 +511,35 @@ describe('StorageTool 编辑与写入', () => {
     expect(container.querySelector('.tw-store__edit')).toBeNull()
   })
 
+  it('裸标量（如 1251）不算 JSON 文档：不进 JSON 编辑器、按原文保存不被改写', async () => {
+    await renderTool()
+    await act(async () => buttonWithText('新增').click())
+    await act(async () => setInput(editorKeyInput(), 'width'))
+    await act(async () => setInput(editorValueArea(), '1251'))
+
+    // 没有 JSON 校验条，也拿不到「格式化 / 压缩」
+    expect(container.querySelector('.tw-store__status-bar--ok')).toBeNull()
+    expect(buttonsIn().some((b) => b.textContent?.includes('格式化'))).toBe(false)
+
+    // 科学计数法这类「合法 JSON 标量」绝不能被 stringify 改写
+    await act(async () => setInput(editorValueArea(), '1e3'))
+    await clickSave()
+    expect(setStorageValue).toHaveBeenCalledWith('local', 'width', '1e3')
+  })
+
+  it('编辑值为裸标量的已有条目：按普通值打开（不美化、不套 JSON 编辑器）', async () => {
+    vi.mocked(listStorage).mockResolvedValue({
+      ok: true,
+      data: makeSnapshot({ entries: [makeEntry('width', '1251')], totalCount: 1 }),
+    })
+    await renderTool()
+
+    await act(async () => buttonWithText('编辑', firstRow()).click())
+    expect(editorValueArea().value).toBe('1251')
+    expect(container.querySelector('.tw-store__status-bar--ok')).toBeNull()
+    expect(buttonsIn().some((b) => b.textContent?.includes('格式化'))).toBe(false)
+  })
+
   it('新增时 Key 为空给出内联校验提示且不写数据', async () => {
     await renderTool()
     await act(async () => buttonWithText('新增').click())
