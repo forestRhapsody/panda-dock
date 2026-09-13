@@ -28,17 +28,8 @@
 功能与交互：
 
 - `A5` 入口缺 `#root` 的兜底：已通过反混淆构建产物确认 `console.error` 分支进入 `dist`；浏览器无法自然触发（入口 HTML 必然带 `#root`）。
-- `A6` `toast` 非法 duration 回落与定时器清理：可自动化的分支已由变异验证钉死，`Toaster.dom.test.tsx` 覆盖到点消失；真实浏览器里的动画/消失观感未实测。
-- `A8` 裁剪导出的失败提示：失败与重试两条路径已由变异验证钉死；真实浏览器用 DevTools 注入 `getContext` 失败仍未做。
-- `T4 #11`/`#12`（抽屉 Escape 与内层浮层让行、划选面板 resize/scroll 重定位）：happy-dom 覆盖了机制，真实浏览器里「面板与抽屉同开时 Escape 只关面板」「滚动时浮层跟随」未实测。
 - `T4 #15`（live region 改动）：读屏的实际播报行为需在真实辅助技术下确认。
-- `T11`/`T12`（工具内层 tab 跨工具记忆、输入后立刻切走再回来不丢内容）：单测走 `chrome` 桩或 `sessionStorage` 降级，真实环境写 `chrome.storage.session`，需在真实扩展里复验。
-- `T8` 内联编辑的 Escape 让行：守卫要求焦点确实落在 `[data-tk-escape]` 子树内，而焦点来自挂载时的 `autoFocus`；真实 content script 影子 DOM 内 `autoFocus` 是否总生效未实测。popup 宿主亦未实测（Escape 可能被浏览器直接消费，页面侧拦不到）。
 - 测试侧限制（happy-dom 无排版）：真实像素高度/滚动条、dnd-kit 真实拖拽序列、真实文件选择与 `FileReader.onerror`、canvas 真实栅格；相关用例只断言可确定的分支。
-
-视觉 / 布局（happy-dom 无法断言，只能目测）：
-
-- **高亮标记扁平化**（T24）：无圆角、无描边的观感；JSON 高亮输入框的选区不再自定义后是否正常。
 
 ## 任务列表
 
