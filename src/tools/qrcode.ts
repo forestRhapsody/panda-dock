@@ -9,6 +9,20 @@ export type QrErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H'
 export type QrLogoShape = 'circle' | 'rounded' | 'square'
 export type QrLogoMargin = 'none' | 'tight' | 'standard'
 
+export interface QrStylePreset {
+  margin?: number
+  resolution?: number
+  fgColor?: string
+  bgColor?: string
+  labelFontSize?: number
+  logoShape?: QrLogoShape
+  logoSizeRatio?: number
+  logoMargin?: QrLogoMargin | boolean
+  ecLevel?: QrErrorCorrectionLevel
+}
+
+export const QR_STYLE_PRESET_KEY = 'toolkit.qrcode.stylePreset'
+
 export interface GenerateQrOptions {
   /** 纠错等级：L (7%) / M (15%) / Q (25%) / H (30%)，默认 M */
   errorCorrectionLevel?: QrErrorCorrectionLevel

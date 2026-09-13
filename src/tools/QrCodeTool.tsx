@@ -2,17 +2,25 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
+import ConfirmDialog from '@/ui/ConfirmDialog'
 import Icon from '@/ui/Icon'
 import TkSelect from '@/ui/TkSelect'
+import { toast } from '@/ui/toast'
 import Tooltip from '@/ui/Tooltip'
 import { copyText } from '@/utils/clipboard'
 import { useToolDraft } from '@/utils/draft'
+import { storageGet, storageRemove, storageSet } from '@/utils/env'
 import { getCurrentPageUrl } from '@/utils/pageUrl'
 
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
-import { decodeQrCodeFromBlob, generateQrCodeBlob, generateQrCodeResult } from './qrcode'
-import type { QrErrorCorrectionLevel, QrLogoMargin, QrLogoShape } from './qrcode'
+import {
+  decodeQrCodeFromBlob,
+  generateQrCodeBlob,
+  generateQrCodeResult,
+  QR_STYLE_PRESET_KEY,
+} from './qrcode'
+import type { QrErrorCorrectionLevel, QrLogoMargin, QrLogoShape, QrStylePreset } from './qrcode'
 import QrLogoCropModal from './QrLogoCropModal'
 import { StatusText } from './StatusText'
 import ToolTabs from './ToolTabs'
@@ -91,6 +99,8 @@ export default function QrCodeTool() {
   const [showCropModal, setShowCropModal] = useState(false)
   const [label, setLabel] = useState('')
   const [showCustomize, setShowCustomize] = useState(false)
+  const [hasCustomPreset, setHasCustomPreset] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [qrDimensions, setQrDimensions] = useState<{ width: number; height: number } | null>(null)
@@ -107,6 +117,79 @@ export default function QrCodeTool() {
   // 只在尚未记录时记录一次：若每次都覆盖，重新上传 Logo（等级仍被锁定为 H）会把
   // 记录改写成 H，移除后就再也回不到用户原本的等级了。
   const ecLevelBeforeLogoRef = useRef<QrErrorCorrectionLevel | null>(null)
+
+  // 挂载时加载用户持久化的样式偏好（若存在）
+  useEffect(() => {
+    let alive = true
+    storageGet<QrStylePreset>('local', QR_STYLE_PRESET_KEY).then((saved) => {
+      if (!alive || !saved) return
+      setHasCustomPreset(true)
+      if (saved.margin !== undefined) setMargin(saved.margin)
+      if (saved.resolution !== undefined) setResolution(saved.resolution)
+      if (saved.fgColor !== undefined) setFgColor(saved.fgColor)
+      if (saved.bgColor !== undefined) setBgColor(saved.bgColor)
+      if (saved.labelFontSize !== undefined) setLabelFontSize(saved.labelFontSize)
+      if (saved.logoShape !== undefined) setLogoShape(saved.logoShape)
+      if (saved.logoSizeRatio !== undefined) setLogoSizeRatio(saved.logoSizeRatio)
+      if (saved.logoMargin !== undefined) {
+        const mapped: QrLogoMargin =
+          saved.logoMargin === false
+            ? 'none'
+            : saved.logoMargin === true
+              ? 'standard'
+              : saved.logoMargin
+        setLogoMargin(mapped)
+      }
+      if (saved.ecLevel !== undefined) {
+        ecLevelBeforeLogoRef.current = saved.ecLevel
+        setEcLevel(saved.ecLevel)
+      }
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  // 保存当前样式为默认偏好
+  async function handleSavePreset() {
+    const preset: QrStylePreset = {
+      margin,
+      resolution,
+      fgColor,
+      bgColor,
+      labelFontSize,
+      logoShape,
+      logoSizeRatio,
+      logoMargin,
+      ecLevel: ecLevelBeforeLogoRef.current ?? ecLevel,
+    }
+    const ok = await storageSet('local', QR_STYLE_PRESET_KEY, preset)
+    if (ok) {
+      setHasCustomPreset(true)
+      toast.success(t('tool.qrcode.presetSaved'))
+    } else {
+      toast.error(t('tool.qrcode.presetSaveFailed'))
+    }
+  }
+
+  // 恢复出厂默认样式配置
+  async function executeResetPreset() {
+    await storageRemove('local', QR_STYLE_PRESET_KEY)
+    setHasCustomPreset(false)
+    setMargin(2)
+    setResolution(1200)
+    setFgColor('#000000')
+    setBgColor('#ffffff')
+    setLabelFontSize(18)
+    setLogoShape('rounded')
+    setLogoSizeRatio(0.22)
+    setLogoMargin('standard')
+    ecLevelBeforeLogoRef.current = 'M'
+    if (!logoUrl) {
+      setEcLevel('M')
+    }
+    toast.success(t('tool.qrcode.presetReset'))
+  }
 
   // —— 解析模式状态 ——
   const [decodeLoading, setDecodeLoading] = useState(false)
@@ -760,6 +843,24 @@ export default function QrCodeTool() {
                   </div>
                 </div>
               </div>
+
+              {/* 预设持久化操作栏 */}
+              <div className='tw-qr__preset-bar'>
+                <button type='button' className='tk-btn tk-btn--sm' onClick={handleSavePreset}>
+                  <Icon name='check' size={12} />
+                  {t('tool.qrcode.saveAsDefault')}
+                </button>
+                {hasCustomPreset && (
+                  <button
+                    type='button'
+                    className='tk-btn tk-btn--sm'
+                    onClick={() => setShowResetConfirm(true)}
+                  >
+                    <Icon name='refresh' size={12} />
+                    {t('tool.qrcode.resetDefault')}
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -914,6 +1015,22 @@ export default function QrCodeTool() {
           initialShape={logoShape}
           onConfirm={handleCropConfirm}
           onCancel={handleCropCancel}
+        />
+      )}
+
+      {/* 恢复出厂默认确认弹窗 */}
+      {showResetConfirm && (
+        <ConfirmDialog
+          title={t('tool.qrcode.resetConfirmTitle')}
+          message={t('tool.qrcode.resetConfirmMessage')}
+          confirmLabel={t('common.confirm')}
+          cancelLabel={t('common.cancel')}
+          danger
+          onCancel={() => setShowResetConfirm(false)}
+          onConfirm={() => {
+            setShowResetConfirm(false)
+            void executeResetPreset()
+          }}
         />
       )}
     </div>

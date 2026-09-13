@@ -1984,6 +1984,15 @@
   flex: 1;
 }
 
+.tw-qr__preset-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--tk-border);
+}
+
 .tw-qr__preview-box {
   display: flex;
   flex-direction: column;

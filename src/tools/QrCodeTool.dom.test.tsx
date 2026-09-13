@@ -6,7 +6,13 @@ import type { Root } from 'react-dom/client'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import i18n from '@/i18n'
-import { decodeQrCodeFromBlob, generateQrCodeBlob, generateQrCodeResult } from '@/tools/qrcode'
+import {
+  decodeQrCodeFromBlob,
+  generateQrCodeBlob,
+  generateQrCodeResult,
+  QR_STYLE_PRESET_KEY,
+} from '@/tools/qrcode'
+import type { QrStylePreset } from '@/tools/qrcode'
 import { setDraftValue } from '@/utils/draft'
 
 import QrCodeTool from './QrCodeTool'
@@ -28,11 +34,15 @@ import QrCodeTool from './QrCodeTool'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-vi.mock('@/tools/qrcode', () => ({
-  generateQrCodeResult: vi.fn(),
-  generateQrCodeBlob: vi.fn(),
-  decodeQrCodeFromBlob: vi.fn(),
-}))
+vi.mock('@/tools/qrcode', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/tools/qrcode')>()
+  return {
+    ...actual,
+    generateQrCodeResult: vi.fn(),
+    generateQrCodeBlob: vi.fn(),
+    decodeQrCodeFromBlob: vi.fn(),
+  }
+})
 
 vi.mock('./QrLogoCropModal', () => ({
   default: ({
@@ -94,6 +104,7 @@ const globalWithChrome = globalThis as unknown as { chrome?: unknown }
 
 let container: HTMLDivElement
 let root: Root
+let localStore: Record<string, unknown>
 let sessionStore: Record<string, unknown>
 let changeListeners: ChangeListener[]
 let urlSeq = 0
@@ -106,23 +117,24 @@ const realRevokeObjectURL = URL.revokeObjectURL
 /** 内存版 chrome.storage 桩：写入派发 onChanged，供 useToolDraft 的实时同步路径使用 */
 function stubChrome() {
   sessionStore = {}
+  localStore = {}
   changeListeners = []
-  const area = {
-    get: async (key: string) => (key in sessionStore ? { [key]: sessionStore[key] } : {}),
+  const makeArea = (store: Record<string, unknown>, areaName: string) => ({
+    get: async (key: string) => (key in store ? { [key]: store[key] } : {}),
     set: async (obj: Record<string, unknown>) => {
       const changes = Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, { newValue: v }]))
-      Object.assign(sessionStore, obj)
-      for (const listener of [...changeListeners]) listener(changes, 'session')
+      Object.assign(store, obj)
+      for (const listener of [...changeListeners]) listener(changes, areaName)
     },
     remove: async (key: string) => {
-      delete sessionStore[key]
+      delete store[key]
     },
-  }
+  })
   globalWithChrome.chrome = {
     storage: {
-      session: area,
-      sync: area,
-      local: area,
+      session: makeArea(sessionStore, 'session'),
+      sync: makeArea(sessionStore, 'sync'),
+      local: makeArea(localStore, 'local'),
       onChanged: {
         addListener: (listener: ChangeListener) => changeListeners.push(listener),
         removeListener: (listener: ChangeListener) => {
@@ -1083,5 +1095,158 @@ describe('QrCodeTool：会话草稿', () => {
     await flush(0)
 
     expect(inputArea().value).toBe('来自会话存储')
+  })
+})
+
+describe('QrCodeTool：样式偏好持久化（默认预设）', () => {
+  it('初始未保存预设时仅有「保存为默认样式」，点击后写入 local 存储并呈现恢复按钮', async () => {
+    await renderTool()
+    openCustomize()
+    expect(queryByText('button', i18n.t('tool.qrcode.saveAsDefault'))).not.toBeNull()
+    expect(
+      queryAll('button').find((b) => b.textContent?.includes(i18n.t('tool.qrcode.resetDefault'))),
+    ).toBeUndefined()
+
+    // 调整一些外观参数
+    chooseOption(selectById('tw-qr-margin'), i18n.t('tool.qrcode.marginLoose'))
+    chooseOption(selectById('tw-qr-resolution'), i18n.t('tool.qrcode.sizeSm'))
+
+    // 点击保存为默认样式
+    clickButton(i18n.t('tool.qrcode.saveAsDefault'))
+    await flush()
+
+    // 验证写入 localStore
+    const saved = localStore[QR_STYLE_PRESET_KEY] as QrStylePreset
+    expect(saved).toBeDefined()
+    expect(saved.margin).toBe(4)
+    expect(saved.resolution).toBe(800)
+    expect(saved.ecLevel).toBe('M')
+
+    // 界面出现「恢复初始默认」按钮
+    expect(
+      queryAll('button').find((b) => b.textContent?.includes(i18n.t('tool.qrcode.resetDefault'))),
+    ).toBeDefined()
+  })
+
+  it('已存在持久化预设时挂载：自动回填所有样式参数，并按该参数生成二维码', async () => {
+    localStore[QR_STYLE_PRESET_KEY] = {
+      margin: 4,
+      resolution: 800,
+      fgColor: '#123456',
+      bgColor: '#abcdef',
+      labelFontSize: 24,
+      logoShape: 'circle',
+      logoSizeRatio: 0.26,
+      logoMargin: 'tight',
+      ecLevel: 'Q',
+    }
+
+    await renderTool()
+    await generateFrom('https://example.com')
+
+    expect(mockedGenerate).toHaveBeenLastCalledWith('https://example.com', {
+      ...defaultOptions(),
+      margin: 4,
+      targetWidth: 800,
+      foregroundColor: '#123456',
+      backgroundColor: '#abcdef',
+      labelFontSize: 24,
+      logoShape: 'circle',
+      logoSizeRatio: 0.26,
+      logoMargin: 'tight',
+      errorCorrectionLevel: 'Q',
+    })
+
+    openCustomize()
+    expect(
+      queryAll('button').find((b) => b.textContent?.includes(i18n.t('tool.qrcode.resetDefault'))),
+    ).toBeDefined()
+  })
+
+  it('兼容旧版偏好：logoMargin 为 boolean 时自动归一化', async () => {
+    localStore[QR_STYLE_PRESET_KEY] = {
+      logoMargin: false,
+    }
+
+    await renderTool()
+    await generateFrom('test')
+
+    expect(mockedGenerate).toHaveBeenLastCalledWith(
+      'test',
+      expect.objectContaining({
+        logoMargin: 'none',
+      }),
+    )
+  })
+
+  it('恢复初始默认需二次确认：取消保留，确认后清除存储并恢复出厂默认', async () => {
+    localStore[QR_STYLE_PRESET_KEY] = {
+      margin: 4,
+      resolution: 800,
+      fgColor: '#ff0000',
+      bgColor: '#ffff00',
+    }
+
+    await renderTool()
+    await generateFrom('hello')
+    openCustomize()
+
+    const resetButton = queryByText<HTMLButtonElement>('button', i18n.t('tool.qrcode.resetDefault'))
+    act(() => resetButton.click())
+    await flush(0)
+
+    // 弹出确认弹窗
+    const dialog = query('[role="alertdialog"]')
+    expect(dialog).not.toBeNull()
+    expect(dialog.textContent).toContain(i18n.t('tool.qrcode.resetConfirmTitle'))
+    expect(dialog.textContent).toContain(i18n.t('tool.qrcode.resetConfirmMessage'))
+
+    // 点击取消
+    const cancelBtn = queryByText<HTMLButtonElement>(
+      '.tk-modal__actions button',
+      i18n.t('common.cancel'),
+    )
+    act(() => cancelBtn.click())
+    await flush(0)
+
+    expect(container.querySelector('[role="alertdialog"]')).toBeNull()
+    expect(localStore[QR_STYLE_PRESET_KEY]).toBeDefined()
+
+    // 再次点击恢复
+    clickButton(i18n.t('tool.qrcode.resetDefault'))
+    await flush(0)
+
+    // 点击确认
+    const confirmBtn = queryByText<HTMLButtonElement>(
+      '.tk-modal__actions button',
+      i18n.t('common.confirm'),
+    )
+    act(() => confirmBtn.click())
+    await flush(0)
+    await flush(200)
+
+    // 存储已被移除
+    expect(localStore[QR_STYLE_PRESET_KEY]).toBeUndefined()
+
+    // 恢复按钮消失
+    expect(
+      queryAll('button').find((b) => b.textContent?.includes(i18n.t('tool.qrcode.resetDefault'))),
+    ).toBeUndefined()
+
+    // options 回归出厂默认
+    expect(mockedGenerate).toHaveBeenLastCalledWith('hello', defaultOptions())
+  })
+
+  it('上传 Logo 锁定 H 级别期间保存预设，持久化的是用户原本的纠错等级', async () => {
+    await renderTool()
+    openCustomize()
+    await uploadLogoAndConfirm()
+
+    // 当前 ecLevel 已经被锁定为 H，保存预设仍应保存用户先前的等级（默认 M）
+    clickButton(i18n.t('tool.qrcode.saveAsDefault'))
+    await flush()
+
+    const saved = localStore[QR_STYLE_PRESET_KEY] as QrStylePreset
+    expect(saved.ecLevel).toBe('M')
   })
 })
