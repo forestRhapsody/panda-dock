@@ -17,11 +17,11 @@ import {
 } from '@/utils/messages'
 import { HOST_ID } from '@/utils/theme'
 
-import ToolkitOverlay from './ToolkitOverlay'
+import PandaDockOverlay from './PandaDockOverlay'
 
 /**
  * 为什么这样测：
- * - ToolkitOverlay 是悬浮球 + 网页内抽屉 + 划选面板的唯一装配点，它的开合只能由
+ * - PandaDockOverlay 是悬浮球 + 网页内抽屉 + 划选面板的唯一装配点，它的开合只能由
  *   消息 / 快捷键 / 悬浮球点击三条真实入口驱动，这里全部走真实事件与真实 chrome 消息，
  *   断言的是「抽屉 DOM 是否出现」这种可观察结果，而不是某个函数被调用过。
  * - 抽屉与原生侧边栏互斥（AGENTS §5）靠 MSG_CLOSE_NATIVE_SIDE_PANEL 中转实现，
@@ -183,7 +183,7 @@ function setupShadowHost(): void {
 
 const renderOverlay = () =>
   act(async () => {
-    root.render(<ToolkitOverlay />)
+    root.render(<PandaDockOverlay />)
   })
 
 /** 打开抽屉后等一帧：ToolsApp / 工具面板挂载时会异步读存储，让这些更新落在 act 内 */

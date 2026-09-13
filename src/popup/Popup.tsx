@@ -10,7 +10,7 @@ import Tooltip from '@/ui/Tooltip'
 import { closeDrawerInActiveTab, openDrawerInActiveTab } from '@/utils/drawer'
 import { isExtension, openOptionsPage } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
-import { formatShortcutForDisplay, getToolkitShortcut, openShortcutsPage } from '@/utils/shortcuts'
+import { formatShortcutForDisplay, getDockShortcut, openShortcutsPage } from '@/utils/shortcuts'
 import { closeNativeSidePanel, openNativeSidePanel } from '@/utils/sidePanel'
 import { useTheme } from '@/utils/theme'
 
@@ -30,7 +30,7 @@ export default function Popup() {
   const [shortcut, setShortcut] = useState('')
 
   useEffect(() => {
-    void getToolkitShortcut().then(setShortcut)
+    void getDockShortcut().then(setShortcut)
   }, [])
 
   async function openPanel() {

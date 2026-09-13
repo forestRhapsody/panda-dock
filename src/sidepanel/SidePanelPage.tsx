@@ -4,7 +4,7 @@ import { useLocale } from '@/i18n/useLocale'
 import ToolsApp from '@/tools/ToolsApp'
 import { TabScopeContext } from '@/utils/draft'
 import { useFontScale } from '@/utils/fontScale'
-import { MSG_CLOSE_NATIVE_SIDE_PANEL } from '@/utils/messages'
+import { MSG_CLOSE_NATIVE_SIDE_PANEL, PORT_SIDEPANEL } from '@/utils/messages'
 import { useTheme } from '@/utils/theme'
 
 import './index.css'
@@ -13,7 +13,7 @@ import './index.css'
  * 浏览器原生侧边栏(Side Panel)页面：定位为浏览器全局常驻工具箱。
  * - 数据跨标签页全局共享，不随 Tab 切换而变动；
  * - 关闭 ToolsApp 自身的 header（showHeader=false），避免与 Chrome 自带 header 重叠；
- * - 挂载时建立 toolkit-sidepanel Port 长连接，与网页抽屉保持互斥。
+ * - 挂载时建立 panda-dock-sidepanel Port 长连接，与网页抽屉保持互斥。
  */
 export default function SidePanelPage() {
   useLocale()
@@ -24,7 +24,7 @@ export default function SidePanelPage() {
     let port: chrome.runtime.Port | null = null
     try {
       if (typeof chrome !== 'undefined' && chrome.runtime?.connect) {
-        port = chrome.runtime.connect({ name: 'toolkit-sidepanel' })
+        port = chrome.runtime.connect({ name: PORT_SIDEPANEL })
         port.onMessage.addListener((msg: unknown) => {
           if ((msg as { action?: string })?.action === MSG_CLOSE_NATIVE_SIDE_PANEL) {
             window.close()

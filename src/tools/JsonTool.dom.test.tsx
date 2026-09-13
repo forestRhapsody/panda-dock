@@ -159,8 +159,8 @@ describe('JsonTool 输入 / 结果展示', () => {
     await renderTool()
     await act(async () => buttonByText('填入示例').click())
 
-    expect(textarea().value).toContain('toolkit-extension')
-    expect(viewerText()).toContain('"name": "toolkit-extension"')
+    expect(textarea().value).toContain('panda-dock')
+    expect(viewerText()).toContain('"name": "panda-dock"')
     expect(container.querySelector('.tw-json-editor-wrap--empty-err')).toBeNull()
   })
 
@@ -312,7 +312,7 @@ describe('JsonTool 复制 / 下载 / 草稿', () => {
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 240))
     })
-    const persisted = store[`toolkit.draft.${JSON_DRAFT_KEY}`] as
+    const persisted = store[`panda.draft.${JSON_DRAFT_KEY}`] as
       | typeof DEFAULT_JSON_DRAFT
       | undefined
     expect(typeof persisted).toBe('object')

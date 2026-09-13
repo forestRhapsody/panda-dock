@@ -131,7 +131,7 @@ describe('外部写入草稿（T134 手递手）', () => {
     root = createRoot(container)
 
     // 只写会话存储、不碰缓存——模拟任何绕过 setDraftValue 的写入路径
-    store[`toolkit.draft.${key}`] = '新值'
+    store[`panda.draft.${key}`] = '新值'
 
     await act(async () => {
       root.render(<Probe draftKey={key} />)
@@ -183,13 +183,13 @@ describe('防抖写入 × 卸载 / 重挂载（切走工具的场景）', () => 
     })
 
     // 清理里必须补写这次改动：否则会话存储仍是旧值，其它页面与下次挂载都读不到
-    expect(store[`toolkit.draft.${key}`]).toBe('新值')
+    expect(store[`panda.draft.${key}`]).toBe('新值')
   })
 
   it('落盘还没完成时重挂载：存储里的旧值不会覆盖内存里的新值', async () => {
     const key = 'debounce.pending'
     // 初始状态：会话存储里是旧值
-    store[`toolkit.draft.${key}`] = '旧值'
+    store[`panda.draft.${key}`] = '旧值'
 
     // 让写入挂起，模拟「flush 已发出但还没写完」
     let release: (() => void) | undefined
@@ -229,11 +229,11 @@ describe('防抖写入 × 卸载 / 重挂载（切走工具的场景）', () => 
 
 describe('标签页作用域隔离（TabScopeContext）', () => {
   it('getScopedDraftKey 正确拼接或回退无前缀 key', () => {
-    expect(getScopedDraftKey('test', 101)).toBe('toolkit.draft.t101.test')
-    expect(getScopedDraftKey('test', null)).toBe('toolkit.draft.test')
-    expect(getScopedDraftKey('test', undefined)).toBe('toolkit.draft.test')
-    expect(getScopedDraftKey('test', 0)).toBe('toolkit.draft.test')
-    expect(getScopedDraftKey('test', -1)).toBe('toolkit.draft.test')
+    expect(getScopedDraftKey('test', 101)).toBe('panda.draft.t101.test')
+    expect(getScopedDraftKey('test', null)).toBe('panda.draft.test')
+    expect(getScopedDraftKey('test', undefined)).toBe('panda.draft.test')
+    expect(getScopedDraftKey('test', 0)).toBe('panda.draft.test')
+    expect(getScopedDraftKey('test', -1)).toBe('panda.draft.test')
   })
 
   it('不同 tabId 的探针草稿互相隔离，互不干扰', async () => {
@@ -275,8 +275,8 @@ describe('标签页作用域隔离（TabScopeContext）', () => {
     await act(async () => new Promise((resolve) => setTimeout(resolve, 260)))
 
     // 验证存储里写入的是带前缀的 t101
-    expect(store['toolkit.draft.t101.doc']).toBe('标签页101专属内容')
-    expect(store['toolkit.draft.t102.doc']).toBeUndefined()
+    expect(store['panda.draft.t101.doc']).toBe('标签页101专属内容')
+    expect(store['panda.draft.t102.doc']).toBeUndefined()
     expect(tab102Text()).toBe('(empty)')
   })
 
@@ -313,7 +313,7 @@ describe('标签页作用域隔离（TabScopeContext）', () => {
 
   it('getDraftValue 与 setDraftValue 携带 tabId 定向存取', async () => {
     await setDraftValue('testKey', 'hello-t301', 301)
-    expect(store['toolkit.draft.t301.testKey']).toBe('hello-t301')
+    expect(store['panda.draft.t301.testKey']).toBe('hello-t301')
     const val = await getDraftValue('testKey', 301)
     expect(val).toBe('hello-t301')
 
@@ -363,8 +363,8 @@ describe('标签页作用域隔离（TabScopeContext）', () => {
     // 200ms 防抖落盘
     await act(async () => new Promise((resolve) => setTimeout(resolve, 260)))
 
-    // 全局写入 toolkit.draft.note，标签页无此键
-    expect(store['toolkit.draft.note']).toBe('全局侧栏备忘')
-    expect(store['toolkit.draft.t303.note']).toBeUndefined()
+    // 全局写入 panda.draft.note，标签页无此键
+    expect(store['panda.draft.note']).toBe('全局侧栏备忘')
+    expect(store['panda.draft.t303.note']).toBeUndefined()
   })
 })

@@ -372,7 +372,7 @@ describe('UrlTool 网址编解码', () => {
     await flushDraft()
     // 回归：默认值提为模块常量后，useToolDraft 的挂载 effect 不再每帧重跑，
     // 200ms 防抖写入能真正落到 chrome.storage.session（此前会被每帧 cleanup 取消，永不落盘）
-    expect(store['toolkit.draft.url.codec']).toEqual({
+    expect(store['panda.draft.url.codec']).toEqual({
       scope: 'component',
       input: 'hello world',
       output: 'hello%20world',
@@ -389,7 +389,7 @@ describe('UrlTool 网址编解码', () => {
 
   it('存储里的旧 url.codec 不会在用户输入后把内容回滚（回归）', async () => {
     // 只改存储、不动内存缓存，模拟「上一会话留下的旧草稿」在新会话被挂载读取
-    store['toolkit.draft.url.codec'] = {
+    store['panda.draft.url.codec'] = {
       scope: 'component',
       input: 'OLD',
       output: 'OLD-OUT',
@@ -403,6 +403,6 @@ describe('UrlTool 网址编解码', () => {
 
     // 旧实现里每次渲染都会重跑挂载 effect，把 OLD 重新读回来覆盖 NEW；现在必须保持 NEW
     expect(codecInput().value).toBe('NEW')
-    expect(store['toolkit.draft.url.codec']).toMatchObject({ input: 'NEW' })
+    expect(store['panda.draft.url.codec']).toMatchObject({ input: 'NEW' })
   })
 })

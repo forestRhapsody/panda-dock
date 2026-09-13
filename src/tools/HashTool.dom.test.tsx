@@ -389,10 +389,9 @@ describe('HashTool 会话草稿', () => {
       lowercase.click()
     })
     await waitFor(
-      () =>
-        (store['toolkit.draft.hash'] as { uppercase?: boolean } | undefined)?.uppercase === true,
+      () => (store['panda.draft.hash'] as { uppercase?: boolean } | undefined)?.uppercase === true,
     )
-    expect(store['toolkit.draft.hash']).toEqual({
+    expect(store['panda.draft.hash']).toEqual({
       ...EMPTY_DRAFT,
       textInput: 'abc',
       uppercase: true,
@@ -403,7 +402,7 @@ describe('HashTool 会话草稿', () => {
       root.unmount()
     })
     root = createRoot(container)
-    store['toolkit.draft.hash'] = { ...EMPTY_DRAFT, textInput: 'restored-text', uppercase: true }
+    store['panda.draft.hash'] = { ...EMPTY_DRAFT, textInput: 'restored-text', uppercase: true }
     await render()
     await flush()
     expect((panel(1).querySelector('textarea') as HTMLTextAreaElement).value).toBe('restored-text')

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 
 import { storageGet, storageRemove, storageSet } from '@/utils/env'
 
-const DRAFT_PREFIX = 'toolkit.draft.'
+export const DRAFT_PREFIX = 'panda.draft.'
 const memoryCache = new Map<string, unknown>()
 
 /**

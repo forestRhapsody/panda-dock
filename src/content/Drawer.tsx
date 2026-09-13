@@ -10,7 +10,7 @@ import { TabScopeContext } from '@/utils/draft'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import { MSG_GET_TAB_ID } from '@/utils/messages'
 
-const WIDTH_KEY = 'toolkit.drawerWidth'
+const WIDTH_KEY = 'panda.drawerWidth'
 const MIN_WIDTH = 280
 const DEFAULT_WIDTH = 400
 

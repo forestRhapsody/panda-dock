@@ -20,7 +20,7 @@ import Drawer from './Drawer'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 /** 与源码一致的存储 key 与宽度约束 */
-const WIDTH_KEY = 'toolkit.drawerWidth'
+const WIDTH_KEY = 'panda.drawerWidth'
 const MIN_WIDTH = 280
 const DEFAULT_WIDTH = 400
 const HANDLE_EDGE_MARGIN = 80

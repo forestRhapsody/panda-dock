@@ -78,7 +78,7 @@ const mockedDecode = vi.mocked(decodeQrCodeFromBlob)
 const QR_DATA_URL = 'data:image/png;base64,QR-FIRST'
 const QR_DATA_URL_2 = 'data:image/png;base64,QR-SECOND'
 const CROPPED_LOGO_URL = 'data:image/png;base64,CROPPED'
-const DRAFT_KEY = 'toolkit.draft.qrcode.input'
+const DRAFT_KEY = 'panda.draft.qrcode.input'
 const DECODED_URL = 'https://example.com/qr'
 const RAW_KEY_PATTERN = /\b(?:tool|common|settings)\.[A-Za-z][\w.]*/
 

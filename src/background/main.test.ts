@@ -16,6 +16,7 @@ import {
   MSG_OPEN_SHORTCUTS,
   MSG_TOGGLE_DETECT,
   MSG_TOGGLE_DRAWER,
+  PORT_SIDEPANEL,
 } from '@/utils/messages'
 import type { ErrorCode } from '@/utils/messages'
 
@@ -905,7 +906,7 @@ describe('MSG_CLOSE_NATIVE_SIDE_PANEL', () => {
 
   it('存在 Port 连接时 port.postMessage 会收到关闭消息', async () => {
     await boot()
-    const { port, emitMessage } = createPort('toolkit-sidepanel')
+    const { port, emitMessage } = createPort(PORT_SIDEPANEL)
     fireConnect(port)
     emitMessage({ windowId: 7 })
 
@@ -918,10 +919,10 @@ describe('MSG_CLOSE_NATIVE_SIDE_PANEL', () => {
   })
 })
 
-describe('onConnect：toolkit-sidepanel 长连接', () => {
+describe('onConnect：panda-dock-sidepanel 长连接', () => {
   it('收到带 windowId 的消息后该窗口视为已打开（后续不 forceOpen 走 toggle 关闭）', async () => {
     const h = await boot()
-    const { port, emitMessage } = createPort('toolkit-sidepanel')
+    const { port, emitMessage } = createPort(PORT_SIDEPANEL)
     fireConnect(port)
     emitMessage({ windowId: 5 })
 
@@ -934,7 +935,7 @@ describe('onConnect：toolkit-sidepanel 长连接', () => {
 
   it('onDisconnect 后恢复未打开状态（再次请求会真正 open）', async () => {
     const h = await boot()
-    const { port, emitMessage, disconnect } = createPort('toolkit-sidepanel')
+    const { port, emitMessage, disconnect } = createPort(PORT_SIDEPANEL)
     fireConnect(port)
     emitMessage({ windowId: 5 })
     disconnect()
@@ -945,7 +946,7 @@ describe('onConnect：toolkit-sidepanel 长连接', () => {
     expect(h.sidePanelOpen).toHaveBeenCalledWith({ windowId: 5 })
   })
 
-  it('非 toolkit-sidepanel 的 Port 被忽略，不注册消息监听也不影响打开判定', async () => {
+  it('非 panda-dock-sidepanel 的 Port 被忽略，不注册消息监听也不影响打开判定', async () => {
     const h = await boot()
     const { port } = createPort('some-other-panel')
     fireConnect(port)
@@ -990,10 +991,10 @@ describe('快捷键 toggle-detect', () => {
   })
 })
 
-describe('快捷键 toggle-toolkit：drawer 模式', () => {
+describe('快捷键 toggle-dock：drawer 模式', () => {
   it('向当前标签页发送 MSG_TOGGLE_DRAWER', async () => {
     const h = await boot({ settings: { ballAction: 'drawer' } })
-    runCommand('toggle-toolkit', { id: 4, windowId: 2 })
+    runCommand('toggle-dock', { id: 4, windowId: 2 })
     await flush()
 
     expect(h.tabsSendMessage).toHaveBeenCalledWith(4, { action: MSG_TOGGLE_DRAWER })
@@ -1002,7 +1003,7 @@ describe('快捷键 toggle-toolkit：drawer 模式', () => {
 
   it('没有 tabId 但有 windowId 时直接打开原生侧边栏', async () => {
     const h = await boot({ settings: { ballAction: 'drawer' } })
-    runCommand('toggle-toolkit', { windowId: 2 })
+    runCommand('toggle-dock', { windowId: 2 })
     await flush()
 
     expect(h.tabsSendMessage).not.toHaveBeenCalled()
@@ -1013,7 +1014,7 @@ describe('快捷键 toggle-toolkit：drawer 模式', () => {
     const h = await boot({ settings: { ballAction: 'drawer' } })
     h.tabsSendMessage.mockRejectedValueOnce(new Error('receiving end does not exist'))
 
-    runCommand('toggle-toolkit', { id: 4, windowId: 2 })
+    runCommand('toggle-dock', { id: 4, windowId: 2 })
     await flush()
 
     expect(h.sidePanelOpen).toHaveBeenCalledWith({ windowId: 2 })
@@ -1023,7 +1024,7 @@ describe('快捷键 toggle-toolkit：drawer 模式', () => {
     const h = await boot()
     fireStorageChanged({ settings: { newValue: { ballAction: 'native' } } }, 'local')
 
-    runCommand('toggle-toolkit', { id: 4, windowId: 2 })
+    runCommand('toggle-dock', { id: 4, windowId: 2 })
     await flush()
 
     expect(h.tabsSendMessage).toHaveBeenCalledWith(4, { action: MSG_TOGGLE_DRAWER })
@@ -1034,7 +1035,7 @@ describe('快捷键 toggle-toolkit：drawer 模式', () => {
     const h = await boot()
     fireStorageChanged({ settings: { newValue: { ballAction: 'bogus' } } }, 'sync')
 
-    runCommand('toggle-toolkit', { id: 4, windowId: 2 })
+    runCommand('toggle-dock', { id: 4, windowId: 2 })
     await flush()
 
     expect(h.tabsSendMessage).toHaveBeenCalledWith(4, { action: MSG_TOGGLE_DRAWER })
@@ -1044,7 +1045,7 @@ describe('快捷键 toggle-toolkit：drawer 模式', () => {
   it('侧边栏已打开时只作「收起」，不再弹出网页抽屉（回归）', async () => {
     // 先用 native 模式打开侧边栏一次，让 background 记住「该窗口侧边栏已开」
     const h = await boot({ settings: { ballAction: 'native' } })
-    runCommand('toggle-toolkit', { id: 4, windowId: 2 })
+    runCommand('toggle-dock', { id: 4, windowId: 2 })
     await flush()
     expect(h.sidePanelOpen).toHaveBeenCalledWith({ windowId: 2 })
 
@@ -1053,7 +1054,7 @@ describe('快捷键 toggle-toolkit：drawer 模式', () => {
     h.tabsSendMessage.mockClear()
     h.sidePanelClose.mockClear()
 
-    runCommand('toggle-toolkit', { id: 4, windowId: 2 })
+    runCommand('toggle-dock', { id: 4, windowId: 2 })
     await flush()
 
     // 回归：以前会「先关侧边栏、再发 TOGGLE_DRAWER」，表现为关掉侧边栏后网页抽屉弹出来
@@ -1064,11 +1065,11 @@ describe('快捷键 toggle-toolkit：drawer 模式', () => {
   })
 })
 
-describe('快捷键 toggle-toolkit：native 模式', () => {
+describe('快捷键 toggle-dock：native 模式', () => {
   it('在首个同步帧内调用 sidePanel.open（保住用户手势令牌）', async () => {
     const h = await boot({ settings: { ballAction: 'native' } })
 
-    runCommand('toggle-toolkit', { id: 9, windowId: 3 })
+    runCommand('toggle-dock', { id: 9, windowId: 3 })
 
     // 关键：此刻尚未 await，open 就必须已经被调用；任何前置 await 都会让手势令牌失效
     expect(h.sidePanelOpen).toHaveBeenCalledTimes(1)
@@ -1077,7 +1078,7 @@ describe('快捷键 toggle-toolkit：native 模式', () => {
 
   it('open 成功后向标签页发送 MSG_CLOSE_DRAWER（与网页抽屉互斥）', async () => {
     const h = await boot({ settings: { ballAction: 'native' } })
-    runCommand('toggle-toolkit', { id: 9, windowId: 3 })
+    runCommand('toggle-dock', { id: 9, windowId: 3 })
     await flush()
 
     expect(h.tabsSendMessage).toHaveBeenCalledWith(9, { action: MSG_CLOSE_DRAWER })
@@ -1085,7 +1086,7 @@ describe('快捷键 toggle-toolkit：native 模式', () => {
 
   it('storage.sync.get 的初始值决定模式（native 不走抽屉）', async () => {
     const h = await boot({ settings: { ballAction: 'native' } })
-    runCommand('toggle-toolkit', { id: 9, windowId: 3 })
+    runCommand('toggle-dock', { id: 9, windowId: 3 })
     expect(h.tabsSendMessage).not.toHaveBeenCalledWith(9, { action: MSG_TOGGLE_DRAWER })
     expect(h.sidePanelOpen).toHaveBeenCalledWith({ windowId: 3 })
   })
@@ -1094,7 +1095,7 @@ describe('快捷键 toggle-toolkit：native 模式', () => {
     const h = await boot()
     fireStorageChanged({ settings: { newValue: { ballAction: 'native' } } }, 'sync')
 
-    runCommand('toggle-toolkit', { id: 5, windowId: 4 })
+    runCommand('toggle-dock', { id: 5, windowId: 4 })
     expect(h.sidePanelOpen).toHaveBeenCalledWith({ windowId: 4 })
   })
 
@@ -1103,7 +1104,7 @@ describe('快捷键 toggle-toolkit：native 模式', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     h.sidePanelOpen.mockRejectedValueOnce(new Error('not allowed'))
 
-    runCommand('toggle-toolkit', { id: 9, windowId: 3 })
+    runCommand('toggle-dock', { id: 9, windowId: 3 })
     await flush()
 
     expect(h.tabsSendMessage).toHaveBeenCalledWith(9, { action: MSG_TOGGLE_DRAWER })
@@ -1111,10 +1112,10 @@ describe('快捷键 toggle-toolkit：native 模式', () => {
 
   it('已打开时再次按下快捷键执行收回，而不是重复 open', async () => {
     const h = await boot({ settings: { ballAction: 'native' } })
-    runCommand('toggle-toolkit', { id: 9, windowId: 3 })
+    runCommand('toggle-dock', { id: 9, windowId: 3 })
     await flush()
 
-    runCommand('toggle-toolkit', { id: 9, windowId: 3 })
+    runCommand('toggle-dock', { id: 9, windowId: 3 })
 
     expect(h.sidePanelClose).toHaveBeenCalledWith({ windowId: 3 })
     expect(h.sidePanelOpen).toHaveBeenCalledTimes(1)
@@ -1122,7 +1123,7 @@ describe('快捷键 toggle-toolkit：native 模式', () => {
 
   it('没有 windowId 时退化为用 tabId 打开，并在成功后关闭抽屉', async () => {
     const h = await boot({ settings: { ballAction: 'native' } })
-    runCommand('toggle-toolkit', { id: 6 })
+    runCommand('toggle-dock', { id: 6 })
     await flush()
 
     expect(h.sidePanelOpen).toHaveBeenCalledWith({ tabId: 6 })
@@ -1162,7 +1163,7 @@ describe('右键菜单（contextMenus）', () => {
     expect(h.i18nGetMessage).toHaveBeenCalledWith('contextMenuDetectSelection')
     const title = h.i18nGetMessage.mock.results[0]?.value
     expect(h.contextMenusCreate).toHaveBeenCalledWith({
-      id: 'toolkit-detect-selection',
+      id: 'panda-detect-selection',
       title,
       contexts: ['selection', 'editable'],
     })
@@ -1180,8 +1181,8 @@ describe('右键菜单（contextMenus）', () => {
 
   it('onClicked：tab.id 缺失时不发送消息', async () => {
     const h = await boot()
-    fireMenuClick({ menuItemId: 'toolkit-detect-selection', selectionText: 'hi' }, {})
-    fireMenuClick({ menuItemId: 'toolkit-detect-selection', selectionText: 'hi' }, undefined)
+    fireMenuClick({ menuItemId: 'panda-detect-selection', selectionText: 'hi' }, {})
+    fireMenuClick({ menuItemId: 'panda-detect-selection', selectionText: 'hi' }, undefined)
     await flush()
     expect(h.tabsSendMessage).not.toHaveBeenCalled()
   })
@@ -1189,7 +1190,7 @@ describe('右键菜单（contextMenus）', () => {
   it('onClicked：匹配时向标签页发送 MSG_DETECT_SELECTION 与选中文本', async () => {
     const h = await boot()
     fireMenuClick(
-      { menuItemId: 'toolkit-detect-selection', selectionText: 'hello world' },
+      { menuItemId: 'panda-detect-selection', selectionText: 'hello world' },
       { id: 11 },
     )
     await flush()
@@ -1204,7 +1205,7 @@ describe('右键菜单（contextMenus）', () => {
     const h = await boot()
     h.tabsSendMessage.mockRejectedValueOnce(new Error('receiving end does not exist'))
 
-    fireMenuClick({ menuItemId: 'toolkit-detect-selection', selectionText: 'hi' }, { id: 11 })
+    fireMenuClick({ menuItemId: 'panda-detect-selection', selectionText: 'hi' }, { id: 11 })
     await flush()
 
     expect(h.tabsSendMessage).toHaveBeenCalledWith(11, {
@@ -1250,10 +1251,10 @@ describe('chrome.tabs.onRemoved 标签页会话垃圾清理', () => {
   it('关闭标签页时只清理以该 tabId 为前缀的草稿，保留其他标签页与非草稿数据', async () => {
     const h = await boot()
     h.sessionGet.mockResolvedValueOnce({
-      'toolkit.draft.t201.json': 'payload-tab201',
-      'toolkit.draft.t201.activeToolTab': 'json',
-      'toolkit.draft.t202.json': 'payload-tab202',
-      'toolkit.otherKey': 'keep-me',
+      'panda.draft.t201.json': 'payload-tab201',
+      'panda.draft.t201.activeToolTab': 'json',
+      'panda.draft.t202.json': 'payload-tab202',
+      'panda.otherKey': 'keep-me',
     })
 
     fireTabRemoved(201)
@@ -1261,15 +1262,15 @@ describe('chrome.tabs.onRemoved 标签页会话垃圾清理', () => {
 
     expect(h.sessionGet).toHaveBeenCalledWith(null)
     expect(h.sessionRemove).toHaveBeenCalledWith([
-      'toolkit.draft.t201.json',
-      'toolkit.draft.t201.activeToolTab',
+      'panda.draft.t201.json',
+      'panda.draft.t201.activeToolTab',
     ])
   })
 
   it('关闭的标签页若无相关草稿，不调用 remove', async () => {
     const h = await boot()
     h.sessionGet.mockResolvedValueOnce({
-      'toolkit.draft.t202.json': 'payload-tab202',
+      'panda.draft.t202.json': 'payload-tab202',
     })
 
     fireTabRemoved(201)
@@ -1284,10 +1285,10 @@ describe('chrome.windows.onRemoved 窗口会话垃圾清理', () => {
   it('关闭窗口时只清理以该 windowId 为前缀的草稿，保留其他窗口与非草稿数据', async () => {
     const h = await boot()
     h.sessionGet.mockResolvedValueOnce({
-      'toolkit.draft.w101.json': 'payload-101',
-      'toolkit.draft.w101.activeToolTab': 'json',
-      'toolkit.draft.w102.json': 'payload-102',
-      'toolkit.otherKey': 'keep-me',
+      'panda.draft.w101.json': 'payload-101',
+      'panda.draft.w101.activeToolTab': 'json',
+      'panda.draft.w102.json': 'payload-102',
+      'panda.otherKey': 'keep-me',
     })
 
     fireWindowRemoved(101)
@@ -1295,15 +1296,15 @@ describe('chrome.windows.onRemoved 窗口会话垃圾清理', () => {
 
     expect(h.sessionGet).toHaveBeenCalledWith(null)
     expect(h.sessionRemove).toHaveBeenCalledWith([
-      'toolkit.draft.w101.json',
-      'toolkit.draft.w101.activeToolTab',
+      'panda.draft.w101.json',
+      'panda.draft.w101.activeToolTab',
     ])
   })
 
   it('关闭的窗口若无相关草稿，不调用 remove', async () => {
     const h = await boot()
     h.sessionGet.mockResolvedValueOnce({
-      'toolkit.draft.w102.json': 'payload-102',
+      'panda.draft.w102.json': 'payload-102',
     })
 
     fireWindowRemoved(101)

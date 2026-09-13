@@ -21,7 +21,7 @@ export interface QrStylePreset {
   ecLevel?: QrErrorCorrectionLevel
 }
 
-export const QR_STYLE_PRESET_KEY = 'toolkit.qrcode.stylePreset'
+export const QR_STYLE_PRESET_KEY = 'panda.qrcode.stylePreset'
 
 export interface GenerateQrOptions {
   /** 纠错等级：L (7%) / M (15%) / Q (25%) / H (30%)，默认 M */

@@ -483,10 +483,10 @@ describe('Base64Tool 会话草稿', () => {
       buttonWith(panel(1), '解码 →').click()
     })
     await waitFor(() => {
-      const v = store['toolkit.draft.base64'] as typeof EMPTY_DRAFT | undefined
+      const v = store['panda.draft.base64'] as typeof EMPTY_DRAFT | undefined
       return v?.decodeInput === 'aGVsbG8=' && v?.decodeOutput === 'hello'
     })
-    expect(store['toolkit.draft.base64']).toEqual({
+    expect(store['panda.draft.base64']).toEqual({
       ...EMPTY_DRAFT,
       decodeInput: 'aGVsbG8=',
       decodeOutput: 'hello',
@@ -502,10 +502,10 @@ describe('Base64Tool 会话草稿', () => {
       buttonWith(panel(2), '编码 →').click()
     })
     await waitFor(() => {
-      const v = store['toolkit.draft.base64'] as typeof EMPTY_DRAFT | undefined
+      const v = store['panda.draft.base64'] as typeof EMPTY_DRAFT | undefined
       return v?.encodeOutput === 'aGk='
     })
-    expect(store['toolkit.draft.base64']).toEqual({
+    expect(store['panda.draft.base64']).toEqual({
       tab: 'encode',
       decodeInput: 'aGVsbG8=',
       decodeOutput: 'hello',
@@ -522,7 +522,7 @@ describe('Base64Tool 会话草稿', () => {
     })
     await waitFor(
       () =>
-        (store['toolkit.draft.base64'] as { decodeInput?: string } | undefined)?.decodeInput ===
+        (store['panda.draft.base64'] as { decodeInput?: string } | undefined)?.decodeInput ===
         'draft-x',
     )
 
@@ -531,7 +531,7 @@ describe('Base64Tool 会话草稿', () => {
       root.unmount()
     })
     root = createRoot(container)
-    store['toolkit.draft.base64'] = {
+    store['panda.draft.base64'] = {
       tab: 'encode',
       decodeInput: 'stale',
       decodeOutput: '',

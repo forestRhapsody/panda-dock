@@ -26,12 +26,12 @@
     "default_path": "sidepanel.html"
   },
   "commands": {
-    "toggle-toolkit": {
+    "toggle-dock": {
       "suggested_key": {
         "default": "Alt+Shift+D",
         "mac": "Alt+Shift+D"
       },
-      "description": "__MSG_commandToggleToolkit__"
+      "description": "__MSG_commandToggleDock__"
     },
     "toggle-detect": {
       "suggested_key": {

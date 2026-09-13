@@ -56,7 +56,7 @@ import type {
 import {
   formatShortcutForDisplay,
   getDetectShortcut,
-  getToolkitShortcut,
+  getDockShortcut,
   openShortcutsPage,
 } from '@/utils/shortcuts'
 import { useTheme } from '@/utils/theme'
@@ -192,7 +192,7 @@ export default function OptionsPage() {
   const [detectShortcut, setDetectShortcut] = useState('Alt+Shift+S')
   useEffect(() => {
     let alive = true
-    void getToolkitShortcut().then((sc) => {
+    void getDockShortcut().then((sc) => {
       if (alive) setShortcut(sc)
     })
     void getDetectShortcut().then((sc) => {

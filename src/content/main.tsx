@@ -9,7 +9,7 @@ import uiCss from '@/ui/ui.css?inline'
 import { HOST_ID } from '@/utils/theme'
 
 import contentCss from './content.css?inline'
-import ToolkitOverlay from './ToolkitOverlay'
+import PandaDockOverlay from './PandaDockOverlay'
 
 /** 把 React 界面挂载进 Shadow DOM，样式与宿主网页完全隔离 */
 function mount() {
@@ -34,7 +34,7 @@ function mount() {
 
   createRoot(app).render(
     <StrictMode>
-      <ToolkitOverlay />
+      <PandaDockOverlay />
     </StrictMode>,
   )
 }

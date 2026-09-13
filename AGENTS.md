@@ -158,7 +158,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 
 1. `utils/settings.ts`：加字段 → `defaultSettings()` → `normalizeSettings()` 加兜底。
 2. UI：完整项放 `options/OptionsPage.tsx`（`persist()`）；快捷项放 `popup/QuickSettings.tsx`（脏标记模式）。
-3. 消费端：监听 `chrome.storage.onChanged`（参考 `ToolsApp` / `ToolkitOverlay`）。
+3. 消费端：监听 `chrome.storage.onChanged`（参考 `ToolsApp` / `PandaDockOverlay`）。
 4. 大体积 / 敏感数据放 `chrome.storage.local`，不塞进 sync。
 5. 测试：`utils/settings.test.ts` 补归一化用例。
 6. ⚠️ **兼容旧数据**：不改已有字段含义或删字段；要演进就加新字段，在 `normalizeSettings` 里做迁移。

@@ -1,11 +1,11 @@
 import { MSG_OPEN_SHORTCUTS } from '@/utils/messages'
 
 /** 读取当前扩展配置的工具箱全局唤起快捷键（若未配置或浏览器不支持则回退默认值） */
-export async function getToolkitShortcut(): Promise<string> {
+export async function getDockShortcut(): Promise<string> {
   try {
     if (typeof chrome !== 'undefined' && chrome.commands?.getAll) {
       const commands = await chrome.commands.getAll()
-      const found = commands.find((c) => c.name === 'toggle-toolkit')
+      const found = commands.find((c) => c.name === 'toggle-dock' || c.name === 'toggle-toolkit')
       if (found?.shortcut) return found.shortcut
     }
   } catch {
@@ -13,6 +13,9 @@ export async function getToolkitShortcut(): Promise<string> {
   }
   return 'Alt+Shift+D'
 }
+
+/** 兼容历史命名的别名 */
+export const getToolkitShortcut = getDockShortcut
 
 /** 读取当前扩展配置的智能解析全局快捷键（若未配置或浏览器不支持则回退默认值） */
 export async function getDetectShortcut(): Promise<string> {

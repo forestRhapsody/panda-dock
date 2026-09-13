@@ -55,7 +55,7 @@
     "actionNative": "Browser native side panel",
     "shortcutSection": "Shortcuts",
     "shortcutTitle": "Global Shortcut",
-    "shortcutDesc": "Quickly toggle the toolkit using a keyboard shortcut.",
+    "shortcutDesc": "Quickly toggle Panda Dock using a keyboard shortcut.",
     "detectShortcutTitle": "Smart Parse Shortcut",
     "detectShortcutDesc": "Quickly parse selected text, or summon the smart parse panel.",
     "configureShortcut": "Configure",

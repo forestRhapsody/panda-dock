@@ -310,9 +310,9 @@ export function unescapeJson(
 /** 一段标准示例 JSON（包含嵌套对象、数组、布尔与数字，便于一键体验各功能） */
 export const SAMPLE_JSON = JSON.stringify(
   {
-    name: 'toolkit-extension',
-    version: '1.2.0',
-    description: 'All-in-one developer toolbox',
+    name: 'panda-dock',
+    version: '0.2.0',
+    description: 'Panda Dock: Developer toolbox for Chrome',
     repository: {
       type: 'git',
       url: 'https://github.com/forestRhapsody/dev-box',

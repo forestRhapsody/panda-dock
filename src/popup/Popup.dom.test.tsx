@@ -127,7 +127,7 @@ describe('Popup：基础渲染与设置入口', () => {
 
   it('把 chrome 配置的快捷键显示在快捷键按钮里', async () => {
     chromeStub.commands.getAll = vi.fn(async () => [
-      { name: 'toggle-toolkit', shortcut: 'Ctrl+Alt+K' },
+      { name: 'toggle-dock', shortcut: 'Ctrl+Alt+K' },
     ])
     await render()
 

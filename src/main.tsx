@@ -3,7 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Trans, useTranslation } from 'react-i18next'
 
-import ToolkitOverlay from '@/content/ToolkitOverlay'
+import PandaDockOverlay from '@/content/PandaDockOverlay'
 import OptionsPage from '@/options/OptionsPage'
 import Popup from '@/popup/Popup'
 import ToolsApp from '@/tools/ToolsApp'
@@ -69,7 +69,7 @@ function DevPreview() {
         </p>
       </section>
 
-      <ToolkitOverlay />
+      <PandaDockOverlay />
     </div>
   )
 }

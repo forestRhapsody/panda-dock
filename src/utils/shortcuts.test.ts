@@ -4,6 +4,7 @@ import { MSG_OPEN_SHORTCUTS } from './messages'
 import {
   formatShortcutForDisplay,
   getDetectShortcut,
+  getDockShortcut,
   getToolkitShortcut,
   openShortcutsPage,
 } from './shortcuts'
@@ -33,13 +34,22 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('getToolkitShortcut / getDetectShortcut 读取命令配置', () => {
-  it('命中 toggle-toolkit 时返回用户配置的快捷键', async () => {
+describe('getDockShortcut / getToolkitShortcut / getDetectShortcut 读取命令配置', () => {
+  it('命中 toggle-dock 时返回用户配置的快捷键', async () => {
+    stubCommands(async () => [
+      { name: 'toggle-detect', shortcut: 'Alt+Shift+S' },
+      { name: 'toggle-dock', shortcut: 'Ctrl+Shift+K' },
+    ])
+    await expect(getDockShortcut()).resolves.toBe('Ctrl+Shift+K')
+    await expect(getToolkitShortcut()).resolves.toBe('Ctrl+Shift+K')
+  })
+
+  it('命中历史 toggle-toolkit 时也能向后兼容返回快捷键', async () => {
     stubCommands(async () => [
       { name: 'toggle-detect', shortcut: 'Alt+Shift+S' },
       { name: 'toggle-toolkit', shortcut: 'Ctrl+Shift+K' },
     ])
-    await expect(getToolkitShortcut()).resolves.toBe('Ctrl+Shift+K')
+    await expect(getDockShortcut()).resolves.toBe('Ctrl+Shift+K')
   })
 
   it('命中 toggle-detect 时返回用户配置的快捷键', async () => {

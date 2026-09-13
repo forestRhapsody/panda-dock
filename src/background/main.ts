@@ -14,6 +14,7 @@ import {
   MSG_OPEN_SHORTCUTS,
   MSG_TOGGLE_DETECT,
   MSG_TOGGLE_DRAWER,
+  PORT_SIDEPANEL,
 } from '@/utils/messages'
 
 function getCookieUrl(
@@ -45,7 +46,7 @@ async function resolveTargetUrl(explicitUrl?: string): Promise<string | null> {
   return null
 }
 
-const DETECT_MENU_ID = 'toolkit-detect-selection'
+const DETECT_MENU_ID = 'panda-detect-selection'
 
 // 开放 chrome.storage.session 访问级别，允许 Content Script（网页内抽屉）读写会话草稿
 const sessionArea = chrome.storage?.session as unknown as
@@ -133,7 +134,7 @@ chrome.storage?.onChanged?.addListener((changes, areaName) => {
 
 // 监听侧边栏长连接，建立窗口级侧边栏存活态追踪
 chrome.runtime?.onConnect?.addListener((port) => {
-  if (port.name !== 'toolkit-sidepanel') return
+  if (port.name !== PORT_SIDEPANEL) return
   activeSidePanelPorts.add(port)
   let boundWindowId: number | undefined
 
@@ -158,7 +159,7 @@ chrome.runtime?.onConnect?.addListener((port) => {
 // 监听标签页关闭，自动清理该标签页作用域内的全部会话草稿，释放 storage.session 配额
 chrome.tabs?.onRemoved?.addListener(async (closedTabId) => {
   try {
-    const prefix = `toolkit.draft.t${closedTabId}.`
+    const prefix = `panda.draft.t${closedTabId}.`
     const sessionArea = chrome.storage?.session
     if (!sessionArea?.get || !sessionArea?.remove) return
     const all = await sessionArea.get(null)
@@ -174,7 +175,7 @@ chrome.tabs?.onRemoved?.addListener(async (closedTabId) => {
 // 监听窗口关闭，自动清理该窗口作用域内的全部会话草稿，释放 storage.session 配额
 chrome.windows?.onRemoved?.addListener(async (closedWindowId) => {
   try {
-    const prefix = `toolkit.draft.w${closedWindowId}.`
+    const prefix = `panda.draft.w${closedWindowId}.`
     const sessionArea = chrome.storage?.session
     if (!sessionArea?.get || !sessionArea?.remove) return
     const all = await sessionArea.get(null)
@@ -534,7 +535,7 @@ chrome.commands.onCommand.addListener((command, tab) => {
     return
   }
 
-  if (command !== 'toggle-toolkit') return
+  if (command !== 'toggle-dock') return
 
   const windowId = tab?.windowId ?? lastActiveWindowId
   const tabId = tab?.id

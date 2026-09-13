@@ -4,7 +4,7 @@ import { isExtension, storageGet } from '@/utils/env'
 import type { ThemeMode } from '@/utils/settings'
 
 /** Content Script Shadow DOM 宿主元素 id */
-export const HOST_ID = '__toolkit_extension_host__'
+export const HOST_ID = '__panda_dock_host__'
 
 const SETTINGS_KEY = 'settings'
 

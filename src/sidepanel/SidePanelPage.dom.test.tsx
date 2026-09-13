@@ -8,14 +8,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '@/i18n'
 import { DEFAULT_TOOLS } from '@/tools/registry'
 import { setDraftValue } from '@/utils/draft'
-import { MSG_CLOSE_NATIVE_SIDE_PANEL } from '@/utils/messages'
+import { MSG_CLOSE_NATIVE_SIDE_PANEL, PORT_SIDEPANEL } from '@/utils/messages'
 
 import SidePanelPage from './SidePanelPage'
 
 /**
  * 原生侧边栏宿主页：
  * - 关闭 ToolsApp 自带 header（Chrome 已提供 header），但工具箱本身照常渲染；
- * - 挂载时与 background 建立 `toolkit-sidepanel` Port 长连接，用于「抽屉 ↔ 侧边栏」互斥；
+ * - 挂载时与 background 建立 `panda-dock-sidepanel` Port 长连接，用于「抽屉 ↔ 侧边栏」互斥；
  * - 首帧上报当前 windowId；收到关闭指令 / Escape / Alt+Shift+D 时关闭自身；卸载要断连并移除监听。
  */
 
@@ -165,10 +165,10 @@ describe('SidePanelPage：渲染共享工具箱', () => {
 })
 
 describe('SidePanelPage：与 background 的 Port 协议', () => {
-  it('挂载时以 name=toolkit-sidepanel 连接，并首帧上报 windowId', async () => {
+  it('挂载时以 name=panda-dock-sidepanel 连接，并首帧上报 windowId', async () => {
     await render()
 
-    expect(chromeStub.runtime.connect).toHaveBeenCalledWith({ name: 'toolkit-sidepanel' })
+    expect(chromeStub.runtime.connect).toHaveBeenCalledWith({ name: PORT_SIDEPANEL })
     expect(chromeStub.windows.getCurrent).toHaveBeenCalled()
     expect(port.postMessage).toHaveBeenCalledWith({ type: 'SIDE_PANEL_INIT', windowId: 42 })
   })

@@ -77,7 +77,7 @@ function stubClipboard(value: unknown) {
   Object.defineProperty(navigator, 'clipboard', { value, configurable: true })
 }
 
-const DRAFT_KEY = 'toolkit.draft.timestamp.input'
+const DRAFT_KEY = 'panda.draft.timestamp.input'
 
 const card = () => container.firstElementChild as HTMLElement
 const area = () => card().querySelector('textarea') as HTMLTextAreaElement

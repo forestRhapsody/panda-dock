@@ -1,13 +1,16 @@
 /** Content Script 与 Background / 扩展页面之间的消息协议 */
 
+/** 原生侧边栏与 Background 建立长连接的 Port 名称（用于互斥状态同步） */
+export const PORT_SIDEPANEL = 'panda-dock-sidepanel'
+
 /** 侧边栏页 → content：切换当前网页里的抽屉开合 */
-export const MSG_TOGGLE_DRAWER = 'TOGGLE_TOOLKIT_DRAWER'
+export const MSG_TOGGLE_DRAWER = 'PANDA_TOGGLE_DRAWER'
 
 /** 扩展页面(popup等) → content：强制打开当前网页里的抽屉（不改变悬浮球点击行为） */
-export const MSG_OPEN_DRAWER = 'OPEN_TOOLKIT_DRAWER'
+export const MSG_OPEN_DRAWER = 'PANDA_OPEN_DRAWER'
 
 /** 扩展页面(popup等) → content：关闭当前网页里的抽屉（用于与原生侧边栏互斥） */
-export const MSG_CLOSE_DRAWER = 'CLOSE_TOOLKIT_DRAWER'
+export const MSG_CLOSE_DRAWER = 'PANDA_CLOSE_DRAWER'
 
 /** content → background：关闭当前窗口的原生侧边栏（用于与网页内抽屉互斥） */
 export const MSG_CLOSE_NATIVE_SIDE_PANEL = 'CLOSE_NATIVE_SIDE_PANEL'
@@ -19,46 +22,46 @@ export const MSG_OPEN_NATIVE_SIDE_PANEL = 'OPEN_NATIVE_SIDE_PANEL'
 export const MSG_OPEN_OPTIONS = 'OPEN_OPTIONS_PAGE'
 
 /** 扩展页面(侧边栏等) → content：读取当前页 localStorage/sessionStorage */
-export const MSG_STORAGE_READ = 'TOOLKIT_STORAGE_READ'
+export const MSG_STORAGE_READ = 'PANDA_STORAGE_READ'
 
 /** 扩展页面(侧边栏等) → content：读取当前页的网址（window.location.href） */
-export const MSG_GET_PAGE_URL = 'TOOLKIT_GET_PAGE_URL'
+export const MSG_GET_PAGE_URL = 'PANDA_GET_PAGE_URL'
 
 /** 扩展页面(侧边栏等) → content：删除当前页存储里的某个 key */
-export const MSG_STORAGE_REMOVE = 'TOOLKIT_STORAGE_REMOVE'
+export const MSG_STORAGE_REMOVE = 'PANDA_STORAGE_REMOVE'
 
 /** 扩展页面(侧边栏等) → content：写入/更新当前页存储里的某个 key */
-export const MSG_STORAGE_SET = 'TOOLKIT_STORAGE_SET'
+export const MSG_STORAGE_SET = 'PANDA_STORAGE_SET'
 
 /** 扩展页面(侧边栏等) → content：清空当前页的某一存储区域 */
-export const MSG_STORAGE_CLEAR = 'TOOLKIT_STORAGE_CLEAR'
+export const MSG_STORAGE_CLEAR = 'PANDA_STORAGE_CLEAR'
 
 /** background → content：右键菜单「智能识别选中文字」→ 显示悬浮面板（携带选中文本与位置） */
-export const MSG_DETECT_SELECTION = 'TOOLKIT_DETECT_SELECTION'
+export const MSG_DETECT_SELECTION = 'PANDA_DETECT_SELECTION'
 
 /** background → content：全局快捷键触发智能解析（解析选中文本或唤起解析面板） */
-export const MSG_TOGGLE_DETECT = 'TOOLKIT_TOGGLE_DETECT'
+export const MSG_TOGGLE_DETECT = 'PANDA_TOGGLE_DETECT'
 
 /** 扩展页面/content → background：获取当前网页的 Cookies */
-export const MSG_COOKIE_GET_ALL = 'TOOLKIT_COOKIE_GET_ALL'
+export const MSG_COOKIE_GET_ALL = 'PANDA_COOKIE_GET_ALL'
 
 /** 扩展页面/content → background：删除指定 Cookie */
-export const MSG_COOKIE_REMOVE = 'TOOLKIT_COOKIE_REMOVE'
+export const MSG_COOKIE_REMOVE = 'PANDA_COOKIE_REMOVE'
 
 /** 扩展页面/content → background：设置/写入 Cookie（单条或多条） */
-export const MSG_COOKIE_SET = 'TOOLKIT_COOKIE_SET'
+export const MSG_COOKIE_SET = 'PANDA_COOKIE_SET'
 
 /** 扩展页面/content → background：清空当前网页的全部 Cookies */
-export const MSG_COOKIE_CLEAR_ALL = 'TOOLKIT_COOKIE_CLEAR_ALL'
+export const MSG_COOKIE_CLEAR_ALL = 'PANDA_COOKIE_CLEAR_ALL'
 
 /** 扩展页面/content → background：打开扩展快捷键设置页（chrome://extensions/shortcuts） */
 export const MSG_OPEN_SHORTCUTS = 'OPEN_SHORTCUTS_PAGE'
 
 /** content → background：获取当前 Tab 所属的 windowId（用于窗口级工作区隔离） */
-export const MSG_GET_WINDOW_ID = 'TOOLKIT_GET_WINDOW_ID'
+export const MSG_GET_WINDOW_ID = 'PANDA_GET_WINDOW_ID'
 
 /** content → background：获取当前 Tab 的 tabId（用于标签页级工作区草稿隔离） */
-export const MSG_GET_TAB_ID = 'TOOLKIT_GET_TAB_ID'
+export const MSG_GET_TAB_ID = 'PANDA_GET_TAB_ID'
 
 /** 悬浮球点击行为配置 */
 export type BallAction = 'drawer' | 'native'

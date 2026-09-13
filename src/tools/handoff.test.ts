@@ -84,9 +84,9 @@ describe('prepareToolHandoff', () => {
     const store = stubChrome()
     await prepareToolHandoff('url', 'https://example.com/a?b=1')
 
-    expect(store.session['toolkit.draft.url.parse.input']).toBe('https://example.com/a?b=1')
-    expect(store.session['toolkit.draft.url.tab']).toBe('parse')
-    expect(store.session['toolkit.draft.activeToolTab']).toBe('url')
+    expect(store.session['panda.draft.url.parse.input']).toBe('https://example.com/a?b=1')
+    expect(store.session['panda.draft.url.tab']).toBe('parse')
+    expect(store.session['panda.draft.activeToolTab']).toBe('url')
   })
 
   it('json：写进对象草稿，保留缩进/排序偏好，并顺手算好格式化结果', async () => {
@@ -97,13 +97,13 @@ describe('prepareToolHandoff', () => {
       output: '上次的输出',
       lastAction: 'format',
     }
-    const store = stubChrome({ session: { [`toolkit.draft.${JSON_DRAFT_KEY}`]: seed } })
+    const store = stubChrome({ session: { [`panda.draft.${JSON_DRAFT_KEY}`]: seed } })
     // 显式同步内存缓存，避免本用例的结果受其它用例写入顺序影响（draft.ts 的缓存是模块级常驻的）
     await setDraftValue(JSON_DRAFT_KEY, seed)
 
     await prepareToolHandoff('json', '{"a":1}')
 
-    expect(store.session[`toolkit.draft.${JSON_DRAFT_KEY}`]).toEqual({
+    expect(store.session[`panda.draft.${JSON_DRAFT_KEY}`]).toEqual({
       ...DEFAULT_JSON_DRAFT,
       indent: 4,
       sortKeys: true,
@@ -112,7 +112,7 @@ describe('prepareToolHandoff', () => {
       output: '{\n    "a": 1\n}',
       lastAction: 'format',
     })
-    expect(store.session['toolkit.draft.activeToolTab']).toBe('json')
+    expect(store.session['panda.draft.activeToolTab']).toBe('json')
   })
 
   it('无论有无历史草稿，写出的 JSON 草稿字段始终完整（不写出残缺对象）', async () => {
@@ -123,7 +123,7 @@ describe('prepareToolHandoff', () => {
 
     await prepareToolHandoff('json', '{"b":2}')
 
-    const draft = store.session[`toolkit.draft.${JSON_DRAFT_KEY}`] as Record<string, unknown>
+    const draft = store.session[`panda.draft.${JSON_DRAFT_KEY}`] as Record<string, unknown>
     expect(Object.keys(draft).sort()).toEqual(Object.keys(DEFAULT_JSON_DRAFT).sort())
     expect(draft.input).toBe('{"b":2}')
     // 默认偏好（indent 2、不排序、非单行）下就是常规展开格式化
@@ -137,7 +137,7 @@ describe('prepareToolHandoff', () => {
 
     await prepareToolHandoff('json', '{\n  "b": 2,\n  "a": 1\n}')
 
-    const draft = store.session[`toolkit.draft.${JSON_DRAFT_KEY}`] as Record<string, unknown>
+    const draft = store.session[`panda.draft.${JSON_DRAFT_KEY}`] as Record<string, unknown>
     // 与工具里那颗按钮同一套偏好：minify 决定单行还是展开（排序偏好为 false，故保持原键序）
     expect(draft.output).toBe('{"b":2,"a":1}')
     expect(draft.lastAction).toBe('minify')
@@ -149,7 +149,7 @@ describe('prepareToolHandoff', () => {
 
     await prepareToolHandoff('json', 'not-json-at-all')
 
-    const draft = store.session[`toolkit.draft.${JSON_DRAFT_KEY}`] as Record<string, unknown>
+    const draft = store.session[`panda.draft.${JSON_DRAFT_KEY}`] as Record<string, unknown>
     expect(draft.input).toBe('not-json-at-all')
     expect(draft.output).toBe('')
     expect(draft.lastAction).toBeNull()
@@ -159,8 +159,8 @@ describe('prepareToolHandoff', () => {
     const store = stubChrome()
     await prepareToolHandoff('detect', 'SGVsbG8=')
 
-    expect(store.session['toolkit.draft.detect.input']).toBe('SGVsbG8=')
-    expect(store.session['toolkit.draft.activeToolTab']).toBe('detect')
+    expect(store.session['panda.draft.detect.input']).toBe('SGVsbG8=')
+    expect(store.session['panda.draft.activeToolTab']).toBe('detect')
   })
 
   it('目标工具被禁用时自动启用，否则切过去会落到别的 Tab', async () => {
@@ -235,32 +235,32 @@ describe('prepareToolHandoff：边界、幂等与降级', () => {
   })
 
   it('url：空串与两侧空白原样写入（不 trim），且 tab 一律拉回解析页', async () => {
-    const store = stubChrome({ session: { 'toolkit.draft.url.tab': 'codec' } })
+    const store = stubChrome({ session: { 'panda.draft.url.tab': 'codec' } })
 
     await expect(prepareToolHandoff('url', '')).resolves.toEqual({ ok: true })
-    expect(store.session['toolkit.draft.url.parse.input']).toBe('')
-    expect(store.session['toolkit.draft.url.tab']).toBe('parse')
+    expect(store.session['panda.draft.url.parse.input']).toBe('')
+    expect(store.session['panda.draft.url.tab']).toBe('parse')
 
     await prepareToolHandoff('url', '  https://example.com  ')
-    expect(store.session['toolkit.draft.url.parse.input']).toBe('  https://example.com  ')
+    expect(store.session['panda.draft.url.parse.input']).toBe('  https://example.com  ')
   })
 
   it('detect：空输入也写入，且不会误写 url / json 的草稿', async () => {
     const store = stubChrome()
 
     await expect(prepareToolHandoff('detect', '')).resolves.toEqual({ ok: true })
-    expect(store.session['toolkit.draft.detect.input']).toBe('')
-    expect(store.session['toolkit.draft.activeToolTab']).toBe('detect')
-    expect(store.session['toolkit.draft.url.parse.input']).toBeUndefined()
-    expect(store.session['toolkit.draft.url.tab']).toBeUndefined()
-    expect(store.session[`toolkit.draft.${JSON_DRAFT_KEY}`]).toBeUndefined()
+    expect(store.session['panda.draft.detect.input']).toBe('')
+    expect(store.session['panda.draft.activeToolTab']).toBe('detect')
+    expect(store.session['panda.draft.url.parse.input']).toBeUndefined()
+    expect(store.session['panda.draft.url.tab']).toBeUndefined()
+    expect(store.session[`panda.draft.${JSON_DRAFT_KEY}`]).toBeUndefined()
   })
 
   it('三种受支持的工具都会把 activeToolTab 指向自己', async () => {
     const store = stubChrome()
     for (const tool of ['detect', 'json', 'url'] as const) {
       await prepareToolHandoff(tool, 'x')
-      expect(store.session['toolkit.draft.activeToolTab'], tool).toBe(tool)
+      expect(store.session['panda.draft.activeToolTab'], tool).toBe(tool)
     }
   })
 
@@ -289,8 +289,8 @@ describe('prepareToolHandoff：边界、幂等与降级', () => {
     await prepareToolHandoff('detect', 'v2')
     // 第二次已经是启用状态，不能再写一遍（sync 有写入频率配额）
     expect(syncWriteLog).toHaveLength(1)
-    expect(store.session['toolkit.draft.detect.input']).toBe('v2')
-    expect(store.session['toolkit.draft.activeToolTab']).toBe('detect')
+    expect(store.session['panda.draft.detect.input']).toBe('v2')
+    expect(store.session['panda.draft.activeToolTab']).toBe('detect')
   })
 
   it('url 被禁用时先自动启用，再把草稿、tab 与激活项写全', async () => {
@@ -305,9 +305,9 @@ describe('prepareToolHandoff：边界、幂等与降级', () => {
     expect((store.sync.settings as { toolEnabled: Record<string, boolean> }).toolEnabled.url).toBe(
       true,
     )
-    expect(store.session['toolkit.draft.url.parse.input']).toBe('https://x.test')
-    expect(store.session['toolkit.draft.url.tab']).toBe('parse')
-    expect(store.session['toolkit.draft.activeToolTab']).toBe('url')
+    expect(store.session['panda.draft.url.parse.input']).toBe('https://x.test')
+    expect(store.session['panda.draft.url.tab']).toBe('parse')
+    expect(store.session['panda.draft.activeToolTab']).toBe('url')
   })
 
   it('设置里没有 toolEnabled（或根本没有 settings）时不产生 sync 写入', async () => {
@@ -343,7 +343,7 @@ describe('prepareToolHandoff：边界、幂等与降级', () => {
     const store = stubChrome({}, { failSyncGet: true, syncWriteLog })
 
     await expect(prepareToolHandoff('url', 'https://x.test')).resolves.toEqual({ ok: true })
-    expect(store.session['toolkit.draft.url.parse.input']).toBe('https://x.test')
+    expect(store.session['panda.draft.url.parse.input']).toBe('https://x.test')
     expect(syncWriteLog).toEqual([])
   })
 
@@ -362,7 +362,7 @@ describe('prepareToolHandoff：边界、幂等与降级', () => {
 
     await prepareToolHandoff('json', '{"a":1}')
 
-    const draft = store.session[`toolkit.draft.${JSON_DRAFT_KEY}`] as Record<string, unknown>
+    const draft = store.session[`panda.draft.${JSON_DRAFT_KEY}`] as Record<string, unknown>
     // 回归：先铺 DEFAULT_JSON_DRAFT 再铺存量，缺失字段被补齐（不会再写出结构不完整的对象）
     expect(Object.keys(draft).sort()).toEqual(Object.keys(DEFAULT_JSON_DRAFT).sort())
     expect(draft.splitRatio).toBe(DEFAULT_JSON_DRAFT.splitRatio)
@@ -383,7 +383,7 @@ describe('prepareToolHandoff：边界、幂等与降级', () => {
 
     await prepareToolHandoff('json', '{"b":2}')
 
-    expect(store.session[`toolkit.draft.${JSON_DRAFT_KEY}`]).toEqual({
+    expect(store.session[`panda.draft.${JSON_DRAFT_KEY}`]).toEqual({
       ...DEFAULT_JSON_DRAFT,
       splitRatio: 70,
       input: '{"b":2}',
@@ -401,7 +401,7 @@ describe('prepareToolHandoff：边界、幂等与降级', () => {
     const store = stubChrome()
 
     await expect(fresh.prepareToolHandoff('json', '{"c":3}')).resolves.toEqual({ ok: true })
-    expect(store.session[`toolkit.draft.${JSON_DRAFT_KEY}`]).toEqual({
+    expect(store.session[`panda.draft.${JSON_DRAFT_KEY}`]).toEqual({
       ...DEFAULT_JSON_DRAFT,
       input: '{"c":3}',
       output: '{\n  "c": 3\n}',

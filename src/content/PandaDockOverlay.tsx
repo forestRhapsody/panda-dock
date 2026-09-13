@@ -40,7 +40,7 @@ import FloatingBall, { clampBallPos, snapToEdge } from './FloatingBall'
 import type { BallPos } from './FloatingBall'
 import SelectionDetectPanel, { type SelectionRect } from './SelectionDetectPanel'
 
-const POS_KEY = 'toolkit.ballPos'
+const POS_KEY = 'panda.ballPos'
 const SETTINGS_KEY = 'settings'
 const EDGE_MARGIN = 8
 /** 默认纵向位置：视口高度 45% 处 */
@@ -306,7 +306,7 @@ function getPageSelectionInfo(
  * - 位置通过 chrome.storage.local 跨页面记忆（浏览器预览时不持久化）
  * - 可被原生侧边栏页以消息唤起（MSG_TOGGLE_DRAWER）
  */
-export default function ToolkitOverlay() {
+export default function PandaDockOverlay() {
   const { t } = useTranslation()
   const inExt = isExtension()
   useLocale()
@@ -578,7 +578,7 @@ export default function ToolkitOverlay() {
 
   // 切换工具箱开合（抽屉或侧边栏，根据 ballAction 配置）：
   // 悬浮球点击与快捷键 Alt+Shift+D 共用，附带 300ms 节流防抖，避免与 Chrome commands 广播重叠触发
-  const toggleToolkit = useCallback(() => {
+  const toggleDock = useCallback(() => {
     const now = Date.now()
     if (now - lastToggleTimeRef.current < 300) return
     lastToggleTimeRef.current = now
@@ -611,13 +611,13 @@ export default function ToolkitOverlay() {
           triggerDetect()
         } else if (e.key === 'D' || e.key === 'd') {
           e.preventDefault()
-          toggleToolkit()
+          toggleDock()
         }
       }
     }
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [toggleToolkit, triggerDetect])
+  }, [toggleDock, triggerDetect])
 
   // 监听来自其他页面或扩展后台的消息
   useEffect(() => {
@@ -689,8 +689,8 @@ export default function ToolkitOverlay() {
     [inExt, ballDockMode, ballSize],
   )
 
-  // 悬浮球点击复用 toggleToolkit
-  const handleBallClick = toggleToolkit
+  // 悬浮球点击复用 toggleDock
+  const handleBallClick = toggleDock
 
   /**
    * 把文本交给目标工具并在扩展宿主里打开：
