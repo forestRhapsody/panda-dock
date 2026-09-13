@@ -49,6 +49,7 @@
     "ballActionDesc": "Choose what opens when clicking the ball or pressing the shortcut.",
     "ballActionDrawerTip": "In-page drawer: Data is only kept in the current tab, cleared automatically when closed.",
     "ballActionNativeTip": "Native side panel: All tabs share the same data, retained until the browser closes.",
+    "ballActionIsolatedTip": "Data between the two panels is completely separate and not shared.",
     "actionDrawer": "In-page drawer",
     "actionNative": "Browser native side panel",
     "shortcutSection": "Shortcuts",

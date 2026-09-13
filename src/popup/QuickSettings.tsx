@@ -278,6 +278,7 @@ export default function QuickSettings() {
             >
               {t('settings.ballActionNativeTip')}
             </p>
+            <p className='pop__setting-tip-note'>{t('settings.ballActionIsolatedTip')}</p>
           </div>
         </li>
         <li className='pop__setting'>

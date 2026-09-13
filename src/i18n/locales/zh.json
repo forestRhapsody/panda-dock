@@ -49,6 +49,7 @@
     "ballActionDesc": "选择点击悬浮球或按下快捷键时打开的界面。",
     "ballActionDrawerTip": "网页抽屉：数据仅在当前标签页内有效，关闭标签页后自动清空。",
     "ballActionNativeTip": "原生侧边栏：所有标签页共用同一份数据，关闭浏览器前一直保留。",
+    "ballActionIsolatedTip": "两处面板的数据各自独立，互不互通。",
     "actionDrawer": "网页内抽屉",
     "actionNative": "浏览器原生侧边栏",
     "shortcutSection": "快捷键",

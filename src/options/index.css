@@ -89,7 +89,7 @@ body {
 .opt__item--col {
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
 }
 
 .opt__item--col .opt__item-text {
@@ -108,13 +108,8 @@ body {
 .opt__item-tips {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
   width: 100%;
-  padding: 10px 14px;
-  background: color-mix(in srgb, var(--tk-muted) 60%, transparent);
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-sm);
-  box-sizing: border-box;
 }
 
 .opt__item-tip {
@@ -128,6 +123,13 @@ body {
 .opt__item-tip--active {
   color: var(--tk-foreground);
   font-weight: 500;
+}
+
+.opt__item-tip-note {
+  margin: 2px 0 0;
+  font-size: var(--tk-text-xs);
+  line-height: 1.5;
+  color: var(--tk-secondary-foreground);
 }
 
 .opt__shortcut-group {

@@ -644,6 +644,7 @@ export default function OptionsPage() {
                 >
                   {t('settings.ballActionNativeTip')}
                 </p>
+                <p className='opt__item-tip-note'>{t('settings.ballActionIsolatedTip')}</p>
               </div>
             </li>
           </ul>
