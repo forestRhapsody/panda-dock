@@ -44,6 +44,8 @@ export interface SelectionDetectPanelProps {
   onOpenInSidePanel?: (text: string) => void
   /** 「在 XX 工具中打开」：交由宿主准备草稿并唤起（T134） */
   onOpenInTool?: (tool: ToolId, text: string) => void
+  /** 图钉状态变化：宿主据此决定「在工具中打开」后是否收起面板（钉住则常驻） */
+  onPinnedChange?: (pinned: boolean) => void
 }
 
 const PAD = 10
@@ -58,7 +60,7 @@ const INPUT_MAX_HEIGHT = 180
  * 右键「智能解析选中文字」或快捷键触发在网页内弹出的悬浮面板。
  * - 选中文字时默认优先精准出现在选中文本正下方（空间不足翻转上方）；
  * - 未选中文字时直接定位在浏览器右上角，输入框自动聚焦方便直接粘贴；
- * - 点击 header 任意拖动整卡；图钉可钉住面板（点击页面外部不关闭）。
+ * - 点击 header 任意拖动整卡；图钉可钉住面板（点击页面外部不关闭，打开工具后也保持常驻）。
  */
 export default function SelectionDetectPanel({
   text,
@@ -69,6 +71,7 @@ export default function SelectionDetectPanel({
   onClose,
   onOpenInSidePanel,
   onOpenInTool,
+  onPinnedChange,
 }: SelectionDetectPanelProps) {
   const { t } = useTranslation()
   const ref = useRef<HTMLDivElement>(null)
@@ -284,6 +287,11 @@ export default function SelectionDetectPanel({
     document.addEventListener('pointerdown', onDown, true)
     return () => document.removeEventListener('pointerdown', onDown, true)
   }, [onClose, pinned])
+
+  // 把图钉状态镜像给宿主：钉住的面板在「在工具中打开」后要保持常驻，不随唤起一起收起
+  useEffect(() => {
+    onPinnedChange?.(pinned)
+  }, [onPinnedChange, pinned])
 
   // Escape 始终关闭；按下快捷键 Alt+Shift+S 也能收回
   useEffect(() => {

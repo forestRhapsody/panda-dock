@@ -338,6 +338,11 @@ export default function ToolkitOverlay() {
     targetRect?: SelectionRect
     position?: 'selection' | 'top-right'
   } | null>(null)
+  /** 划选面板是否被钉住（状态在面板内部，这里只镜像：钉住时唤起工具不收起面板） */
+  const selectionPinnedRef = useRef(false)
+  const handleSelectionPinnedChange = useCallback((pinned: boolean) => {
+    selectionPinnedRef.current = pinned
+  }, [])
   const noticeTimer = useRef<number | undefined>(undefined)
   // 记录最后一次右键位置与选区坐标，供「智能解析选中文字」悬浮面板定位
   const lastCtxPos = useRef<{
@@ -690,12 +695,14 @@ export default function ToolkitOverlay() {
   /**
    * 把文本交给目标工具并在扩展宿主里打开：
    * 1) 先让目标工具就位（写会话草稿、激活 Tab、必要时启用——见 handoff.ts）；
-   * 2) 原生侧边栏优先（forceOpen 避免误收起已开的侧边栏），受限时回退网页内抽屉；
+   * 2) 打开哪个宿主按设置里的唤起方式（ballAction）走：native 用 forceOpen 强开，避免误收起
+   *    已开的侧边栏，受限时回退网页内抽屉；drawer 先收起原生侧边栏（互斥）再开抽屉。
+   *    面板头部「在侧边栏中打开」是显式例外，始终走 native（按钮文案就是这么承诺的）；
    * 3) 关闭网页内的选区悬浮面板。
    * 工具没能就位（如启用写入失败）时直接返回：不能打开一个会显示错工具的宿主。
    */
   const openToolInHost = useCallback(
-    async (tool: ToolId, text: string) => {
+    async (tool: ToolId, text: string, host: 'auto' | 'native' = 'auto') => {
       let tabId: number | null = null
       if (inExt) {
         try {
@@ -719,20 +726,27 @@ export default function ToolkitOverlay() {
       }
 
       if (inExt) {
-        const ok = await requestNativeSidePanel(true)
-        if (ok) {
-          setDrawerOpen(false)
+        if (host === 'native' || ballAction === 'native') {
+          const ok = await requestNativeSidePanel(true)
+          if (ok) {
+            setDrawerOpen(false)
+          } else {
+            showNotice(t('toast.nativeSidePanelFallback'))
+            setDrawerOpen(true)
+          }
         } else {
-          showNotice(t('toast.nativeSidePanelFallback'))
+          // 打开网页内抽屉前先把原生侧边栏关掉（互斥：两种工具箱不同时显示）
+          void chrome.runtime.sendMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
           setDrawerOpen(true)
         }
       } else {
         setDrawerOpen(true)
       }
 
-      setSelectionDetect(null)
+      // 钉住的面板是用户要求常驻的：唤起工具后保持不动，只有未钉住时才随唤起收起
+      if (!selectionPinnedRef.current) setSelectionDetect(null)
     },
-    [inExt, showNotice, t],
+    [ballAction, inExt, showNotice, t],
   )
 
   // 判定当前网页是否按黑白名单规则显示悬浮球
@@ -776,8 +790,9 @@ export default function ToolkitOverlay() {
           targetRect={selectionDetect.targetRect}
           position={selectionDetect.position}
           onClose={() => setSelectionDetect(null)}
-          onOpenInSidePanel={(text) => void openToolInHost('detect', text)}
+          onOpenInSidePanel={(text) => void openToolInHost('detect', text, 'native')}
           onOpenInTool={(tool, text) => void openToolInHost(tool, text)}
+          onPinnedChange={handleSelectionPinnedChange}
         />
       )}
       {notice && inExt && (

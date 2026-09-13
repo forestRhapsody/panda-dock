@@ -757,6 +757,98 @@ describe('划选解析面板（消息入口）', () => {
   })
 })
 
+describe('划选面板「在工具中打开」按唤起方式选择宿主', () => {
+  /** 弹出划选面板并点里面的「在 JSON 工具中打开」 */
+  async function openJsonFromPanel(): Promise<void> {
+    sendContentMessage({ action: MSG_DETECT_SELECTION, text: '{"name":"panda"}' })
+    const openBtn = query<HTMLButtonElement>('.tek-detect-panel button.tw-detect__head-action')
+    if (!openBtn) throw new Error('未找到「在 JSON 工具中打开」入口')
+    act(() => {
+      openBtn.click()
+    })
+    await flush()
+    await flush()
+  }
+
+  it('ballAction=drawer：打开网页抽屉，不请求原生侧边栏', async () => {
+    stubChrome({ settings: { ballAction: 'drawer' } })
+    await renderOverlay()
+    await flush()
+
+    await openJsonFromPanel()
+
+    expect(drawerEl()).not.toBeNull()
+    expect(query('.tek-detect-panel')).toBeNull()
+    expect(sentActions()).toContain(MSG_CLOSE_NATIVE_SIDE_PANEL)
+    expect(sentActions()).not.toContain(MSG_OPEN_NATIVE_SIDE_PANEL)
+  })
+
+  it('钉住面板后「在工具中打开」不再收起面板', async () => {
+    stubChrome({ settings: { ballAction: 'drawer' } })
+    await renderOverlay()
+    await flush()
+
+    sendContentMessage({ action: MSG_DETECT_SELECTION, text: '{"name":"panda"}' })
+    const pinBtn = query<HTMLButtonElement>(
+      `.tek-detect-panel button[aria-label="${i18n.t('tool.detect.pin')}"]`,
+    )
+    if (!pinBtn) throw new Error('未找到图钉按钮')
+    act(() => {
+      pinBtn.click()
+    })
+    expect(query('.tek-detect-panel__pin--on')).not.toBeNull()
+
+    await openJsonFromPanel()
+
+    expect(drawerEl()).not.toBeNull()
+    expect(query('.tek-detect-panel')).not.toBeNull()
+  })
+
+  it('ballAction=native：强开原生侧边栏（forceOpen），不展开网页抽屉', async () => {
+    stubChrome({ settings: { ballAction: 'native' } })
+    sendMessageMock.mockImplementation(async (message: unknown) =>
+      (message as { action?: string }).action === MSG_OPEN_NATIVE_SIDE_PANEL ? true : undefined,
+    )
+    await renderOverlay()
+    await flush()
+
+    await openJsonFromPanel()
+
+    expect(sendMessageMock).toHaveBeenCalledWith({
+      action: MSG_OPEN_NATIVE_SIDE_PANEL,
+      forceOpen: true,
+    })
+    expect(drawerEl()).toBeNull()
+    expect(query('.tek-detect-panel')).toBeNull()
+  })
+
+  it('头部「在侧边栏中打开」是显式例外：drawer 模式下依然请求原生侧边栏', async () => {
+    stubChrome({ settings: { ballAction: 'drawer' } })
+    sendMessageMock.mockImplementation(async (message: unknown) =>
+      (message as { action?: string }).action === MSG_OPEN_NATIVE_SIDE_PANEL ? true : undefined,
+    )
+    await renderOverlay()
+    await flush()
+
+    sendContentMessage({ action: MSG_DETECT_SELECTION, text: '{"name":"panda"}' })
+    const sideBtn = query<HTMLButtonElement>(
+      `button[aria-label="${i18n.t('tool.detect.openInSidePanel')}"]`,
+    )
+    if (!sideBtn) throw new Error('未找到「在侧边栏中打开」入口')
+    act(() => {
+      sideBtn.click()
+    })
+    await flush()
+    await flush()
+
+    expect(sendMessageMock).toHaveBeenCalledWith({
+      action: MSG_OPEN_NATIVE_SIDE_PANEL,
+      forceOpen: true,
+    })
+    expect(drawerEl()).toBeNull()
+  })
+})
+
 describe('卸载清理', () => {
   it('卸载后移除 onMessage / onChanged 监听，再推送消息既不报错也不更新 UI', async () => {
     await renderOverlay()
