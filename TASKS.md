@@ -39,12 +39,7 @@
   - 依赖：人工 + 真实浏览器环境（本会话环境不具备）
   - 结果：（待填）
 
-## 已完成批次（摘要；明细见提交信息与代码注释）
+## 已完成批次（历史记录见 git commit）
 
-- **T4–T6 / T8 / T9 / T11–T13**：B 类交互疑点 17 条、`detect` 的 `kind:'urls'` 死代码清理、A6/A8 失败分支单测、内联编辑 Escape 不再误关抽屉与绘制残留、工具内层 tab 记忆与草稿防抖丢字、撤回「两端还有内容」提示。
-- **T14–T20**：Base64 只把 CR/LF 当透明空白（Unicode 空白不再当胶水）、detect 多行 Base64 按行成项 + 64/76 折行护栏、正文夹带 JSON 候选、嵌入 JSON 扫描改单遍 O(n) 并兜住深嵌套爆栈、划选面板高度与滚动条收敛。
-- **T21–T25**：JSON 内「像时间的字段」两次产品回滚（不做猜测式可读化）、工具 tab 条与标题对齐、高亮标记扁平化 + 待切换项用次级背景标出、深色高亮令牌调深。
-- **T26–T30**：验证分级写进 AGENTS → 脚本静音 + `pnpm gate` + 交付门禁改为用户触发 + §9 上下文与输出纪律；深色高亮根因修复（函数式 `:host([data-theme='dark'])` + 内联兜底逐字一致守卫）与配色收敛（`#f3f4f6`、选区交回浏览器）；结果 tab 尺寸收进 `--tk-control-h-xs`。
-- **T31**：品牌与代号全量重构（Panda Dock）：SAMPLE_JSON 示例与文案对齐、HOST_ID 与 PandaDockOverlay 重命名、PORT_SIDEPANEL 与右键菜单 ID 统一、Manifest 命令改为 toggle-dock、草稿与位置前缀统一为 panda.*、内部消息 Action 统一为 PANDA_*，通过全量交付门禁。
-- **T32**：设计令牌与通用组件全面重构至 `pd` 前缀：CSS 变量 `--tk-*` $\to$ `--pd-*`、通用组件类名 `tk-*` $\to$ `pd-*`、组件 `TkSelect` $\to$ `PdSelect`、属性 `data-tk-escape` / `data-tks-item` 对齐重命名、同步更新 `AGENTS.md` 约束，通过全量交付门禁。
+- **T33**：JWT 验签支持：基于 Web Crypto 原生 API 实现 HS256/HS384/HS512 签名校验，支持实时状态反馈、草稿记忆、示例联动及中英双语对齐，通过定向门禁。
 

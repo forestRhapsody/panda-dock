@@ -2536,6 +2536,48 @@
   overflow-y: auto;
 }
 
+/* —— JWT 验签区（shadcn/ui 风格：输入框下方单行 FormMessage 反馈） —— */
+.tw-jwt__verify {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 状态行：对齐 shadcn FormMessage，纯文本 + 图标，无边框无底色 */
+.tw-jwt__verify-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 1px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--pd-text-sm);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--pd-muted-foreground);
+}
+
+.tw-jwt__verify-status--valid {
+  color: var(--pd-success);
+}
+
+.tw-jwt__verify-status--invalid {
+  color: var(--pd-destructive);
+}
+
+.tw-jwt__verify-status--unsupported {
+  color: var(--pd-warning);
+}
+
+.tw-jwt__verify-status--idle {
+  color: var(--pd-muted-foreground);
+}
+
+.tw-jwt__verify-icon {
+  flex-shrink: 0;
+}
+
 /* —— 工具级错误边界降级卡片（T128） —— */
 
 .tw-error {

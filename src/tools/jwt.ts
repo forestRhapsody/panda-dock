@@ -238,8 +238,117 @@ export function decodeJwt(token: string): JwtResult {
   }
 }
 
-/** 一段标准示例 JWT（便于体验） */
+export type HmacAlg = 'HS256' | 'HS384' | 'HS512'
+
+const HMAC_HASH_MAP: Record<HmacAlg, string> = {
+  HS256: 'SHA-256',
+  HS384: 'SHA-384',
+  HS512: 'SHA-512',
+}
+
+export type JwtVerifyStatus = 'valid' | 'invalid' | 'unsupported'
+
+export interface JwtVerifyResult {
+  status: JwtVerifyStatus
+  message: string
+}
+
+/** 将 Base64URL 字符串还原为字节数组 */
+export function base64UrlToBytes(b64url: string): Uint8Array {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4)
+  const binary = atob(padded)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+/**
+ * 校验 JWT 的 HMAC 签名（HS256 / HS384 / HS512）。
+ * 基于原生 Web Crypto API，纯逻辑模块，不依赖 React，提示文案走 i18n。
+ */
+export async function verifyJwtSignature(token: string, secret: string): Promise<JwtVerifyResult> {
+  const clean = token
+    .trim()
+    .replace(/^Bearer\s+/i, '')
+    .trim()
+  const parts = clean.split('.')
+  if (parts.length !== 3) {
+    return {
+      status: 'invalid',
+      message: i18n.t('tool.jwt.verifyInvalidToken'),
+    }
+  }
+
+  const [headerSeg, payloadSeg, signatureSeg] = parts
+  if (!headerSeg || !payloadSeg || !signatureSeg) {
+    return {
+      status: 'invalid',
+      message: i18n.t('tool.jwt.verifyInvalidToken'),
+    }
+  }
+
+  let alg: string
+  try {
+    const header = parseJson(decodeSegment(headerSeg), i18n.t('tool.jwt.header'))
+    alg = getHeaderAlg(header)
+  } catch {
+    return {
+      status: 'invalid',
+      message: i18n.t('tool.jwt.verifyInvalidHeader'),
+    }
+  }
+
+  const hashName = HMAC_HASH_MAP[alg as HmacAlg]
+  if (!hashName) {
+    return {
+      status: 'unsupported',
+      message: i18n.t('tool.jwt.verifyStatusUnsupported', { alg }),
+    }
+  }
+
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    return {
+      status: 'unsupported',
+      message: i18n.t('tool.jwt.verifyCryptoUnavailable'),
+    }
+  }
+
+  try {
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: { name: hashName } },
+      false,
+      ['verify'],
+    )
+    const dataBytes = new TextEncoder().encode(`${headerSeg}.${payloadSeg}`)
+    const signatureBytes = base64UrlToBytes(signatureSeg)
+    const valid = await crypto.subtle.verify('HMAC', key, signatureBytes, dataBytes)
+
+    if (valid) {
+      return {
+        status: 'valid',
+        message: i18n.t('tool.jwt.verifyStatusValid'),
+      }
+    }
+    return {
+      status: 'invalid',
+      message: i18n.t('tool.jwt.verifyStatusInvalid'),
+    }
+  } catch {
+    return {
+      status: 'invalid',
+      message: i18n.t('tool.jwt.verifyStatusInvalid'),
+    }
+  }
+}
+
+/** 一段标准示例 JWT（含 sub / exp / iat，签名与 SAMPLE_SECRET 匹配） */
 export const SAMPLE_JWT =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
-  'eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE4MDE2MjM5MDIyfQ.' +
-  'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+  'eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE4MDE2MjM5MDJ9.' +
+  'NjH-41io2kQLrj4eb6E3lNMBGKD0qc_T5QyRs0BTxDs'
+
+/** 示例 JWT 对应的 Secret */
+export const SAMPLE_SECRET = 'your-256-bit-secret'

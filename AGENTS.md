@@ -143,7 +143,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 6. `src/i18n/locales/{zh,en}.json`：补 `tool.registry.foo` 与工具内全部文案（两套都要）。
 7. 样式写进 `tools/tools.css`（`tw-*` + 设计令牌）。
 8. 可选：`ui/Icon.tsx` 补图标；`tools/detect.ts` 接入智能解析；`tools/handoff.ts` 接入「在 XX 工具中打开」。
-9. 验证：`pnpm test foo && pnpm test i18n && pnpm type-check`。
+9. 验证：`pnpm test foo && pnpm test i18n && pnpm build`。
 
 ### 6.2 新增或修改文案
 
@@ -169,25 +169,26 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 
 ### 7.1 开发期验证（默认）
 
-**决策树**（按顺序判断，匹配第一条即止）：
+**决策树**（按顺序判断，匹配第一条即止；代码/样式/文案任务完工均以 `+ pnpm build` 结尾刷新 `dist/`）：
 
 ```
 改了什么？
 ├─ 纯文档（AGENTS.md / README / TASKS.md）→ 不跑任何命令
-├─ 纯 CSS（tools.css / ui.css / content.css）→ 目测 / pnpm dev（无自动化）
-├─ theme.css 令牌值  → pnpm test theme
-├─ 文案 key          → pnpm test i18n
-├─ 工具纯逻辑 x.ts   → pnpm test x.test
-├─ 工具组件 XTool.tsx → pnpm test XTool + pnpm type-check
-├─ 公共契约（§3 唯一来源文件 / 构建配置）→ pnpm test:changed + pnpm type-check
-└─ 拿不准影响面      → pnpm test:changed（无匹配再考虑全量）
+├─ 纯 CSS（tools.css / ui.css / content.css）→ 目测 / pnpm dev + pnpm build
+├─ theme.css 令牌值  → pnpm test theme + pnpm build
+├─ 文案 key          → pnpm test i18n + pnpm build
+├─ 工具纯逻辑 x.ts   → pnpm test x.test + pnpm build
+├─ 工具组件 XTool.tsx → pnpm test XTool + pnpm build
+├─ 公共契约（§3 唯一来源文件 / 构建配置）→ pnpm test:changed + pnpm build
+└─ 拿不准影响面      → pnpm test:changed + pnpm build
 ```
 
-三条纪律：
+四条纪律：
 
-1. **粒度从最小开始**：绿了就停，不要「顺手」再跑全量。
-2. **输出 ≤ 30 行**：长输出一律 `| tail -n 20` 或 `| grep -E "Test Files|Tests |FAIL"`，不把整段输出贴进上下文。有代理变量时加 `NODE_OPTIONS=--no-warnings`（只内联，不写进脚本——Windows 不兼容）。
-3. **红了再聚焦**：失败时单独重跑那个文件，不在全量输出里翻。
+1. **完工必跑 build**：开发任务执行完毕、向用户汇报完成前，必须执行 `pnpm build`（刷新 `dist/` 产物并消除 IIFE/动态引用等打包期隐患；`build` 内含 `tsc -b`，无需单跑 `type-check`）。
+2. **粒度从最小开始**：定向单测绿了就停，不要在开发期顺手跑全量单测。
+3. **输出 ≤ 30 行**：长输出一律 `| tail -n 20` 或 `| grep -E "Test Files|Tests |FAIL"`，不把整段输出贴进上下文。有代理变量时加 `NODE_OPTIONS=--no-warnings`（只内联，不写进脚本——Windows 不兼容）。
+4. **红了再聚焦**：失败时单独重跑那个文件，不在全量输出里翻。
 
 ### 7.2 交付门禁（仅用户明确要求时触发）
 

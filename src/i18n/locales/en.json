@@ -495,7 +495,17 @@
       "errorNotJson": "{{what}} is not valid JSON: {{message}}",
       "errorSegmentCount": "A JWT must contain 3 segments (header.payload.signature); got {{count}}",
       "errorEmptySegment": "JWT has an empty segment: none of header.payload.signature may be empty",
-      "errorInvalidChars": "JWT segment contains invalid characters (expected Base64URL charset)"
+      "errorInvalidChars": "JWT segment contains invalid characters (expected Base64URL charset)",
+      "verifyLabel": "Signature Verification (HMAC)",
+      "verifySecretLabel": "Secret Key",
+      "verifySecretPlaceholder": "Enter secret to verify signature (HS256 / HS384 / HS512)",
+      "verifyStatusIdle": "Enter secret to verify signature",
+      "verifyStatusValid": "Signature verified",
+      "verifyStatusInvalid": "Invalid signature (secret mismatch)",
+      "verifyStatusUnsupported": "Algorithm ({{alg}}) unsupported, only HMAC (HS256/384/512) is supported",
+      "verifyInvalidToken": "Invalid token format",
+      "verifyInvalidHeader": "Invalid header format",
+      "verifyCryptoUnavailable": "Web Crypto API is not available"
     },
     "storage": {
       "add": "Add",

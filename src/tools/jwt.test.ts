@@ -2,7 +2,15 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 
 import i18n from '@/i18n'
 
-import { decodeJwt, formatDateTime, getClaimLabel, SAMPLE_JWT } from './jwt'
+import {
+  base64UrlToBytes,
+  decodeJwt,
+  formatDateTime,
+  getClaimLabel,
+  SAMPLE_JWT,
+  SAMPLE_SECRET,
+  verifyJwtSignature,
+} from './jwt'
 
 /** 中日韩字符与全角标点：用来断言「英文界面下不出现中文」 */
 const CJK = /[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef]/
@@ -92,7 +100,7 @@ describe('decodeJwt 基础解码', () => {
     expect(res.ok).toBe(true)
     if (!res.ok) return
     expect(res.data.alg).toBe('HS256')
-    expect(res.data.signatureB64).toBe('SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c')
+    expect(res.data.signatureB64).toBe('NjH-41io2kQLrj4eb6E3lNMBGKD0qc_T5QyRs0BTxDs')
     expect(res.data.claims.map((c) => c.key)).toEqual(['sub', 'exp', 'iat'])
   })
 
@@ -490,5 +498,87 @@ describe('jwt 文案 i18n（中英双语）', () => {
       expect(hints).toHaveLength(2)
       for (const row of hints) expect(CJK.test(row.hint?.text ?? ''), row.key).toBe(true)
     }
+  })
+})
+
+describe('verifyJwtSignature HMAC 签名验证', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('zh')
+  })
+
+  it('使用正确 secret 验证内置 SAMPLE_JWT 返回 valid', async () => {
+    const res = await verifyJwtSignature(SAMPLE_JWT, SAMPLE_SECRET)
+    expect(res.status).toBe('valid')
+    expect(res.message).toBe('签名验证通过')
+  })
+
+  it('使用错误 secret 验证 SAMPLE_JWT 返回 invalid', async () => {
+    const res = await verifyJwtSignature(SAMPLE_JWT, 'wrong-secret')
+    expect(res.status).toBe('invalid')
+    expect(res.message).toBe('签名验证失败（Secret 不匹配）')
+  })
+
+  it('支持 HS384 签名验证', async () => {
+    const token =
+      'eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJpYXQiOjE1MTYyMzkwMjJ9.G8qb5luyb4lsDsPbJZOMrhfEobhasc0f1V48yYv_3aL0peU7YzyDqhZpHwB4EqpC'
+    const validRes = await verifyJwtSignature(token, 'secret-384')
+    expect(validRes.status).toBe('valid')
+    expect(validRes.message).toBe('签名验证通过')
+
+    const invalidRes = await verifyJwtSignature(token, 'wrong-384')
+    expect(invalidRes.status).toBe('invalid')
+  })
+
+  it('支持 HS512 签名验证', async () => {
+    const token =
+      'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJpYXQiOjE1MTYyMzkwMjJ9.AnltT5nduOTxHJh5qh4nclJ3GiExGRlIREBW__JZ8ug6zoKIqLYYhItF166Bh9YSzb2R6pTFzHSQ8XeZf1jlvQ'
+    const validRes = await verifyJwtSignature(token, 'secret-512')
+    expect(validRes.status).toBe('valid')
+    expect(validRes.message).toBe('签名验证通过')
+
+    const invalidRes = await verifyJwtSignature(token, 'wrong-512')
+    expect(invalidRes.status).toBe('invalid')
+  })
+
+  it('非 HMAC 算法（如 RS256、none）返回 unsupported', async () => {
+    const rsToken = makeToken({ alg: 'RS256' }, { sub: '123' }, 'sig')
+    const rsRes = await verifyJwtSignature(rsToken, 'secret')
+    expect(rsRes.status).toBe('unsupported')
+    expect(rsRes.message).toContain('RS256')
+
+    const noneToken = makeToken({ alg: 'none' }, { sub: '123' }, 'sig')
+    const noneRes = await verifyJwtSignature(noneToken, 'secret')
+    expect(noneRes.status).toBe('unsupported')
+    expect(noneRes.message).toContain('none')
+  })
+
+  it('畸形 token 或空段返回 invalid 错误提示', async () => {
+    const badSegments = await verifyJwtSignature('a.b', 'sec')
+    expect(badSegments.status).toBe('invalid')
+    expect(badSegments.message).toBe('Token 格式无效')
+
+    const emptySeg = await verifyJwtSignature('a..c', 'sec')
+    expect(emptySeg.status).toBe('invalid')
+
+    const badHeader = await verifyJwtSignature('!!!.b.c', 'sec')
+    expect(badHeader.status).toBe('invalid')
+  })
+
+  it('英文环境下提示文案为英文', async () => {
+    await i18n.changeLanguage('en')
+    const valid = await verifyJwtSignature(SAMPLE_JWT, SAMPLE_SECRET)
+    expect(valid.status).toBe('valid')
+    expect(valid.message).toBe('Signature verified')
+    expect(CJK.test(valid.message)).toBe(false)
+
+    const invalid = await verifyJwtSignature(SAMPLE_JWT, 'wrong')
+    expect(invalid.status).toBe('invalid')
+    expect(invalid.message).toBe('Invalid signature (secret mismatch)')
+    expect(CJK.test(invalid.message)).toBe(false)
+  })
+
+  it('base64UrlToBytes 正常解析且补齐 padding', () => {
+    const bytes = base64UrlToBytes('YQ') // 'a'
+    expect(bytes).toEqual(new Uint8Array([97]))
   })
 })

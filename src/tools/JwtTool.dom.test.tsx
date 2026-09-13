@@ -10,7 +10,7 @@ import '@/i18n'
 import { copyText } from '@/utils/clipboard'
 import { setDraftValue } from '@/utils/draft'
 
-import { SAMPLE_JWT } from './jwt'
+import { SAMPLE_JWT, SAMPLE_SECRET } from './jwt'
 import JwtTool from './JwtTool'
 
 /**
@@ -89,6 +89,21 @@ function tokenInput(): HTMLTextAreaElement {
   return el
 }
 
+function secretInput(): HTMLInputElement {
+  const el = container.querySelector<HTMLInputElement>('.tw-jwt__verify-input')
+  if (!el) throw new Error('未找到 Secret 输入框')
+  return el
+}
+
+function setSecretValue(el: HTMLInputElement, value: string) {
+  const nativeSetter = Object.getOwnPropertyDescriptor(
+    window.HTMLInputElement.prototype,
+    'value',
+  )?.set
+  nativeSetter?.call(el, value)
+  el.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
 function buttonByText(text: string): HTMLButtonElement {
   const btn = [...container.querySelectorAll('button')].find(
     (el) => el.textContent?.trim() === text,
@@ -122,8 +137,9 @@ beforeEach(async () => {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
-  // 草稿的模块级 memoryCache 常驻，先把 token 归零
+  // 草稿的模块级 memoryCache 常驻，先把 token 与 secret 归零
   await setDraftValue('jwt.token', '')
+  await setDraftValue('jwt.secret', '')
 })
 
 afterEach(() => {
@@ -254,5 +270,56 @@ describe('JwtTool 复制', () => {
     expect(vi.mocked(copyText)).toHaveBeenCalledWith(HEADER_TEXT)
     // 复制成功后按钮被 Tooltip 包裹替换，需重新查询
     expect(field('Header').querySelector('button[aria-label="复制"]')?.textContent).toBe('已复制')
+  })
+})
+
+describe('JwtTool 签名验证 (HMAC)', () => {
+  it('解码后默认展示签名验证输入框与待验证提示', async () => {
+    await decode(SAMPLE_JWT)
+    expect(container.textContent).toContain('签名校验 (HMAC)')
+    expect(secretInput().value).toBe('')
+    expect(container.textContent).toContain('请输入 Secret 校验签名')
+  })
+
+  it('点击「填入示例」同时填充示例 JWT 与 SAMPLE_SECRET，并展示验证通过状态', async () => {
+    await renderTool()
+    await act(async () => buttonByText('填入示例').click())
+
+    expect(tokenInput().value).toBe(SAMPLE_JWT)
+    expect(secretInput().value).toBe(SAMPLE_SECRET)
+
+    // 等待 Web Crypto 异步验签完成
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+
+    expect(container.textContent).toContain('签名验证通过')
+    expect(container.querySelector('.tw-jwt__verify-status--valid')).not.toBeNull()
+  })
+
+  it('输入错误的 Secret 时展示验证失败状态', async () => {
+    await decode(SAMPLE_JWT)
+    await act(async () => setSecretValue(secretInput(), 'wrong-secret'))
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+
+    expect(container.textContent).toContain('签名验证失败（Secret 不匹配）')
+    expect(container.querySelector('.tw-jwt__verify-status--invalid')).not.toBeNull()
+  })
+
+  it('清空按钮一并清空 Token、Secret 与验证状态', async () => {
+    await renderTool()
+    await act(async () => buttonByText('填入示例').click())
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+    expect(secretInput().value).toBe(SAMPLE_SECRET)
+
+    await act(async () => buttonByText('清空').click())
+    expect(tokenInput().value).toBe('')
+    expect(container.querySelector('.tw-jwt__verify')).toBeNull()
   })
 })
