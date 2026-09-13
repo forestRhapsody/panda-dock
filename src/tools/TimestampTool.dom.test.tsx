@@ -6,7 +6,7 @@ import type { Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import i18n from '@/i18n'
-import { setDraftValue } from '@/utils/draft'
+import { clearDraftValue, setDraftValue } from '@/utils/draft'
 
 import TimestampTool from './TimestampTool'
 
@@ -308,5 +308,63 @@ describe('TimestampTool 清空与草稿', () => {
     await render()
     await flush()
     expect(area().value).toBe('9999999999')
+  })
+
+  it('重挂载后自动补算上次的结果，不必再点一次「转换 →」', async () => {
+    await render()
+    await convert('1735689600')
+    expect(valueOf('Unix 秒')).toBe('1735689600')
+
+    await act(async () => {
+      root.unmount()
+    })
+    root = createRoot(container)
+    await render()
+    await flush()
+
+    expect(area().value).toBe('1735689600')
+    expect(card().querySelector('.tw-status--ok')?.textContent).toBe('按 Unix 秒解析')
+    expect(valueOf('Unix 秒')).toBe('1735689600')
+  })
+
+  it('只剩会话存储（如页面刷新）时同样会自动补算', async () => {
+    // 内存缓存清空 + 只写存储：模拟新页面只读到会话存储
+    await clearDraftValue('timestamp.input')
+    store[DRAFT_KEY] = '1735689600'
+
+    await render()
+    await flush()
+
+    expect(area().value).toBe('1735689600')
+    expect(valueOf('Unix 秒')).toBe('1735689600')
+  })
+
+  it('补算只针对能解析成功的草稿：非法值重开时不无故弹出错误横幅', async () => {
+    await clearDraftValue('timestamp.input')
+    store[DRAFT_KEY] = '这不是时间'
+
+    await render()
+    await flush()
+
+    expect(area().value).toBe('这不是时间')
+    expect(card().querySelectorAll('.tw-detect__field')).toHaveLength(0)
+    expect(card().querySelector('.tw-status')).toBeNull()
+  })
+
+  it('补算只发生一次：之后输入新值仍要手动点按钮才会更新结果', async () => {
+    await render()
+    await convert('1735689600')
+
+    await act(async () => {
+      root.unmount()
+    })
+    root = createRoot(container)
+    await render()
+    await flush()
+
+    // 重开后改了输入但没点按钮：结果仍是上一次的，工具保持按钮触发式
+    await setInput('9999999999')
+    expect(area().value).toBe('9999999999')
+    expect(valueOf('Unix 秒')).toBe('1735689600')
   })
 })

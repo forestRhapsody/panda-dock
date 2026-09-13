@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -19,10 +19,27 @@ const SOURCE_KEY: Record<StampSource, string> = {
 /** 时间戳转换工具：输入秒/毫秒/日期文本，按钮触发转换多格式输出 */
 export default function TimestampTool() {
   const { t } = useTranslation()
-  const [input, setInput, clearInput] = useToolDraft<string>('timestamp.input', '')
+  const [input, setInput, clearInput, inputLoaded] = useToolDraft<string>('timestamp.input', '')
   const [result, setResult] = useState<StampResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { emptyErr, areaRef: inputRef, triggerEmpty, clearEmpty } = useEmptyError()
+  /** 是否已为恢复出来的草稿补算过结果（只补一次，之后仍由用户点按钮触发） */
+  const hydratedRef = useRef(false)
+
+  // 草稿里的输入恢复后自动补算一次：否则重开抽屉只剩输入框、结果区空着
+  // （与 URL 解析 / JSON 工作台一致；本工具是按钮触发式，因此只补这一次，不改成实时解析）
+  useEffect(() => {
+    if (!inputLoaded || hydratedRef.current) return
+    hydratedRef.current = true
+    const raw = input.trim()
+    if (!raw) return
+    const res = parseStamp(raw)
+    // 只补算能解析成功的值：重开时不该无故弹出上一次的错误横幅
+    if (res.ok) {
+      setResult(res)
+      setError(null)
+    }
+  }, [inputLoaded, input])
 
   function run(text = input) {
     const raw = text.trim()
