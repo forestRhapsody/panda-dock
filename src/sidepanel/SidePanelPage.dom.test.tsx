@@ -152,6 +152,29 @@ describe('SidePanelPage：渲染共享工具箱', () => {
     )
     expect(container.textContent).not.toContain('tool.registry.')
   })
+
+  it('windowId 尚未就位时首帧不挂载 ToolsApp，避免草稿脏读', async () => {
+    let resolveWin: ((win: { id: number }) => void) | null = null
+    chromeStub.windows.getCurrent = vi.fn((cb: (win: { id: number }) => void) => {
+      resolveWin = cb
+    })
+
+    await act(async () => {
+      root.render(<SidePanelPage />)
+    })
+
+    // 尚未返回 windowId：不挂载 ToolsApp，避免以无前缀 key 脏读全局草稿
+    expect(container.querySelector('.tw')).toBeNull()
+    expect(container.querySelector('.sp')).not.toBeNull()
+
+    // 模拟异步返回 windowId = 99
+    await act(async () => {
+      resolveWin?.({ id: 99 })
+    })
+
+    // 成功挂载 ToolsApp
+    expect(container.querySelector('.tw')).not.toBeNull()
+  })
 })
 
 describe('SidePanelPage：与 background 的 Port 协议', () => {

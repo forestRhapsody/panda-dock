@@ -65,7 +65,7 @@ export default function Drawer({ onClose }: DrawerProps) {
   const { t } = useTranslation()
   const inExt = isExtension()
   const [width, setWidth] = useState(DEFAULT_WIDTH)
-  const [windowId, setWindowId] = useState<number | null>(null)
+  const [windowId, setWindowId] = useState<number | null>(() => (inExt ? null : 0))
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
   const [dragging, setDragging] = useState(false)
   // 宽度最新值的镜像：拖拽期间 pointermove → pointerup 可能落在同一批次，
@@ -78,13 +78,17 @@ export default function Drawer({ onClose }: DrawerProps) {
     if (!inExt) return
     let alive = true
     void (async () => {
+      let resolvedId: number | null = null
       try {
         const res = await chrome.runtime?.sendMessage?.({ action: MSG_GET_WINDOW_ID })
-        if (alive && res?.ok && typeof res.data === 'number') {
-          setWindowId(res.data)
+        if (res?.ok && typeof res.data === 'number') {
+          resolvedId = res.data
         }
       } catch {
         // 忽略
+      }
+      if (alive) {
+        setWindowId(resolvedId ?? 0)
       }
     })()
     return () => {
@@ -206,22 +210,25 @@ export default function Drawer({ onClose }: DrawerProps) {
         onPointerCancel={onResizeEnd}
         onKeyDown={onResizeKey}
       />
-      <WindowScopeContext.Provider value={windowId}>
-        <ToolsApp
-          headerActions={
-            <Tooltip content={t('drawer.ariaClose')} side='bottom'>
-              <button
-                type='button'
-                className='tk-icon-btn'
-                aria-label={t('drawer.ariaClose')}
-                onClick={onClose}
-              >
-                <Icon name='close' size={14} />
-              </button>
-            </Tooltip>
-          }
-        />
-      </WindowScopeContext.Provider>
+      {windowId !== null && (
+        <WindowScopeContext.Provider value={windowId > 0 ? windowId : null}>
+          <ToolsApp
+            key={windowId}
+            headerActions={
+              <Tooltip content={t('drawer.ariaClose')} side='bottom'>
+                <button
+                  type='button'
+                  className='tk-icon-btn'
+                  aria-label={t('drawer.ariaClose')}
+                  onClick={onClose}
+                >
+                  <Icon name='close' size={14} />
+                </button>
+              </Tooltip>
+            }
+          />
+        </WindowScopeContext.Provider>
+      )}
     </div>
   )
 }

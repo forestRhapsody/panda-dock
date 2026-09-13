@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react'
 import { useLocale } from '@/i18n/useLocale'
 import ToolsApp from '@/tools/ToolsApp'
 import { WindowScopeContext } from '@/utils/draft'
+import { isExtension } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
-import { MSG_CLOSE_NATIVE_SIDE_PANEL } from '@/utils/messages'
+import { MSG_CLOSE_NATIVE_SIDE_PANEL, MSG_GET_WINDOW_ID } from '@/utils/messages'
 import { useTheme } from '@/utils/theme'
 
 import './index.css'
@@ -19,22 +20,17 @@ export default function SidePanelPage() {
   useFontScale()
   useTheme()
 
-  const [windowId, setWindowId] = useState<number | null>(null)
+  const inExt = isExtension()
+  // 扩展环境下初始为 null，等待异步获取到真实 windowId 后才挂载 ToolsApp；
+  // 避免首帧用 null 全局 key 脏读/回写上一个窗口的草稿，彻底杜绝跨窗口状态串扰。
+  const [windowId, setWindowId] = useState<number | null>(() => (inExt ? null : 0))
 
   useEffect(() => {
+    let alive = true
     let port: chrome.runtime.Port | null = null
     try {
       if (typeof chrome !== 'undefined' && chrome.runtime?.connect) {
         port = chrome.runtime.connect({ name: 'toolkit-sidepanel' })
-        // 向 background 上报当前所在的 windowId，并设置当前侧边栏的窗口作用域
-        chrome.windows?.getCurrent?.((win) => {
-          if (win?.id != null) {
-            setWindowId(win.id)
-            if (port) {
-              port.postMessage({ type: 'SIDE_PANEL_INIT', windowId: win.id })
-            }
-          }
-        })
         port.onMessage.addListener((msg: unknown) => {
           if ((msg as { action?: string })?.action === MSG_CLOSE_NATIVE_SIDE_PANEL) {
             window.close()
@@ -45,25 +41,67 @@ export default function SidePanelPage() {
       // 忽略
     }
 
+    let resolved = false
+    const reportWindow = (id: number) => {
+      resolved = true
+      setWindowId(id)
+      if (port) {
+        port.postMessage({ type: 'SIDE_PANEL_INIT', windowId: id })
+      }
+    }
+
+    try {
+      if (typeof chrome !== 'undefined' && chrome.windows?.getCurrent) {
+        const ret: unknown = chrome.windows.getCurrent((win) => {
+          if (win?.id != null && alive && !resolved) {
+            reportWindow(win.id)
+          }
+        })
+        if (Boolean(ret) && typeof (ret as Promise<{ id?: number }>).then === 'function') {
+          void (ret as Promise<{ id?: number }>)
+            .then((win) => {
+              if (win?.id != null && alive && !resolved) {
+                reportWindow(win.id)
+              }
+            })
+            .catch(() => {})
+        }
+      }
+    } catch {
+      // 忽略
+    }
+
+    void (async () => {
+      if (!inExt) return
+      // 若 60ms 内仍未通过 getCurrent 确定 windowId，向 background 请求备援
+      await new Promise((r) => setTimeout(r, 60))
+      if (!alive || resolved) return
+      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        try {
+          const res = await chrome.runtime.sendMessage({ action: MSG_GET_WINDOW_ID })
+          if (alive && !resolved && res?.ok && typeof res.data === 'number') {
+            reportWindow(res.data)
+          }
+        } catch {
+          // 忽略
+        }
+      }
+      if (alive && !resolved) {
+        setWindowId(0)
+      }
+    })()
+
     const onRuntimeMessage = (msg: unknown) => {
       if ((msg as { action?: string })?.action === MSG_CLOSE_NATIVE_SIDE_PANEL) {
         window.close()
       }
     }
-    // 与上方 Port 块保持一致：chrome.* 必须落在 typeof 守卫里（AGENTS §4 第 4 条）
     if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
       chrome.runtime.onMessage.addListener(onRuntimeMessage)
     }
 
-    // 面板内**不再**自行处理全局键盘（原 Escape / Alt+Shift+D 分支已删除）：
-    // - `window.close()` 对浏览器自有的侧边栏窗口是空操作，实测按 Escape 根本关不掉面板，
-    //   单测只断言了「close 被调用」，所以一直是假绿；
-    // - 更是误伤：全局 keydown 会让用户在 JSON 编辑、Cookie 弹窗、输入框里按 Escape（本意是取消当前编辑）
-    //   时把整个面板关掉，与内层 ConfirmDialog 的 Escape 语义直接冲突。
-    // 关闭职责归三处：Chrome 侧边栏自带的 X 按钮、用户配置的全局快捷键（Alt+Shift+D，由 background 的
-    // chrome.commands.onCommand 处理）、以及抽屉互斥时的 MSG_CLOSE_NATIVE_SIDE_PANEL 消息。
-
     return () => {
+      alive = false
       if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
         chrome.runtime.onMessage.removeListener(onRuntimeMessage)
       }
@@ -73,12 +111,16 @@ export default function SidePanelPage() {
         // 忽略
       }
     }
-  }, [])
+  }, [inExt])
+
+  if (windowId === null) {
+    return <div className='sp' />
+  }
 
   return (
     <div className='sp'>
-      <WindowScopeContext.Provider value={windowId}>
-        <ToolsApp showHeader={false} />
+      <WindowScopeContext.Provider value={windowId > 0 ? windowId : null}>
+        <ToolsApp key={windowId} showHeader={false} />
       </WindowScopeContext.Provider>
     </div>
   )
