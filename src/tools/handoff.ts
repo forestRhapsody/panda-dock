@@ -50,7 +50,11 @@ export type HandoffResult =
  * 顺序很关键：**先确保工具可见，再写草稿与激活项**。否则一旦启用失败，
  * `activeToolTab` 会指向一个不可见的工具，用户落在别的 Tab 上却没有任何提示。
  */
-export async function prepareToolHandoff(tool: ToolId, text: string): Promise<HandoffResult> {
+export async function prepareToolHandoff(
+  tool: ToolId,
+  text: string,
+  windowId?: number | null,
+): Promise<HandoffResult> {
   if (!SUPPORTED_TOOLS.includes(tool)) {
     return { ok: false, reason: 'unsupported' }
   }
@@ -67,11 +71,11 @@ export async function prepareToolHandoff(tool: ToolId, text: string): Promise<Ha
   // 2) 写入输入草稿
   if (tool === 'detect') {
     // 划选面板的「在侧边栏中打开」走这里：把选中文本带回智能解析工具
-    await setDraftValue(DETECT_INPUT_KEY, text)
+    await setDraftValue(DETECT_INPUT_KEY, text, windowId)
   } else if (tool === 'json') {
     // JSON 工具用的是**对象草稿**：保留用户已有的缩进 / 排序 / 单行偏好。
     // 必须先铺默认值再铺存量：历史草稿缺字段时靠默认值补齐，避免写出结构不完整的对象。
-    const stored = await getDraftValue<typeof DEFAULT_JSON_DRAFT>(JSON_DRAFT_KEY)
+    const stored = await getDraftValue<typeof DEFAULT_JSON_DRAFT>(JSON_DRAFT_KEY, windowId)
     const draft = { ...DEFAULT_JSON_DRAFT, ...(stored ?? {}) }
     // 智能解析送来的就是已识别通过的 JSON：这里**顺手执行一次「格式化」**（与工具里那颗按钮同一套偏好：
     // minify 偏好决定单行还是展开），把结果一并写进草稿，用户打开就在结果区看到内容，不必再点一下。
@@ -79,19 +83,23 @@ export async function prepareToolHandoff(tool: ToolId, text: string): Promise<Ha
     const formatted = draft.minify
       ? minifyJson(text, { sortKeys: draft.sortKeys })
       : formatJson(text, { indent: draft.indent, sortKeys: draft.sortKeys })
-    await setDraftValue(JSON_DRAFT_KEY, {
-      ...draft,
-      input: text,
-      output: formatted.ok ? (formatted.text ?? '') : '',
-      lastAction: formatted.ok ? (draft.minify ? 'minify' : 'format') : null,
-    })
+    await setDraftValue(
+      JSON_DRAFT_KEY,
+      {
+        ...draft,
+        input: text,
+        output: formatted.ok ? (formatted.text ?? '') : '',
+        lastAction: formatted.ok ? (draft.minify ? 'minify' : 'format') : null,
+      },
+      windowId,
+    )
   } else {
-    await setDraftValue(URL_PARSE_INPUT_KEY, text)
+    await setDraftValue(URL_PARSE_INPUT_KEY, text, windowId)
     // 用户上次若停在「网址编解码」页，送进来的网址应回到解析页
-    await setDraftValue(URL_TAB_KEY, 'parse')
+    await setDraftValue(URL_TAB_KEY, 'parse', windowId)
   }
 
   // 3) 激活目标工具（ToolsApp 监听该草稿变化后切换 Tab）
-  await setDraftValue(ACTIVE_TAB_KEY, tool)
+  await setDraftValue(ACTIVE_TAB_KEY, tool, windowId)
   return { ok: true }
 }

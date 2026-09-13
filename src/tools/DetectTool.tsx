@@ -1,10 +1,18 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useContext,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import { useTranslation } from 'react-i18next'
 
 import { toast } from '@/ui/toast'
 import Tooltip from '@/ui/Tooltip'
-import { useToolDraft } from '@/utils/draft'
+import { useToolDraft, WindowScopeContext } from '@/utils/draft'
 
 import { detect } from './detect'
 import type { DetectResult } from './detect'
@@ -83,6 +91,8 @@ export default function DetectTool() {
   const totalMatches = items?.length ?? 1
   const safeActiveIndex = activeMatchIndex >= totalMatches ? 0 : activeMatchIndex
 
+  const windowId = useContext(WindowScopeContext)
+
   /**
    * 「在 XX 工具中打开」：检测工具与目标工具本来就同处一个宿主（侧边栏 / 抽屉），
    * 因此只需准备草稿并激活该 Tab——`activeToolTab` 的草稿变化会被 ToolsApp 的
@@ -90,14 +100,16 @@ export default function DetectTool() {
    */
   const handleOpenInTool = useCallback(
     (tool: ToolId, text: string) => {
-      void prepareToolHandoff(tool, text).then((res) => {
+      const promise =
+        windowId != null ? prepareToolHandoff(tool, text, windowId) : prepareToolHandoff(tool, text)
+      void promise.then((res) => {
         // 目标工具被禁用且启用失败时，Tab 不会切过去，必须告知用户
         if (!res.ok && res.reason === 'enable-failed') {
           toast.error(t('tool.detect.openInToolFailed', { tool: t(`tool.registry.${tool}`) }))
         }
       })
     },
-    [t],
+    [t, windowId],
   )
 
   const currentResult = useMemo<DetectResult | null>(() => {

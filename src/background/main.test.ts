@@ -9,6 +9,7 @@ import {
   MSG_COOKIE_REMOVE,
   MSG_COOKIE_SET,
   MSG_DETECT_SELECTION,
+  MSG_GET_WINDOW_ID,
   MSG_OPEN_NATIVE_SIDE_PANEL,
   MSG_OPEN_OPTIONS,
   MSG_OPEN_SHORTCUTS,
@@ -77,6 +78,7 @@ interface BackgroundHarness {
   storageChangedListeners: Array<(changes: unknown, areaName: string) => void>
   focusChangedListeners: Array<(windowId: number) => void>
   tabActivatedListeners: Array<(info: { windowId?: number }) => void>
+  windowRemovedListeners: Array<(windowId: number) => void>
   getURL: Fn
   tabsCreate: Fn
   tabsQuery: Fn
@@ -91,6 +93,8 @@ interface BackgroundHarness {
   sidePanelClose: Fn
   runtimeSendMessage: Fn
   sessionSetAccessLevel?: Fn
+  sessionGet: Fn
+  sessionRemove: Fn
 }
 
 function createHarness(options: StubOptions): BackgroundHarness {
@@ -102,6 +106,10 @@ function createHarness(options: StubOptions): BackgroundHarness {
   const storageChangedListeners: Array<(changes: unknown, areaName: string) => void> = []
   const focusChangedListeners: Array<(windowId: number) => void> = []
   const tabActivatedListeners: Array<(info: { windowId?: number }) => void> = []
+  const windowRemovedListeners: Array<(windowId: number) => void> = []
+
+  const sessionGet = vi.fn(async (): Promise<Record<string, unknown>> => ({}))
+  const sessionRemove = vi.fn(async (): Promise<void> => undefined)
 
   const getURL = vi.fn((path: string) => `chrome-extension://fake-id/${path}`)
   const runtimeSendMessage = vi.fn(async (): Promise<unknown> => undefined)
@@ -154,7 +162,11 @@ function createHarness(options: StubOptions): BackgroundHarness {
     runtime,
     storage: {
       sync: { get: syncGet },
-      session: sessionSetAccessLevel ? { setAccessLevel: sessionSetAccessLevel } : {},
+      session: {
+        get: sessionGet,
+        remove: sessionRemove,
+        ...(sessionSetAccessLevel ? { setAccessLevel: sessionSetAccessLevel } : {}),
+      },
       onChanged: {
         addListener: vi.fn((listener: (changes: unknown, areaName: string) => void) => {
           storageChangedListeners.push(listener)
@@ -185,6 +197,11 @@ function createHarness(options: StubOptions): BackgroundHarness {
       onFocusChanged: {
         addListener: vi.fn((listener: (windowId: number) => void) => {
           focusChangedListeners.push(listener)
+        }),
+      },
+      onRemoved: {
+        addListener: vi.fn((listener: (windowId: number) => void) => {
+          windowRemovedListeners.push(listener)
         }),
       },
     },
@@ -221,6 +238,7 @@ function createHarness(options: StubOptions): BackgroundHarness {
     storageChangedListeners,
     focusChangedListeners,
     tabActivatedListeners,
+    windowRemovedListeners,
     getURL,
     tabsCreate,
     tabsQuery,
@@ -235,6 +253,8 @@ function createHarness(options: StubOptions): BackgroundHarness {
     sidePanelClose,
     runtimeSendMessage,
     sessionSetAccessLevel,
+    sessionGet,
+    sessionRemove,
   }
 }
 
@@ -305,6 +325,12 @@ function fireTabActivated(info: { windowId?: number }): void {
   const listener = harness.tabActivatedListeners[0]
   if (!listener) throw new Error('main.ts 未注册 tabs.onActivated 监听器')
   listener(info)
+}
+
+function fireWindowRemoved(windowId: number): void {
+  const listener = harness.windowRemovedListeners[0]
+  if (!listener) throw new Error('main.ts 未注册 windows.onRemoved 监听器')
+  listener(windowId)
 }
 
 /** 造一个最小可用的 Port：记录监听器，便于测试手动触发消息 / 断开 */
@@ -1170,5 +1196,57 @@ describe('右键菜单（contextMenus）', () => {
       action: MSG_DETECT_SELECTION,
       text: 'hi',
     })
+  })
+})
+
+describe('MSG_GET_WINDOW_ID', () => {
+  it('优先从 sender.tab.windowId 获取所属窗口 ID', async () => {
+    await boot()
+    const res = await dispatch({ action: MSG_GET_WINDOW_ID }, { tab: { windowId: 42 } })
+    expect(res).toEqual({ ok: true, data: 42 })
+  })
+
+  it('sender 无 tab 时回退到 lastActiveWindowId（若有）或 null', async () => {
+    await boot()
+    const res = await dispatch({ action: MSG_GET_WINDOW_ID }, {})
+    expect(res).toEqual({ ok: true, data: null })
+
+    fireTabActivated({ windowId: 99 })
+    const res2 = await dispatch({ action: MSG_GET_WINDOW_ID }, {})
+    expect(res2).toEqual({ ok: true, data: 99 })
+  })
+})
+
+describe('chrome.windows.onRemoved 窗口会话垃圾清理', () => {
+  it('关闭窗口时只清理以该 windowId 为前缀的草稿，保留其他窗口与非草稿数据', async () => {
+    const h = await boot()
+    h.sessionGet.mockResolvedValueOnce({
+      'toolkit.draft.w101.json': 'payload-101',
+      'toolkit.draft.w101.activeToolTab': 'json',
+      'toolkit.draft.w102.json': 'payload-102',
+      'toolkit.otherKey': 'keep-me',
+    })
+
+    fireWindowRemoved(101)
+    await flush()
+
+    expect(h.sessionGet).toHaveBeenCalledWith(null)
+    expect(h.sessionRemove).toHaveBeenCalledWith([
+      'toolkit.draft.w101.json',
+      'toolkit.draft.w101.activeToolTab',
+    ])
+  })
+
+  it('关闭的窗口若无相关草稿，不调用 remove', async () => {
+    const h = await boot()
+    h.sessionGet.mockResolvedValueOnce({
+      'toolkit.draft.w102.json': 'payload-102',
+    })
+
+    fireWindowRemoved(101)
+    await flush()
+
+    expect(h.sessionGet).toHaveBeenCalledWith(null)
+    expect(h.sessionRemove).not.toHaveBeenCalled()
   })
 })

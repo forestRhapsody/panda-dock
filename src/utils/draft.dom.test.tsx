@@ -5,7 +5,13 @@ import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { setDraftValue, useToolDraft } from './draft'
+import {
+  getDraftValue,
+  getScopedDraftKey,
+  setDraftValue,
+  useToolDraft,
+  WindowScopeContext,
+} from './draft'
 
 /**
  * T134 手递手的关键保证：从外部（智能解析的「在 XX 工具中打开」）写入的草稿，
@@ -218,5 +224,100 @@ describe('防抖写入 × 卸载 / 重挂载（切走工具的场景）', () => 
 
     release?.()
     await flush()
+  })
+})
+
+describe('窗口作用域隔离（WindowScopeContext）', () => {
+  it('getScopedDraftKey 正确拼接或回退无前缀 key', () => {
+    expect(getScopedDraftKey('test', 101)).toBe('toolkit.draft.w101.test')
+    expect(getScopedDraftKey('test', null)).toBe('toolkit.draft.test')
+    expect(getScopedDraftKey('test', undefined)).toBe('toolkit.draft.test')
+    expect(getScopedDraftKey('test', 0)).toBe('toolkit.draft.test')
+    expect(getScopedDraftKey('test', -1)).toBe('toolkit.draft.test')
+  })
+
+  it('不同 windowId 的探针草稿互相隔离，互不干扰', async () => {
+    function MultiWindowHarness() {
+      return (
+        <div>
+          <WindowScopeContext.Provider value={101}>
+            <div data-testid='win-101'>
+              <EditableProbe draftKey='doc' next='窗口101专属内容' />
+            </div>
+          </WindowScopeContext.Provider>
+          <WindowScopeContext.Provider value={102}>
+            <div data-testid='win-102'>
+              <Probe draftKey='doc' />
+            </div>
+          </WindowScopeContext.Provider>
+        </div>
+      )
+    }
+
+    await act(async () => {
+      root.render(<MultiWindowHarness />)
+    })
+
+    const win101Btn = container.querySelector('[data-testid="win-101"] button') as HTMLButtonElement
+    const win102Text = () =>
+      container.querySelector('[data-testid="win-102"] [data-testid="value"]')?.textContent
+
+    expect(win101Btn.textContent).toBe('(empty)')
+    expect(win102Text()).toBe('(empty)')
+
+    // 窗口 101 点击改值
+    act(() => win101Btn.click())
+    expect(win101Btn.textContent).toBe('窗口101专属内容')
+    // 窗口 102 保持独立，完全不受影响
+    expect(win102Text()).toBe('(empty)')
+
+    // 等防抖 200ms 落盘
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 260)))
+
+    // 验证存储里写入的是带前缀的 w101
+    expect(store['toolkit.draft.w101.doc']).toBe('窗口101专属内容')
+    expect(store['toolkit.draft.w102.doc']).toBeUndefined()
+    expect(win102Text()).toBe('(empty)')
+  })
+
+  it('同 windowId 的组件（抽屉与侧边栏）实时共享草稿', async () => {
+    function SameWindowHarness() {
+      return (
+        <WindowScopeContext.Provider value={201}>
+          <div data-testid='drawer'>
+            <EditableProbe draftKey='shared' next='抽屉写入' />
+          </div>
+          <div data-testid='sidepanel'>
+            <Probe draftKey='shared' />
+          </div>
+        </WindowScopeContext.Provider>
+      )
+    }
+
+    await act(async () => {
+      root.render(<SameWindowHarness />)
+    })
+
+    const drawerBtn = container.querySelector('[data-testid="drawer"] button') as HTMLButtonElement
+    const sidepanelText = () =>
+      container.querySelector('[data-testid="sidepanel"] [data-testid="value"]')?.textContent
+
+    expect(sidepanelText()).toBe('(empty)')
+
+    act(() => drawerBtn.click())
+    // 200ms 防抖落盘并触发同 session 区域通知
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 260)))
+
+    expect(sidepanelText()).toBe('抽屉写入')
+  })
+
+  it('getDraftValue 与 setDraftValue 携带 windowId 定向存取', async () => {
+    await setDraftValue('testKey', 'hello-w301', 301)
+    expect(store['toolkit.draft.w301.testKey']).toBe('hello-w301')
+    const val = await getDraftValue('testKey', 301)
+    expect(val).toBe('hello-w301')
+
+    const otherVal = await getDraftValue('testKey', 302)
+    expect(otherVal).toBeNull()
   })
 })

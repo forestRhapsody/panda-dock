@@ -6,7 +6,9 @@ import { useTranslation } from 'react-i18next'
 import ToolsApp from '@/tools/ToolsApp'
 import Icon from '@/ui/Icon'
 import Tooltip from '@/ui/Tooltip'
+import { WindowScopeContext } from '@/utils/draft'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
+import { MSG_GET_WINDOW_ID } from '@/utils/messages'
 
 const WIDTH_KEY = 'toolkit.drawerWidth'
 const MIN_WIDTH = 280
@@ -63,12 +65,32 @@ export default function Drawer({ onClose }: DrawerProps) {
   const { t } = useTranslation()
   const inExt = isExtension()
   const [width, setWidth] = useState(DEFAULT_WIDTH)
+  const [windowId, setWindowId] = useState<number | null>(null)
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
   const [dragging, setDragging] = useState(false)
   // 宽度最新值的镜像：拖拽期间 pointermove → pointerup 可能落在同一批次，
   // 此时事件闭包里的 width 还是上一次渲染的旧值，直接持久化会写错，统一经 ref 读写。
   const widthRef = useRef(width)
   const rootRef = useRef<HTMLDivElement>(null)
+
+  // 获取当前网页所在的 windowId，使网页抽屉与同窗口原生侧边栏处于同一工作区
+  useEffect(() => {
+    if (!inExt) return
+    let alive = true
+    void (async () => {
+      try {
+        const res = await chrome.runtime?.sendMessage?.({ action: MSG_GET_WINDOW_ID })
+        if (alive && res?.ok && typeof res.data === 'number') {
+          setWindowId(res.data)
+        }
+      } catch {
+        // 忽略
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [inExt])
 
   // 记忆的宽度 + 窗口变化时收敛到可视范围
   useEffect(() => {
@@ -184,20 +206,22 @@ export default function Drawer({ onClose }: DrawerProps) {
         onPointerCancel={onResizeEnd}
         onKeyDown={onResizeKey}
       />
-      <ToolsApp
-        headerActions={
-          <Tooltip content={t('drawer.ariaClose')} side='bottom'>
-            <button
-              type='button'
-              className='tk-icon-btn'
-              aria-label={t('drawer.ariaClose')}
-              onClick={onClose}
-            >
-              <Icon name='close' size={14} />
-            </button>
-          </Tooltip>
-        }
-      />
+      <WindowScopeContext.Provider value={windowId}>
+        <ToolsApp
+          headerActions={
+            <Tooltip content={t('drawer.ariaClose')} side='bottom'>
+              <button
+                type='button'
+                className='tk-icon-btn'
+                aria-label={t('drawer.ariaClose')}
+                onClick={onClose}
+              >
+                <Icon name='close' size={14} />
+              </button>
+            </Tooltip>
+          }
+        />
+      </WindowScopeContext.Provider>
     </div>
   )
 }

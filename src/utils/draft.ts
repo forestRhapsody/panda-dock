@@ -1,9 +1,25 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 import { storageGet, storageRemove, storageSet } from '@/utils/env'
 
 const DRAFT_PREFIX = 'toolkit.draft.'
 const memoryCache = new Map<string, unknown>()
+
+/**
+ * 窗口作用域 Context：向子树提供当前宿主所属的 windowId。
+ * 原生侧边栏与同窗口网页抽屉拥有相同 windowId，实现同窗口内无缝连续；
+ * 不同独立窗口间 windowId 互不相同，彻底杜绝跨窗口草稿打架与 Tab 抢占。
+ * 未提供（如 happy-dom 单测或 dev 预览）时为 null，自动回退到无前缀全局 key。
+ */
+export const WindowScopeContext = createContext<number | null>(null)
+
+/** 根据可选的 windowId 计算实际的草稿存储键 */
+export function getScopedDraftKey(key: string, windowId?: number | null): string {
+  if (typeof windowId === 'number' && windowId > 0) {
+    return `${DRAFT_PREFIX}w${windowId}.${key}`
+  }
+  return `${DRAFT_PREFIX}${key}`
+}
 
 /**
  * 本页面已改、但还没确认落盘的草稿键（防抖还在窗口内，或写入正在飞行中）。
@@ -16,8 +32,8 @@ const locallyDirty = new Set<string>()
  * 读取某个草稿（优先内存缓存，回退会话存储）。
  * 供「写入前先保留用户其它偏好」的场景使用（如智能解析送数据给 JSON 工具时保留其缩进/排序设置）。
  */
-export async function getDraftValue<T>(key: string): Promise<T | null> {
-  const fullKey = `${DRAFT_PREFIX}${key}`
+export async function getDraftValue<T>(key: string, windowId?: number | null): Promise<T | null> {
+  const fullKey = getScopedDraftKey(key, windowId)
   if (memoryCache.has(fullKey)) return memoryCache.get(fullKey) as T
   return storageGet<T>('session', fullKey)
 }
@@ -27,8 +43,12 @@ export async function getDraftValue<T>(key: string): Promise<T | null> {
  * 必须**同时**更新内存缓存与会话存储：`useToolDraft` 的初始状态优先取内存缓存，
  * 只写存储会让同一会话内先前用过该工具的用户看到一帧旧值（甚至误以为没带过去）。
  */
-export async function setDraftValue<T>(key: string, value: T): Promise<void> {
-  const fullKey = `${DRAFT_PREFIX}${key}`
+export async function setDraftValue<T>(
+  key: string,
+  value: T,
+  windowId?: number | null,
+): Promise<void> {
+  const fullKey = getScopedDraftKey(key, windowId)
   memoryCache.set(fullKey, value)
   locallyDirty.add(fullKey)
   await storageSet('session', fullKey, value)
@@ -38,6 +58,7 @@ export async function setDraftValue<T>(key: string, value: T): Promise<void> {
 /**
  * 工具草稿状态持久化 Hook（基于浏览器会话存储，关抽屉/刷页面/切换侧边栏不丢失，关浏览器自动清空）
  * - 结合内存同步缓存：切换 Tab 或重新挂载时零延迟、无白屏/闪烁
+ * - 支持 WindowScopeContext：窗口级工作区隔离，不同窗口互不干扰
  * - 防抖自动同步到 chrome.storage.session
  * - 提供 clearDraft 一键清空重置
  */
@@ -45,7 +66,8 @@ export function useToolDraft<T>(
   key: string,
   initialValue: T,
 ): [T, (val: T | ((prev: T) => T)) => void, () => void, boolean] {
-  const fullKey = `${DRAFT_PREFIX}${key}`
+  const windowId = useContext(WindowScopeContext)
+  const fullKey = getScopedDraftKey(key, windowId)
   const [value, setValue] = useState<T>(() => {
     if (memoryCache.has(fullKey)) {
       return memoryCache.get(fullKey) as T
@@ -65,6 +87,12 @@ export function useToolDraft<T>(
       if (saved !== null && saved !== undefined && !locallyDirty.has(fullKey)) {
         memoryCache.set(fullKey, saved)
         setValue(saved)
+      } else if (!locallyDirty.has(fullKey)) {
+        if (memoryCache.has(fullKey)) {
+          setValue(memoryCache.get(fullKey) as T)
+        } else {
+          setValue(initialValue)
+        }
       }
       setLoaded(true)
     })

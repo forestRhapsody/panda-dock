@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useLocale } from '@/i18n/useLocale'
 import ToolsApp from '@/tools/ToolsApp'
+import { WindowScopeContext } from '@/utils/draft'
 import { useFontScale } from '@/utils/fontScale'
 import { MSG_CLOSE_NATIVE_SIDE_PANEL } from '@/utils/messages'
 import { useTheme } from '@/utils/theme'
@@ -18,15 +19,20 @@ export default function SidePanelPage() {
   useFontScale()
   useTheme()
 
+  const [windowId, setWindowId] = useState<number | null>(null)
+
   useEffect(() => {
     let port: chrome.runtime.Port | null = null
     try {
       if (typeof chrome !== 'undefined' && chrome.runtime?.connect) {
         port = chrome.runtime.connect({ name: 'toolkit-sidepanel' })
-        // 向 background 上报当前所在的 windowId，使 background 能精确定位该窗口的侧边栏状态
+        // 向 background 上报当前所在的 windowId，并设置当前侧边栏的窗口作用域
         chrome.windows?.getCurrent?.((win) => {
-          if (win?.id != null && port) {
-            port.postMessage({ type: 'SIDE_PANEL_INIT', windowId: win.id })
+          if (win?.id != null) {
+            setWindowId(win.id)
+            if (port) {
+              port.postMessage({ type: 'SIDE_PANEL_INIT', windowId: win.id })
+            }
           }
         })
         port.onMessage.addListener((msg: unknown) => {
@@ -71,7 +77,9 @@ export default function SidePanelPage() {
 
   return (
     <div className='sp'>
-      <ToolsApp showHeader={false} />
+      <WindowScopeContext.Provider value={windowId}>
+        <ToolsApp showHeader={false} />
+      </WindowScopeContext.Provider>
     </div>
   )
 }
