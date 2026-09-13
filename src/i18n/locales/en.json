@@ -303,6 +303,8 @@
       "logoSizeSm": "Compact (18%)",
       "logoSizeMd": "Standard (22%)",
       "logoSizeLg": "Prominent (26%)",
+      "logoMargin": "Logo Border",
+      "logoMarginHint": "Keep white spacing and subtle border around the logo",
       "ecLockedForLogo": "Center logo attached; locked to the highest error correction level H (30%)",
       "bottomLabel": "Bottom label",
       "labelPlaceholder": "e.g. Scan to visit console",

@@ -303,6 +303,8 @@
       "logoSizeSm": "紧凑 (18%)",
       "logoSizeMd": "标准 (22%)",
       "logoSizeLg": "醒目 (26%)",
+      "logoMargin": "Logo 边框",
+      "logoMarginHint": "保留 Logo 周围的白色间距与衬底边框",
       "ecLockedForLogo": "已上传中心 Logo，自动锁定为最高纠错级别 H（30%）",
       "bottomLabel": "底部说明标签",
       "labelPlaceholder": "例如：扫码访问控制台",

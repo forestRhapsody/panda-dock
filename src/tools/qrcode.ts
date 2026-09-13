@@ -25,6 +25,8 @@ export interface GenerateQrOptions {
   logoShape?: QrLogoShape
   /** Logo 占二维码宽度的比例，默认 0.22 */
   logoSizeRatio?: number
+  /** 是否保留 Logo 外围背景色保护垫与边框（默认 true；设为 false 则无白色间距与外边框） */
+  logoMargin?: boolean
   /** 底部说明文字 */
   label?: string | null
   /** 底部说明文字基础字号（CSS px，默认 18） */
@@ -78,6 +80,7 @@ async function generateQrCanvas(
     logoUrl = null,
     logoShape = 'rounded',
     logoSizeRatio = 0.22,
+    logoMargin = true,
     label = null,
     labelFontSize = 18,
   } = options
@@ -142,8 +145,9 @@ async function generateQrCanvas(
       const centerX = Math.round((qrSize - logoSize) / 2)
       const centerY = Math.round((qrSize - logoSize) / 2)
 
-      // 保护垫（背景色衬底框，留白尺寸约 1 个 module 宽度）
-      const pad = Math.max(3, Math.round(scale * 0.9))
+      // 保护垫（背景色衬底框，留白尺寸约 1 个 module 宽度；logoMargin 为 false 时不留白也不画外边框）
+      const hasPad = logoMargin !== false
+      const pad = hasPad ? Math.max(3, Math.round(scale * 0.9)) : 0
       const boxX = centerX - pad
       const boxY = centerY - pad
       const boxSize = logoSize + pad * 2
@@ -153,7 +157,7 @@ async function generateQrCanvas(
       ctx.imageSmoothingQuality = 'high'
       ctx.fillStyle = backgroundColor
 
-      // 绘制保护垫底框路径
+      // 绘制保护垫底框路径（用于遮蔽中心区域的二维码点阵）
       ctx.beginPath()
       if (logoShape === 'circle') {
         const cX = centerX + logoSize / 2
@@ -163,15 +167,17 @@ async function generateQrCanvas(
         ctx.rect(boxX, boxY, boxSize, boxSize)
       } else {
         // rounded 平滑圆角
-        const radius = Math.round(boxSize * 0.22)
+        const radius = hasPad ? Math.round(boxSize * 0.22) : Math.round(logoSize * 0.2)
         pathRoundRect(ctx, boxX, boxY, boxSize, boxSize, radius)
       }
       ctx.fill()
 
-      // 细微轻柔边框增强层次，避免生硬突兀
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
-      ctx.lineWidth = Math.max(1, Math.round(scale * 0.08))
-      ctx.stroke()
+      if (hasPad) {
+        // 细微轻柔边框增强层次，避免生硬突兀
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
+        ctx.lineWidth = Math.max(1, Math.round(scale * 0.08))
+        ctx.stroke()
+      }
 
       // 计算源图等比裁剪（cover），彻底杜绝拉伸畸变
       const imgW = logoImg.naturalWidth || logoImg.width

@@ -340,6 +340,49 @@ describe('中心 Logo 合成', () => {
     expect(fakeCtx.clip).toHaveBeenCalledTimes(1)
   })
 
+  it('logoMargin=false 关闭保护垫留白与描边，正方形底框与 Logo 尺寸严格重合', async () => {
+    stubImage()
+    await generateQrCodeResult('PANDA', {
+      targetWidth: 240,
+      logoUrl: LOGO,
+      logoShape: 'square',
+      logoMargin: false,
+    })
+
+    const logoSize = Math.round(240 * 0.22)
+    const centerX = Math.round((240 - logoSize) / 2)
+
+    // 两次 rect（一次清除二维码中心点阵的背景 fill，一次 Logo 裁切蒙版），参数必须完全一致且无 pad
+    expect(fakeCtx.rect).toHaveBeenCalledTimes(2)
+    expect(fakeCtx.rect).toHaveBeenNthCalledWith(1, centerX, centerX, logoSize, logoSize)
+    expect(fakeCtx.rect).toHaveBeenNthCalledWith(2, centerX, centerX, logoSize, logoSize)
+    // 明确不调用 stroke 绘制边框
+    expect(fakeCtx.stroke).not.toHaveBeenCalled()
+  })
+
+  it('logoMargin=true 默认保留保护垫留白（pad > 0）与轻柔描边', async () => {
+    stubImage()
+    await generateQrCodeResult('PANDA', {
+      targetWidth: 240,
+      logoUrl: LOGO,
+      logoShape: 'square',
+      logoMargin: true,
+    })
+
+    const logoSize = Math.round(240 * 0.22)
+    const centerX = Math.round((240 - logoSize) / 2)
+
+    expect(fakeCtx.rect).toHaveBeenCalledTimes(2)
+    // 第一次是保护垫（boxSize > logoSize，坐标往左上偏移 pad）
+    const firstCallArgs = fakeCtx.rect.mock.calls[0]
+    expect(firstCallArgs[2]).toBeGreaterThan(logoSize)
+    expect(firstCallArgs[0]).toBeLessThan(centerX)
+    // 第二次是 Logo 裁切蒙版（尺寸严格为 logoSize）
+    expect(fakeCtx.rect).toHaveBeenNthCalledWith(2, centerX, centerX, logoSize, logoSize)
+    // 必须调用 stroke 绘制微边框
+    expect(fakeCtx.stroke).toHaveBeenCalledTimes(1)
+  })
+
   it('logoShape=rounded 优先使用 roundRect', async () => {
     stubImage()
     await generateQrCodeResult('PANDA', {

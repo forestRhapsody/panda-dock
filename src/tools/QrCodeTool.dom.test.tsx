@@ -83,6 +83,7 @@ function defaultOptions() {
     logoUrl: null,
     logoShape: 'rounded',
     logoSizeRatio: 0.22,
+    logoMargin: true,
     label: '',
     labelFontSize: 18,
   }
@@ -648,6 +649,45 @@ describe('QrCodeTool：Logo 上传、裁剪与移除', () => {
     )
     expect(container.querySelector('.tw-qr__logo-thumb')).toBeNull()
     expect(selectById('tw-qr-ec').disabled).toBe(false)
+  })
+
+  it('Logo 边框勾选切换：取消勾选时向生成器传入 logoMargin=false，重新勾选恢复 true', async () => {
+    await renderTool()
+    await generateFrom('hello')
+    openCustomize()
+    await uploadLogoAndConfirm()
+
+    const marginCheckbox = query<HTMLInputElement>('#tw-qr-logo-margin')
+    expect(marginCheckbox).not.toBeNull()
+    expect(marginCheckbox.checked).toBe(true)
+
+    // 取消勾选「Logo 边框」（去除白色间距）
+    act(() => {
+      marginCheckbox.click()
+    })
+    await flush()
+
+    expect(mockedGenerate).toHaveBeenLastCalledWith(
+      'hello',
+      expect.objectContaining({
+        logoUrl: CROPPED_LOGO_URL,
+        logoMargin: false,
+      }),
+    )
+
+    // 重新勾选恢复
+    act(() => {
+      marginCheckbox.click()
+    })
+    await flush()
+
+    expect(mockedGenerate).toHaveBeenLastCalledWith(
+      'hello',
+      expect.objectContaining({
+        logoUrl: CROPPED_LOGO_URL,
+        logoMargin: true,
+      }),
+    )
   })
 
   it('移除 Logo 回落的是用户手动改过的等级（Q），而不是默认 M', async () => {
