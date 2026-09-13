@@ -73,7 +73,7 @@ export default function Drawer({ onClose }: DrawerProps) {
   const widthRef = useRef(width)
   const rootRef = useRef<HTMLDivElement>(null)
 
-  // 获取当前网页所属的 tabId，使网页抽屉与同标签页原生侧边栏处于同一工作区
+  // 获取当前网页所属的 tabId：抽屉用 tab 级草稿工作区（原生侧边栏是独立的全局工作区，两者不互通）
   useEffect(() => {
     if (!inExt) return
     let alive = true

@@ -6,6 +6,7 @@ import type { Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
+  clearDraftValue,
   getDraftValue,
   getScopedDraftKey,
   setDraftValue,
@@ -280,7 +281,7 @@ describe('标签页作用域隔离（TabScopeContext）', () => {
     expect(tab102Text()).toBe('(empty)')
   })
 
-  it('同 tabId 的组件（抽屉与侧边栏）实时共享草稿', async () => {
+  it('同一 tabId 工作区内的多个挂载点实时共享草稿（抽屉与原生侧边栏是两个独立工作区，不在此列）', async () => {
     function SameTabHarness() {
       return (
         <TabScopeContext.Provider value={201}>
@@ -366,5 +367,42 @@ describe('标签页作用域隔离（TabScopeContext）', () => {
     // 全局写入 panda.draft.note，标签页无此键
     expect(store['panda.draft.note']).toBe('全局侧栏备忘')
     expect(store['panda.draft.t303.note']).toBeUndefined()
+  })
+})
+
+describe('clearDraftValue：从外部清空草稿', () => {
+  it('同时清内存缓存与会话存储，重挂载回到初始值', async () => {
+    const key = 'clear.outside'
+    await act(async () => {
+      await setDraftValue(key, '待清空')
+    })
+    expect(store[`panda.draft.${key}`]).toBe('待清空')
+
+    await act(async () => {
+      await clearDraftValue(key)
+    })
+    expect(store[`panda.draft.${key}`]).toBeUndefined()
+    expect(await getDraftValue(key)).toBeNull()
+
+    // 缓存没被清干净的话，重挂载会拿旧值出来（这正是要防的）
+    await act(async () => {
+      root.render(<Probe draftKey={key} />)
+    })
+    await flush()
+    expect(text()).toBe('(empty)')
+  })
+
+  it('带 tabId 时只清目标工作区，不动全局工作区', async () => {
+    await act(async () => {
+      await setDraftValue('scope.clear', '全局')
+      await setDraftValue('scope.clear', '标签页 501', 501)
+    })
+
+    await act(async () => {
+      await clearDraftValue('scope.clear', 501)
+    })
+
+    expect(await getDraftValue('scope.clear', 501)).toBeNull()
+    expect(await getDraftValue('scope.clear')).toBe('全局')
   })
 })

@@ -6,10 +6,16 @@ export const DRAFT_PREFIX = 'panda.draft.'
 const memoryCache = new Map<string, unknown>()
 
 /**
- * 标签页作用域 Context：向子树提供当前宿主所属的 tabId。
- * 每个 Tab（标签页）拥有独立的草稿工作区，不同标签页之间（如 a.com 与 b.com）互不干扰；
- * 同一 Tab 内的网页抽屉与原生侧边栏拥有相同 tabId，实现同标签页内无缝连续与实时同步；
- * 标签页关闭时自动清理该 tabId 的所有草稿，释放存储配额。
+ * 标签页作用域 Context：向子树提供当前宿主所属的 tabId（网页内抽屉传当前标签页）。
+ *
+ * 两个入口是**互相独立**的工作区，不要按「同一份数据」理解（Options 里「默认唤起方式」的
+ * 说明就是这个语义）：
+ * - 网页抽屉（content script）：tab 级工作区，key 带 `t{tabId}` 前缀，各标签页互不干扰，
+ *   标签页关闭时由 background 清理该前缀下的全部草稿；
+ * - 原生侧边栏（SidePanelPage）：全局工作区，显式传 `null`（即无前缀），跨标签页共用一份数据；
+ * - 因此「同 tabId 的多个挂载点实时同步」这条机制只对同属一个工作区的组件成立
+ *   （如抽屉与它内部的划选面板），抽屉 ↔ 原生侧边栏之间不会互相同步。
+ *
  * 未提供（如 happy-dom 单测或 dev 预览）时为 null，自动回退到无前缀全局 key。
  */
 export const TabScopeContext = createContext<number | null>(null)
@@ -56,6 +62,17 @@ export async function setDraftValue<T>(
   locallyDirty.add(fullKey)
   await storageSet('session', fullKey, value)
   locallyDirty.delete(fullKey)
+}
+
+/**
+ * 从外部清空某个草稿（内存缓存与会话存储一起清）。
+ * 与 `setDraftValue` 对称：只删存储会让同会话内的内存缓存继续冒充新值。
+ */
+export async function clearDraftValue(key: string, tabId?: number | null): Promise<void> {
+  const fullKey = getScopedDraftKey(key, tabId)
+  memoryCache.delete(fullKey)
+  locallyDirty.delete(fullKey)
+  await storageRemove('session', fullKey)
 }
 
 /**
