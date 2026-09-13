@@ -50,7 +50,7 @@
     "ballActionDrawerTitle": "In-page drawer",
     "ballActionDrawerTip": ": Data is limited to current tab, cleared automatically when closed.",
     "ballActionNativeTitle": "Native side panel",
-    "ballActionNativeTip": ": Data is kept until browser closes, completely independent of in-page drawer data.",
+    "ballActionNativeTip": ": All tabs share one copy of data, retained until browser closes, completely independent of in-page drawer data.",
     "actionDrawer": "In-page drawer",
     "actionNative": "Browser native side panel",
     "shortcutSection": "Shortcuts",

@@ -50,7 +50,7 @@
     "ballActionDrawerTitle": "网页抽屉",
     "ballActionDrawerTip": "：数据仅限当前标签页使用，关闭标签页后自动清空。",
     "ballActionNativeTitle": "原生侧边栏",
-    "ballActionNativeTip": "：数据保留至浏览器关闭，与网页抽屉数据相互独立。",
+    "ballActionNativeTip": "：所有标签页共用一份数据，数据保留至浏览器关闭，与网页抽屉数据相互独立。",
     "actionDrawer": "网页内抽屉",
     "actionNative": "浏览器原生侧边栏",
     "shortcutSection": "快捷键",

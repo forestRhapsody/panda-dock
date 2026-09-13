@@ -175,17 +175,11 @@ body {
   font-size: var(--tk-text-xs);
   line-height: 1.4;
   color: var(--tk-muted-foreground);
-  transition: color 0.15s ease;
 }
 
 .pop__setting-tip strong {
   font-weight: 600;
   color: inherit;
-}
-
-.pop__setting-tip--active {
-  color: var(--tk-foreground);
-  font-weight: 500;
 }
 
 .pop__offset-group {
