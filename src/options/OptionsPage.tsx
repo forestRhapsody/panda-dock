@@ -334,7 +334,7 @@ export default function OptionsPage() {
     setWhitelistText('')
   }
 
-  /** 恢复「悬浮球与唤起方式」这块到默认（显示、停靠行为、点击动作） */
+  /** 恢复「悬浮球与唤起方式」到默认（显示、停靠行为、点击动作） */
   function resetBallSection() {
     const base = defaultSettings()
     persist({
@@ -538,6 +538,7 @@ export default function OptionsPage() {
           </ul>
         </div>
 
+        {/* 悬浮球：行为与样式是两块并列配置，相邻成簇；各自带一个「恢复默认」 */}
         <div className='opt__card'>
           <div className='opt__card-head'>
             <h2>{t('settings.ballSection')}</h2>
@@ -645,52 +646,6 @@ export default function OptionsPage() {
                   <strong>{t('settings.ballActionNativeTitle')}</strong>
                   {t('settings.ballActionNativeTip')}
                 </p>
-              </div>
-            </li>
-          </ul>
-        </div>
-
-        <div className='opt__card'>
-          <div className='opt__card-head'>
-            <h2>{t('settings.shortcutSection')}</h2>
-          </div>
-          <ul className='opt__list'>
-            <li className='opt__item'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.shortcutTitle')}</strong>
-                <p>{t('settings.shortcutDesc')}</p>
-              </div>
-              <div className='opt__shortcut-group'>
-                <kbd className='opt__kbd'>{formatShortcutForDisplay(shortcut)}</kbd>
-                {inExt && (
-                  <button
-                    type='button'
-                    className='pd-btn pd-btn--sm'
-                    onClick={() => void openShortcutsPage()}
-                  >
-                    <Icon name='external-link' size={14} />
-                    {t('settings.configureShortcut')}
-                  </button>
-                )}
-              </div>
-            </li>
-            <li className='opt__item'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.detectShortcutTitle')}</strong>
-                <p>{t('settings.detectShortcutDesc')}</p>
-              </div>
-              <div className='opt__shortcut-group'>
-                <kbd className='opt__kbd'>{formatShortcutForDisplay(detectShortcut)}</kbd>
-                {inExt && (
-                  <button
-                    type='button'
-                    className='pd-btn pd-btn--sm'
-                    onClick={() => void openShortcutsPage()}
-                  >
-                    <Icon name='external-link' size={14} />
-                    {t('settings.configureShortcut')}
-                  </button>
-                )}
               </div>
             </li>
           </ul>
@@ -959,6 +914,52 @@ export default function OptionsPage() {
               </ul>
             </SortableContext>
           </DndContext>
+        </div>
+
+        <div className='opt__card'>
+          <div className='opt__card-head'>
+            <h2>{t('settings.shortcutSection')}</h2>
+          </div>
+          <ul className='opt__list'>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.shortcutTitle')}</strong>
+                <p>{t('settings.shortcutDesc')}</p>
+              </div>
+              <div className='opt__shortcut-group'>
+                <kbd className='opt__kbd'>{formatShortcutForDisplay(shortcut)}</kbd>
+                {inExt && (
+                  <button
+                    type='button'
+                    className='pd-btn pd-btn--sm'
+                    onClick={() => void openShortcutsPage()}
+                  >
+                    <Icon name='external-link' size={14} />
+                    {t('settings.configureShortcut')}
+                  </button>
+                )}
+              </div>
+            </li>
+            <li className='opt__item'>
+              <div className='opt__item-text'>
+                <strong>{t('settings.detectShortcutTitle')}</strong>
+                <p>{t('settings.detectShortcutDesc')}</p>
+              </div>
+              <div className='opt__shortcut-group'>
+                <kbd className='opt__kbd'>{formatShortcutForDisplay(detectShortcut)}</kbd>
+                {inExt && (
+                  <button
+                    type='button'
+                    className='pd-btn pd-btn--sm'
+                    onClick={() => void openShortcutsPage()}
+                  >
+                    <Icon name='external-link' size={14} />
+                    {t('settings.configureShortcut')}
+                  </button>
+                )}
+              </div>
+            </li>
+          </ul>
         </div>
 
         <div className='opt__card'>

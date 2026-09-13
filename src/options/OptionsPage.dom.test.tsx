@@ -370,8 +370,8 @@ describe('OptionsPage 首屏读取与归一化', () => {
     expect(selectText('主题')).toBe('跟随系统')
     expect(selectText('语言')).toBe('跟随系统')
     expect(selectText('整体字体大小')).toBe('标准')
-    expect(selectText('形状')).toBe('圆角矩形')
-    expect(selectText('大小')).toBe('中')
+    expect(selectText('形状')).toBe('圆形')
+    expect(selectText('大小')).toBe('小')
     expect(selectText('默认唤起方式')).toBe('网页内抽屉')
     // ballDockMode 非法但 ballSnap=false → 迁移为自由停靠（向后兼容旧字段）
     expect(selectText('停靠行为')).toBe('自由停靠')
@@ -401,6 +401,28 @@ describe('OptionsPage 首屏读取与归一化', () => {
     await mount({ ...BASE(), ballDockMode: 'bottomRight', ballBottomRightRight: 9999 })
     const offsets = [...container.querySelectorAll<HTMLInputElement>('.opt__offset-input')]
     expect(offsets.map((i) => i.value)).toEqual(['800', '80'])
+  })
+
+  it('卡片按「常用优先 + 相关聚合」排序：悬浮球相关的三张卡连续相邻', async () => {
+    await mount()
+
+    const headings = [...container.querySelectorAll<HTMLElement>('.opt__main > .opt__card h2')]
+    expect(headings.map((h) => h.textContent)).toEqual([
+      i18n.t('settings.appearanceDisplay'),
+      i18n.t('settings.ballSection'),
+      i18n.t('settings.ballStyleSection'),
+      i18n.t('settings.domainSection'),
+      i18n.t('settings.toolbox'),
+      i18n.t('settings.shortcutSection'),
+      i18n.t('settings.backupSection'),
+      i18n.t('settings.restoreDefaults'),
+    ])
+
+    // 每张卡都是「标题 + 一个恢复默认」，不出现第三级标题
+    for (const h2 of headings) {
+      const cardEl = h2.closest('.opt__card') as HTMLElement
+      expect(cardEl.querySelectorAll('h3')).toHaveLength(0)
+    }
   })
 })
 
@@ -634,9 +656,9 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
 
     fire(resetButtonOf('悬浮球样式'), 'click')
     const afterStyle = writtenSettings()
-    expect(afterStyle.ballShape).toBe('rounded')
+    expect(afterStyle.ballShape).toBe('circle')
     expect(afterStyle.ballPreset).toBe('primary')
-    expect(afterStyle.ballSize).toBe('md')
+    expect(afterStyle.ballSize).toBe('sm')
     expect(afterStyle.theme).toBe('system')
     expectFullSettings(afterStyle)
   })
@@ -876,7 +898,7 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
     fire(container.querySelector('.pd-modal button.pd-btn--danger') as Element, 'click')
     await settle(10)
 
-    expect(writtenSettings().ballShape).toBe('rounded')
+    expect(writtenSettings().ballShape).toBe('circle')
     expect(chromeState.local.ballImage).toBeNull()
     expect(container.querySelector('img[src^="data:image/"]')).toBeNull()
   })
@@ -888,7 +910,7 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
     await settle(10)
 
     expect(container.querySelector('.pd-modal')).toBeNull()
-    expect(writtenSettings().ballShape).toBe('rounded')
+    expect(writtenSettings().ballShape).toBe('circle')
   })
 })
 
