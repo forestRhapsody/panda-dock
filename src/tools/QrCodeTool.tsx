@@ -338,7 +338,7 @@ export default function QrCodeTool() {
     const win = window.open()
     if (win) {
       win.document.write(
-        `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${t('tool.qrcode.openOriginal')}</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#18181b;}img{max-width:92vw;max-height:92vh;object-fit:contain;box-shadow:0 12px 36px rgba(0,0,0,0.5);image-rendering:-webkit-optimize-contrast;}</style></head><body><img src="${qrDataUrl}" alt="QR" /></body></html>`,
+        `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${t('tool.qrcode.openOriginal')}</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#18181b;}img{max-width:92vw;max-height:92vh;object-fit:contain;image-rendering:-webkit-optimize-contrast;}</style></head><body><img src="${qrDataUrl}" alt="QR" /></body></html>`,
       )
       win.document.close()
     }

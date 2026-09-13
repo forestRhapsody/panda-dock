@@ -181,13 +181,6 @@ async function generateQrCanvas(
       }
       ctx.fill()
 
-      if (hasPad) {
-        // 细微轻柔边框增强层次，避免生硬突兀
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
-        ctx.lineWidth = Math.max(1, Math.round(scale * 0.08))
-        ctx.stroke()
-      }
-
       // 计算源图等比裁剪（cover），彻底杜绝拉伸畸变
       const imgW = logoImg.naturalWidth || logoImg.width
       const imgH = logoImg.naturalHeight || logoImg.height

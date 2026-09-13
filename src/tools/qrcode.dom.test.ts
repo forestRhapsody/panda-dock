@@ -360,7 +360,7 @@ describe('中心 Logo 合成', () => {
     expect(fakeCtx.stroke).not.toHaveBeenCalled()
   })
 
-  it('logoMargin="tight" 采用紧凑留白（0 < pad_tight < pad_standard）并绘制微边框', async () => {
+  it('logoMargin="tight" 采用紧凑留白（0 < pad_tight < pad_standard），无杂色描边与阴影', async () => {
     stubImage()
     await generateQrCodeResult('PANDA', {
       targetWidth: 240,
@@ -372,7 +372,7 @@ describe('中心 Logo 合成', () => {
     const logoSize = Math.round(240 * 0.22)
     const tightBoxSize = fakeCtx.rect.mock.calls[0][2] as number
     expect(tightBoxSize).toBeGreaterThan(logoSize)
-    expect(fakeCtx.stroke).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.stroke).not.toHaveBeenCalled()
 
     // 对比 standard 模式，tight 的 boxSize 必须更小（留白更紧凑）
     fakeCtx.rect.mockClear()
@@ -385,10 +385,10 @@ describe('中心 Logo 合成', () => {
     })
     const standardBoxSize = fakeCtx.rect.mock.calls[0][2] as number
     expect(standardBoxSize).toBeGreaterThan(tightBoxSize)
-    expect(fakeCtx.stroke).toHaveBeenCalledTimes(1)
+    expect(fakeCtx.stroke).not.toHaveBeenCalled()
   })
 
-  it('logoMargin="standard"（默认）保留标准保护垫留白与轻柔描边', async () => {
+  it('logoMargin="standard"（默认）保留标准留白，无杂色描边与阴影', async () => {
     stubImage()
     await generateQrCodeResult('PANDA', {
       targetWidth: 240,
@@ -406,8 +406,8 @@ describe('中心 Logo 合成', () => {
     expect(firstCallArgs[0]).toBeLessThan(centerX)
     // 第二次是 Logo 裁切蒙版（尺寸严格为 logoSize）
     expect(fakeCtx.rect).toHaveBeenNthCalledWith(2, centerX, centerX, logoSize, logoSize)
-    // 必须调用 stroke 绘制微边框
-    expect(fakeCtx.stroke).toHaveBeenCalledTimes(1)
+    // 彻底去除半透明描边，杜绝阴影感
+    expect(fakeCtx.stroke).not.toHaveBeenCalled()
   })
 
   it('logoShape=rounded 优先使用 roundRect', async () => {
