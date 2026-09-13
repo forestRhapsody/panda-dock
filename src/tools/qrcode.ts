@@ -7,6 +7,7 @@ import QRCode from 'qrcode'
 
 export type QrErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H'
 export type QrLogoShape = 'circle' | 'rounded' | 'square'
+export type QrLogoMargin = 'none' | 'tight' | 'standard'
 
 export interface GenerateQrOptions {
   /** 纠错等级：L (7%) / M (15%) / Q (25%) / H (30%)，默认 M */
@@ -25,8 +26,8 @@ export interface GenerateQrOptions {
   logoShape?: QrLogoShape
   /** Logo 占二维码宽度的比例，默认 0.22 */
   logoSizeRatio?: number
-  /** 是否保留 Logo 外围背景色保护垫与边框（默认 true；设为 false 则无白色间距与外边框） */
-  logoMargin?: boolean
+  /** Logo 外围保护垫边距：none (无边框) / tight (紧凑) / standard (默认)，默认 standard */
+  logoMargin?: QrLogoMargin | boolean
   /** 底部说明文字 */
   label?: string | null
   /** 底部说明文字基础字号（CSS px，默认 18） */
@@ -80,7 +81,7 @@ async function generateQrCanvas(
     logoUrl = null,
     logoShape = 'rounded',
     logoSizeRatio = 0.22,
-    logoMargin = true,
+    logoMargin = 'standard',
     label = null,
     labelFontSize = 18,
   } = options
@@ -145,9 +146,17 @@ async function generateQrCanvas(
       const centerX = Math.round((qrSize - logoSize) / 2)
       const centerY = Math.round((qrSize - logoSize) / 2)
 
-      // 保护垫（背景色衬底框，留白尺寸约 1 个 module 宽度；logoMargin 为 false 时不留白也不画外边框）
-      const hasPad = logoMargin !== false
-      const pad = hasPad ? Math.max(3, Math.round(scale * 0.9)) : 0
+      // 保护垫（背景色衬底框）：
+      // - standard（或 true）：约 1 个 module 宽度，适中留白
+      // - tight：约 0.45 个 module 宽度，紧凑贴合
+      // - none（或 false）：无间距，点阵紧靠 Logo 边缘，不画微边框
+      let pad = 0
+      if (logoMargin === 'tight') {
+        pad = Math.max(2, Math.round(scale * 0.45))
+      } else if (logoMargin === 'standard' || logoMargin === true || logoMargin === undefined) {
+        pad = Math.max(3, Math.round(scale * 0.9))
+      }
+      const hasPad = pad > 0
       const boxX = centerX - pad
       const boxY = centerY - pad
       const boxSize = logoSize + pad * 2

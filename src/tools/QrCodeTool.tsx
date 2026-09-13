@@ -12,7 +12,7 @@ import { getCurrentPageUrl } from '@/utils/pageUrl'
 import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import { decodeQrCodeFromBlob, generateQrCodeBlob, generateQrCodeResult } from './qrcode'
-import type { QrErrorCorrectionLevel, QrLogoShape } from './qrcode'
+import type { QrErrorCorrectionLevel, QrLogoMargin, QrLogoShape } from './qrcode'
 import QrLogoCropModal from './QrLogoCropModal'
 import { StatusText } from './StatusText'
 import ToolTabs from './ToolTabs'
@@ -56,6 +56,12 @@ const LOGO_SIZE_OPTIONS = [
   { labelKey: 'tool.qrcode.logoSizeLg', value: 0.26 },
 ]
 
+const LOGO_MARGIN_OPTIONS: { labelKey: string; value: QrLogoMargin }[] = [
+  { labelKey: 'tool.qrcode.logoMarginStandard', value: 'standard' },
+  { labelKey: 'tool.qrcode.logoMarginTight', value: 'tight' },
+  { labelKey: 'tool.qrcode.logoMarginNone', value: 'none' },
+]
+
 const FONT_SIZE_OPTIONS = [
   { labelKey: 'tool.qrcode.fontSizeSm', value: 14 },
   { labelKey: 'tool.qrcode.fontSizeMd', value: 18 },
@@ -80,7 +86,7 @@ export default function QrCodeTool() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [logoShape, setLogoShape] = useState<QrLogoShape>('rounded')
   const [logoSizeRatio, setLogoSizeRatio] = useState<number>(0.22)
-  const [logoMargin, setLogoMargin] = useState<boolean>(true)
+  const [logoMargin, setLogoMargin] = useState<QrLogoMargin>('standard')
   const [cropSourceUrl, setCropSourceUrl] = useState<string | null>(null)
   const [showCropModal, setShowCropModal] = useState(false)
   const [label, setLabel] = useState('')
@@ -252,7 +258,7 @@ export default function QrCodeTool() {
     }
     setCropSourceUrl(null)
     setLogoUrl(null)
-    setLogoMargin(true)
+    setLogoMargin('standard')
     // 回落到应用 Logo 前的用户等级（从未记录过则视为默认 M），并清空记录，
     // 让下次上传 Logo 重新记住当时的等级，而不是一直沿用陈旧值。
     setEcLevel(ecLevelBeforeLogoRef.current ?? 'M')
@@ -723,17 +729,22 @@ export default function QrCodeTool() {
                             </TkSelect>
                           </div>
 
-                          <Tooltip content={t('tool.qrcode.logoMarginHint')}>
-                            <label className='tk-checkbox tw-qr__logo-margin-check'>
-                              <input
-                                type='checkbox'
-                                id='tw-qr-logo-margin'
-                                checked={logoMargin}
-                                onChange={(e) => setLogoMargin(e.target.checked)}
-                              />
-                              <span>{t('tool.qrcode.logoMargin')}</span>
+                          <div className='tw-qr__opt-group'>
+                            <label className='tw-qr__opt-label' htmlFor='tw-qr-logo-margin'>
+                              {t('tool.qrcode.logoMargin')}:
                             </label>
-                          </Tooltip>
+                            <TkSelect
+                              id='tw-qr-logo-margin'
+                              value={logoMargin}
+                              onChange={(e) => setLogoMargin(e.target.value as QrLogoMargin)}
+                            >
+                              {LOGO_MARGIN_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {t(o.labelKey)}
+                                </option>
+                              ))}
+                            </TkSelect>
+                          </div>
                         </div>
                       </>
                     ) : (

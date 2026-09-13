@@ -340,13 +340,13 @@ describe('中心 Logo 合成', () => {
     expect(fakeCtx.clip).toHaveBeenCalledTimes(1)
   })
 
-  it('logoMargin=false 关闭保护垫留白与描边，正方形底框与 Logo 尺寸严格重合', async () => {
+  it('logoMargin="none"（或 false）关闭保护垫留白与描边，底框与 Logo 尺寸严格重合', async () => {
     stubImage()
     await generateQrCodeResult('PANDA', {
       targetWidth: 240,
       logoUrl: LOGO,
       logoShape: 'square',
-      logoMargin: false,
+      logoMargin: 'none',
     })
 
     const logoSize = Math.round(240 * 0.22)
@@ -360,13 +360,40 @@ describe('中心 Logo 合成', () => {
     expect(fakeCtx.stroke).not.toHaveBeenCalled()
   })
 
-  it('logoMargin=true 默认保留保护垫留白（pad > 0）与轻柔描边', async () => {
+  it('logoMargin="tight" 采用紧凑留白（0 < pad_tight < pad_standard）并绘制微边框', async () => {
     stubImage()
     await generateQrCodeResult('PANDA', {
       targetWidth: 240,
       logoUrl: LOGO,
       logoShape: 'square',
-      logoMargin: true,
+      logoMargin: 'tight',
+    })
+
+    const logoSize = Math.round(240 * 0.22)
+    const tightBoxSize = fakeCtx.rect.mock.calls[0][2] as number
+    expect(tightBoxSize).toBeGreaterThan(logoSize)
+    expect(fakeCtx.stroke).toHaveBeenCalledTimes(1)
+
+    // 对比 standard 模式，tight 的 boxSize 必须更小（留白更紧凑）
+    fakeCtx.rect.mockClear()
+    fakeCtx.stroke.mockClear()
+    await generateQrCodeResult('PANDA', {
+      targetWidth: 240,
+      logoUrl: LOGO,
+      logoShape: 'square',
+      logoMargin: 'standard',
+    })
+    const standardBoxSize = fakeCtx.rect.mock.calls[0][2] as number
+    expect(standardBoxSize).toBeGreaterThan(tightBoxSize)
+    expect(fakeCtx.stroke).toHaveBeenCalledTimes(1)
+  })
+
+  it('logoMargin="standard"（默认）保留标准保护垫留白与轻柔描边', async () => {
+    stubImage()
+    await generateQrCodeResult('PANDA', {
+      targetWidth: 240,
+      logoUrl: LOGO,
+      logoShape: 'square',
     })
 
     const logoSize = Math.round(240 * 0.22)

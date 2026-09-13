@@ -83,7 +83,7 @@ function defaultOptions() {
     logoUrl: null,
     logoShape: 'rounded',
     logoSizeRatio: 0.22,
-    logoMargin: true,
+    logoMargin: 'standard',
     label: '',
     labelFontSize: 18,
   }
@@ -651,41 +651,49 @@ describe('QrCodeTool：Logo 上传、裁剪与移除', () => {
     expect(selectById('tw-qr-ec').disabled).toBe(false)
   })
 
-  it('Logo 边框勾选切换：取消勾选时向生成器传入 logoMargin=false，重新勾选恢复 true', async () => {
+  it('Logo 边框选项切换：支持默认、紧凑与无边框切换', async () => {
     await renderTool()
     await generateFrom('hello')
     openCustomize()
     await uploadLogoAndConfirm()
 
-    const marginCheckbox = query<HTMLInputElement>('#tw-qr-logo-margin')
-    expect(marginCheckbox).not.toBeNull()
-    expect(marginCheckbox.checked).toBe(true)
+    const marginSelect = selectById('tw-qr-logo-margin')
+    expect(marginSelect).not.toBeNull()
+    expect(marginSelect.textContent).toContain(i18n.t('tool.qrcode.logoMarginStandard'))
 
-    // 取消勾选「Logo 边框」（去除白色间距）
-    act(() => {
-      marginCheckbox.click()
-    })
+    // 切换到「紧凑」
+    chooseOption(marginSelect, i18n.t('tool.qrcode.logoMarginTight'))
     await flush()
 
     expect(mockedGenerate).toHaveBeenLastCalledWith(
       'hello',
       expect.objectContaining({
         logoUrl: CROPPED_LOGO_URL,
-        logoMargin: false,
+        logoMargin: 'tight',
       }),
     )
 
-    // 重新勾选恢复
-    act(() => {
-      marginCheckbox.click()
-    })
+    // 切换到「无边框」
+    chooseOption(marginSelect, i18n.t('tool.qrcode.logoMarginNone'))
     await flush()
 
     expect(mockedGenerate).toHaveBeenLastCalledWith(
       'hello',
       expect.objectContaining({
         logoUrl: CROPPED_LOGO_URL,
-        logoMargin: true,
+        logoMargin: 'none',
+      }),
+    )
+
+    // 重新切回「默认」
+    chooseOption(marginSelect, i18n.t('tool.qrcode.logoMarginStandard'))
+    await flush()
+
+    expect(mockedGenerate).toHaveBeenLastCalledWith(
+      'hello',
+      expect.objectContaining({
+        logoUrl: CROPPED_LOGO_URL,
+        logoMargin: 'standard',
       }),
     )
   })
