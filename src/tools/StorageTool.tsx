@@ -124,7 +124,7 @@ function EditorForm({
       className='tw-store__edit'
       // 声明「本子树接管 Escape」：抽屉的关闭守卫据此让行（见 content/Drawer.tsx）。
       // Escape = 取消编辑，与「取消」按钮同义（丢弃草稿，不写存储）。
-      data-tk-escape
+      data-pd-escape
       onKeyDown={(e) => {
         if (e.key !== 'Escape') return
         e.preventDefault()
@@ -571,7 +571,7 @@ export default function StorageTool() {
       <div className='tw-actions'>
         <button
           type='button'
-          className='tk-btn tk-btn--primary'
+          className='pd-btn pd-btn--primary'
           onClick={() => void handleRefresh()}
           disabled={refreshing}
         >
@@ -580,7 +580,7 @@ export default function StorageTool() {
         </button>
         <button
           type='button'
-          className='tk-btn'
+          className='pd-btn'
           onClick={
             area === 'cookie'
               ? () => {
@@ -596,7 +596,7 @@ export default function StorageTool() {
         </button>
         <button
           type='button'
-          className='tk-btn'
+          className='pd-btn'
           onClick={area === 'cookie' ? askClearAllCookies : askClearAll}
           disabled={area === 'cookie' ? cookieEmpty : empty}
         >
@@ -618,7 +618,7 @@ export default function StorageTool() {
             value={filter}
             // 只有存在筛选词时才声明接管 Escape：空筛选时若也接管，
             // 焦点停在搜索框上会让抽屉再也无法用 Escape 关闭。
-            data-tk-escape={filter ? true : undefined}
+            data-pd-escape={filter ? true : undefined}
             onChange={(e) => setFilter(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {

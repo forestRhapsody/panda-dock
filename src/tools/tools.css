@@ -13,9 +13,9 @@
   height: 100%;
   min-height: 0;
   box-sizing: border-box;
-  font-family: var(--tk-font);
-  color: var(--tk-foreground);
-  background: var(--tk-background);
+  font-family: var(--pd-font);
+  color: var(--pd-foreground);
+  background: var(--pd-background);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -38,8 +38,8 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 18px;
-  border-bottom: 1px solid var(--tk-border);
-  background: var(--tk-card);
+  border-bottom: 1px solid var(--pd-border);
+  background: var(--pd-card);
   flex: none;
 }
 
@@ -52,7 +52,7 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: var(--tk-text-lg);
+  font-size: var(--pd-text-lg);
   line-height: 1.3;
 }
 
@@ -83,10 +83,10 @@
   align-items: center;
   gap: 8px;
   padding: 8px 18px;
-  border-top: 1px solid var(--tk-border);
-  background: var(--tk-card);
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  border-top: 1px solid var(--pd-border);
+  background: var(--pd-card);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
   flex: none;
 }
 
@@ -95,8 +95,8 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--tk-primary);
-  font-size: var(--tk-text-sm);
+  color: var(--pd-primary);
+  font-size: var(--pd-text-sm);
   cursor: pointer;
 }
 
@@ -116,8 +116,8 @@
   display: inline-flex;
   gap: 4px;
   padding: 4px;
-  border-radius: var(--tk-radius);
-  background: var(--tk-secondary);
+  border-radius: var(--pd-radius);
+  background: var(--pd-secondary);
   align-self: flex-start;
   max-width: 100%;
   overflow-x: auto;
@@ -135,15 +135,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: var(--tk-control-h);
+  height: var(--pd-control-h);
   padding: 0 18px;
   border: none;
-  border-radius: calc(var(--tk-radius) - 0.25rem);
+  border-radius: calc(var(--pd-radius) - 0.25rem);
   background: none;
-  font-family: var(--tk-font);
-  font-size: var(--tk-text-base);
+  font-family: var(--pd-font);
+  font-size: var(--pd-text-base);
   line-height: 1;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
@@ -154,14 +154,14 @@
 }
 
 .tw-tabs__btn:hover {
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
 }
 
 .tw-tabs__btn--on {
-  background: var(--tk-card);
-  color: var(--tk-foreground);
+  background: var(--pd-card);
+  color: var(--pd-foreground);
   font-weight: 600;
-  box-shadow: var(--tk-shadow-sm);
+  box-shadow: var(--pd-shadow-sm);
 }
 
 .tw-field {
@@ -173,10 +173,10 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 6px;
-  font-size: var(--tk-text-sm);
+  font-size: var(--pd-text-sm);
   line-height: 1.5;
   font-weight: 600;
-  color: var(--tk-secondary-foreground);
+  color: var(--pd-secondary-foreground);
 }
 
 .tw-field__actions {
@@ -188,9 +188,9 @@
 .tw-field__hint {
   display: block;
   margin-top: 6px;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
   line-height: 1.4;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
 }
 
 .tw-link {
@@ -200,8 +200,8 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--tk-primary);
-  font-size: var(--tk-text-sm);
+  color: var(--pd-primary);
+  font-size: var(--pd-text-sm);
   line-height: 1.5;
   text-decoration: none;
   cursor: pointer;
@@ -212,7 +212,7 @@
 }
 
 .tw-link:disabled {
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -224,13 +224,13 @@
   min-height: 108px;
   max-height: 360px;
   padding: 10px 12px;
-  border: 1px solid var(--tk-input);
-  border-radius: var(--tk-radius);
-  background: var(--tk-card);
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-base);
+  border: 1px solid var(--pd-input);
+  border-radius: var(--pd-radius);
+  background: var(--pd-card);
+  font-family: var(--pd-font-mono);
+  font-size: var(--pd-text-base);
   line-height: 1.6;
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
   resize: vertical;
   outline: none;
   transition:
@@ -239,17 +239,17 @@
 }
 
 .tw-area:hover:not(:focus) {
-  border-color: var(--tk-border-strong);
+  border-color: var(--pd-border-strong);
 }
 
 .tw-area:focus {
-  border-color: var(--tk-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+  border-color: var(--pd-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pd-ring) 25%, transparent);
 }
 
 .tw-area--result {
   min-height: 88px;
-  background: var(--tk-muted);
+  background: var(--pd-muted);
   /* 只读输出自动增高，禁止手动拉伸（否则会超出外层容器导致多余滚动条）；长串强制换行 */
   resize: none;
   word-break: break-all;
@@ -257,18 +257,18 @@
 
 /* 只读结果框不应触发编辑类聚焦光环 */
 .tw-area--result:focus {
-  border-color: var(--tk-input);
+  border-color: var(--pd-input);
   box-shadow: none;
 }
 
 /* 输入框无数据操作时的醒目警示态（边框、光环与占位符静止变红，无多余动画） */
 .tw-area--empty-err {
-  border-color: var(--tk-destructive) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-destructive) 25%, transparent) !important;
+  border-color: var(--pd-destructive) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pd-destructive) 25%, transparent) !important;
 }
 
 .tw-area--empty-err::placeholder {
-  color: var(--tk-destructive) !important;
+  color: var(--pd-destructive) !important;
   opacity: 0.85;
 }
 
@@ -283,21 +283,21 @@
   min-height: 96px;
   overflow-y: auto;
   overflow-x: hidden;
-  border: 1px solid var(--tk-input);
-  border-radius: var(--tk-radius);
-  background: var(--tk-card);
+  border: 1px solid var(--pd-input);
+  border-radius: var(--pd-radius);
+  background: var(--pd-card);
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
 }
 
 .tw-area-wrapper:hover:not(:focus-within) {
-  border-color: var(--tk-border-strong);
+  border-color: var(--pd-border-strong);
 }
 
 .tw-area-wrapper:focus-within {
-  border-color: var(--tk-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+  border-color: var(--pd-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pd-ring) 25%, transparent);
 }
 
 .tw-area-backdrop,
@@ -310,8 +310,8 @@
   padding: 10px 12px;
   border: 0;
   border-radius: 0;
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-base);
+  font-family: var(--pd-font-mono);
+  font-size: var(--pd-text-base);
   font-weight: 400;
   line-height: 1.6;
   letter-spacing: normal;
@@ -328,7 +328,7 @@
    所以 color 必须与标记底色成对保持高对比；标记内部再按 active / idle 覆写。 */
 .tw-area-backdrop {
   pointer-events: none;
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
   background: transparent;
   user-select: none;
   -webkit-user-select: none;
@@ -353,7 +353,7 @@
 
 /* 输入层：文字透明，只保留光标、选区与输入法 —— 与 JSON 高亮编辑器同一套模式
    （见 .json-editor__hl / .json-editor__input），避免两层文字叠出重影。
-   ⚠️ 把这里的 color 改回 --tk-foreground 就等于把「高亮底上的字看不清」那个 bug 放回来：
+   ⚠️ 把这里的 color 改回 --pd-foreground 就等于把「高亮底上的字看不清」那个 bug 放回来：
    高亮底色由涂层画，文字色却由这一层统一决定，深色主题下两者会撞成浅底浅字。 */
 .tw-area-input {
   display: block;
@@ -361,11 +361,11 @@
   resize: none;
   background: transparent;
   color: transparent;
-  caret-color: var(--tk-foreground);
+  caret-color: var(--pd-foreground);
 }
 
 .tw-area-input::placeholder {
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   opacity: 0.7;
 }
 
@@ -373,11 +373,11 @@
 
 /* 匹配标记涂抹层：紧密跟随字符自然流动，换行独立克隆。
    沿用 T24 的扁平样式（无圆角、无描边，只靠颜色区分）；底色与文字色成对使用
-   （active = --tk-highlight / -foreground，idle = --tk-highlight-secondary / -foreground），
+   （active = --pd-highlight / -foreground，idle = --pd-highlight-secondary / -foreground），
    明暗两套主题的对比度都由 theme.dom.test.ts 的「高亮标记的可读性」守住 ≥ 4.5:1。 */
 .tw-area-mark {
-  color: var(--tk-highlight-foreground);
-  background: var(--tk-highlight);
+  color: var(--pd-highlight-foreground);
+  background: var(--pd-highlight);
   padding: 1px 2px;
   margin: 0 -1px;
   -webkit-box-decoration-break: clone;
@@ -386,8 +386,8 @@
 }
 
 .tw-area-mark--idle {
-  color: var(--tk-highlight-secondary-foreground);
-  background: var(--tk-highlight-secondary);
+  color: var(--pd-highlight-secondary-foreground);
+  background: var(--pd-highlight-secondary);
 }
 
 .tw-actions {
@@ -395,30 +395,30 @@
   gap: 8px;
 }
 
-/* 按钮统一走 src/ui/ui.css 的 tk-btn 共享体系（本文件不再单独定义） */
+/* 按钮统一走 src/ui/ui.css 的 pd-btn 共享体系（本文件不再单独定义） */
 
 .tw-status {
   margin: 0;
-  font-size: var(--tk-text-sm);
+  font-size: var(--pd-text-sm);
   line-height: 1.5;
 }
 
 .tw-status--ok {
-  color: var(--tk-success);
+  color: var(--pd-success);
 }
 
 .tw-status--err {
-  color: var(--tk-destructive);
+  color: var(--pd-destructive);
 }
 
 .tw-status--info {
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
 }
 
 .tw-note {
   margin: 0;
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
 }
 
 /* —— JSON 工具：格式化 / 压缩（tab 切换，各自独立） —— */
@@ -489,7 +489,7 @@
   gap: 6px;
 }
 
-.tw-json__indent .tk-select {
+.tw-json__indent .pd-select {
   min-width: 76px;
 }
 
@@ -530,9 +530,9 @@
   height: auto;
   box-sizing: border-box;
   display: flex;
-  border: 1px solid var(--tk-input);
-  border-radius: var(--tk-radius);
-  background: var(--tk-card);
+  border: 1px solid var(--pd-input);
+  border-radius: var(--pd-radius);
+  background: var(--pd-card);
   overflow: hidden;
   position: relative;
   transition:
@@ -541,23 +541,23 @@
 }
 
 .tw-json-editor-wrap:hover:not(:focus-within) {
-  border-color: var(--tk-border-strong);
+  border-color: var(--pd-border-strong);
 }
 
 .tw-json-editor-wrap:focus-within {
   position: relative;
   z-index: 2;
-  border-color: var(--tk-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+  border-color: var(--pd-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pd-ring) 25%, transparent);
 }
 
 .tw-json-editor-wrap--empty-err {
-  border-color: var(--tk-destructive) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-destructive) 25%, transparent) !important;
+  border-color: var(--pd-destructive) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pd-destructive) 25%, transparent) !important;
 }
 
 .tw-json-editor-wrap--empty-err .tw-json-editor__input::placeholder {
-  color: var(--tk-destructive) !important;
+  color: var(--pd-destructive) !important;
   opacity: 0.85;
 }
 
@@ -568,7 +568,7 @@
   padding-top: 10px;
   padding-bottom: 10px;
   background: transparent;
-  border-right: 1px solid color-mix(in srgb, var(--tk-border) 45%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--pd-border) 45%, transparent);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -580,10 +580,10 @@
   padding-left: 8px;
   padding-right: 10px;
   text-align: right;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   opacity: 0.38;
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-base);
+  font-family: var(--pd-font-mono);
+  font-size: var(--pd-text-base);
   font-variant-numeric: tabular-nums;
   user-select: none;
   -webkit-user-select: none;
@@ -591,7 +591,7 @@
 
 /* 错误行高亮标红指示（行号纯净变红加粗） */
 .tw-json-editor__ln--error {
-  color: var(--tk-destructive) !important;
+  color: var(--pd-destructive) !important;
   opacity: 1 !important;
   font-weight: 600;
 }
@@ -607,10 +607,10 @@
   border: none;
   outline: none;
   background: transparent;
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-base);
+  font-family: var(--pd-font-mono);
+  font-size: var(--pd-text-base);
   line-height: 1.6;
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
   white-space: pre;
   overflow-wrap: normal;
   overflow: auto;
@@ -618,7 +618,7 @@
   tab-size: 2;
   -moz-tab-size: 2;
   scrollbar-width: thin;
-  scrollbar-color: var(--tk-border-strong) transparent;
+  scrollbar-color: var(--pd-border-strong) transparent;
 }
 
 /* 可拖拽分屏控制条 (Splitter) */
@@ -643,7 +643,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: var(--tk-border);
+  background: var(--pd-border);
   transition:
     background-color 0.15s ease,
     height 0.15s ease;
@@ -655,7 +655,7 @@
   width: 32px;
   height: 4px;
   border-radius: 999px;
-  background: var(--tk-border-strong);
+  background: var(--pd-border-strong);
   transition:
     background-color 0.15s ease,
     width 0.15s ease,
@@ -665,14 +665,14 @@
 .tw-json__splitter:hover::before,
 .tw-json__splitter:focus-visible::before,
 .tw-json__splitter--active::before {
-  background: var(--tk-primary);
+  background: var(--pd-primary);
   height: 2px;
 }
 
 .tw-json__splitter:hover .tw-json__splitter-handle,
 .tw-json__splitter:focus-visible .tw-json__splitter-handle,
 .tw-json__splitter--active .tw-json__splitter-handle {
-  background: var(--tk-primary);
+  background: var(--pd-primary);
   width: 44px;
   height: 5px;
 }
@@ -684,10 +684,10 @@
 }
 
 .tw-json__stats {
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
   font-weight: normal;
-  font-family: var(--tk-font-sans);
+  font-family: var(--pd-font);
 }
 
 .tw-json__result-actions {
@@ -729,13 +729,13 @@
   margin: 0;
   min-height: 0;
   padding: 10px 12px;
-  border: 1px solid var(--tk-input);
-  border-radius: var(--tk-radius);
-  background: var(--tk-muted);
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-base);
+  border: 1px solid var(--pd-input);
+  border-radius: var(--pd-radius);
+  background: var(--pd-muted);
+  font-family: var(--pd-font-mono);
+  font-size: var(--pd-text-base);
   line-height: 1.6;
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
   white-space: pre-wrap;
   word-break: break-all;
   overflow: hidden;
@@ -768,7 +768,7 @@
 }
 
 .tw-json-hl__line:hover {
-  background: color-mix(in srgb, var(--tk-foreground) 3.5%, transparent);
+  background: color-mix(in srgb, var(--pd-foreground) 3.5%, transparent);
 }
 
 .tw-json-hl__ln {
@@ -778,8 +778,8 @@
   padding-left: 10px;
   padding-right: 10px;
   margin-right: 10px;
-  border-right: 1px solid color-mix(in srgb, var(--tk-border) 70%, transparent);
-  color: var(--tk-muted-foreground);
+  border-right: 1px solid color-mix(in srgb, var(--pd-border) 70%, transparent);
+  color: var(--pd-muted-foreground);
   opacity: 0.5;
   font-family: inherit;
   font-size: inherit;
@@ -798,7 +798,7 @@
 }
 
 .tw-json-hl__empty {
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   user-select: none;
   padding-left: 12px;
 }
@@ -822,7 +822,7 @@
 }
 .tw-json-hl .jhl-punc,
 .json-editor__hl .jhl-punc {
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
 }
 
 :root[data-theme='dark'] .tw-json-hl .jhl-key,
@@ -868,8 +868,8 @@
 
 .json-editor__hl,
 .json-editor__input {
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-sm);
+  font-family: var(--pd-font-mono);
+  font-size: var(--pd-text-sm);
   line-height: 1.5;
   padding: 6px 8px;
   box-sizing: border-box;
@@ -879,7 +879,7 @@
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
-  border-radius: var(--tk-radius-sm);
+  border-radius: var(--pd-radius-sm);
 }
 
 .json-editor__hl {
@@ -887,19 +887,19 @@
   inset: 0;
   margin: 0;
   overflow: hidden;
-  border: 1px solid var(--tk-input);
-  background: var(--tk-card);
-  color: var(--tk-foreground);
+  border: 1px solid var(--pd-input);
+  background: var(--pd-card);
+  color: var(--pd-foreground);
   pointer-events: none;
 }
 
 .json-editor__input {
   position: relative;
   display: block;
-  border: 1px solid var(--tk-input);
+  border: 1px solid var(--pd-input);
   background: transparent;
   color: transparent;
-  caret-color: var(--tk-foreground);
+  caret-color: var(--pd-foreground);
   resize: vertical;
   overflow: auto;
   outline: none;
@@ -911,8 +911,8 @@
 /* 同智能解析输入框：选区不自定义配色，交给浏览器默认（原先自定义的选区块会与语法高亮抢色） */
 
 .json-editor__input:focus {
-  border-color: var(--tk-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+  border-color: var(--pd-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pd-ring) 25%, transparent);
 }
 
 /* —— 工具箱选项卡导航 —— */
@@ -923,8 +923,8 @@
   /* 与按钮内边距配合，让首个 tab 的文字左缘与头部标题对齐：8(把手) + 4 + 14 = 26 = 8 + 18(.tw__header)；
      原先 0 14px + 按钮 10px 16px 会比头部多缩进 12px，看着像凭空多出一段空白 */
   padding: 0 4px;
-  border-bottom: 1px solid var(--tk-border);
-  background: var(--tk-card);
+  border-bottom: 1px solid var(--pd-border);
+  background: var(--pd-card);
   flex: none;
   overflow-x: auto;
   scrollbar-width: none;
@@ -944,10 +944,10 @@
   border-bottom: 2px solid transparent;
   border-radius: 0;
   background: none;
-  font-family: var(--tk-font);
-  font-size: var(--tk-text-base);
+  font-family: var(--pd-font);
+  font-size: var(--pd-text-base);
   line-height: 1.5;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   cursor: pointer;
   white-space: nowrap;
   touch-action: none;
@@ -958,12 +958,12 @@
 }
 
 .tw-nav__btn:hover {
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
 }
 
 .tw-nav__btn--on {
-  color: var(--tk-foreground);
-  border-bottom-color: var(--tk-primary);
+  color: var(--pd-foreground);
+  border-bottom-color: var(--pd-primary);
   font-weight: 600;
 }
 
@@ -971,10 +971,10 @@
 .tw-nav__btn--drag {
   position: relative;
   z-index: 2;
-  background: var(--tk-muted);
-  color: var(--tk-foreground);
+  background: var(--pd-muted);
+  color: var(--pd-foreground);
   border-radius: 0;
-  box-shadow: var(--tk-shadow-md);
+  box-shadow: var(--pd-shadow-md);
   cursor: grabbing;
 }
 
@@ -986,11 +986,11 @@
 }
 
 .tw-link--danger {
-  color: var(--tk-destructive);
+  color: var(--pd-destructive);
 }
 
 .tw-link--danger:hover {
-  color: color-mix(in srgb, var(--tk-destructive) 82%, black);
+  color: color-mix(in srgb, var(--pd-destructive) 82%, black);
   text-decoration: underline;
 }
 
@@ -1007,9 +1007,9 @@
 
 .tw-detect__formats-label {
   flex: none;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
   line-height: 1;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   user-select: none;
 }
 
@@ -1025,15 +1025,15 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  height: var(--tk-control-h-xs);
+  height: var(--pd-control-h-xs);
   padding: 0 8px;
-  font-size: var(--tk-text-xs);
-  font-family: var(--tk-font);
+  font-size: var(--pd-text-xs);
+  font-family: var(--pd-font);
   line-height: 1;
-  color: var(--tk-muted-foreground);
-  background: var(--tk-muted);
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-sm);
+  color: var(--pd-muted-foreground);
+  background: var(--pd-muted);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-sm);
   cursor: pointer;
   outline: none;
   transition:
@@ -1043,9 +1043,9 @@
 }
 
 .tw-detect__format-chip:hover {
-  color: var(--tk-foreground);
-  background: var(--tk-accent);
-  border-color: var(--tk-ring);
+  color: var(--pd-foreground);
+  background: var(--pd-accent);
+  border-color: var(--pd-ring);
 }
 
 .tw-detect {
@@ -1063,10 +1063,10 @@
 }
 
 .tw-detect__total-badge {
-  font-size: var(--tk-text-xs);
-  font-family: var(--tk-font);
+  font-size: var(--pd-text-xs);
+  font-family: var(--pd-font);
   font-weight: 500;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -1076,7 +1076,7 @@
 /* 「在 XX 工具中打开」：始终贴右，避免与识别徽标、计数徽章挤在一起 */
 .tw-detect__head-action {
   margin-left: auto;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
   white-space: nowrap;
 }
 
@@ -1102,15 +1102,15 @@
   justify-content: center;
   box-sizing: border-box;
   /* 与同级「支持格式」胶囊同高（曾用 26px，比旁边的胶囊胖一圈，用户反馈「太大」） */
-  height: var(--tk-control-h-xs);
+  height: var(--pd-control-h-xs);
   padding: 0 8px;
-  font-size: var(--tk-text-xs);
-  font-family: var(--tk-font);
+  font-size: var(--pd-text-xs);
+  font-family: var(--pd-font);
   line-height: 1;
-  color: var(--tk-muted-foreground);
-  background: var(--tk-card);
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-sm);
+  color: var(--pd-muted-foreground);
+  background: var(--pd-card);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-sm);
   cursor: pointer;
   outline: none;
   white-space: nowrap;
@@ -1124,23 +1124,23 @@
 }
 
 .tw-detect__tab:hover {
-  color: var(--tk-foreground);
-  background: var(--tk-accent);
-  border-color: var(--tk-border-strong);
+  color: var(--pd-foreground);
+  background: var(--pd-accent);
+  border-color: var(--pd-border-strong);
 }
 
 .tw-detect__tab--active {
-  color: var(--tk-primary-foreground);
-  background: var(--tk-primary);
-  border-color: var(--tk-primary);
+  color: var(--pd-primary-foreground);
+  background: var(--pd-primary);
+  border-color: var(--pd-primary);
   font-weight: 600;
-  box-shadow: var(--tk-shadow-xs);
+  box-shadow: var(--pd-shadow-xs);
 }
 
 .tw-detect__tab--active:hover {
-  color: var(--tk-primary-foreground);
-  background: var(--tk-primary-hover);
-  border-color: var(--tk-primary-hover);
+  color: var(--pd-primary-foreground);
+  background: var(--pd-primary-hover);
+  border-color: var(--pd-primary-hover);
 }
 
 .tw-detect__tab-num {
@@ -1170,10 +1170,10 @@
   padding: 6px 10px;
   min-height: 34px;
   box-sizing: border-box;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-card);
-  font-size: var(--tk-text-sm);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-sm);
+  background: var(--pd-card);
+  font-size: var(--pd-text-sm);
   line-height: 1.5;
   transition:
     border-color 0.15s,
@@ -1181,15 +1181,15 @@
 }
 
 .tw-detect__field:hover {
-  border-color: var(--tk-border-strong);
+  border-color: var(--pd-border-strong);
 }
 
 .tw-detect__field-label {
   flex: none;
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-sm);
+  font-family: var(--pd-font-mono);
+  font-size: var(--pd-text-sm);
   line-height: 1.5;
-  color: var(--tk-primary);
+  color: var(--pd-primary);
   font-weight: 600;
   word-break: keep-all;
 }
@@ -1198,14 +1198,14 @@
   flex: 1;
   min-width: 0;
   word-break: break-all;
-  color: var(--tk-foreground);
-  font-family: var(--tk-font);
-  font-size: var(--tk-text-sm);
+  color: var(--pd-foreground);
+  font-family: var(--pd-font);
+  font-size: var(--pd-text-sm);
   line-height: 1.5;
 }
 
 .tw-detect__field-value--mono {
-  font-family: var(--tk-font-mono);
+  font-family: var(--pd-font-mono);
 }
 
 .tw-detect__copy {
@@ -1216,9 +1216,9 @@
   height: 24px;
   padding: 0;
   border: none;
-  border-radius: var(--tk-radius-sm);
+  border-radius: var(--pd-radius-sm);
   background: none;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   cursor: pointer;
   transition:
     background 0.15s,
@@ -1226,8 +1226,8 @@
 }
 
 .tw-detect__copy:hover {
-  background: var(--tk-accent);
-  color: var(--tk-foreground);
+  background: var(--pd-accent);
+  color: var(--pd-foreground);
 }
 
 .tw-detect__block {
@@ -1251,9 +1251,9 @@
   max-width: 100%;
   max-height: 260px;
   object-fit: contain;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius);
-  background: var(--tk-muted);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius);
+  background: var(--pd-muted);
 }
 
 /* —— 文件 / 图片 → Base64 (tw-fileb64) —— */
@@ -1272,10 +1272,10 @@
   gap: 4px;
   min-height: 140px;
   padding: 20px 16px;
-  border: 2px dashed var(--tk-border);
-  border-radius: var(--tk-radius);
-  background: color-mix(in srgb, var(--tk-muted) 35%, var(--tk-card));
-  color: var(--tk-muted-foreground);
+  border: 2px dashed var(--pd-border);
+  border-radius: var(--pd-radius);
+  background: color-mix(in srgb, var(--pd-muted) 35%, var(--pd-card));
+  color: var(--pd-muted-foreground);
   cursor: pointer;
   text-align: center;
   outline: none;
@@ -1286,13 +1286,13 @@
 
 .tw-fileb64__drop:hover,
 .tw-fileb64__drop:focus {
-  border-color: var(--tk-ring);
-  background: color-mix(in srgb, var(--tk-muted) 60%, var(--tk-card));
+  border-color: var(--pd-ring);
+  background: color-mix(in srgb, var(--pd-muted) 60%, var(--pd-card));
 }
 
 .tw-fileb64__drop--drag {
-  border-color: var(--tk-primary);
-  background: color-mix(in srgb, var(--tk-primary) 10%, var(--tk-card));
+  border-color: var(--pd-primary);
+  background: color-mix(in srgb, var(--pd-primary) 10%, var(--pd-card));
 }
 
 .tw-fileb64__drop-icon {
@@ -1300,13 +1300,13 @@
 }
 
 .tw-fileb64__drop strong {
-  font-size: var(--tk-text-sm);
-  color: var(--tk-foreground);
+  font-size: var(--pd-text-sm);
+  color: var(--pd-foreground);
 }
 
 .tw-fileb64__drop p {
   margin: 0;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
 }
 
 .tw-fileb64__file {
@@ -1314,9 +1314,9 @@
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius);
-  background: var(--tk-card);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius);
+  background: var(--pd-card);
 }
 
 .tw-fileb64__thumb {
@@ -1324,9 +1324,9 @@
   width: 56px;
   height: 56px;
   object-fit: contain;
-  border-radius: var(--tk-radius-sm);
-  border: 1px solid var(--tk-border);
-  background: var(--tk-muted);
+  border-radius: var(--pd-radius-sm);
+  border: 1px solid var(--pd-border);
+  background: var(--pd-muted);
 }
 
 .tw-fileb64__fileinfo {
@@ -1342,13 +1342,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--tk-text-sm);
+  font-size: var(--pd-text-sm);
   font-weight: 600;
 }
 
 .tw-fileb64__meta {
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
   word-break: break-all;
 }
 
@@ -1374,9 +1374,9 @@
   flex-direction: column;
   gap: 8px;
   padding: 8px 10px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius);
-  background: var(--tk-card);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius);
+  background: var(--pd-card);
 }
 
 .tw-store__head {
@@ -1388,16 +1388,16 @@
 
 .tw-store__key {
   min-width: 0;
-  font-size: var(--tk-text-sm);
+  font-size: var(--pd-text-sm);
   font-weight: 600;
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
   word-break: break-all;
 }
 
 .tw-store__size {
   flex: none;
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
 }
 
 .tw-store__value {
@@ -1405,12 +1405,12 @@
   max-height: 120px;
   overflow-y: auto;
   padding: 6px 8px;
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-muted);
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-xs);
+  border-radius: var(--pd-radius-sm);
+  background: var(--pd-muted);
+  font-family: var(--pd-font-mono);
+  font-size: var(--pd-text-xs);
   line-height: 1.6;
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
   white-space: pre-wrap;
   word-break: break-all;
   user-select: text;
@@ -1427,13 +1427,13 @@
   display: block;
   width: 100%;
   box-sizing: border-box;
-  height: var(--tk-control-h);
+  height: var(--pd-control-h);
   padding: 0 10px;
-  border: 1px solid var(--tk-input);
-  border-radius: var(--tk-radius);
-  background: var(--tk-card);
-  font-size: var(--tk-text-sm);
-  color: var(--tk-foreground);
+  border: 1px solid var(--pd-input);
+  border-radius: var(--pd-radius);
+  background: var(--pd-card);
+  font-size: var(--pd-text-sm);
+  color: var(--pd-foreground);
   outline: none;
   transition:
     border-color 0.15s,
@@ -1441,16 +1441,16 @@
 }
 
 .tw-input::placeholder {
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
 }
 
 .tw-input:hover:not(:focus) {
-  border-color: var(--tk-border-strong);
+  border-color: var(--pd-border-strong);
 }
 
 .tw-input:focus {
-  border-color: var(--tk-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+  border-color: var(--pd-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pd-ring) 25%, transparent);
 }
 
 /* —— 本地存储搜索输入框与无匹配状态 —— */
@@ -1464,7 +1464,7 @@
 .tw-store__search-icon {
   position: absolute;
   left: 10px;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   pointer-events: none;
   flex: none;
 }
@@ -1491,9 +1491,9 @@
   height: 22px;
   padding: 0;
   border: none;
-  border-radius: var(--tk-radius-sm);
+  border-radius: var(--pd-radius-sm);
   background: transparent;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   cursor: pointer;
   transition:
     color 0.15s,
@@ -1501,8 +1501,8 @@
 }
 
 .tw-store__search-clear:hover {
-  color: var(--tk-foreground);
-  background: var(--tk-muted);
+  color: var(--pd-foreground);
+  background: var(--pd-muted);
 }
 
 .tw-store__nomatch {
@@ -1513,12 +1513,12 @@
 
 /* 正在编辑的行 / 新增行卡片 */
 .tw-store__row--editing {
-  border-color: var(--tk-ring);
+  border-color: var(--pd-ring);
   /* 用 outline 画外圈，而不是 box-shadow：
      box-shadow 是独立阴影层，编辑态行高骤降（约 190px → 97px）时 Chrome 会残留
      旧底边位置的 1px 绘制，表现为条目下方一条几秒后才消失的横线（T9）。
      outline 与元素本体同相绘制/失效，且 1px 边框 + 1px outline 仍是原来的 2px 强调观感。 */
-  outline: 1px solid var(--tk-ring);
+  outline: 1px solid var(--pd-ring);
   outline-offset: 0;
 }
 
@@ -1544,13 +1544,13 @@
   min-height: 56px;
   max-height: 240px;
   padding: 6px 8px;
-  border: 1px solid var(--tk-input);
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-card);
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-sm);
+  border: 1px solid var(--pd-input);
+  border-radius: var(--pd-radius-sm);
+  background: var(--pd-card);
+  font-family: var(--pd-font-mono);
+  font-size: var(--pd-text-sm);
   line-height: 1.5;
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
   resize: vertical;
   outline: none;
   transition:
@@ -1559,8 +1559,8 @@
 }
 
 .tw-store__editval:focus {
-  border-color: var(--tk-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+  border-color: var(--pd-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pd-ring) 25%, transparent);
 }
 
 /* —— JSON 状态提示与表单错误提示（轻量纯文本，无背景容器） —— */
@@ -1572,27 +1572,27 @@
   padding: 0;
   background: none;
   border: none;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
   line-height: 1.5;
   word-break: break-all;
 }
 
 .tw-store__status-bar--ok {
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
 }
 
 .tw-store__status-bar--ok .tw-store__status-icon {
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   flex-shrink: 0;
   opacity: 0.85;
 }
 
 .tw-store__status-bar--err {
-  color: var(--tk-destructive);
+  color: var(--pd-destructive);
 }
 
 .tw-store__status-bar--err .tw-store__status-icon {
-  color: var(--tk-destructive);
+  color: var(--pd-destructive);
   flex-shrink: 0;
 }
 
@@ -1628,26 +1628,26 @@
   padding: 3px 6px;
   background: none;
   border: none;
-  border-radius: var(--tk-radius-sm);
+  border-radius: var(--pd-radius-sm);
   font-family: inherit;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
   line-height: 1;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
   transition:
-    color var(--tk-transition),
-    background-color var(--tk-transition);
+    color var(--pd-transition),
+    background-color var(--pd-transition);
 }
 
 .tw-store__text-btn:hover:not(:disabled) {
-  color: var(--tk-foreground);
-  background: var(--tk-muted);
+  color: var(--pd-foreground);
+  background: var(--pd-muted);
 }
 
 .tw-store__text-btn:active:not(:disabled) {
-  background: color-mix(in srgb, var(--tk-muted) 80%, transparent);
+  background: color-mix(in srgb, var(--pd-muted) 80%, transparent);
 }
 
 .tw-store__text-btn:disabled {
@@ -1660,29 +1660,29 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: calc(24px * var(--tk-font-scale));
+  height: calc(24px * var(--pd-font-scale));
   padding: 0 8px;
   background: none;
   border: none;
-  border-radius: var(--tk-radius-sm);
+  border-radius: var(--pd-radius-sm);
   font-family: inherit;
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
   transition:
-    color var(--tk-transition),
-    background-color var(--tk-transition);
+    color var(--pd-transition),
+    background-color var(--pd-transition);
 }
 
 .tw-store__ghost-btn:hover {
-  color: var(--tk-foreground);
-  background: var(--tk-muted);
+  color: var(--pd-foreground);
+  background: var(--pd-muted);
 }
 
 .tw-store__ghost-btn:active {
-  background: color-mix(in srgb, var(--tk-muted) 80%, transparent);
+  background: color-mix(in srgb, var(--pd-muted) 80%, transparent);
 }
 
 /* 右侧主要动作：微型精致主保存按钮 */
@@ -1690,22 +1690,22 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: calc(24px * var(--tk-font-scale));
+  height: calc(24px * var(--pd-font-scale));
   padding: 0 12px;
   border: none;
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-primary);
-  color: var(--tk-primary-foreground);
+  border-radius: var(--pd-radius-sm);
+  background: var(--pd-primary);
+  color: var(--pd-primary-foreground);
   font-family: inherit;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
   font-weight: 500;
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
-  box-shadow: var(--tk-shadow-sm);
+  box-shadow: var(--pd-shadow-sm);
   transition:
-    opacity var(--tk-transition),
-    background-color var(--tk-transition);
+    opacity var(--pd-transition),
+    background-color var(--pd-transition);
 }
 
 .tw-store__save-btn:hover {
@@ -1719,14 +1719,14 @@
 .tw-store__text-btn:focus-visible,
 .tw-store__ghost-btn:focus-visible,
 .tw-store__save-btn:focus-visible {
-  outline: 2px solid var(--tk-ring);
+  outline: 2px solid var(--pd-ring);
   outline-offset: 1px;
 }
 
 /* —— 站点摘要信息条 —— */
 .tw-store__summary {
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
   line-height: 1.5;
 }
 
@@ -1750,22 +1750,22 @@
   display: inline-flex;
   align-items: center;
   padding: 1px 5px;
-  border-radius: var(--tk-radius-sm);
-  font-size: calc(10px * var(--tk-font-scale));
+  border-radius: var(--pd-radius-sm);
+  font-size: calc(10px * var(--pd-font-scale));
   font-weight: 500;
-  font-family: var(--tk-font-mono);
+  font-family: var(--pd-font-mono);
   line-height: 1.2;
-  background: var(--tk-muted);
-  color: var(--tk-muted-foreground);
-  border: 1px solid var(--tk-border);
+  background: var(--pd-muted);
+  color: var(--pd-muted-foreground);
+  border: 1px solid var(--pd-border);
 }
 
 .tw-cookie__details {
   margin-top: 4px;
   padding: 8px 10px;
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-muted);
-  font-size: var(--tk-text-xs);
+  border-radius: var(--pd-radius-sm);
+  background: var(--pd-muted);
+  font-size: var(--pd-text-xs);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 6px 12px;
@@ -1779,19 +1779,19 @@
 }
 
 .tw-cookie__detail-label {
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   flex: none;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
 }
 
 .tw-cookie__detail-value {
-  color: var(--tk-foreground);
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-xs);
+  color: var(--pd-foreground);
+  font-family: var(--pd-font-mono);
+  font-size: var(--pd-text-xs);
   word-break: break-all;
 }
 
-/* 确认弹窗改用 src/ui/ui.css 的 .tk-modal（抽屉/侧边栏/设置页通用） */
+/* 确认弹窗改用 src/ui/ui.css 的 .pd-modal（抽屉/侧边栏/设置页通用） */
 
 /* —— 二维码生成与解析工具 (tw-qr) —— */
 
@@ -1817,8 +1817,8 @@
 }
 
 .tw-qr__opt-label {
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
   white-space: nowrap;
 }
 
@@ -1848,9 +1848,9 @@
   flex-direction: column;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius);
-  background: color-mix(in srgb, var(--tk-muted) 35%, var(--tk-card));
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius);
+  background: color-mix(in srgb, var(--pd-muted) 35%, var(--pd-card));
 }
 
 .tw-qr__custom-row {
@@ -1869,9 +1869,9 @@
 }
 
 .tw-qr__custom-label {
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
   font-weight: 500;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
 }
 
 .tw-qr__color-picker-wrap {
@@ -1884,8 +1884,8 @@
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-sm);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-sm);
   background: none;
   cursor: pointer;
   outline: none;
@@ -1897,7 +1897,7 @@
 
 .tw-qr__color-input::-webkit-color-swatch {
   border: none;
-  border-radius: calc(var(--tk-radius-sm) - 1px);
+  border-radius: calc(var(--pd-radius-sm) - 1px);
 }
 
 .tw-qr__color-swatches {
@@ -1923,7 +1923,7 @@
 }
 
 .tw-qr__swatch--active {
-  outline: 2px solid var(--tk-ring);
+  outline: 2px solid var(--pd-ring);
   outline-offset: 1px;
 }
 
@@ -1939,16 +1939,16 @@
   align-items: center;
   gap: 8px;
   padding: 3px 8px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-card);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-sm);
+  background: var(--pd-card);
 }
 
 .tw-qr__logo-thumb {
   width: 22px;
   height: 22px;
   object-fit: cover;
-  border: 1px solid var(--tk-border);
+  border: 1px solid var(--pd-border);
   transition: border-radius 0.15s ease;
 }
 
@@ -1980,7 +1980,7 @@
 
 .tw-qr__label-input {
   /* 只负责在行内填满剩余宽度；高度/字号/padding/圆角全部交给统一的 .tw-input，
-     保证与其它工具的单行输入框同高（--tk-control-h），不再另起一套小号高度 */
+     保证与其它工具的单行输入框同高（--pd-control-h），不再另起一套小号高度 */
   flex: 1;
 }
 
@@ -1990,7 +1990,7 @@
   align-items: center;
   gap: 8px;
   padding-top: 8px;
-  border-top: 1px dashed var(--tk-border);
+  border-top: 1px dashed var(--pd-border);
 }
 
 .tw-qr__preview-box {
@@ -2000,11 +2000,11 @@
   justify-content: center;
   min-height: 240px;
   padding: 16px;
-  border: 1px solid var(--tk-border);
+  border: 1px solid var(--pd-border);
   /* 最外层容器遵循全局面板圆角，与 .tw-qr__drop-zone 等保持一致；
      所见即所得由内层 .tw-qr__img-wrapper / .tw-qr__img 的直角保证，容器圆角不接触导出图像 */
-  border-radius: var(--tk-radius);
-  background: color-mix(in srgb, var(--tk-muted) 40%, var(--tk-card));
+  border-radius: var(--pd-radius);
+  background: color-mix(in srgb, var(--pd-muted) 40%, var(--pd-card));
 }
 
 .tw-qr__result-card {
@@ -2018,7 +2018,7 @@
   position: absolute;
   inset: 0;
   border-radius: 0;
-  background: color-mix(in srgb, var(--tk-background) 55%, transparent);
+  background: color-mix(in srgb, var(--pd-background) 55%, transparent);
   animation: tw-qr-pulse 0.9s ease-in-out infinite alternate;
 }
 
@@ -2034,7 +2034,7 @@
 .tw-qr__img-wrapper {
   position: relative;
   line-height: 0;
-  border: 1px solid var(--tk-border);
+  border: 1px solid var(--pd-border);
   border-radius: 0;
 }
 
@@ -2055,13 +2055,13 @@
 }
 
 .tw-qr__dimension-badge {
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
-  font-family: var(--tk-font-mono, monospace);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
+  font-family: var(--pd-font-mono, monospace);
   letter-spacing: 0.02em;
-  background: var(--tk-muted);
+  background: var(--pd-muted);
   padding: 2px 8px;
-  border-radius: var(--tk-radius-sm);
+  border-radius: var(--pd-radius-sm);
 }
 
 .tw-qr__btn-group {
@@ -2075,9 +2075,9 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   text-align: center;
-  font-size: var(--tk-text-sm);
+  font-size: var(--pd-text-sm);
 }
 
 .tw-qr__ph-icon {
@@ -2095,9 +2095,9 @@
   justify-content: center;
   min-height: 140px;
   padding: 20px 16px;
-  border: 2px dashed var(--tk-border);
-  border-radius: var(--tk-radius);
-  background: color-mix(in srgb, var(--tk-muted) 35%, var(--tk-card));
+  border: 2px dashed var(--pd-border);
+  border-radius: var(--pd-radius);
+  background: color-mix(in srgb, var(--pd-muted) 35%, var(--pd-card));
   cursor: pointer;
   transition:
     border-color 0.15s,
@@ -2107,13 +2107,13 @@
 
 .tw-qr__drop-zone:hover,
 .tw-qr__drop-zone:focus {
-  border-color: var(--tk-ring);
-  background: color-mix(in srgb, var(--tk-muted) 60%, var(--tk-card));
+  border-color: var(--pd-ring);
+  background: color-mix(in srgb, var(--pd-muted) 60%, var(--pd-card));
 }
 
 .tw-qr__drop-zone--drag {
-  border-color: var(--tk-primary);
-  background: color-mix(in srgb, var(--tk-primary) 10%, var(--tk-card));
+  border-color: var(--pd-primary);
+  background: color-mix(in srgb, var(--pd-primary) 10%, var(--pd-card));
 }
 
 .tw-qr__drop-prompt {
@@ -2125,19 +2125,19 @@
 }
 
 .tw-qr__drop-icon {
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
   margin-bottom: 4px;
 }
 
 .tw-qr__drop-prompt strong {
-  font-size: var(--tk-text-sm);
-  color: var(--tk-foreground);
+  font-size: var(--pd-text-sm);
+  color: var(--pd-foreground);
 }
 
 .tw-qr__drop-prompt p {
   margin: 0;
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
 }
 
 .tw-qr__drop-preview {
@@ -2151,15 +2151,15 @@
   max-width: 140px;
   max-height: 140px;
   object-fit: contain;
-  border-radius: var(--tk-radius-sm);
-  border: 1px solid var(--tk-border);
-  box-shadow: var(--tk-shadow-xs);
+  border-radius: var(--pd-radius-sm);
+  border: 1px solid var(--pd-border);
+  box-shadow: var(--pd-shadow-xs);
 }
 
 .tw-qr__reupload-hint {
   margin: 0;
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
 }
 
 /* —— Logo 裁剪弹窗 (tw-crop-modal) —— */
@@ -2180,22 +2180,22 @@
 
 .tw-crop-modal__title {
   margin: 0;
-  font-size: var(--tk-text-base);
+  font-size: var(--pd-text-base);
   font-weight: 600;
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
 }
 
 .tw-crop-modal__hint {
   margin: 0;
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
 }
 
 .tw-crop-modal__viewport {
   position: relative;
   overflow: hidden;
   margin: 0 auto;
-  border-radius: var(--tk-radius);
+  border-radius: var(--pd-radius);
   /* 设计意图：裁剪预览区需要深色背景以突出裁剪边框与图片边缘，亮/暗主题下均固定为暗色 */
   background: #18181b;
   cursor: grab;
@@ -2285,8 +2285,8 @@
   flex-direction: column;
   gap: 10px;
   padding: 8px 10px;
-  border-radius: var(--tk-radius-sm);
-  background: color-mix(in srgb, var(--tk-muted) 35%, var(--tk-card));
+  border-radius: var(--pd-radius-sm);
+  background: color-mix(in srgb, var(--pd-muted) 35%, var(--pd-card));
 }
 
 .tw-crop-modal__row {
@@ -2296,8 +2296,8 @@
 }
 
 .tw-crop-modal__label {
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
   white-space: nowrap;
 }
 
@@ -2309,14 +2309,14 @@
   flex: 1;
   height: 4px;
   cursor: pointer;
-  accent-color: var(--tk-primary);
+  accent-color: var(--pd-primary);
 }
 
 .tw-crop-modal__zoom-val {
   min-width: 40px;
-  font-size: var(--tk-text-xs);
-  font-family: var(--tk-font-mono, monospace);
-  color: var(--tk-foreground);
+  font-size: var(--pd-text-xs);
+  font-family: var(--pd-font-mono, monospace);
+  color: var(--pd-foreground);
   text-align: right;
 }
 
@@ -2336,10 +2336,10 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-lg);
-  background: var(--tk-card);
-  box-shadow: var(--tk-shadow-lg);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-lg);
+  background: var(--pd-card);
+  box-shadow: var(--pd-shadow-lg);
   box-sizing: border-box;
   transition:
     width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
@@ -2363,9 +2363,9 @@
 
 .tw-cookie-modal__title {
   margin: 0;
-  font-size: var(--tk-text-md);
+  font-size: var(--pd-text-md);
   font-weight: 600;
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
   line-height: 1.25;
 }
 
@@ -2409,7 +2409,7 @@
 
 .tw-cookie-modal__raw-area {
   min-height: 160px;
-  font-family: var(--tk-font-mono);
+  font-family: var(--pd-font-mono);
 }
 
 .tw-cookie-modal--maximized .tw-cookie-modal__raw-area {
@@ -2432,9 +2432,9 @@
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius);
-  background: color-mix(in srgb, var(--tk-muted) 35%, var(--tk-card));
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius);
+  background: color-mix(in srgb, var(--pd-muted) 35%, var(--pd-card));
 }
 
 .tw-cookie-modal__row {
@@ -2459,8 +2459,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--tk-text-xs);
-  color: var(--tk-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-foreground);
   cursor: pointer;
   user-select: none;
 }
@@ -2489,14 +2489,14 @@
 
 .tw-cookie-modal__err {
   margin-right: auto;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
 }
 
 /* —— 哈希校验匹配激活态（shadcn/ui 沉静聚焦风格） —— */
 .tw-detect__field--matched {
-  border-color: var(--tk-ring);
-  box-shadow: 0 0 0 1px var(--tk-ring);
-  background: color-mix(in srgb, var(--tk-accent) 60%, var(--tk-card));
+  border-color: var(--pd-ring);
+  box-shadow: 0 0 0 1px var(--pd-ring);
+  background: color-mix(in srgb, var(--pd-accent) 60%, var(--pd-card));
 }
 
 /* —— 哈希工具：工具栏与选项复选框 —— */
@@ -2517,9 +2517,9 @@
 
 /* —— JWT 工具：签名区与 Claims 相对时间辅助注解 —— */
 .tw-jwt__time-hint {
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
-  font-family: var(--tk-font);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
+  font-family: var(--pd-font);
   user-select: none;
   margin-left: 6px;
   flex-shrink: 0;
@@ -2527,7 +2527,7 @@
 }
 
 .tw-jwt__time-hint--expired {
-  color: var(--tk-destructive);
+  color: var(--pd-destructive);
   font-weight: 500;
 }
 
@@ -2549,29 +2549,29 @@
   max-height: 100%;
   overflow: auto;
   padding: 16px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius);
-  background: var(--tk-card);
-  box-shadow: var(--tk-shadow-xs);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius);
+  background: var(--pd-card);
+  box-shadow: var(--pd-shadow-xs);
 }
 
 .tw-error__head {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--tk-destructive);
+  color: var(--pd-destructive);
 }
 
 .tw-error__title {
-  font-size: var(--tk-text-sm);
+  font-size: var(--pd-text-sm);
   font-weight: 600;
 }
 
 .tw-error__desc {
   margin: 0;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
   line-height: 1.6;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
 }
 
 .tw-error__detail {
@@ -2581,11 +2581,11 @@
   overflow: auto;
   margin: 0;
   padding: 8px 10px;
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-secondary);
-  color: var(--tk-secondary-foreground);
-  font-family: var(--tk-font-mono);
-  font-size: var(--tk-text-xs);
+  border-radius: var(--pd-radius-sm);
+  background: var(--pd-secondary);
+  color: var(--pd-secondary-foreground);
+  font-family: var(--pd-font-mono);
+  font-size: var(--pd-text-xs);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;

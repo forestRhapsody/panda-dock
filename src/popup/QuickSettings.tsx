@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import NumberInput from '@/ui/NumberInput'
-import TkSelect from '@/ui/TkSelect'
+import PdSelect from '@/ui/PdSelect'
 import { toast } from '@/ui/toast'
 import Tooltip from '@/ui/Tooltip'
 import { isDomainMatched, shouldShowFloatingBall } from '@/utils/domainMatch'
@@ -154,10 +154,10 @@ export default function QuickSettings() {
               type='button'
               role='switch'
               aria-checked={item.value}
-              className={`tk-switch${item.value ? ' tk-switch--on' : ''}`}
+              className={`pd-switch${item.value ? ' pd-switch--on' : ''}`}
               onClick={() => item.set(!item.value)}
             >
-              <span className='tk-switch__knob' />
+              <span className='pd-switch__knob' />
             </button>
           </li>
         ))}
@@ -180,11 +180,11 @@ export default function QuickSettings() {
                 type='button'
                 role='switch'
                 aria-checked={siteAllowed}
-                className={`tk-switch${siteAllowed ? ' tk-switch--on' : ''}`}
+                className={`pd-switch${siteAllowed ? ' pd-switch--on' : ''}`}
                 onClick={toggleSiteBall}
                 aria-label={siteAllowed ? t('popup.disableOnSite') : t('popup.enableOnSite')}
               >
-                <span className='tk-switch__knob' />
+                <span className='pd-switch__knob' />
               </button>
             </Tooltip>
           </li>
@@ -199,7 +199,7 @@ export default function QuickSettings() {
               )}
             </p>
           </div>
-          <TkSelect
+          <PdSelect
             variant='sm'
             value={settings.ballDockMode}
             onChange={(e) => {
@@ -213,7 +213,7 @@ export default function QuickSettings() {
                 {t(o.labelKey)}
               </option>
             ))}
-          </TkSelect>
+          </PdSelect>
         </li>
         {settings.ballDockMode === 'bottomRight' && (
           <li className='pop__setting'>
@@ -257,7 +257,7 @@ export default function QuickSettings() {
         <li className='pop__setting pop__setting--col'>
           <div className='pop__setting-header'>
             <strong>{t('settings.ballAction')}</strong>
-            <TkSelect
+            <PdSelect
               variant='sm'
               value={settings.ballAction}
               onChange={(e) => update({ ballAction: e.target.value as BallAction })}
@@ -265,7 +265,7 @@ export default function QuickSettings() {
             >
               <option value='drawer'>{t('settings.actionDrawer')}</option>
               <option value='native'>{t('settings.actionNative')}</option>
-            </TkSelect>
+            </PdSelect>
           </div>
           <div className='pop__setting-tips'>
             <p className='pop__setting-tip'>
@@ -283,7 +283,7 @@ export default function QuickSettings() {
             <strong>{t('settings.theme')}</strong>
             <p>{t('settings.themeDesc')}</p>
           </div>
-          <TkSelect
+          <PdSelect
             variant='sm'
             value={settings.theme}
             onChange={(e) => update({ theme: e.target.value as ThemeMode })}
@@ -300,14 +300,14 @@ export default function QuickSettings() {
                 )}
               </option>
             ))}
-          </TkSelect>
+          </PdSelect>
         </li>
         <li className='pop__setting'>
           <div className='pop__setting-text'>
             <strong>{t('settings.language')}</strong>
             <p>{t('settings.languageDesc')}</p>
           </div>
-          <TkSelect
+          <PdSelect
             variant='sm'
             value={settings.locale}
             onChange={(e) => update({ locale: e.target.value as LocaleSetting })}
@@ -318,7 +318,7 @@ export default function QuickSettings() {
                 {o.value === 'system' ? t('settings.localeSystem') : o.label}
               </option>
             ))}
-          </TkSelect>
+          </PdSelect>
         </li>
       </ul>
     </div>

@@ -83,13 +83,13 @@ export default function TimestampTool() {
       </label>
 
       <div className='tw-actions'>
-        <button type='button' className='tk-btn tk-btn--primary' onClick={() => run()}>
+        <button type='button' className='pd-btn pd-btn--primary' onClick={() => run()}>
           {t('tool.timestamp.convert')}
         </button>
-        <button type='button' className='tk-btn' onClick={fillNow}>
+        <button type='button' className='pd-btn' onClick={fillNow}>
           {t('tool.timestamp.now')}
         </button>
-        <button type='button' className='tk-btn' onClick={clear}>
+        <button type='button' className='pd-btn' onClick={clear}>
           {t('common.clear')}
         </button>
       </div>

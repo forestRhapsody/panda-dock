@@ -25,7 +25,7 @@ import { setDraftValue } from '@/utils/draft'
  * StorageTool 的真实 DOM 行为测试。
  * 只 mock 存储桥接层（`@/tools/storage`）与 toast：前者依赖 chrome 消息通道、
  * 无法在 happy-dom 里跑通；后者会用定时器排队，直接用 spy 断言提示文案更稳定。
- * 其余（编辑器、确认弹窗、TkSelect、i18n）全部走真实实现，断言用户可观察的结果。
+ * 其余（编辑器、确认弹窗、PdSelect、i18n）全部走真实实现，断言用户可观察的结果。
  *
  * 红线校验：所有破坏性写操作（删 key / 清空区域 / 删 Cookie / 清空 Cookie）都必须
  * 经过 ConfirmDialog 二次确认，且不得走 window.confirm（§4 第 14 条 / §8）。
@@ -602,7 +602,7 @@ describe('StorageTool 编辑与写入', () => {
     const editor = container.querySelector<HTMLElement>('.tw-store__edit')
     if (!editor) throw new Error('编辑器未打开')
     // 抽屉的 Escape 守卫（content/Drawer.tsx）据此标记 + 焦点判断「内层正在处理键盘」
-    expect(editor.hasAttribute('data-tk-escape')).toBe(true)
+    expect(editor.hasAttribute('data-pd-escape')).toBe(true)
 
     const escaped = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
     await act(async () => {
@@ -625,10 +625,10 @@ describe('StorageTool 编辑与写入', () => {
     const search = container.querySelector<HTMLInputElement>('.tw-store__search-input')
     if (!search) throw new Error('未找到搜索框')
 
-    expect(search.hasAttribute('data-tk-escape')).toBe(false)
+    expect(search.hasAttribute('data-pd-escape')).toBe(false)
 
     await act(async () => setInput(search, 'a'))
-    expect(search.hasAttribute('data-tk-escape')).toBe(true)
+    expect(search.hasAttribute('data-pd-escape')).toBe(true)
 
     // 有筛选词时接管：Escape 复位筛选，而不是关掉抽屉
     const escaped = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
@@ -637,7 +637,7 @@ describe('StorageTool 编辑与写入', () => {
     })
     expect(escaped.defaultPrevented).toBe(true)
     expect(search.value).toBe('')
-    expect(search.hasAttribute('data-tk-escape')).toBe(false)
+    expect(search.hasAttribute('data-pd-escape')).toBe(false)
   })
 })
 

@@ -5,10 +5,10 @@ import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import TkSelect from './TkSelect'
+import PdSelect from './PdSelect'
 
 /**
- * TkSelect 是全项目替代原生 <select> 的唯一通用下拉（AGENTS §4 第 14 条），
+ * PdSelect 是全项目替代原生 <select> 的唯一通用下拉（AGENTS §4 第 14 条），
  * 它的键盘导航、点击外部关闭、portal 挂载点、disabled 行为都是被大量调用方
  * （Options / 工具栏 / content 抽屉）依赖的公共契约，所以按真实 DOM 逐条验证，
  * 而不是只断言「渲染出来了」。
@@ -37,29 +37,29 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-/** 触发器：源码用 button.tk-select 承载 combobox 角色 */
+/** 触发器：源码用 button.pd-select 承载 combobox 角色 */
 function trigger(): HTMLButtonElement {
-  const el = container.querySelector('button.tk-select')
-  if (!el) throw new Error('未找到 TkSelect 触发器')
+  const el = container.querySelector('button.pd-select')
+  if (!el) throw new Error('未找到 PdSelect 触发器')
   return el as HTMLButtonElement
 }
 
 /** 下拉面板被 portal 到 document.body（happy-dom 里 trigger 的根节点是 document） */
 function popup(): HTMLElement | null {
-  return document.body.querySelector('.tk-select-popup')
+  return document.body.querySelector('.pd-select-popup')
 }
 
 function items(): HTMLElement[] {
-  return [...document.body.querySelectorAll<HTMLElement>('.tk-select-item')]
+  return [...document.body.querySelectorAll<HTMLElement>('.pd-select-item')]
 }
 
 function labelTexts(): (string | null)[] {
-  return [...document.body.querySelectorAll('.tk-select-item__label')].map((n) => n.textContent)
+  return [...document.body.querySelectorAll('.pd-select-item__label')].map((n) => n.textContent)
 }
 
-/** 当前值文本（.tk-select__value） */
+/** 当前值文本（.pd-select__value） */
 function shownValue(): string {
-  return container.querySelector('.tk-select__value')?.textContent ?? ''
+  return container.querySelector('.pd-select__value')?.textContent ?? ''
 }
 
 /**
@@ -83,14 +83,14 @@ function open(btn: HTMLButtonElement = trigger()) {
   fire(btn, 'click')
 }
 
-describe('TkSelect 自定义下拉', () => {
+describe('PdSelect 自定义下拉', () => {
   it('初始按 value 显示对应 label，而不是 value 本身', () => {
     act(() => {
       root.render(
-        <TkSelect value='b' onChange={() => {}}>
+        <PdSelect value='b' onChange={() => {}}>
           <option value='a'>甲方案</option>
           <option value='b'>乙方案</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
@@ -106,22 +106,22 @@ describe('TkSelect 自定义下拉', () => {
   it('点击触发器展开选项列表，aria-expanded 变 true，面板 portal 到 body 而非容器内', () => {
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={() => {}}>
+        <PdSelect value='a' onChange={() => {}}>
           <option value='a'>甲</option>
           <option value='b'>乙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
     open()
 
     expect(trigger().getAttribute('aria-expanded')).toBe('true')
-    expect(trigger().className).toContain('tk-select--open')
+    expect(trigger().className).toContain('pd-select--open')
     const panel = popup()
     expect(panel).not.toBeNull()
     expect(panel?.getAttribute('role')).toBe('listbox')
     // portal 到 body：容器里不应出现面板，否则会被父级 overflow 裁剪
-    expect(container.querySelector('.tk-select-popup')).toBeNull()
+    expect(container.querySelector('.pd-select-popup')).toBeNull()
     expect(items()).toHaveLength(2)
     expect(labelTexts()).toEqual(['甲', '乙'])
     for (const item of items()) expect(item.getAttribute('role')).toBe('option')
@@ -130,10 +130,10 @@ describe('TkSelect 自定义下拉', () => {
   it('实测校正后弹层可见，且左右都被夹在视口内（回归）', () => {
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={() => {}}>
+        <PdSelect value='a' onChange={() => {}}>
           <option value='a'>甲</option>
           <option value='b'>乙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
@@ -156,9 +156,9 @@ describe('TkSelect 自定义下拉', () => {
   it('再次点击触发器收起面板', () => {
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={() => {}}>
+        <PdSelect value='a' onChange={() => {}}>
           <option value='a'>甲</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
@@ -168,17 +168,17 @@ describe('TkSelect 自定义下拉', () => {
     open()
     expect(popup()).toBeNull()
     expect(trigger().getAttribute('aria-expanded')).toBe('false')
-    expect(trigger().className).not.toContain('tk-select--open')
+    expect(trigger().className).not.toContain('pd-select--open')
   })
 
   it('点击选项触发 onChange 并传入 { target: { value } }，随后收起并显示新 label', () => {
     const onChange = vi.fn()
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={onChange}>
+        <PdSelect value='a' onChange={onChange}>
           <option value='a'>甲</option>
           <option value='b'>乙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
@@ -194,10 +194,10 @@ describe('TkSelect 自定义下拉', () => {
     // 父级把新 value 传回来后显示新 label
     act(() => {
       root.render(
-        <TkSelect value='b' onChange={onChange}>
+        <PdSelect value='b' onChange={onChange}>
           <option value='a'>甲</option>
           <option value='b'>乙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
     expect(shownValue()).toBe('乙')
@@ -206,34 +206,34 @@ describe('TkSelect 自定义下拉', () => {
   it('选中项带 --selected 类并显示 check 图标，焦点项带 --focused 类', () => {
     act(() => {
       root.render(
-        <TkSelect value='b' onChange={() => {}}>
+        <PdSelect value='b' onChange={() => {}}>
           <option value='a'>甲</option>
           <option value='b'>乙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
     open()
 
     const [first, second] = items()
-    expect(second.className).toContain('tk-select-item--selected')
+    expect(second.className).toContain('pd-select-item--selected')
     expect(second.getAttribute('aria-selected')).toBe('true')
     expect(first.getAttribute('aria-selected')).toBe('false')
     // 选中项左侧渲染 check 图标，未选中项只有空占位
-    expect(second.querySelector('.tk-select-item__check svg')).not.toBeNull()
-    expect(first.querySelector('.tk-select-item__check svg')).toBeNull()
+    expect(second.querySelector('.pd-select-item__check svg')).not.toBeNull()
+    expect(first.querySelector('.pd-select-item__check svg')).toBeNull()
     // 打开时焦点落在当前选中项
-    expect(second.className).toContain('tk-select-item--focused')
+    expect(second.className).toContain('pd-select-item--focused')
   })
 
   it('同一 value 再次选择仍会触发一次 onChange（源码未做去重）', () => {
     const onChange = vi.fn()
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={onChange}>
+        <PdSelect value='a' onChange={onChange}>
           <option value='a'>甲</option>
           <option value='b'>乙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
@@ -251,9 +251,9 @@ describe('TkSelect 自定义下拉', () => {
   it('点击组件外部（外部节点派发 pointerdown）关闭面板；点触发器/面板自身不关闭', () => {
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={() => {}}>
+        <PdSelect value='a' onChange={() => {}}>
           <option value='a'>甲</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
@@ -281,10 +281,10 @@ describe('TkSelect 自定义下拉', () => {
     const onChange = vi.fn()
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={onChange} disabled>
+        <PdSelect value='a' onChange={onChange} disabled>
           <option value='a'>甲</option>
           <option value='b'>乙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
@@ -304,20 +304,20 @@ describe('TkSelect 自定义下拉', () => {
     const onChange = vi.fn()
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={onChange}>
+        <PdSelect value='a' onChange={onChange}>
           <option value='a'>甲</option>
           <option value='b'>乙</option>
           <option value='c'>丙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
     fire(trigger(), 'keydown', { key: 'ArrowDown' })
     expect(popup()).not.toBeNull()
-    expect(items()[0].className).toContain('tk-select-item--focused')
+    expect(items()[0].className).toContain('pd-select-item--focused')
 
     fire(trigger(), 'keydown', { key: 'ArrowDown' })
-    expect(items()[1].className).toContain('tk-select-item--focused')
+    expect(items()[1].className).toContain('pd-select-item--focused')
 
     fire(trigger(), 'keydown', { key: 'Enter' })
     expect(onChange).toHaveBeenCalledWith({ target: { value: 'b' } })
@@ -327,42 +327,42 @@ describe('TkSelect 自定义下拉', () => {
   it('键盘 ArrowDown 跳过 disabled 选项', () => {
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={() => {}}>
+        <PdSelect value='a' onChange={() => {}}>
           <option value='a'>甲</option>
           <option value='b' disabled>
             乙（禁用）
           </option>
           <option value='c'>丙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
     fire(trigger(), 'keydown', { key: 'ArrowDown' })
-    expect(items()[0].className).toContain('tk-select-item--focused')
+    expect(items()[0].className).toContain('pd-select-item--focused')
 
     fire(trigger(), 'keydown', { key: 'ArrowDown' })
     // 落在 b 上会被 do/while 跳过，直接到 c
-    expect(items()[1].className).not.toContain('tk-select-item--focused')
-    expect(items()[2].className).toContain('tk-select-item--focused')
+    expect(items()[1].className).not.toContain('pd-select-item--focused')
+    expect(items()[2].className).toContain('pd-select-item--focused')
   })
 
   it('禁用选项不可选中：pointerdown 不触发 onChange，且带 --disabled 与 aria-disabled', () => {
     const onChange = vi.fn()
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={onChange}>
+        <PdSelect value='a' onChange={onChange}>
           <option value='a'>甲</option>
           <option value='b' disabled>
             乙（禁用）
           </option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
     open()
     const disabledItem = items()[1]
     expect(disabledItem.getAttribute('aria-disabled')).toBe('true')
-    expect(disabledItem.className).toContain('tk-select-item--disabled')
+    expect(disabledItem.className).toContain('pd-select-item--disabled')
 
     fire(disabledItem, 'pointerdown')
     expect(onChange).not.toHaveBeenCalled()
@@ -372,27 +372,27 @@ describe('TkSelect 自定义下拉', () => {
   it('键盘 ArrowUp 在首项处夹紧（不会越界成 -1）', () => {
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={() => {}}>
+        <PdSelect value='a' onChange={() => {}}>
           <option value='a'>甲</option>
           <option value='b'>乙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
     fire(trigger(), 'keydown', { key: 'ArrowUp' })
-    expect(items()[0].className).toContain('tk-select-item--focused')
+    expect(items()[0].className).toContain('pd-select-item--focused')
     fire(trigger(), 'keydown', { key: 'ArrowUp' })
-    expect(items()[0].className).toContain('tk-select-item--focused')
+    expect(items()[0].className).toContain('pd-select-item--focused')
   })
 
   it('Escape 关闭面板，不触发 onChange', () => {
     const onChange = vi.fn()
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={onChange}>
+        <PdSelect value='a' onChange={onChange}>
           <option value='a'>甲</option>
           <option value='b'>乙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
@@ -407,9 +407,9 @@ describe('TkSelect 自定义下拉', () => {
   it('Tab 关闭面板', () => {
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={() => {}}>
+        <PdSelect value='a' onChange={() => {}}>
           <option value='a'>甲</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
@@ -422,10 +422,10 @@ describe('TkSelect 自定义下拉', () => {
     const onChange = vi.fn()
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={onChange}>
+        <PdSelect value='a' onChange={onChange}>
           <option value='a'>甲</option>
           <option value='b'>乙</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
@@ -441,8 +441,8 @@ describe('TkSelect 自定义下拉', () => {
   it('选项为空时仍可渲染面板，但不出现任何 option，回车不会触发 onChange', () => {
     const onChange = vi.fn()
     act(() => {
-      // 显式传 children={null}（TkSelectProps 里 children 是必填），模拟无任何 option
-      root.render(<TkSelect value='a' onChange={onChange} children={null} />)
+      // 显式传 children={null}（PdSelectProps 里 children 是必填），模拟无任何 option
+      root.render(<PdSelect value='a' onChange={onChange} children={null} />)
     })
 
     expect(trigger().disabled).toBe(false)
@@ -463,13 +463,13 @@ describe('TkSelect 自定义下拉', () => {
   it('受控 value 与任何选项都不匹配时显示占位符 —（不显示错误 label）', () => {
     act(() => {
       root.render(
-        <TkSelect value='missing' onChange={() => {}}>
+        <PdSelect value='missing' onChange={() => {}}>
           <option value='a'>甲</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
-    expect(container.querySelector('.tk-select__placeholder')?.textContent).toBe('—')
+    expect(container.querySelector('.pd-select__placeholder')?.textContent).toBe('—')
     expect(shownValue()).toBe('—')
     // aria-label 回退到空 label 而不是 value
     expect(trigger().getAttribute('aria-label')).toBe('')
@@ -478,28 +478,28 @@ describe('TkSelect 自定义下拉', () => {
   it('variant="sm" 与 id / className 透传到触发器，chevron 尺寸随 variant 变化', () => {
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={() => {}} variant='sm' id='pick' className='extra'>
+        <PdSelect value='a' onChange={() => {}} variant='sm' id='pick' className='extra'>
           <option value='a'>甲</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
     const btn = trigger()
-    expect(btn.className).toContain('tk-select--sm')
+    expect(btn.className).toContain('pd-select--sm')
     expect(btn.className).toContain('extra')
     expect(btn.id).toBe('pick')
-    expect(btn.querySelector('.tk-select__arrow svg')?.getAttribute('width')).toBe('12')
+    expect(btn.querySelector('.pd-select__arrow svg')?.getAttribute('width')).toBe('12')
 
     open()
-    expect(popup()?.className).toContain('tk-select-popup--sm')
+    expect(popup()?.className).toContain('pd-select-popup--sm')
   })
 
   it('aria-label 透传到 combobox 与 listbox', () => {
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={() => {}} aria-label='选择方案'>
+        <PdSelect value='a' onChange={() => {}} aria-label='选择方案'>
           <option value='a'>甲</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
@@ -511,34 +511,34 @@ describe('TkSelect 自定义下拉', () => {
   it('title 存在时由 Tooltip 包裹触发器，不额外插入包裹节点破坏布局', () => {
     act(() => {
       root.render(
-        <TkSelect value='a' onChange={() => {}} title='选择方案'>
+        <PdSelect value='a' onChange={() => {}} title='选择方案'>
           <option value='a'>甲</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
     // Tooltip 只 cloneElement 触发器，容器首个子元素仍是同一个 button
     expect(container.children).toHaveLength(1)
     expect(container.firstElementChild?.tagName).toBe('BUTTON')
-    expect(container.firstElementChild?.className).toContain('tk-select')
+    expect(container.firstElementChild?.className).toContain('pd-select')
   })
 
   it('文案没有渲染成裸 i18n key（触发值与选项标签均不含 tk. / tool. 前缀 key）', () => {
     act(() => {
       root.render(
-        <TkSelect value='zh-CN' onChange={() => {}} title='界面语言'>
+        <PdSelect value='zh-CN' onChange={() => {}} title='界面语言'>
           <option value='zh-CN'>简体中文</option>
           <option value='en'>English</option>
-        </TkSelect>,
+        </PdSelect>,
       )
     })
 
     open()
 
-    const rendered = [shownValue(), ...labelTexts(), ...items().map((i) => i.dataset.tksItem ?? '')]
+    const rendered = [shownValue(), ...labelTexts(), ...items().map((i) => i.dataset.pdsItem ?? '')]
     expect(rendered.join('|')).toContain('简体中文')
     for (const text of rendered) {
-      expect(text ?? '').not.toMatch(/^(tk|tool|common|settings)\./)
+      expect(text ?? '').not.toMatch(/^(pd|tk|tool|common|settings)\./)
     }
     // 中文标签里必须真的含 CJK，防「key 被当成文案渲染」
     expect(shownValue()).toMatch(/[\u4e00-\u9fa5]/)

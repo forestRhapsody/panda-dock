@@ -32,18 +32,18 @@ interface QueryRoot {
 /**
  * 比抽屉更内层的浮层：**只要存在**就必须让行（它们本身就是模态 / 瞬态交互），
  * 否则会出现「内层浮层和抽屉一起关掉」。
- * - `.tk-modal`：ConfirmDialog / Cookie 编辑 / QR 裁剪弹窗
- * - `.tk-select-popup`：TkSelect 下拉
+ * - `.pd-modal`：ConfirmDialog / Cookie 编辑 / QR 裁剪弹窗
+ * - `.pd-select-popup`：PdSelect 下拉
  * - `.tek-detect-panel`：网页内划选解析面板（与抽屉同在 content 影子根里）
  */
-const INNER_LAYER_SELECTOR = '.tk-modal, .tk-select-popup, .tek-detect-panel'
+const INNER_LAYER_SELECTOR = '.pd-modal, .pd-select-popup, .tek-detect-panel'
 
 /**
  * 自己处理 Escape 的内层交互区（如网页存储的内联编辑器、带筛选词的搜索框）。
  * 按**焦点**而不是「存在」判定：搜索框在有数据时会长期留在 DOM 里，
  * 若按存在判定，抽屉此后再也无法用 Escape 关闭；只有焦点真的落在里面，按键才归它。
  */
-const ESCAPE_OWNER_SELECTOR = '[data-tk-escape]'
+const ESCAPE_OWNER_SELECTOR = '[data-pd-escape]'
 
 /**
  * 判断给定 root（网页里是 Content Script 的 ShadowRoot，测试里是 document）里是否有人先接管 Escape。
@@ -121,10 +121,10 @@ export default function Drawer({ onClose }: DrawerProps) {
   }, [inExt])
 
   // Escape 关闭抽屉；但若影子根里有人该先接管（更内层的浮层，或焦点正落在声明了
-  // `data-tk-escape` 的内联编辑 / 搜索框里，见 innerHandlesEscape），Escape 必须先让给它们，
+  // `data-pd-escape` 的内联编辑 / 搜索框里，见 innerHandlesEscape），Escape 必须先让给它们，
   // 否则会出现「按 Escape 退出编辑却把整个抽屉关掉」。
-  // 用捕获阶段：TkSelect 的 React 处理器会在事件冒泡到 container 时同步把下拉卸载掉，
-  // 冒泡阶段再查 DOM 就查不到 `.tk-select-popup` 了，会误关整个抽屉。
+  // 用捕获阶段：PdSelect 的 React 处理器会在事件冒泡到 container 时同步把下拉卸载掉，
+  // 冒泡阶段再查 DOM 就查不到 `.pd-select-popup` 了，会误关整个抽屉。
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
@@ -218,7 +218,7 @@ export default function Drawer({ onClose }: DrawerProps) {
               <Tooltip content={t('drawer.ariaClose')} side='bottom'>
                 <button
                   type='button'
-                  className='tk-icon-btn'
+                  className='pd-icon-btn'
                   aria-label={t('drawer.ariaClose')}
                   onClick={onClose}
                 >

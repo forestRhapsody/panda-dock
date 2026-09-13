@@ -84,14 +84,14 @@ describe('DownloadButton 的渲染', () => {
     expect(button().getAttribute('aria-label')).toBe('data.json')
   })
 
-  it('className 追加到 tk-btn 之后，未传时保持纯 tk-btn', () => {
+  it('className 追加到 pd-btn 之后，未传时保持纯 pd-btn', () => {
     render({ className: 'tw-mt' })
-    expect(button().className).toBe('tk-btn tw-mt')
+    expect(button().className).toBe('pd-btn tw-mt')
 
     act(() => root.unmount())
     root = createRoot(container)
     render()
-    expect(button().className).toBe('tk-btn')
+    expect(button().className).toBe('pd-btn')
   })
 
   it('type=button，不会在表单里误触发提交', () => {

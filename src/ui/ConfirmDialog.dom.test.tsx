@@ -44,11 +44,11 @@ afterAll(async () => {
 })
 
 function dialog(): HTMLElement | null {
-  return container.querySelector('.tk-modal')
+  return container.querySelector('.pd-modal')
 }
 
 function card(): HTMLElement {
-  const el = container.querySelector('.tk-modal__card')
+  const el = container.querySelector('.pd-modal__card')
   if (!el) throw new Error('未找到弹窗卡片')
   return el as HTMLElement
 }
@@ -84,12 +84,12 @@ describe('ConfirmDialog 确认弹窗', () => {
     })
 
     expect(dialog()).not.toBeNull()
-    expect(dialog()?.className).toContain('tk-modal')
+    expect(dialog()?.className).toContain('pd-modal')
     expect(dialog()?.getAttribute('role')).toBe('alertdialog')
     expect(dialog()?.getAttribute('aria-modal')).toBe('true')
     expect(dialog()?.getAttribute('aria-label')).toBe('删除 Cookie')
-    expect(container.querySelector('.tk-modal__title')?.textContent).toBe('删除 Cookie')
-    expect(container.querySelector('.tk-modal__msg')?.textContent).toBe('该操作不可撤销')
+    expect(container.querySelector('.pd-modal__title')?.textContent).toBe('删除 Cookie')
+    expect(container.querySelector('.pd-modal__msg')?.textContent).toBe('该操作不可撤销')
 
     // 未传按钮文案时走 i18n key（common.confirm / common.cancel）
     expect(buttonByText(i18n.t('common.cancel'))).toBeTruthy()
@@ -257,24 +257,24 @@ describe('ConfirmDialog 确认弹窗', () => {
     })
 
     click(card())
-    click(container.querySelector('.tk-modal__msg') as HTMLElement)
+    click(container.querySelector('.pd-modal__msg') as HTMLElement)
 
     // 卡片上的 stopPropagation 必须兜住冒泡（否则点文字就把弹窗关了）
     expect(onCancel).not.toHaveBeenCalled()
     expect(dialog()).not.toBeNull()
   })
 
-  it('danger 模式给确认按钮加 tk-btn--danger 类，常规模式为 tk-btn--primary', () => {
+  it('danger 模式给确认按钮加 pd-btn--danger 类，常规模式为 pd-btn--primary', () => {
     act(() => {
       root.render(<ConfirmDialog title='删除' message='不可撤销' danger onConfirm={() => {}} />)
     })
-    expect(buttonByText(i18n.t('common.confirm')).className).toContain('tk-btn--danger')
+    expect(buttonByText(i18n.t('common.confirm')).className).toContain('pd-btn--danger')
 
     act(() => {
       root.render(<ConfirmDialog title='保存' message='保存？' onConfirm={() => {}} />)
     })
-    expect(buttonByText(i18n.t('common.confirm')).className).toContain('tk-btn--primary')
-    expect(buttonByText(i18n.t('common.confirm')).className).not.toContain('tk-btn--danger')
+    expect(buttonByText(i18n.t('common.confirm')).className).toContain('pd-btn--primary')
+    expect(buttonByText(i18n.t('common.confirm')).className).not.toContain('pd-btn--danger')
   })
 
   it('危险操作打开后焦点落在取消按钮（防手滑按回车），常规操作聚焦确认按钮', () => {

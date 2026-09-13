@@ -58,7 +58,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 | `src/utils/messages.ts` | `MSG_*` 常量 + `ERROR_CODES` | `pnpm test:changed` + `type-check` |
 | `src/utils/env.ts` | `chrome.*` 降级封装 | `pnpm type-check` |
 | `src/utils/settings.ts` | `Settings` 类型、默认值、归一化、`saveSettings` | `pnpm test settings` + `type-check` |
-| `src/theme.css` | `--tk-*` 设计令牌、主题切换、滚动条 | `pnpm test theme` |
+| `src/theme.css` | `--pd-*` 设计令牌、主题切换、滚动条 | `pnpm test theme` |
 | `src/i18n/locales/{zh,en}.json` | 应用内全部文案 | `pnpm test i18n` |
 | `public/_locales/{zh_CN,en}/messages.json` | 清单级文案（商店页、右键菜单） | `pnpm test i18n` |
 | `public/manifest.json` | 权限、入口、快捷键、content script 声明 | `pnpm test:changed` + `type-check` |
@@ -69,7 +69,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 - `src/content/` — Content Script：Shadow DOM 注入悬浮球 / 抽屉 / 划选面板（**样式只能内联**）
 - `src/popup/` `src/options/` `src/sidepanel/` — 三个扩展页面，各自带 `index.css`（前缀 `pop-*` / `opt-*` / `sp-*`）
 - `src/tools/` — 工具层：`{Tool}.tsx` 组件、`{tool}.ts` 纯逻辑、共享件（`AutoArea` / `JsonHighlight` / `CopyButton` / `ToolTabs` / `StatusText` / 编辑弹窗）、`tools.css`
-- `src/ui/` — 通用组件与 `ui.css`（前缀 `tk-*`）：Icon / TkSelect / Tooltip / ConfirmDialog / Toaster / ToolErrorBoundary
+- `src/ui/` — 通用组件与 `ui.css`（前缀 `pd-*`）：Icon / PdSelect / Tooltip / ConfirmDialog / Toaster / ToolErrorBoundary
 - `src/utils/` — 无 UI 依赖的工具函数：草稿、备份、快捷键、域名匹配、主题、字体缩放等
 - `src/i18n/` — i18next 实例、`useLocale`、语言包，以及文案守卫测试
 - 测试与被测模块**同目录**：`*.test.ts(x)`；DOM 用例在文件头写 `// @vitest-environment happy-dom`
@@ -96,10 +96,10 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 **UI 与文案**
 
 11. **文案一律走 key 且中英同步**：按钮、选项卡标签、下拉选项、状态/错误提示、占位符、空状态引导、`aria-label` / `title` / Tooltip 都算文案。两套语言包都要补（应用内 `src/i18n/locales/{zh,en}.json`、清单级 `public/_locales/{zh_CN,en}/messages.json`）。**「中英同形」也要登记 key**（`localStorage`、`Base64` 等专有名词同理）；单复数按语义判断；纯技术示例值（`example.com`、`1780000000`）可直接写字面量。
-12. **只用设计令牌**：颜色 / 字号 / 控件高 / 圆角 / 阴影走 `theme.css` 的 `--tk-*`，主题靠 `data-theme`；不要写死色值。
-13. **类名前缀分域**：`tk-*` 通用组件、`tw-*` 工具箱、`tek-*` content 悬浮层、`pop-*` / `opt-*` / `sp-*` 各宿主页。
+12. **只用设计令牌**：颜色 / 字号 / 控件高 / 圆角 / 阴影走 `theme.css` 的 `--pd-*`，主题靠 `data-theme`；不要写死色值。
+13. **类名前缀分域**：`pd-*` 通用组件、`tw-*` 工具箱、`tek-*` content 悬浮层、`pop-*` / `opt-*` / `sp-*` 各宿主页。
 14. **复用现成组件**：
-    - `TkSelect`（禁用原生 `<select>`）
+    - `PdSelect`（禁用原生 `<select>`）
     - `ConfirmDialog`（禁用 `window.confirm`——content script 里被 Chrome 禁用；扩展页虽可用，但统一走此组件保持风格）
     - `Tooltip`（禁用原生 `title`）
     - `Icon`（禁用 emoji；新图标在 `ui/Icon.tsx` 注册 SVG path，用 `size` prop 控制大小）

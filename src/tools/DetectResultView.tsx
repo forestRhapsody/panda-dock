@@ -109,7 +109,7 @@ function BlockRow({
       )}
       {canMinify && (
         <div className='tw-detect__block-options'>
-          <label className='tk-checkbox'>
+          <label className='pd-checkbox'>
             <input
               type='checkbox'
               checked={minified}

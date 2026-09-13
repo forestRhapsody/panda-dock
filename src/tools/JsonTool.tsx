@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
-import TkSelect from '@/ui/TkSelect'
+import PdSelect from '@/ui/PdSelect'
 import Tooltip from '@/ui/Tooltip'
 import { useToolDraft } from '@/utils/draft'
 
@@ -390,16 +390,16 @@ export default function JsonTool() {
             />
           </div>
           <div className='tw-json__actions'>
-            <button type='button' className='tk-btn tk-btn--primary' onClick={() => runFormat()}>
+            <button type='button' className='pd-btn pd-btn--primary' onClick={() => runFormat()}>
               {t('tool.json.formatBtn')}
             </button>
-            <button type='button' className='tk-btn' onClick={() => runEscape()}>
+            <button type='button' className='pd-btn' onClick={() => runEscape()}>
               {t('tool.json.escapeBtn')}
             </button>
-            <button type='button' className='tk-btn' onClick={() => runUnescape()}>
+            <button type='button' className='pd-btn' onClick={() => runUnescape()}>
               {t('tool.json.unescapeBtn')}
             </button>
-            <button type='button' className='tk-btn' onClick={clear}>
+            <button type='button' className='pd-btn' onClick={clear}>
               {t('common.clear')}
             </button>
           </div>
@@ -480,7 +480,7 @@ export default function JsonTool() {
           <div className='tw-json__options'>
             <div className='tw-json__options-group'>
               <Tooltip content={t('tool.json.minifyDesc')}>
-                <label className='tk-checkbox'>
+                <label className='pd-checkbox'>
                   <input
                     type='checkbox'
                     checked={minify}
@@ -491,7 +491,7 @@ export default function JsonTool() {
               </Tooltip>
 
               <Tooltip content={t('tool.json.sortKeysDesc')}>
-                <label className='tk-checkbox'>
+                <label className='pd-checkbox'>
                   <input
                     type='checkbox'
                     checked={sortKeys}
@@ -503,7 +503,7 @@ export default function JsonTool() {
             </div>
 
             <div className='tw-json__indent'>
-              <TkSelect
+              <PdSelect
                 variant='sm'
                 value={indent}
                 disabled={minify}
@@ -513,7 +513,7 @@ export default function JsonTool() {
                 <option value={2}>{t('tool.json.indent2')}</option>
                 <option value={4}>{t('tool.json.indent4')}</option>
                 <option value='tab'>{t('tool.json.indentTab')}</option>
-              </TkSelect>
+              </PdSelect>
             </div>
           </div>
         </section>

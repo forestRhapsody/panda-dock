@@ -182,8 +182,8 @@ describe('Icon 的无障碍与透传行为', () => {
   })
 
   it('className 透传到 svg 根节点', () => {
-    const svg = renderIcon('search', { className: 'tk-icon tw-search' })
-    expect(svg.getAttribute('class')).toBe('tk-icon tw-search')
+    const svg = renderIcon('search', { className: 'pd-icon tw-search' })
+    expect(svg.getAttribute('class')).toBe('pd-icon tw-search')
   })
 
   it('未传 className 时不产生空 class 属性', () => {

@@ -66,11 +66,11 @@ function buildBallStyle(shape: BallShape, d: number, image?: string | null): CSS
       backgroundSize: 'cover',
       backgroundRepeat: 'no-repeat',
       backgroundPosition: 'center',
-      backgroundColor: 'var(--tk-card)',
+      backgroundColor: 'var(--pd-card)',
     }
   }
   // 无自定义图片：球面显示所选内置 logo（现为 emoji 占位），垫一层中性底让 logo 清晰可见
-  return { ...base, background: 'var(--tk-card)', color: 'var(--tk-foreground)' }
+  return { ...base, background: 'var(--pd-card)', color: 'var(--pd-foreground)' }
 }
 
 interface DownState {

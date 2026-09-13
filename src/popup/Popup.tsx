@@ -59,7 +59,7 @@ export default function Popup() {
         <Tooltip content={t('popup.openOptions')} side='bottom'>
           <button
             type='button'
-            className='tk-icon-btn'
+            className='pd-icon-btn'
             aria-label={t('popup.openOptions')}
             onClick={openOptionsPage}
           >
@@ -72,7 +72,7 @@ export default function Popup() {
           <div className='pop__actions'>
             <button
               type='button'
-              className='tk-btn tk-btn--primary tk-btn--lg tk-btn--block'
+              className='pd-btn pd-btn--primary pd-btn--lg pd-btn--block'
               onClick={() => void openPanel()}
             >
               <Icon name='panel-right' size={15} />
@@ -80,7 +80,7 @@ export default function Popup() {
             </button>
             <button
               type='button'
-              className='tk-btn tk-btn--lg tk-btn--block'
+              className='pd-btn pd-btn--lg pd-btn--block'
               onClick={() => void openDrawer()}
             >
               <Icon name='window' size={15} />

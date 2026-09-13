@@ -90,7 +90,7 @@ function buttonByText(text: string): HTMLButtonElement {
 }
 
 function checkboxByLabel(label: string): HTMLInputElement {
-  const wrap = [...container.querySelectorAll('label.tk-checkbox')].find((el) =>
+  const wrap = [...container.querySelectorAll('label.pd-checkbox')].find((el) =>
     el.textContent?.includes(label),
   )
   const input = wrap?.querySelector<HTMLInputElement>('input[type="checkbox"]')

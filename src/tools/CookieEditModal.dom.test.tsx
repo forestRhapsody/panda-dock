@@ -65,8 +65,8 @@ beforeEach(() => {
 afterEach(async () => {
   act(() => root.unmount())
   container.remove()
-  // TkSelect 的下拉是 portal 到 body 的，残留会污染下一个用例的选项查询
-  document.body.querySelectorAll('.tk-select-popup').forEach((el) => el.remove())
+  // PdSelect 的下拉是 portal 到 body 的，残留会污染下一个用例的选项查询
+  document.body.querySelectorAll('.pd-select-popup').forEach((el) => el.remove())
   if (i18n.language !== 'zh') await i18n.changeLanguage('zh')
 })
 
@@ -113,7 +113,7 @@ function tabWithText(text: string): HTMLButtonElement {
 
 function saveButton(): HTMLButtonElement {
   const btn = container.querySelector<HTMLButtonElement>(
-    '.tw-cookie-modal__foot button.tk-btn--primary',
+    '.tw-cookie-modal__foot button.pd-btn--primary',
   )
   if (!btn) throw new Error('未找到保存按钮')
   return btn
@@ -121,7 +121,7 @@ function saveButton(): HTMLButtonElement {
 
 function cancelButton(): HTMLButtonElement {
   const btn = container.querySelector<HTMLButtonElement>(
-    '.tw-cookie-modal__foot button.tk-btn:not(.tk-btn--primary)',
+    '.tw-cookie-modal__foot button.pd-btn:not(.pd-btn--primary)',
   )
   if (!btn) throw new Error('未找到取消按钮')
   return btn
@@ -129,7 +129,7 @@ function cancelButton(): HTMLButtonElement {
 
 function headIconButtons(): HTMLButtonElement[] {
   return Array.from(
-    container.querySelectorAll<HTMLButtonElement>('.tw-cookie-modal__head-actions .tk-icon-btn'),
+    container.querySelectorAll<HTMLButtonElement>('.tw-cookie-modal__head-actions .pd-icon-btn'),
   )
 }
 
@@ -209,10 +209,10 @@ function setInput(el: HTMLInputElement | HTMLTextAreaElement, value: string): vo
   el.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-/** 打开 TkSelect 并选择选项（选项 portal 到 document.body，必须在那里查） */
+/** 打开 PdSelect 并选择选项（选项 portal 到 document.body，必须在那里查） */
 async function chooseOption(combo: HTMLButtonElement, label: string): Promise<void> {
   await act(async () => combo.click())
-  const option = Array.from(document.body.querySelectorAll<HTMLElement>('[data-tks-item]')).find(
+  const option = Array.from(document.body.querySelectorAll<HTMLElement>('[data-pds-item]')).find(
     (el) => el.textContent?.includes(label),
   )
   if (!option) throw new Error(`未找到下拉选项：${label}`)
@@ -472,7 +472,7 @@ describe('CookieEditModal 保存', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
 
     // 源码未给遮罩绑定关闭（避免误触丢失输入），点击 overlay 不应关闭
-    const modal = container.querySelector<HTMLElement>('.tk-modal')
+    const modal = container.querySelector<HTMLElement>('.pd-modal')
     await act(async () => modal?.click())
     expect(onClose).toHaveBeenCalledTimes(1)
   })

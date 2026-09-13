@@ -2,12 +2,12 @@
 html,
 body {
   margin: 0;
-  background: var(--tk-muted);
+  background: var(--pd-muted);
 }
 
 body {
-  font-family: var(--tk-font);
-  color: var(--tk-foreground);
+  font-family: var(--pd-font);
+  color: var(--pd-foreground);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -22,23 +22,23 @@ body {
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: var(--tk-text-xl);
+  font-size: var(--pd-text-xl);
 }
 
 .pv__hero p {
   max-width: 640px;
   line-height: 1.8;
-  font-size: var(--tk-text-base);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-base);
+  color: var(--pd-muted-foreground);
 }
 
 .pv__hero code {
   padding: 1px 6px;
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-card);
-  border: 1px solid var(--tk-border);
-  font-size: var(--tk-text-sm);
-  font-family: var(--tk-font-mono);
+  border-radius: var(--pd-radius-sm);
+  background: var(--pd-card);
+  border: 1px solid var(--pd-border);
+  font-size: var(--pd-text-sm);
+  font-family: var(--pd-font-mono);
 }
 
 .pv__section {
@@ -50,39 +50,39 @@ body {
   align-items: center;
   gap: 10px;
   margin: 0 0 14px;
-  font-size: var(--tk-text-lg);
-  color: var(--tk-secondary-foreground);
+  font-size: var(--pd-text-lg);
+  color: var(--pd-secondary-foreground);
 }
 
 .pv__tag {
   padding: 2px 10px;
   border-radius: 999px;
-  background: var(--tk-primary);
-  color: var(--tk-primary-foreground);
-  font-size: var(--tk-text-xs);
+  background: var(--pd-primary);
+  color: var(--pd-primary-foreground);
+  font-size: var(--pd-text-xs);
   font-weight: 700;
 }
 
 .pv__popup-frame {
   width: 380px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-lg);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-lg);
   overflow: hidden;
-  background: var(--tk-card);
-  box-shadow: var(--tk-shadow-lg);
+  background: var(--pd-card);
+  box-shadow: var(--pd-shadow-lg);
 }
 
 .pv__tools-frame {
   height: 540px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-lg);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-lg);
   overflow: hidden;
-  background: var(--tk-card);
-  box-shadow: var(--tk-shadow-lg);
+  background: var(--pd-card);
+  box-shadow: var(--pd-shadow-lg);
 }
 
 .pv__note {
-  font-size: var(--tk-text-base);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-base);
+  color: var(--pd-muted-foreground);
   line-height: 1.8;
 }

@@ -367,10 +367,10 @@ export default function Base64Tool() {
         </label>
 
         <div className='tw-actions'>
-          <button type='button' className='tk-btn tk-btn--primary' onClick={runDecode}>
+          <button type='button' className='pd-btn pd-btn--primary' onClick={runDecode}>
             {t('tool.base64.runDecode')}
           </button>
-          <button type='button' className='tk-btn' onClick={clearDecode}>
+          <button type='button' className='pd-btn' onClick={clearDecode}>
             {t('common.clear')}
           </button>
         </div>
@@ -419,10 +419,10 @@ export default function Base64Tool() {
         </label>
 
         <div className='tw-actions'>
-          <button type='button' className='tk-btn tk-btn--primary' onClick={runEncode}>
+          <button type='button' className='pd-btn pd-btn--primary' onClick={runEncode}>
             {t('tool.base64.runEncode')}
           </button>
-          <button type='button' className='tk-btn' onClick={clearEncode}>
+          <button type='button' className='pd-btn' onClick={clearEncode}>
             {t('common.clear')}
           </button>
         </div>
@@ -497,7 +497,7 @@ export default function Base64Tool() {
               </div>
               <button
                 type='button'
-                className='tk-btn tk-btn--sm'
+                className='pd-btn pd-btn--sm'
                 onClick={() => {
                   setFile(null)
                   setFileDataUrl('')
@@ -538,7 +538,7 @@ export default function Base64Tool() {
             </div>
 
             <div className='tw-actions'>
-              <button type='button' className='tk-btn' onClick={clearFileEncode}>
+              <button type='button' className='pd-btn' onClick={clearFileEncode}>
                 {t('common.clear')}
               </button>
             </div>
@@ -565,10 +565,10 @@ export default function Base64Tool() {
         </label>
 
         <div className='tw-actions'>
-          <button type='button' className='tk-btn' onClick={() => void pasteClipboardText()}>
+          <button type='button' className='pd-btn' onClick={() => void pasteClipboardText()}>
             {t('tool.fileB64.pasteFromClipboard')}
           </button>
-          <button type='button' className='tk-btn' onClick={clearFileDecode}>
+          <button type='button' className='pd-btn' onClick={clearFileDecode}>
             {t('common.clear')}
           </button>
         </div>

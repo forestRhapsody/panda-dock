@@ -12,7 +12,7 @@ import { applyTheme, HOST_ID, useTheme } from './theme'
 /**
  * 主题落点是最容易「看起来对、实际漏」的地方：
  * - 扩展页面必须写 documentElement，content script 必须只写 Shadow DOM 宿主，
- *   写错就会污染宿主网页的 <html>（§4 第 12 条：主题靠 data-theme + --tk-* 令牌）；
+ *   写错就会污染宿主网页的 <html>（§4 第 12 条：主题靠 data-theme + --pd-* 令牌）；
  * - content script 里 `:host[data-theme]` 的级联覆盖有坑，所以还要把配色内联到宿主，
  *   这里断言的是「内联后的真实 CSS 变量值」，而不是函数被调用了。
  */
@@ -174,7 +174,7 @@ describe('applyTheme 的落点与令牌内联', () => {
 
     // 宿主网页的 <html> 必须保持原样，否则内容是「泄漏」到宿主页面上
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
-    expect(cssVar(document.documentElement, '--tk-background')).toBe('')
+    expect(cssVar(document.documentElement, '--pd-background')).toBe('')
   })
 
   it('存在宿主但非扩展（dev 预览）：宿主与 documentElement 都写', () => {
@@ -184,10 +184,10 @@ describe('applyTheme 的落点与令牌内联', () => {
     applyTheme('light')
 
     expect(host.dataset.theme).toBe('light')
-    expect(cssVar(host, '--tk-background')).toBe(tokenValue('light', '--tk-background'))
+    expect(cssVar(host, '--pd-background')).toBe(tokenValue('light', '--pd-background'))
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(
-      tokenValue('light', '--tk-background'),
+    expect(cssVar(document.documentElement, '--pd-background')).toBe(
+      tokenValue('light', '--pd-background'),
     )
   })
 
@@ -196,15 +196,15 @@ describe('applyTheme 的落点与令牌内联', () => {
 
     applyTheme('system')
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(
-      tokenValue('dark', '--tk-background'),
+    expect(cssVar(document.documentElement, '--pd-background')).toBe(
+      tokenValue('dark', '--pd-background'),
     )
 
     media.setMatches(false)
     applyTheme('system')
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(
-      tokenValue('light', '--tk-background'),
+    expect(cssVar(document.documentElement, '--pd-background')).toBe(
+      tokenValue('light', '--pd-background'),
     )
   })
 
@@ -214,17 +214,17 @@ describe('applyTheme 的落点与令牌内联', () => {
     applyTheme('dark')
     applyTheme('dark')
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(cssVar(document.documentElement, '--tk-primary')).toBe(
-      tokenValue('dark', '--tk-primary'),
+    expect(cssVar(document.documentElement, '--pd-primary')).toBe(
+      tokenValue('dark', '--pd-primary'),
     )
 
     applyTheme('light')
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(cssVar(document.documentElement, '--tk-primary')).toBe(
-      tokenValue('light', '--tk-primary'),
+    expect(cssVar(document.documentElement, '--pd-primary')).toBe(
+      tokenValue('light', '--pd-primary'),
     )
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(
-      tokenValue('light', '--tk-background'),
+    expect(cssVar(document.documentElement, '--pd-background')).toBe(
+      tokenValue('light', '--pd-background'),
     )
   })
 
@@ -237,8 +237,8 @@ describe('applyTheme 的落点与令牌内联', () => {
     applyTheme('light')
 
     expect(host.dataset.theme).toBe('light')
-    expect(cssVar(host, '--tk-background')).toBe(tokenValue('light', '--tk-background'))
-    expect(cssVar(host, '--tk-primary')).toBe(tokenValue('light', '--tk-primary'))
+    expect(cssVar(host, '--pd-background')).toBe(tokenValue('light', '--pd-background'))
+    expect(cssVar(host, '--pd-primary')).toBe(tokenValue('light', '--pd-primary'))
   })
 })
 
@@ -272,8 +272,8 @@ describe('useTheme 读取设置与实时切换', () => {
 
     await flush()
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(
-      tokenValue('dark', '--tk-background'),
+    expect(cssVar(document.documentElement, '--pd-background')).toBe(
+      tokenValue('dark', '--pd-background'),
     )
   })
 
@@ -288,7 +288,7 @@ describe('useTheme 读取设置与实时切换', () => {
     await flush()
 
     expect(host.dataset.theme).toBe('dark')
-    expect(cssVar(host, '--tk-background')).toBe(tokenValue('dark', '--tk-background'))
+    expect(cssVar(host, '--pd-background')).toBe(tokenValue('dark', '--pd-background'))
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
   })
 
@@ -304,14 +304,14 @@ describe('useTheme 读取设置与实时切换', () => {
 
     emitChange({ theme: 'dark' })
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(
-      tokenValue('dark', '--tk-background'),
+    expect(cssVar(document.documentElement, '--pd-background')).toBe(
+      tokenValue('dark', '--pd-background'),
     )
 
     emitChange({ theme: 'light' })
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(cssVar(document.documentElement, '--tk-background')).toBe(
-      tokenValue('light', '--tk-background'),
+    expect(cssVar(document.documentElement, '--pd-background')).toBe(
+      tokenValue('light', '--pd-background'),
     )
   })
 
@@ -399,8 +399,8 @@ describe('useTheme 读取设置与实时切换', () => {
 
 /**
  * 高亮标记的可读性：标记的**底色与文字色成对**取自令牌
- * （active = `--tk-highlight` / `--tk-highlight-foreground`，idle = `--tk-highlight-secondary` /
- * `--tk-highlight-secondary-foreground`）—— 见 tools.css 的双层结构：可见文字由涂层绘制，
+ * （active = `--pd-highlight` / `--pd-highlight-foreground`，idle = `--pd-highlight-secondary` /
+ * `--pd-highlight-secondary-foreground`）—— 见 tools.css 的双层结构：可见文字由涂层绘制，
  * textarea 只留光标与选区。
  *
  * 令牌值的唯一出处是 `src/theme.css`（Vitest 里 CSS 导入会被置空，所以直接读文件），
@@ -440,10 +440,10 @@ function firstRuleBody(part: string): string {
   return part.slice(open + 1, close)
 }
 
-/** 属性块里的全部 `--tk-*` 声明 */
+/** 属性块里的全部 `--pd-*` 声明 */
 function declaredTokens(body: string): Map<string, string> {
   const tokens = new Map<string, string>()
-  for (const [, name, value] of body.matchAll(/(--tk-[\w-]+)\s*:\s*([^;]+);/g)) {
+  for (const [, name, value] of body.matchAll(/(--pd-[\w-]+)\s*:\s*([^;]+);/g)) {
     tokens.set(name, value.trim())
   }
   return tokens
@@ -507,9 +507,9 @@ function contrastRatio(foreground: string, background: string): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
 }
 
-/** 某主题下，文字色（--tk-foreground）压在给定底色令牌上的对比度 */
+/** 某主题下，文字色（--pd-foreground）压在给定底色令牌上的对比度 */
 const textOn = (theme: 'light' | 'dark', background: string) =>
-  contrastRatio(tokenValue(theme, '--tk-foreground'), tokenValue(theme, background))
+  contrastRatio(tokenValue(theme, '--pd-foreground'), tokenValue(theme, background))
 
 /** HSL 饱和度（0–1）：激活项与待切换项靠饱和度区分，而不是同色系深浅 */
 function saturationOf(value: string): number {
@@ -523,25 +523,25 @@ function saturationOf(value: string): number {
 
 describe('高亮标记的可读性', () => {
   for (const theme of ['light', 'dark'] as const) {
-    it(`${theme} 主题：激活项高亮（--tk-highlight）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
-      // 激活项高亮统一使用 --tk-highlight-foreground（深色字）压在 --tk-highlight（明亮浅黄）上
+    it(`${theme} 主题：激活项高亮（--pd-highlight）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
+      // 激活项高亮统一使用 --pd-highlight-foreground（深色字）压在 --pd-highlight（明亮浅黄）上
       const ratio = contrastRatio(
-        tokenValue(theme, '--tk-highlight-foreground'),
-        tokenValue(theme, '--tk-highlight'),
+        tokenValue(theme, '--pd-highlight-foreground'),
+        tokenValue(theme, '--pd-highlight'),
       )
       expect(ratio).toBeGreaterThanOrEqual(MIN_CONTRAST)
     })
 
-    it(`${theme} 主题：次级高亮（--tk-highlight-secondary）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
+    it(`${theme} 主题：次级高亮（--pd-highlight-secondary）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
       const ratio = contrastRatio(
-        tokenValue(theme, '--tk-highlight-secondary-foreground'),
-        tokenValue(theme, '--tk-highlight-secondary'),
+        tokenValue(theme, '--pd-highlight-secondary-foreground'),
+        tokenValue(theme, '--pd-highlight-secondary'),
       )
       expect(ratio).toBeGreaterThanOrEqual(MIN_CONTRAST)
     })
 
-    it(`${theme} 主题：通用次要背景（--tk-secondary）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
-      expect(textOn(theme, '--tk-secondary')).toBeGreaterThanOrEqual(MIN_CONTRAST)
+    it(`${theme} 主题：通用次要背景（--pd-secondary）上的文字对比度 ≥ ${MIN_CONTRAST}:1`, () => {
+      expect(textOn(theme, '--pd-secondary')).toBeGreaterThanOrEqual(MIN_CONTRAST)
     })
 
     /**
@@ -550,8 +550,8 @@ describe('高亮标记的可读性', () => {
      * 待切换项是中性底；谁要把 idle 改回浅黄，这条会立刻变红。
      */
     it(`${theme} 主题：激活项饱和、待切换项中性（靠饱和度区分，不是同色系深浅）`, () => {
-      expect(saturationOf(tokenValue(theme, '--tk-highlight'))).toBeGreaterThanOrEqual(0.6)
-      expect(saturationOf(tokenValue(theme, '--tk-highlight-secondary'))).toBeLessThanOrEqual(0.2)
+      expect(saturationOf(tokenValue(theme, '--pd-highlight'))).toBeGreaterThanOrEqual(0.6)
+      expect(saturationOf(tokenValue(theme, '--pd-highlight-secondary'))).toBeLessThanOrEqual(0.2)
     })
   }
 })
@@ -560,7 +560,7 @@ describe('高亮标记的可读性', () => {
  * 深色令牌有两条送达路径：theme.css 的 `:host([data-theme='dark'])`（Shadow DOM 用）与 theme.ts 的
  * 内联兜底 `THEME_PALETTES`（内联样式优先级最高，实际生效值以它为准）。兜底是 theme.css 的一份副本，
  * 一旦漏掉某个主题相关令牌、或写了不一样的值，深浅两套就会各说各话 —— 高亮标记正是这么漏过一次
- * （`--tk-highlight` 不在兜底里，深色主题拿到浅色主题的浅黄底，压在近白文字上）。
+ * （`--pd-highlight` 不在兜底里，深色主题拿到浅色主题的浅黄底，压在近白文字上）。
  * 这里把「两份必须逐字一致」钉死，顺带也就守住了「漏令牌」这一类问题。
  */
 describe('内联兜底一致性（theme.css ↔ theme.ts 调色板）', () => {
@@ -634,20 +634,20 @@ describe('高亮文字层契约（tools.css）', () => {
   const toolsCssText = readCss('tools/tools.css')
 
   it('可见文字由涂层绘制，textarea 文字透明、只保留光标', () => {
-    expect(ruleBody(toolsCssText, '.tw-area-backdrop')).toMatch(/color:\s*var\(--tk-foreground\)/)
+    expect(ruleBody(toolsCssText, '.tw-area-backdrop')).toMatch(/color:\s*var\(--pd-foreground\)/)
     const input = ruleBody(toolsCssText, '.tw-area-input')
     expect(input).toMatch(/color:\s*transparent/)
-    expect(input).toMatch(/caret-color:\s*var\(--tk-foreground\)/)
+    expect(input).toMatch(/caret-color:\s*var\(--pd-foreground\)/)
   })
 
   it('标记的文字色与底色成对取自高亮令牌，idle 走次级令牌', () => {
     const mark = ruleBody(toolsCssText, '.tw-area-mark')
-    expect(mark).toMatch(/color:\s*var\(--tk-highlight-foreground\)/)
-    expect(mark).toMatch(/background:\s*var\(--tk-highlight\)/)
+    expect(mark).toMatch(/color:\s*var\(--pd-highlight-foreground\)/)
+    expect(mark).toMatch(/background:\s*var\(--pd-highlight\)/)
 
     const idle = ruleBody(toolsCssText, '.tw-area-mark--idle')
-    expect(idle).toMatch(/color:\s*var\(--tk-highlight-secondary-foreground\)/)
-    expect(idle).toMatch(/background:\s*var\(--tk-highlight-secondary\)/)
+    expect(idle).toMatch(/color:\s*var\(--pd-highlight-secondary-foreground\)/)
+    expect(idle).toMatch(/background:\s*var\(--pd-highlight-secondary\)/)
   })
 })
 
@@ -674,9 +674,9 @@ describe('选区不自定义配色', () => {
 describe('行内胶囊尺寸一致（tools.css）', () => {
   const toolsCssText = readCss('tools/tools.css')
 
-  it('格式预设 chip 与结果 tab 同高，且都走 --tk-control-h-xs', () => {
+  it('格式预设 chip 与结果 tab 同高，且都走 --pd-control-h-xs', () => {
     for (const selector of ['.tw-detect__format-chip', '.tw-detect__tab']) {
-      expect(ruleBody(toolsCssText, selector)).toMatch(/height:\s*var\(--tk-control-h-xs\)/)
+      expect(ruleBody(toolsCssText, selector)).toMatch(/height:\s*var\(--pd-control-h-xs\)/)
     }
   })
 })

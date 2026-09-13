@@ -54,7 +54,7 @@ export function ToolErrorFallback({ error, onRetry }: ToolErrorFallbackProps) {
       <pre className='tw-error__detail' aria-label={t('tool.error.detailLabel')}>
         {error.name ? `${error.name}: ${error.message}` : error.message}
       </pre>
-      <button type='button' className='tk-btn tk-btn--sm' onClick={onRetry}>
+      <button type='button' className='pd-btn pd-btn--sm' onClick={onRetry}>
         <Icon name='refresh' size={13} />
         {t('common.retry')}
       </button>

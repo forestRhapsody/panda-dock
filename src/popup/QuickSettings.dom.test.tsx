@@ -151,19 +151,19 @@ function rowSwitch(title: string): HTMLButtonElement {
 }
 
 function triggerByLabel(label: string): HTMLButtonElement {
-  const el = container.querySelector<HTMLButtonElement>(`button.tk-select[aria-label="${label}"]`)
-  if (!el) throw new Error(`未找到 TkSelect 触发器：${label}`)
+  const el = container.querySelector<HTMLButtonElement>(`button.pd-select[aria-label="${label}"]`)
+  if (!el) throw new Error(`未找到 PdSelect 触发器：${label}`)
   return el
 }
 
 function selectText(label: string): string {
-  return triggerByLabel(label).querySelector('.tk-select__value')?.textContent ?? ''
+  return triggerByLabel(label).querySelector('.pd-select__value')?.textContent ?? ''
 }
 
 function choose(label: string, optionLabel: string) {
   fire(triggerByLabel(label), 'click')
-  const item = [...document.body.querySelectorAll<HTMLElement>('.tk-select-item')].find(
-    (n) => n.querySelector('.tk-select-item__label')?.textContent === optionLabel,
+  const item = [...document.body.querySelectorAll<HTMLElement>('.pd-select-item')].find(
+    (n) => n.querySelector('.pd-select-item__label')?.textContent === optionLabel,
   )
   if (!item) throw new Error(`未找到选项：${label} → ${optionLabel}`)
   fire(item, 'pointerdown')
@@ -365,7 +365,7 @@ describe('QuickSettings 脏标记 + useEffect 写存储', () => {
     fire(rowSwitch(i18n.t('settings.quickOpen')), 'click')
     await settle()
 
-    expect(container.querySelector('.tk-toast__title')?.textContent).toBe(
+    expect(container.querySelector('.pd-toast__title')?.textContent).toBe(
       i18n.t('settings.saveFailed'),
     )
   })

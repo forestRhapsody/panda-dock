@@ -28,7 +28,7 @@ interface ConfirmDialogProps {
  * - 默认点击遮罩背景不关闭（防误触，带轻微振动反馈），仅 Escape 与按钮关闭；
  * - 支持 danger 模式（红色警告按钮与警告图标）；
  * - 支持 hideCancel 纯提示模式（只展示确认按钮）。
- * 样式走 ui.css 的 .tk-modal。
+ * 样式走 ui.css 的 .pd-modal。
  */
 export default function ConfirmDialog({
   title,
@@ -71,25 +71,25 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className='tk-modal'
+      className='pd-modal'
       role='alertdialog'
       aria-modal='true'
       aria-label={title}
       onClick={handleOverlayClick}
     >
-      <div className='tk-modal__card' onClick={(e) => e.stopPropagation()}>
-        <h3 className='tk-modal__title'>{title}</h3>
-        <p className='tk-modal__msg'>{message}</p>
-        <div className='tk-modal__actions'>
+      <div className='pd-modal__card' onClick={(e) => e.stopPropagation()}>
+        <h3 className='pd-modal__title'>{title}</h3>
+        <p className='pd-modal__msg'>{message}</p>
+        <div className='pd-modal__actions'>
           {!hideCancel && (
-            <button type='button' ref={cancelRef} className='tk-btn' onClick={handleDismiss}>
+            <button type='button' ref={cancelRef} className='pd-btn' onClick={handleDismiss}>
               {cancelLabel ?? t('common.cancel')}
             </button>
           )}
           <button
             type='button'
             ref={confirmRef}
-            className={`tk-btn ${danger ? 'tk-btn--danger' : 'tk-btn--primary'}`}
+            className={`pd-btn ${danger ? 'pd-btn--danger' : 'pd-btn--primary'}`}
             onClick={onConfirm}
           >
             {confirmLabel ?? t('common.confirm')}

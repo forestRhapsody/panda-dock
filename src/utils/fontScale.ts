@@ -8,11 +8,11 @@ function applyFontScale(scale: number): void {
   if (typeof document === 'undefined') return
   const v = String(scale)
   // 与 applyTheme 一致：content script（有 shadow 宿主）只写宿主，绝不动页面 <html>；
-  // 扩展页面（无宿主）才写 documentElement，避免把 --tk-font-scale 泄漏到宿主网页。
+  // 扩展页面（无宿主）才写 documentElement，避免把 --pd-font-scale 泄漏到宿主网页。
   const host = document.getElementById(HOST_ID)
   const setRoot = !host || !isExtension()
-  if (host) host.style.setProperty('--tk-font-scale', v)
-  if (setRoot) document.documentElement.style.setProperty('--tk-font-scale', v)
+  if (host) host.style.setProperty('--pd-font-scale', v)
+  if (setRoot) document.documentElement.style.setProperty('--pd-font-scale', v)
 }
 
 /**

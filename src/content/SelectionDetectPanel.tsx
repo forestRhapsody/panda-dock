@@ -348,7 +348,7 @@ export default function SelectionDetectPanel({
           <Tooltip content={t('tool.detect.openInSidePanel')} side='bottom'>
             <button
               type='button'
-              className='tk-icon-btn'
+              className='pd-icon-btn'
               aria-label={t('tool.detect.openInSidePanel')}
               onClick={handleOpenInSidePanel}
             >
@@ -359,7 +359,7 @@ export default function SelectionDetectPanel({
         <Tooltip content={pinned ? t('tool.detect.unpin') : t('tool.detect.pin')} side='bottom'>
           <button
             type='button'
-            className={`tk-icon-btn tek-detect-panel__pin${pinned ? ' tek-detect-panel__pin--on' : ''}`}
+            className={`pd-icon-btn tek-detect-panel__pin${pinned ? ' tek-detect-panel__pin--on' : ''}`}
             aria-label={pinned ? t('tool.detect.unpin') : t('tool.detect.pin')}
             aria-pressed={pinned}
             onClick={() => setPinned((p) => !p)}
@@ -370,7 +370,7 @@ export default function SelectionDetectPanel({
         <Tooltip content={t('common.cancel')} side='bottom'>
           <button
             type='button'
-            className='tk-icon-btn'
+            className='pd-icon-btn'
             aria-label={t('common.cancel')}
             onClick={onClose}
           >

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import ConfirmDialog from '@/ui/ConfirmDialog'
 import Icon from '@/ui/Icon'
-import TkSelect from '@/ui/TkSelect'
+import PdSelect from '@/ui/PdSelect'
 import { toast } from '@/ui/toast'
 import Tooltip from '@/ui/Tooltip'
 import { copyText } from '@/utils/clipboard'
@@ -556,12 +556,12 @@ export default function QrCodeTool() {
             />
           </label>
           <div className='tw-actions'>
-            <button type='button' className='tk-btn' onClick={() => void fillCurrentPageUrl()}>
+            <button type='button' className='pd-btn' onClick={() => void fillCurrentPageUrl()}>
               <Icon name='window' size={13} />
               {t('tool.qrcode.fillCurrentUrl')}
             </button>
             {inputText && (
-              <button type='button' className='tk-btn' onClick={clearInputText}>
+              <button type='button' className='pd-btn' onClick={clearInputText}>
                 <Icon name='close' size={13} />
                 {t('common.clear')}
               </button>
@@ -576,7 +576,7 @@ export default function QrCodeTool() {
                 <label className='tw-qr__opt-label' htmlFor='tw-qr-margin'>
                   {t('tool.qrcode.margin')}:
                 </label>
-                <TkSelect
+                <PdSelect
                   id='tw-qr-margin'
                   value={margin}
                   onChange={(e) => setMargin(Number(e.target.value))}
@@ -586,7 +586,7 @@ export default function QrCodeTool() {
                       {t(o.labelKey)}
                     </option>
                   ))}
-                </TkSelect>
+                </PdSelect>
               </div>
 
               {/* 纠错级别 */}
@@ -594,7 +594,7 @@ export default function QrCodeTool() {
                 <label className='tw-qr__opt-label' htmlFor='tw-qr-ec'>
                   {t('tool.qrcode.errorCorrection')}:
                 </label>
-                <TkSelect
+                <PdSelect
                   id='tw-qr-ec'
                   value={ecLevel}
                   disabled={Boolean(logoUrl)}
@@ -605,7 +605,7 @@ export default function QrCodeTool() {
                   <option value='M'>M (15%)</option>
                   <option value='Q'>Q (25%)</option>
                   <option value='H'>H (30%)</option>
-                </TkSelect>
+                </PdSelect>
               </div>
 
               {/* 清晰度 */}
@@ -613,7 +613,7 @@ export default function QrCodeTool() {
                 <label className='tw-qr__opt-label' htmlFor='tw-qr-resolution'>
                   {t('tool.qrcode.resolution')}:
                 </label>
-                <TkSelect
+                <PdSelect
                   id='tw-qr-resolution'
                   value={resolution}
                   onChange={(e) => setResolution(Number(e.target.value))}
@@ -623,13 +623,13 @@ export default function QrCodeTool() {
                       {t(o.labelKey)}
                     </option>
                   ))}
-                </TkSelect>
+                </PdSelect>
               </div>
             </div>
 
             <button
               type='button'
-              className={`tk-btn tk-btn--sm${showCustomize ? ' tk-btn--primary' : ''}`}
+              className={`pd-btn pd-btn--sm${showCustomize ? ' pd-btn--primary' : ''}`}
               onClick={() => setShowCustomize((prev) => !prev)}
             >
               <Icon name='settings' size={13} />
@@ -710,7 +710,7 @@ export default function QrCodeTool() {
                       <Tooltip content={t('common.cancel')}>
                         <button
                           type='button'
-                          className='tk-icon-btn'
+                          className='pd-icon-btn'
                           onClick={() => setLabel('')}
                           aria-label={t('common.cancel')}
                         >
@@ -723,7 +723,7 @@ export default function QrCodeTool() {
 
                 <div className='tw-qr__custom-col' style={{ flex: '0 0 auto' }}>
                   <span className='tw-qr__custom-label'>{t('tool.qrcode.labelFontSize')}:</span>
-                  <TkSelect
+                  <PdSelect
                     value={labelFontSize}
                     onChange={(e) => setLabelFontSize(Number(e.target.value))}
                   >
@@ -732,7 +732,7 @@ export default function QrCodeTool() {
                         {t(o.labelKey)}
                       </option>
                     ))}
-                  </TkSelect>
+                  </PdSelect>
                 </div>
               </div>
 
@@ -758,7 +758,7 @@ export default function QrCodeTool() {
                           />
                           <button
                             type='button'
-                            className='tk-btn tk-btn--sm'
+                            className='pd-btn pd-btn--sm'
                             onClick={handleRecrop}
                           >
                             <Icon name='code' size={12} />
@@ -766,13 +766,13 @@ export default function QrCodeTool() {
                           </button>
                           <button
                             type='button'
-                            className='tk-btn tk-btn--sm'
+                            className='pd-btn pd-btn--sm'
                             onClick={() => logoInputRef.current?.click()}
                           >
                             <Icon name='upload' size={12} />
                             {t('tool.qrcode.uploadLogo')}
                           </button>
-                          <button type='button' className='tk-btn tk-btn--sm' onClick={removeLogo}>
+                          <button type='button' className='pd-btn pd-btn--sm' onClick={removeLogo}>
                             <Icon name='close' size={12} />
                             {t('tool.qrcode.removeLogo')}
                           </button>
@@ -784,7 +784,7 @@ export default function QrCodeTool() {
                             <label className='tw-qr__opt-label' htmlFor='tw-qr-logo-shape'>
                               {t('tool.qrcode.logoShape')}:
                             </label>
-                            <TkSelect
+                            <PdSelect
                               id='tw-qr-logo-shape'
                               value={logoShape}
                               onChange={(e) => setLogoShape(e.target.value as QrLogoShape)}
@@ -792,14 +792,14 @@ export default function QrCodeTool() {
                               <option value='rounded'>{t('tool.qrcode.logoShapeRounded')}</option>
                               <option value='circle'>{t('tool.qrcode.logoShapeCircle')}</option>
                               <option value='square'>{t('tool.qrcode.logoShapeSquare')}</option>
-                            </TkSelect>
+                            </PdSelect>
                           </div>
 
                           <div className='tw-qr__opt-group'>
                             <label className='tw-qr__opt-label' htmlFor='tw-qr-logo-size'>
                               {t('tool.qrcode.logoSize')}:
                             </label>
-                            <TkSelect
+                            <PdSelect
                               id='tw-qr-logo-size'
                               value={logoSizeRatio}
                               onChange={(e) => setLogoSizeRatio(Number(e.target.value))}
@@ -809,14 +809,14 @@ export default function QrCodeTool() {
                                   {t(o.labelKey)}
                                 </option>
                               ))}
-                            </TkSelect>
+                            </PdSelect>
                           </div>
 
                           <div className='tw-qr__opt-group'>
                             <label className='tw-qr__opt-label' htmlFor='tw-qr-logo-margin'>
                               {t('tool.qrcode.logoMargin')}:
                             </label>
-                            <TkSelect
+                            <PdSelect
                               id='tw-qr-logo-margin'
                               value={logoMargin}
                               onChange={(e) => setLogoMargin(e.target.value as QrLogoMargin)}
@@ -826,14 +826,14 @@ export default function QrCodeTool() {
                                   {t(o.labelKey)}
                                 </option>
                               ))}
-                            </TkSelect>
+                            </PdSelect>
                           </div>
                         </div>
                       </>
                     ) : (
                       <button
                         type='button'
-                        className='tk-btn tk-btn--sm'
+                        className='pd-btn pd-btn--sm'
                         onClick={() => logoInputRef.current?.click()}
                       >
                         <Icon name='upload' size={13} />
@@ -846,14 +846,14 @@ export default function QrCodeTool() {
 
               {/* 预设持久化操作栏 */}
               <div className='tw-qr__preset-bar'>
-                <button type='button' className='tk-btn tk-btn--sm' onClick={handleSavePreset}>
+                <button type='button' className='pd-btn pd-btn--sm' onClick={handleSavePreset}>
                   <Icon name='check' size={12} />
                   {t('tool.qrcode.saveAsDefault')}
                 </button>
                 {hasCustomPreset && (
                   <button
                     type='button'
-                    className='tk-btn tk-btn--sm'
+                    className='pd-btn pd-btn--sm'
                     onClick={() => setShowResetConfirm(true)}
                   >
                     <Icon name='refresh' size={12} />
@@ -880,7 +880,7 @@ export default function QrCodeTool() {
                 <div className='tw-qr__btn-group'>
                   <button
                     type='button'
-                    className='tk-btn tk-btn--sm'
+                    className='pd-btn pd-btn--sm'
                     onClick={() => void copyQrImage()}
                   >
                     <Icon name={copiedImage ? 'check' : 'copy'} size={13} />
@@ -888,13 +888,13 @@ export default function QrCodeTool() {
                   </button>
                   <button
                     type='button'
-                    className='tk-btn tk-btn--sm'
+                    className='pd-btn pd-btn--sm'
                     onClick={() => void downloadQrImage()}
                   >
                     <Icon name='download' size={13} />
                     {t('tool.qrcode.downloadPng')}
                   </button>
-                  <button type='button' className='tk-btn tk-btn--sm' onClick={openOriginalImage}>
+                  <button type='button' className='pd-btn pd-btn--sm' onClick={openOriginalImage}>
                     <Icon name='external-link' size={13} />
                     {t('tool.qrcode.openOriginal')}
                   </button>
@@ -963,16 +963,16 @@ export default function QrCodeTool() {
           </div>
 
           <div className='tw-actions'>
-            <button type='button' className='tk-btn' onClick={() => fileInputRef.current?.click()}>
+            <button type='button' className='pd-btn' onClick={() => fileInputRef.current?.click()}>
               <Icon name='upload' size={14} />
               {t('tool.qrcode.chooseFile')}
             </button>
-            <button type='button' className='tk-btn' onClick={() => void readClipboardImage()}>
+            <button type='button' className='pd-btn' onClick={() => void readClipboardImage()}>
               <Icon name='copy' size={14} />
               {t('tool.qrcode.pasteClipboard')}
             </button>
             {(decodedResult || decodeError || imagePreviewUrl) && (
-              <button type='button' className='tk-btn' onClick={clearDecode}>
+              <button type='button' className='pd-btn' onClick={clearDecode}>
                 <Icon name='close' size={13} />
                 {t('common.cancel')}
               </button>

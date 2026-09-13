@@ -16,7 +16,7 @@ import HashTool from './HashTool'
  * 这里测组件层：文本自动计算的异步防抖、小写开关、HMAC 展开、文件 tab 的拖拽/结果/比对、
  * 计算失败与超限的错误提示、以及草稿对象的写入与恢复。
  *
- * 注意：源码里并没有「算法选择器（TkSelect）」——四种算法是同时渲染的，
+ * 注意：源码里并没有「算法选择器（PdSelect）」——四种算法是同时渲染的，
  * 因此用「四个算法同时出现且与已知向量一致」来断言，而不是臆测一个不存在的下拉。
  */
 
@@ -216,8 +216,8 @@ describe('HashTool 文本哈希', () => {
     expect(values).toEqual([ABC.md5, ABC.sha1, ABC.sha256, ABC.sha512])
     // 输出长度即算法位数（32/40/64/128 个 hex 字符）
     expect(values.map((v) => v.length)).toEqual([32, 40, 64, 128])
-    // 源码没有 TkSelect 算法选择器，四种算法是并列渲染的
-    expect(card().querySelector('.tk-select')).toBeNull()
+    // 源码没有 PdSelect 算法选择器，四种算法是并列渲染的
+    expect(card().querySelector('.pd-select')).toBeNull()
   })
 
   it('大输入不阻塞主线程：输入当帧无结果，随后异步完成', async () => {

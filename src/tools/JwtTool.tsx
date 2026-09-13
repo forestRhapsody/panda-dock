@@ -84,10 +84,10 @@ export default function JwtTool() {
       </label>
 
       <div className='tw-actions'>
-        <button type='button' className='tk-btn tk-btn--primary' onClick={() => run()}>
+        <button type='button' className='pd-btn pd-btn--primary' onClick={() => run()}>
           {t('tool.jwt.decode')}
         </button>
-        <button type='button' className='tk-btn' onClick={clear}>
+        <button type='button' className='pd-btn' onClick={clear}>
           {t('common.clear')}
         </button>
       </div>

@@ -285,27 +285,27 @@ describe('DetectResultView 的内容块分支', () => {
       }),
     })
 
-    const cb = q<HTMLInputElement>('.tk-checkbox input')
+    const cb = q<HTMLInputElement>('.pd-checkbox input')
     expect(cb).not.toBeNull()
     expect(cb?.checked).toBe(false)
-    expect(q('.tk-checkbox span')?.textContent).toBe(i18n.t('tool.detect.minifyOption'))
+    expect(q('.pd-checkbox span')?.textContent).toBe(i18n.t('tool.detect.minifyOption'))
     expect(qa('.tw-json-hl__line')).toHaveLength(3)
 
     act(() => cb?.click())
-    expect(q<HTMLInputElement>('.tk-checkbox input')?.checked).toBe(true)
+    expect(q<HTMLInputElement>('.pd-checkbox input')?.checked).toBe(true)
     expect(q('pre.tw-json-hl')?.textContent).toBe(minified)
     // 压缩成单行后不再需要行号栏
     expect(qa('.tw-json-hl__line')).toHaveLength(0)
 
-    act(() => q<HTMLInputElement>('.tk-checkbox input')?.click())
-    expect(q<HTMLInputElement>('.tk-checkbox input')?.checked).toBe(false)
+    act(() => q<HTMLInputElement>('.pd-checkbox input')?.click())
+    expect(q<HTMLInputElement>('.pd-checkbox input')?.checked).toBe(false)
     expect(textsOf('.tw-json-hl__content').join('\n')).toBe(formatted)
   })
 
   it('没有 minifiedValue 的块不渲染压缩开关', () => {
     render({ result: result({ kind: 'hex', blocks: [block('decoded', 'abc')] }) })
     expect(q('.tw-detect__block-options')).toBeNull()
-    expect(q('.tk-checkbox')).toBeNull()
+    expect(q('.pd-checkbox')).toBeNull()
   })
 
   it('JWT 解码块不显示行号（避免行号栏挤占本就很窄的面板）', () => {
@@ -328,13 +328,13 @@ describe('DetectResultView 的内容块分支', () => {
     })
 
     render(props(formatted, minified))
-    act(() => q<HTMLInputElement>('.tk-checkbox input')?.click())
-    expect(q<HTMLInputElement>('.tk-checkbox input')?.checked).toBe(true)
+    act(() => q<HTMLInputElement>('.pd-checkbox input')?.click())
+    expect(q<HTMLInputElement>('.pd-checkbox input')?.checked).toBe(true)
 
     // 换成另一份解析结果（block.key 不变，state 会被保留）→ 必须复位，否则会继续显示上一份的压缩态
     const next = '{\n  "b": 2\n}'
     render(props(next, '{"b":2}'))
-    expect(q<HTMLInputElement>('.tk-checkbox input')?.checked).toBe(false)
+    expect(q<HTMLInputElement>('.pd-checkbox input')?.checked).toBe(false)
     expect(textsOf('.tw-json-hl__content').join('\n')).toBe(next)
   })
 })
@@ -371,7 +371,7 @@ describe('DetectResultView 的复制与下载', () => {
     // 非图标模式复制成功后文案变为「已复制」
     expect(q('.tw-detect__block .tw-link')?.textContent).toBe(i18n.t('common.copied'))
 
-    act(() => q<HTMLInputElement>('.tk-checkbox input')?.click())
+    act(() => q<HTMLInputElement>('.pd-checkbox input')?.click())
     await act(async () => q<HTMLButtonElement>('.tw-detect__block .tw-link')?.click())
     expect(copyText).toHaveBeenLastCalledWith(minified)
   })

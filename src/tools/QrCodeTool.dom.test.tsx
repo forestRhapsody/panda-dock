@@ -240,10 +240,10 @@ function selectById(id: string) {
   return query<HTMLButtonElement>(`#${id}`)
 }
 
-/** 打开某个 TkSelect 并点选指定文案的选项（下拉经 portal 渲染到 document.body） */
+/** 打开某个 PdSelect 并点选指定文案的选项（下拉经 portal 渲染到 document.body） */
 function chooseOption(trigger: HTMLButtonElement, optionLabel: string) {
   act(() => trigger.click())
-  const items = [...document.querySelectorAll<HTMLElement>('[data-tks-item]')]
+  const items = [...document.querySelectorAll<HTMLElement>('[data-pds-item]')]
   const item = items.find((el) => (el.textContent ?? '').trim() === optionLabel)
   if (!item) {
     throw new Error(
@@ -255,12 +255,12 @@ function chooseOption(trigger: HTMLButtonElement, optionLabel: string) {
   })
 }
 
-/** 没有 id 的 TkSelect（如标签字号）：用当前选中文案定位触发按钮 */
+/** 没有 id 的 PdSelect（如标签字号）：用当前选中文案定位触发按钮 */
 function chooseOptionByCurrentLabel(currentLabel: string, optionLabel: string) {
-  const trigger = queryAll<HTMLButtonElement>('.tk-select').find(
+  const trigger = queryAll<HTMLButtonElement>('.pd-select').find(
     (el) => (el.textContent ?? '').trim() === currentLabel,
   )
-  if (!trigger) throw new Error(`未找到当前显示为「${currentLabel}」的 TkSelect`)
+  if (!trigger) throw new Error(`未找到当前显示为「${currentLabel}」的 PdSelect`)
   chooseOption(trigger, optionLabel)
 }
 
@@ -589,7 +589,7 @@ describe('QrCodeTool：参数控件变化后的 options', () => {
     expect(container.querySelector('.tw-qr__custom-panel')).not.toBeNull()
     expect(
       queryByText<HTMLButtonElement>('button', i18n.t('tool.qrcode.customizeToggle')).className,
-    ).toContain('tk-btn--primary')
+    ).toContain('pd-btn--primary')
 
     openCustomize()
     expect(container.querySelector('.tw-qr__custom-panel')).toBeNull()
@@ -1203,7 +1203,7 @@ describe('QrCodeTool：样式偏好持久化（默认预设）', () => {
 
     // 点击取消
     const cancelBtn = queryByText<HTMLButtonElement>(
-      '.tk-modal__actions button',
+      '.pd-modal__actions button',
       i18n.t('common.cancel'),
     )
     act(() => cancelBtn.click())
@@ -1218,7 +1218,7 @@ describe('QrCodeTool：样式偏好持久化（默认预设）', () => {
 
     // 点击确认
     const confirmBtn = queryByText<HTMLButtonElement>(
-      '.tk-modal__actions button',
+      '.pd-modal__actions button',
       i18n.t('common.confirm'),
     )
     act(() => confirmBtn.click())

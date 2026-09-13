@@ -23,7 +23,7 @@ export default function DownloadButton({ mime, dataUrl, label, className }: Down
     <Tooltip content={filename}>
       <button
         type='button'
-        className={`tk-btn${className ? ` ${className}` : ''}`}
+        className={`pd-btn${className ? ` ${className}` : ''}`}
         aria-label={filename}
         onClick={() => downloadDataUrl(dataUrl, filename)}
       >

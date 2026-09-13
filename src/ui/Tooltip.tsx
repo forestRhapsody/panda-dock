@@ -308,7 +308,7 @@ export default function Tooltip({
             id={id}
             role='tooltip'
             data-side={position.actualSide}
-            className={`tk-tooltip${contentClassName ? ` ${contentClassName}` : ''}`}
+            className={`pd-tooltip${contentClassName ? ` ${contentClassName}` : ''}`}
             style={tooltipStyle}
           >
             {content}

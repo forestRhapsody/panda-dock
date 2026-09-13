@@ -18,7 +18,7 @@ import AppLogo from '@/ui/AppLogo'
 import ConfirmDialog from '@/ui/ConfirmDialog'
 import Icon from '@/ui/Icon'
 import NumberInput from '@/ui/NumberInput'
-import TkSelect from '@/ui/TkSelect'
+import PdSelect from '@/ui/PdSelect'
 import { toast } from '@/ui/toast'
 import Toaster from '@/ui/Toaster'
 import Tooltip from '@/ui/Tooltip'
@@ -119,10 +119,10 @@ function SortableToolRow({ id, label, on, onToggle }: SortableToolRowProps) {
           role='switch'
           aria-checked={on}
           aria-label={label}
-          className={`tk-switch${on ? ' tk-switch--on' : ''}`}
+          className={`pd-switch${on ? ' pd-switch--on' : ''}`}
           onClick={() => onToggle(id)}
         >
-          <span className='tk-switch__knob' />
+          <span className='pd-switch__knob' />
         </button>
       </Tooltip>
     </li>
@@ -477,7 +477,7 @@ export default function OptionsPage() {
                 <strong>{t('settings.theme')}</strong>
                 <p>{t('settings.themeDesc')}</p>
               </div>
-              <TkSelect
+              <PdSelect
                 value={settings.theme}
                 onChange={(e) => setTheme(e.target.value as ThemeMode)}
                 aria-label={t('settings.theme')}
@@ -493,14 +493,14 @@ export default function OptionsPage() {
                     )}
                   </option>
                 ))}
-              </TkSelect>
+              </PdSelect>
             </li>
             <li className='opt__item'>
               <div className='opt__item-text'>
                 <strong>{t('settings.language')}</strong>
                 <p>{t('settings.languageDesc')}</p>
               </div>
-              <TkSelect
+              <PdSelect
                 value={settings.locale}
                 onChange={(e) => setLocale(e.target.value as LocaleSetting)}
                 aria-label={t('settings.language')}
@@ -510,14 +510,14 @@ export default function OptionsPage() {
                     {o.value === 'system' ? t('settings.localeSystem') : o.label}
                   </option>
                 ))}
-              </TkSelect>
+              </PdSelect>
             </li>
             <li className='opt__item'>
               <div className='opt__item-text'>
                 <strong>{t('settings.fontScale')}</strong>
                 <p>{t('settings.fontScaleDesc')}</p>
               </div>
-              <TkSelect
+              <PdSelect
                 value={settings.fontScale}
                 onChange={(e) => setFontScale(Number(e.target.value))}
                 aria-label={t('settings.fontScale')}
@@ -533,7 +533,7 @@ export default function OptionsPage() {
                     )}
                   </option>
                 ))}
-              </TkSelect>
+              </PdSelect>
             </li>
           </ul>
         </div>
@@ -556,10 +556,10 @@ export default function OptionsPage() {
                   type='button'
                   role='switch'
                   aria-checked={settings[f.key]}
-                  className={`tk-switch${settings[f.key] ? ' tk-switch--on' : ''}`}
+                  className={`pd-switch${settings[f.key] ? ' pd-switch--on' : ''}`}
                   onClick={() => toggle(f.key)}
                 >
-                  <span className='tk-switch__knob' />
+                  <span className='pd-switch__knob' />
                 </button>
               </li>
             ))}
@@ -568,7 +568,7 @@ export default function OptionsPage() {
                 <strong>{t('settings.ballDockMode')}</strong>
                 <p>{t('settings.ballDockModeDesc')}</p>
               </div>
-              <TkSelect
+              <PdSelect
                 value={settings.ballDockMode}
                 onChange={(e) => setBallDockMode(e.target.value as BallDockMode)}
                 aria-label={t('settings.ballDockMode')}
@@ -578,7 +578,7 @@ export default function OptionsPage() {
                     {t(o.labelKey)}
                   </option>
                 ))}
-              </TkSelect>
+              </PdSelect>
             </li>
             {settings.ballDockMode === 'bottomRight' && (
               <li className='opt__item'>
@@ -625,14 +625,14 @@ export default function OptionsPage() {
                   <strong>{t('settings.ballAction')}</strong>
                 </div>
                 <div className='opt__item-control'>
-                  <TkSelect
+                  <PdSelect
                     value={settings.ballAction}
                     onChange={(e) => setBallAction(e.target.value as BallAction)}
                     aria-label={t('settings.ballAction')}
                   >
                     <option value='drawer'>{t('settings.actionDrawer')}</option>
                     <option value='native'>{t('settings.actionNative')}</option>
-                  </TkSelect>
+                  </PdSelect>
                 </div>
               </div>
               <p className='opt__item-desc'>{t('settings.ballActionDesc')}</p>
@@ -665,7 +665,7 @@ export default function OptionsPage() {
                 {inExt && (
                   <button
                     type='button'
-                    className='tk-btn tk-btn--sm'
+                    className='pd-btn pd-btn--sm'
                     onClick={() => void openShortcutsPage()}
                   >
                     <Icon name='external-link' size={14} />
@@ -684,7 +684,7 @@ export default function OptionsPage() {
                 {inExt && (
                   <button
                     type='button'
-                    className='tk-btn tk-btn--sm'
+                    className='pd-btn pd-btn--sm'
                     onClick={() => void openShortcutsPage()}
                   >
                     <Icon name='external-link' size={14} />
@@ -709,7 +709,7 @@ export default function OptionsPage() {
                 <strong>{t('settings.ballShape')}</strong>
                 <p>{t('settings.ballShapeDesc')}</p>
               </div>
-              <TkSelect
+              <PdSelect
                 value={settings.ballShape}
                 onChange={(e) => setBallShape(e.target.value as BallShape)}
                 aria-label={t('settings.ballShape')}
@@ -719,7 +719,7 @@ export default function OptionsPage() {
                     {t(o.labelKey)}
                   </option>
                 ))}
-              </TkSelect>
+              </PdSelect>
             </li>
             <li className='opt__item'>
               <div className='opt__item-text'>
@@ -762,7 +762,7 @@ export default function OptionsPage() {
                 <strong>{t('settings.ballSize')}</strong>
                 <p>{t('settings.ballSizeDesc')}</p>
               </div>
-              <TkSelect
+              <PdSelect
                 value={settings.ballSize}
                 onChange={(e) => setBallSize(e.target.value as BallSize)}
                 aria-label={t('settings.ballSize')}
@@ -772,7 +772,7 @@ export default function OptionsPage() {
                     {t(o.labelKey)}
                   </option>
                 ))}
-              </TkSelect>
+              </PdSelect>
             </li>
             <li className='opt__item'>
               <div className='opt__item-text'>
@@ -790,19 +790,19 @@ export default function OptionsPage() {
                       height: 40,
                       borderRadius: 8,
                       objectFit: 'cover',
-                      border: '1px solid var(--tk-input)',
+                      border: '1px solid var(--pd-input)',
                     }}
                   />
                 ) : null}
                 <button
                   type='button'
-                  className='tk-btn tk-btn--sm'
+                  className='pd-btn pd-btn--sm'
                   onClick={() => fileInputRef.current?.click()}
                 >
                   {t('settings.ballImageChoose')}
                 </button>
                 {ballImage && (
-                  <button type='button' className='tk-btn tk-btn--sm' onClick={removeBallImage}>
+                  <button type='button' className='pd-btn pd-btn--sm' onClick={removeBallImage}>
                     {t('settings.ballImageRemove')}
                   </button>
                 )}
@@ -837,7 +837,7 @@ export default function OptionsPage() {
                 <strong>{t('settings.domainMode')}</strong>
                 <p>{t('settings.domainModeDesc')}</p>
               </div>
-              <TkSelect
+              <PdSelect
                 value={settings.ballDomainMode}
                 onChange={(e) => {
                   const mode = e.target.value as DomainMatchMode
@@ -848,7 +848,7 @@ export default function OptionsPage() {
               >
                 <option value='blacklist'>{t('settings.domainModeBlacklist')}</option>
                 <option value='whitelist'>{t('settings.domainModeWhitelist')}</option>
-              </TkSelect>
+              </PdSelect>
             </li>
           </ul>
 
@@ -974,7 +974,7 @@ export default function OptionsPage() {
               </div>
               <button
                 type='button'
-                className='tk-btn tk-btn--sm'
+                className='pd-btn pd-btn--sm'
                 onClick={() => void handleExport()}
                 disabled={exporting}
               >
@@ -990,7 +990,7 @@ export default function OptionsPage() {
               <div>
                 <button
                   type='button'
-                  className='tk-btn tk-btn--sm'
+                  className='pd-btn pd-btn--sm'
                   onClick={() => importInputRef.current?.click()}
                 >
                   <Icon name='upload' size={14} />
@@ -1015,7 +1015,7 @@ export default function OptionsPage() {
           <h2>{t('settings.restoreDefaults')}</h2>
           <p className='opt__env'>{t('settings.restoreDefaultsDesc')}</p>
           <div className='opt__reset-row'>
-            <button type='button' className='tk-btn tk-btn--danger' onClick={requestGlobalReset}>
+            <button type='button' className='pd-btn pd-btn--danger' onClick={requestGlobalReset}>
               {t('settings.restoreDefaults')}
             </button>
           </div>

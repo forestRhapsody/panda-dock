@@ -308,7 +308,7 @@ export default function HashTool() {
 
         <div className='tw-hash__toolbar'>
           <div className='tw-hash__options'>
-            <label className='tk-checkbox'>
+            <label className='pd-checkbox'>
               <input
                 type='checkbox'
                 checked={!uppercase}
@@ -317,7 +317,7 @@ export default function HashTool() {
               <span>{t('tool.hash.lower')}</span>
             </label>
 
-            <label className='tk-checkbox'>
+            <label className='pd-checkbox'>
               <input
                 type='checkbox'
                 checked={showHmac}
@@ -328,7 +328,7 @@ export default function HashTool() {
           </div>
 
           <div className='tw-actions'>
-            <button type='button' className='tk-btn' onClick={clearText}>
+            <button type='button' className='pd-btn' onClick={clearText}>
               {t('common.clear')}
             </button>
           </div>
@@ -410,12 +410,12 @@ export default function HashTool() {
             </div>
             <button
               type='button'
-              className='tk-btn tk-btn--sm'
+              className='pd-btn pd-btn--sm'
               onClick={() => fileInputRef.current?.click()}
             >
               {t('tool.hash.changeFile')}
             </button>
-            <button type='button' className='tk-btn tk-btn--sm' onClick={clearFile}>
+            <button type='button' className='pd-btn pd-btn--sm' onClick={clearFile}>
               {t('common.clear')}
             </button>
           </div>

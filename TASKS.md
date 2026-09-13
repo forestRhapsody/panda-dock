@@ -46,3 +46,5 @@
 - **T21–T25**：JSON 内「像时间的字段」两次产品回滚（不做猜测式可读化）、工具 tab 条与标题对齐、高亮标记扁平化 + 待切换项用次级背景标出、深色高亮令牌调深。
 - **T26–T30**：验证分级写进 AGENTS → 脚本静音 + `pnpm gate` + 交付门禁改为用户触发 + §9 上下文与输出纪律；深色高亮根因修复（函数式 `:host([data-theme='dark'])` + 内联兜底逐字一致守卫）与配色收敛（`#f3f4f6`、选区交回浏览器）；结果 tab 尺寸收进 `--tk-control-h-xs`。
 - **T31**：品牌与代号全量重构（Panda Dock）：SAMPLE_JSON 示例与文案对齐、HOST_ID 与 PandaDockOverlay 重命名、PORT_SIDEPANEL 与右键菜单 ID 统一、Manifest 命令改为 toggle-dock、草稿与位置前缀统一为 panda.*、内部消息 Action 统一为 PANDA_*，通过全量交付门禁。
+- **T32**：设计令牌与通用组件全面重构至 `pd` 前缀：CSS 变量 `--tk-*` $\to$ `--pd-*`、通用组件类名 `tk-*` $\to$ `pd-*`、组件 `TkSelect` $\to$ `PdSelect`、属性 `data-tk-escape` / `data-tks-item` 对齐重命名、同步更新 `AGENTS.md` 约束，通过全量交付门禁。
+

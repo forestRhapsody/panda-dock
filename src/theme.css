@@ -19,136 +19,139 @@
   color-scheme: light;
 
   /* —— 中性色（冷调，偏向 zinc / slate） —— */
-  --tk-background: hsl(0 0% 99%);
-  --tk-foreground: hsl(240 9% 9%);
-  --tk-card: hsl(0 0% 100%);
-  --tk-muted: hsl(240 5% 96%);
-  --tk-muted-foreground: hsl(240 4% 46%);
-  --tk-secondary: hsl(240 5% 96%);
-  --tk-secondary-foreground: hsl(240 8% 20%);
-  --tk-accent: hsl(240 6% 94%);
-  --tk-accent-foreground: #171717;
+  --pd-background: hsl(0 0% 99%);
+  --pd-foreground: hsl(240 9% 9%);
+  --pd-card: hsl(0 0% 100%);
+  --pd-muted: hsl(240 5% 96%);
+  --pd-muted-foreground: hsl(240 4% 46%);
+  --pd-secondary: hsl(240 5% 96%);
+  --pd-secondary-foreground: hsl(240 8% 20%);
+  --pd-accent: hsl(240 6% 94%);
+  --pd-accent-foreground: #171717;
 
   /* —— 强调色（主题色：炭黑 #171717，冷寂单色基调） —— */
-  --tk-primary: #171717;
-  --tk-primary-hover: #2b2b2b;
-  --tk-primary-active: #000000;
-  --tk-primary-foreground: #ffffff;
-  --tk-ring: #171717;
+  --pd-primary: #171717;
+  --pd-primary-hover: #2b2b2b;
+  --pd-primary-active: #000000;
+  --pd-primary-foreground: #ffffff;
+  --pd-ring: #171717;
 
   /* —— 功能色（shadcn/ui 基础上按实际观感微调；与 theme.ts 的内联兜底保持逐字一致，
         兜底优先级更高，所以这里写的就是「实际生效值」，由 theme.dom.test.ts 守住） —— */
-  --tk-destructive: hsl(0 66% 48%);
-  --tk-destructive-foreground: hsl(0 0% 98%);
-  --tk-success: hsl(149 46% 34%);
-  --tk-warning: hsl(36 78% 38%);
-  --tk-info: hsl(207 70% 42%);
+  --pd-destructive: hsl(0 66% 48%);
+  --pd-destructive-foreground: hsl(0 0% 98%);
+  --pd-success: hsl(149 46% 34%);
+  --pd-warning: hsl(36 78% 38%);
+  --pd-info: hsl(207 70% 42%);
 
   /* —— 描边 / 输入 —— */
-  --tk-border: hsl(240 6% 90%);
-  --tk-border-strong: hsl(240 5% 82%);
-  --tk-input: hsl(240 6% 90%);
+  --pd-border: hsl(240 6% 90%);
+  --pd-border-strong: hsl(240 5% 82%);
+  --pd-input: hsl(240 6% 90%);
 
   /* —— 圆角 —— */
-  --tk-radius: 0.625rem;
-  --tk-radius-sm: 0.375rem;
-  --tk-radius-lg: 0.75rem;
+  --pd-radius: 0.625rem;
+  --pd-radius-sm: 0.375rem;
+  --pd-radius-lg: 0.75rem;
 
   /* —— 阴影（柔和、低存在感） —— */
-  --tk-shadow-xs: 0 1px 1px 0 rgb(24 24 27 / 0.06);
-  --tk-shadow-sm: 0 1px 2px 0 rgb(24 24 27 / 0.05), 0 1px 3px 0 rgb(24 24 27 / 0.05);
-  --tk-shadow-md: 0 4px 12px -2px rgb(24 24 27 / 0.08), 0 2px 6px -2px rgb(24 24 27 / 0.05);
-  --tk-shadow-lg: 0 12px 26px -6px rgb(24 24 27 / 0.18);
+  --pd-shadow-xs: 0 1px 1px 0 rgb(24 24 27 / 0.06);
+  --pd-shadow-sm: 0 1px 2px 0 rgb(24 24 27 / 0.05), 0 1px 3px 0 rgb(24 24 27 / 0.05);
+  --pd-shadow-md: 0 4px 12px -2px rgb(24 24 27 / 0.08), 0 2px 6px -2px rgb(24 24 27 / 0.05);
+  --pd-shadow-lg: 0 12px 26px -6px rgb(24 24 27 / 0.18);
 
   /* —— 功能色：高亮标记（激活项在明暗两套里都是「明快浅黄 + 深色字」） —— */
-  --tk-highlight: #fef08a;
-  --tk-highlight-foreground: #171717;
+  --pd-highlight: #fef08a;
+  --pd-highlight-foreground: #171717;
   /* 待切换项用**极浅中性灰**（#f3f4f6），与激活项的荧光黄靠饱和度拉开 —— 原先用同色系浅黄
      （#fef9c3）深浅太接近，用户反馈「区分不够明显」。 */
-  --tk-highlight-secondary: #f3f4f6;
-  --tk-highlight-secondary-foreground: hsl(240 9% 9%);
+  --pd-highlight-secondary: #f3f4f6;
+  --pd-highlight-secondary-foreground: hsl(240 9% 9%);
 
   /* —— 字体 —— */
-  --tk-font:
+  --pd-font:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', sans-serif;
-  --tk-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --pd-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* —— 字号层级（全入口统一，随 --tk-font-scale 缩放） —— */
-  --tk-text-xs: calc(11px * var(--tk-font-scale)); /* 角标、副标题、注脚 */
-  --tk-text-sm: calc(12px * var(--tk-font-scale)); /* 辅助说明、标签、列表行 */
-  --tk-text-base: calc(13px * var(--tk-font-scale)); /* 正文、按钮、输入框 */
-  --tk-text-md: calc(14px * var(--tk-font-scale)); /* 小标题、Popup 标题 */
-  --tk-text-lg: calc(16px * var(--tk-font-scale)); /* 区块标题、工具箱标题 */
-  --tk-text-xl: calc(20px * var(--tk-font-scale)); /* 页面级大标题（Options / 预览页） */
+  /* —— 字号层级（全入口统一，随 --pd-font-scale 缩放） —— */
+  --pd-text-xs: calc(11px * var(--pd-font-scale)); /* 角标、副标题、注脚 */
+  --pd-text-sm: calc(12px * var(--pd-font-scale)); /* 辅助说明、标签、列表行 */
+  --pd-text-base: calc(13px * var(--pd-font-scale)); /* 正文、按钮、输入框 */
+  --pd-text-md: calc(14px * var(--pd-font-scale)); /* 小标题、Popup 标题 */
+  --pd-text-lg: calc(16px * var(--pd-font-scale)); /* 区块标题、工具箱标题 */
+  --pd-text-xl: calc(20px * var(--pd-font-scale)); /* 页面级大标题（Options / 预览页） */
 
-  /* —— 控件尺寸（按钮 / 输入框统一规格，随 --tk-font-scale 缩放） —— */
-  --tk-control-h: calc(32px * var(--tk-font-scale)); /* 标准控件高 */
-  --tk-control-h-sm: calc(26px * var(--tk-font-scale)); /* 紧凑控件高（头部动作区） */
-  --tk-control-h-lg: calc(38px * var(--tk-font-scale)); /* 强调按钮高（主操作按钮） */
-  /* 行内小胶囊高（格式预设 / 智能解析的结果 tab）：比 --tk-control-h-sm 再矮一档，
+  /* —— 控件尺寸（按钮 / 输入框统一规格，随 --pd-font-scale 缩放） —— */
+  --pd-control-h: calc(32px * var(--pd-font-scale)); /* 标准控件高 */
+  --pd-control-h-sm: calc(26px * var(--pd-font-scale)); /* 紧凑控件高（头部动作区） */
+  --pd-control-h-lg: calc(38px * var(--pd-font-scale)); /* 强调按钮高（主操作按钮） */
+  /* 行内小胶囊高（格式预设 / 智能解析的结果 tab）：比 --pd-control-h-sm 再矮一档，
      自带缩放 —— 固定 px 时字体缩放调大后文字会顶出胶囊 */
-  --tk-control-h-xs: calc(22px * var(--tk-font-scale));
+  --pd-control-h-xs: calc(22px * var(--pd-font-scale));
+
+  /* —— 过渡动效 —— */
+  --pd-transition: 0.15s;
 }
 
 /* —— 深色（冷调中性色反转，主色提亮为近白、文字转深） ——
    ⚠️ Shadow DOM 里必须写**函数式** `:host([data-theme='dark'])`：按 css-scoping，非函数式 `:host`
    只能单独成一个 compound，`:host[data-theme='dark']` 永远不匹配。曾经因为这么写，深色令牌在
-   抽屉 / 悬浮球里整块不生效，只剩 theme.ts 的内联兜底在生效；而兜底里漏了 `--tk-highlight`，
+   抽屉 / 悬浮球里整块不生效，只剩 theme.ts 的内联兜底在生效；而兜底里漏了 `--pd-highlight`，
    于是浅色主题的浅黄高亮被留在深色背景上、压着近白文字 —— 就是「高亮那段字看不清」。
    两条防线现在都有守卫：theme.dom.test.ts 的「Shadow DOM 主题选择器」与「内联兜底完整性」。 */
 :root[data-theme='dark'],
 :host([data-theme='dark']) {
   color-scheme: dark;
 
-  --tk-background: hsl(240 10% 4%);
-  --tk-foreground: hsl(0 0% 98%);
-  --tk-card: hsl(240 6% 7%);
-  --tk-muted: hsl(240 5% 12%);
-  --tk-muted-foreground: hsl(240 5% 64%);
-  --tk-secondary: hsl(240 4% 12%);
-  --tk-secondary-foreground: hsl(0 0% 98%);
-  --tk-accent: hsl(240 5% 15%);
-  --tk-accent-foreground: hsl(0 0% 98%);
+  --pd-background: hsl(240 10% 4%);
+  --pd-foreground: hsl(0 0% 98%);
+  --pd-card: hsl(240 6% 7%);
+  --pd-muted: hsl(240 5% 12%);
+  --pd-muted-foreground: hsl(240 5% 64%);
+  --pd-secondary: hsl(240 4% 12%);
+  --pd-secondary-foreground: hsl(0 0% 98%);
+  --pd-accent: hsl(240 5% 15%);
+  --pd-accent-foreground: hsl(0 0% 98%);
 
-  --tk-primary: hsl(0 0% 96%);
-  --tk-primary-hover: hsl(0 0% 88%);
-  --tk-primary-active: hsl(0 0% 80%);
-  --tk-primary-foreground: hsl(240 10% 4%);
-  --tk-ring: hsl(0 0% 83%);
+  --pd-primary: hsl(0 0% 96%);
+  --pd-primary-hover: hsl(0 0% 88%);
+  --pd-primary-active: hsl(0 0% 80%);
+  --pd-primary-foreground: hsl(240 10% 4%);
+  --pd-ring: hsl(0 0% 83%);
 
   /* 与 theme.ts 的内联兜底保持一致：兜底里这一支是提亮过的 55%（近黑底上 30.6% 太暗、几乎看不出是
      「红」），内联样式优先级更高，所以**实际生效的一直是 55%**；这里同步过来，免得 CSS 与兜底各说各话
      （由 theme.dom.test.ts 的「内联兜底一致性」逐字守住）。 */
-  --tk-destructive: hsl(0 62% 55%);
-  --tk-destructive-foreground: hsl(0 0% 98%);
-  --tk-success: hsl(149 50% 45%);
-  --tk-warning: hsl(36 80% 50%);
-  --tk-info: hsl(207 75% 55%);
+  --pd-destructive: hsl(0 62% 55%);
+  --pd-destructive-foreground: hsl(0 0% 98%);
+  --pd-success: hsl(149 50% 45%);
+  --pd-warning: hsl(36 80% 50%);
+  --pd-info: hsl(207 75% 55%);
 
-  --tk-border: hsl(240 4% 18%);
-  --tk-border-strong: hsl(240 4% 28%);
-  --tk-input: hsl(240 4% 18%);
+  --pd-border: hsl(240 4% 18%);
+  --pd-border-strong: hsl(240 4% 28%);
+  --pd-input: hsl(240 4% 18%);
 
-  --tk-shadow-xs: 0 1px 1px 0 rgb(0 0 0 / 0.3);
-  --tk-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
-  --tk-shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
-  --tk-shadow-lg: 0 12px 26px -6px rgb(0 0 0 / 0.6);
+  --pd-shadow-xs: 0 1px 1px 0 rgb(0 0 0 / 0.3);
+  --pd-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --pd-shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
+  --pd-shadow-lg: 0 12px 26px -6px rgb(0 0 0 / 0.6);
 
   /* 深色主题下激活项同为明快浅黄 + 深色字；待切换项仍是**中性灰底**，只是这里不能沿用浅色主题的
      #f3f4f6 —— 那是近乎白的浅灰，在深色卡片上会变成刺眼的亮块、也不再是「次级」。 */
-  --tk-highlight: #fef08a;
-  --tk-highlight-foreground: #171717;
-  --tk-highlight-secondary: hsl(240 5% 28%);
-  --tk-highlight-secondary-foreground: hsl(0 0% 98%);
+  --pd-highlight: #fef08a;
+  --pd-highlight-foreground: #171717;
+  --pd-highlight-secondary: hsl(240 5% 28%);
+  --pd-highlight-secondary-foreground: hsl(0 0% 98%);
 }
 
 /* 字体缩放默认值只设在 :root 与 :host（两者是各场景的令牌宿主，页面取 :root、Shadow DOM 取
-   :host），不要设到 .tw —— 否则 .tw 会自带 --tk-font-scale:1 并遮蔽 JS 设置的值，导致
+   :host），不要设到 .tw —— 否则 .tw 会自带 --pd-font-scale:1 并遮蔽 JS 设置的值，导致
    侧边栏/抽屉里的工具箱不跟随缩放。JS（applyFontScale）用 inline 值覆盖这两处默认值。 */
 :root,
 :host {
-  --tk-font-scale: 1;
+  --pd-font-scale: 1;
 }
 
 /* 确保 HTML 原生 [hidden] 属性具有最高优先级，防止被各类具有 display: flex/grid/block 等类名意外覆盖 */
@@ -165,7 +168,7 @@ body,
 *::before,
 *::after {
   scrollbar-width: thin;
-  scrollbar-color: var(--tk-border-strong) transparent;
+  scrollbar-color: var(--pd-border-strong) transparent;
 }
 
 ::-webkit-scrollbar,
@@ -181,13 +184,13 @@ body,
 
 ::-webkit-scrollbar-thumb,
 *::-webkit-scrollbar-thumb {
-  background: var(--tk-border-strong);
+  background: var(--pd-border-strong);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover,
 *::-webkit-scrollbar-thumb:hover {
-  background: var(--tk-muted-foreground);
+  background: var(--pd-muted-foreground);
 }
 
 ::-webkit-scrollbar-corner,

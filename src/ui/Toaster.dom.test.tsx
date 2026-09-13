@@ -23,8 +23,8 @@ let container: HTMLDivElement
 let root: Root
 let live: boolean
 
-const titles = () => [...container.querySelectorAll('.tk-toast__title')].map((el) => el.textContent)
-const toasts = () => [...container.querySelectorAll('.tk-toast')]
+const titles = () => [...container.querySelectorAll('.pd-toast__title')].map((el) => el.textContent)
+const toasts = () => [...container.querySelectorAll('.pd-toast')]
 
 beforeEach(() => {
   // toast.ts 是模块级状态，先清空避免上一条用例的通知串进来
@@ -49,7 +49,7 @@ describe('Toaster 渲染与语义', () => {
       root.render(<Toaster />)
     })
 
-    const region = container.querySelector('.tk-toaster')
+    const region = container.querySelector('.pd-toaster')
     expect(region).not.toBeNull()
     expect(region?.getAttribute('role')).toBe('region')
     expect(region?.getAttribute('aria-live')).toBe('polite')
@@ -68,16 +68,16 @@ describe('Toaster 渲染与语义', () => {
 
     expect(titles()).toEqual(['保存成功'])
 
-    const region = container.querySelector('.tk-toaster')
+    const region = container.querySelector('.pd-toaster')
     expect(region).not.toBeNull()
     expect(region?.getAttribute('role')).toBe('region')
     expect(region?.getAttribute('aria-live')).toBe('polite')
     expect(region?.getAttribute('aria-label')).toBe(i18n.t('common.notifications'))
     // 默认位置是底部居中
-    expect(region?.classList.contains('tk-toaster--bottom')).toBe(true)
+    expect(region?.classList.contains('pd-toaster--bottom')).toBe(true)
 
     // 每条通知自身是 status
-    expect(container.querySelector('.tk-toast')?.getAttribute('role')).toBe('status')
+    expect(container.querySelector('.pd-toast')?.getAttribute('role')).toBe('status')
   })
 
   it('position="top" 时改用顶部位置类，不再带底部类', () => {
@@ -88,9 +88,9 @@ describe('Toaster 渲染与语义', () => {
       toast.info('顶部提示')
     })
 
-    const region = container.querySelector('.tk-toaster')
-    expect(region?.classList.contains('tk-toaster--top')).toBe(true)
-    expect(region?.classList.contains('tk-toaster--bottom')).toBe(false)
+    const region = container.querySelector('.pd-toaster')
+    expect(region?.classList.contains('pd-toaster--top')).toBe(true)
+    expect(region?.classList.contains('pd-toaster--bottom')).toBe(false)
   })
 
   it('success 与 error 渲染出不同的 kind 类名（样式差异的挂点）', () => {
@@ -104,8 +104,8 @@ describe('Toaster 渲染与语义', () => {
 
     // error 后触发，排在最前
     expect(toasts().map((el) => el.className)).toEqual([
-      'tk-toast tk-toast--err',
-      'tk-toast tk-toast--success',
+      'pd-toast pd-toast--err',
+      'pd-toast pd-toast--success',
     ])
     expect(titles()).toEqual(['失败', '成功'])
   })
@@ -119,7 +119,7 @@ describe('Toaster 渲染与语义', () => {
       toast.info('提示一下')
     })
 
-    const iconOf = (el: Element) => el.querySelector('.tk-toast__icon')?.innerHTML ?? ''
+    const iconOf = (el: Element) => el.querySelector('.pd-toast__icon')?.innerHTML ?? ''
     // info 后触发，排在最前
     const [infoToast, errToast] = toasts()
     expect(iconOf(infoToast)).not.toBe('')
@@ -160,7 +160,7 @@ describe('Toaster 的堆叠数量与清空', () => {
     })
     expect(toasts()).toHaveLength(0)
     // 容器若随内容销毁，读屏会丢掉公告区域，故空列表也要保留
-    expect(container.querySelector('.tk-toaster')).not.toBeNull()
+    expect(container.querySelector('.pd-toaster')).not.toBeNull()
   })
 
   it('toast.dismiss(id) 只让对应那一条从 DOM 消失', () => {
@@ -188,7 +188,7 @@ describe('Toaster 的堆叠数量与清空', () => {
       toast.error('关闭我')
     })
 
-    const buttons = [...container.querySelectorAll<HTMLButtonElement>('.tk-toast__close')]
+    const buttons = [...container.querySelectorAll<HTMLButtonElement>('.pd-toast__close')]
     expect(buttons).toHaveLength(2)
     expect(buttons[0].getAttribute('aria-label')).toBe(i18n.t('common.close'))
 
@@ -249,7 +249,7 @@ describe('Toaster 的订阅生命周期与定时消失', () => {
     act(() => {
       otherRoot.render(<Toaster />)
     })
-    expect([...other.querySelectorAll('.tk-toast__title')].map((el) => el.textContent)).toEqual([
+    expect([...other.querySelectorAll('.pd-toast__title')].map((el) => el.textContent)).toEqual([
       '卸载后',
       '卸载前',
     ])
@@ -272,6 +272,6 @@ describe('Toaster 的订阅生命周期与定时消失', () => {
     })
     expect(toasts()).toHaveLength(0)
     // 定时消失只移除通知，live region 容器仍在
-    expect(container.querySelector('.tk-toaster')).not.toBeNull()
+    expect(container.querySelector('.pd-toaster')).not.toBeNull()
   })
 })

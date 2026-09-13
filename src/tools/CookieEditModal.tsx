@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
-import TkSelect from '@/ui/TkSelect'
+import PdSelect from '@/ui/PdSelect'
 import Tooltip from '@/ui/Tooltip'
 
 import AutoArea from './AutoArea'
@@ -282,9 +282,9 @@ export default function CookieEditModal({
   if (!open) return null
 
   return (
-    <div className='tk-modal'>
+    <div className='pd-modal'>
       <div
-        className={`tk-modal__card tw-cookie-modal${maximized ? ' tw-cookie-modal--maximized' : ''}`}
+        className={`pd-modal__card tw-cookie-modal${maximized ? ' tw-cookie-modal--maximized' : ''}`}
         role='dialog'
         aria-modal='true'
         aria-labelledby='tw-cookie-modal-title'
@@ -313,7 +313,7 @@ export default function CookieEditModal({
             >
               <button
                 type='button'
-                className='tk-icon-btn'
+                className='pd-icon-btn'
                 onClick={() => setMaximized((v) => !v)}
                 aria-label={maximized ? t('tool.storage.minimize') : t('tool.storage.maximize')}
               >
@@ -323,7 +323,7 @@ export default function CookieEditModal({
             <Tooltip content={t('common.cancel')} side='bottom'>
               <button
                 type='button'
-                className='tk-icon-btn'
+                className='pd-icon-btn'
                 onClick={handleClose}
                 aria-label={t('common.cancel')}
               >
@@ -417,7 +417,7 @@ export default function CookieEditModal({
                   <div className='tw-cookie-modal__row'>
                     <div className='tw-field tw-cookie-modal__col'>
                       <span className='tw-field__label'>{t('tool.storage.cookieExpires')}</span>
-                      <TkSelect
+                      <PdSelect
                         value={expiresType}
                         onChange={(e) => setExpiresType(e.target.value as ExpiresType)}
                       >
@@ -427,7 +427,7 @@ export default function CookieEditModal({
                         <option value='30d'>{t('tool.storage.expires30d')}</option>
                         <option value='1y'>{t('tool.storage.expires1y')}</option>
                         <option value='custom'>{t('tool.storage.expiresCustom')}</option>
-                      </TkSelect>
+                      </PdSelect>
                     </div>
 
                     {expiresType === 'custom' ? (
@@ -446,7 +446,7 @@ export default function CookieEditModal({
                     ) : (
                       <div className='tw-field tw-cookie-modal__col'>
                         <span className='tw-field__label'>SameSite</span>
-                        <TkSelect
+                        <PdSelect
                           value={sameSite}
                           onChange={(e) => {
                             const v = e.target.value as
@@ -462,7 +462,7 @@ export default function CookieEditModal({
                           <option value='strict'>Strict</option>
                           <option value='no_restriction'>None (Secure)</option>
                           <option value='unspecified'>Unspecified</option>
-                        </TkSelect>
+                        </PdSelect>
                       </div>
                     )}
                   </div>
@@ -471,7 +471,7 @@ export default function CookieEditModal({
                     <div className='tw-cookie-modal__row'>
                       <div className='tw-field tw-cookie-modal__col'>
                         <span className='tw-field__label'>SameSite</span>
-                        <TkSelect
+                        <PdSelect
                           value={sameSite}
                           onChange={(e) => {
                             const v = e.target.value as
@@ -487,7 +487,7 @@ export default function CookieEditModal({
                           <option value='strict'>Strict</option>
                           <option value='no_restriction'>None (Secure)</option>
                           <option value='unspecified'>Unspecified</option>
-                        </TkSelect>
+                        </PdSelect>
                       </div>
                       <div className='tw-cookie-modal__col' />
                     </div>
@@ -591,18 +591,18 @@ export default function CookieEditModal({
         </div>
 
         {/* 底部按钮栏 */}
-        <div className='tk-modal__actions tw-cookie-modal__foot'>
+        <div className='pd-modal__actions tw-cookie-modal__foot'>
           {error && (
             <StatusText kind='err' className='tw-cookie-modal__err'>
               {error}
             </StatusText>
           )}
-          <button type='button' className='tk-btn' onClick={handleClose} disabled={submitting}>
+          <button type='button' className='pd-btn' onClick={handleClose} disabled={submitting}>
             {t('common.cancel')}
           </button>
           <button
             type='button'
-            className='tk-btn tk-btn--primary'
+            className='pd-btn pd-btn--primary'
             disabled={
               submitting ||
               (mode === 'form' && !name.trim()) ||

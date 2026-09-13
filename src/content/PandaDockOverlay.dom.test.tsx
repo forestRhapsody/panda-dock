@@ -344,15 +344,15 @@ describe('抽屉的开合入口', () => {
     expect(drawerEl()).toBeNull()
   })
 
-  it('影子根里存在 .tk-modal 内层弹窗时 Escape 不关抽屉，交给内层弹窗', async () => {
+  it('影子根里存在 .pd-modal 内层弹窗时 Escape 不关抽屉，交给内层弹窗', async () => {
     await renderOverlay()
     await flush()
     await openDrawer()
     expect(drawerEl()).not.toBeNull()
 
-    // happy-dom 里直接往影子根塞一个 .tk-modal，构造「内层弹窗还开着」的场景
+    // happy-dom 里直接往影子根塞一个 .pd-modal，构造「内层弹窗还开着」的场景
     const modal = document.createElement('div')
-    modal.className = 'tk-modal'
+    modal.className = 'pd-modal'
     shadowRoot().appendChild(modal)
 
     act(() => {
@@ -373,9 +373,9 @@ describe('抽屉的开合入口', () => {
     await flush()
     await openDrawer()
 
-    // 网页存储双击编辑值时的真实形态：编辑容器带 data-tk-escape，焦点落在其内部
+    // 网页存储双击编辑值时的真实形态：编辑容器带 data-pd-escape，焦点落在其内部
     const editor = document.createElement('div')
-    editor.setAttribute('data-tk-escape', '')
+    editor.setAttribute('data-pd-escape', '')
     const input = document.createElement('input')
     editor.appendChild(input)
     shadowRoot().appendChild(editor)
@@ -577,15 +577,15 @@ describe('设置联动', () => {
     await flush()
 
     expect(host.dataset.theme).toBe('dark')
-    expect(host.style.getPropertyValue('--tk-font-scale')).toBe('1.25')
+    expect(host.style.getPropertyValue('--pd-font-scale')).toBe('1.25')
     // content script 绝不能把令牌写到宿主的 documentElement（AGENTS §4 第 12 条）
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
-    expect(document.documentElement.style.getPropertyValue('--tk-font-scale')).toBe('')
+    expect(document.documentElement.style.getPropertyValue('--pd-font-scale')).toBe('')
 
     emitSettings({ theme: 'light', fontScale: 1.1 })
 
     expect(host.dataset.theme).toBe('light')
-    expect(host.style.getPropertyValue('--tk-font-scale')).toBe('1.1')
+    expect(host.style.getPropertyValue('--pd-font-scale')).toBe('1.1')
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
   })
 

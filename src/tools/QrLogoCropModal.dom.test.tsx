@@ -156,10 +156,10 @@ function wheel(deltaY: number) {
   viewport().dispatchEvent(new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true }))
 }
 
-/** 打开某个 TkSelect 并点选指定文案的选项（下拉经 portal 渲染到 document.body） */
+/** 打开某个 PdSelect 并点选指定文案的选项（下拉经 portal 渲染到 document.body） */
 function chooseOption(trigger: HTMLButtonElement, optionLabel: string) {
   act(() => trigger.click())
-  const items = [...document.querySelectorAll<HTMLElement>('[data-tks-item]')]
+  const items = [...document.querySelectorAll<HTMLElement>('[data-pds-item]')]
   const item = items.find((el) => (el.textContent ?? '').trim() === optionLabel)
   if (!item) {
     throw new Error(
@@ -237,7 +237,7 @@ describe('QrLogoCropModal：初始渲染', () => {
     imageBehavior = { width: 400, height: 200, auto: false }
     await renderModal()
 
-    const dialog = query<HTMLElement>('.tk-modal')
+    const dialog = query<HTMLElement>('.pd-modal')
     expect(dialog.getAttribute('role')).toBe('dialog')
     expect(dialog.getAttribute('aria-modal')).toBe('true')
     expect(dialog.getAttribute('aria-label')).toBe(i18n.t('tool.qrcode.cropTitle'))
@@ -538,7 +538,7 @@ describe('QrLogoCropModal：取消路径', () => {
     )
     expect(onCancel).not.toHaveBeenCalled()
 
-    act(() => query('.tk-modal').dispatchEvent(new MouseEvent('click', { bubbles: true })))
+    act(() => query('.pd-modal').dispatchEvent(new MouseEvent('click', { bubbles: true })))
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 
@@ -580,7 +580,7 @@ describe('QrLogoCropModal：导出失败反馈', () => {
     expect(container.textContent).toContain(i18n.t('tool.qrcode.cropExportError'))
 
     // 失败不关弹窗：按钮只受图片加载状态约束，用户可以直接重试
-    expect(container.querySelector('.tk-modal')).not.toBeNull()
+    expect(container.querySelector('.pd-modal')).not.toBeNull()
     expect(confirmButton().disabled).toBe(false)
 
     getContext.mockImplementation(() => ctx)

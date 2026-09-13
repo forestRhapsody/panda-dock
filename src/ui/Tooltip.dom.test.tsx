@@ -9,7 +9,7 @@ import Tooltip from './Tooltip'
 
 /**
  * Tooltip 是 AGENTS §4 第 14 条指定的「替代原生 title」通用组件，
- * 被 TkSelect / CopyButton / 工具栏大量复用。它有几个容易被改坏的公共契约：
+ * 被 PdSelect / CopyButton / 工具栏大量复用。它有几个容易被改坏的公共契约：
  *  - 不额外包裹子元素（透传渲染，保证 flex 布局与 trigger 的 ref 不被破坏）；
  *  - 悬停/聚焦延迟显示、离开/失焦/按下/Escape 隐藏；
  *  - children 原有事件与 ref 必须继续生效；
@@ -155,7 +155,7 @@ describe('Tooltip 气泡', () => {
     waitDelay()
     expect(tooltip()).not.toBeNull()
     expect(tooltip()?.textContent).toBe('这是提示')
-    expect(tooltip()?.className).toContain('tk-tooltip')
+    expect(tooltip()?.className).toContain('pd-tooltip')
 
     hoverOut(button())
     expect(tooltip()).toBeNull()
@@ -235,14 +235,14 @@ describe('Tooltip 气泡', () => {
     expect(container.children).toHaveLength(1)
     expect(container.firstElementChild?.tagName).toBe('BUTTON')
     expect(container.firstElementChild?.className).toBe('my-btn')
-    expect(container.querySelector('.tk-tooltip')).toBeNull()
+    expect(container.querySelector('.pd-tooltip')).toBeNull()
 
     hoverIn(button())
     waitDelay()
 
     // 气泡挂在 body 上（happy-dom 里 trigger 根节点是 document），不进入容器
-    expect(container.querySelector('.tk-tooltip')).toBeNull()
-    expect(document.body.lastElementChild?.className).toContain('tk-tooltip')
+    expect(container.querySelector('.pd-tooltip')).toBeNull()
+    expect(document.body.lastElementChild?.className).toContain('pd-tooltip')
   })
 
   it('保留 children 原有事件处理器（onMouseEnter / onClick 都被调用）', () => {

@@ -1,5 +1,5 @@
 /**
- * 自定义 Select 下拉组件（tk-select）
+ * 自定义 Select 下拉组件（pd-select）
  * 完全抛弃原生 <select>，对齐 shadcn/ui 设计规范：
  *  - Trigger：button[role=combobox]，显示当前选中值 + 旋转 chevron
  *  - Dropdown：React Portal 渲染到 document.body（避免 overflow 裁剪），position:fixed 定位
@@ -33,7 +33,7 @@ interface OptionInfo {
   disabled?: boolean
 }
 
-interface TkSelectProps {
+interface PdSelectProps {
   value: string | number
   onChange: (e: { target: { value: string } }) => void
   children: React.ReactNode
@@ -77,7 +77,7 @@ function parseOptions(children: React.ReactNode): OptionInfo[] {
 
 // —— 组件 ——
 
-export default function TkSelect({
+export default function PdSelect({
   value,
   onChange,
   children,
@@ -87,7 +87,7 @@ export default function TkSelect({
   className,
   title,
   'aria-label': ariaLabel,
-}: TkSelectProps) {
+}: PdSelectProps) {
   const [open, setOpen] = useState(false)
   const [focusedIdx, setFocusedIdx] = useState(0)
   const [popupPos, setPopupPos] = useState<PopupPosition>({ left: 0, minWidth: 0 })
@@ -210,7 +210,7 @@ export default function TkSelect({
 
   useLayoutEffect(() => {
     if (!open || !popupRef.current) return
-    const items = popupRef.current.querySelectorAll<HTMLElement>('[data-tks-item]')
+    const items = popupRef.current.querySelectorAll<HTMLElement>('[data-pds-item]')
     items[focusedIdx]?.scrollIntoView({ block: 'nearest' })
 
     // 真实 DOM 渲染后兜底校验：用**实测尺寸**把弹层夹在视口内 —— 左右两边都要夹。
@@ -289,9 +289,9 @@ export default function TkSelect({
   // —— 渲染 ——
 
   const triggerCls = [
-    'tk-select',
-    variant === 'sm' && 'tk-select--sm',
-    open && 'tk-select--open',
+    'pd-select',
+    variant === 'sm' && 'pd-select--sm',
+    open && 'pd-select--open',
     className,
   ]
     .filter(Boolean)
@@ -327,7 +327,7 @@ export default function TkSelect({
             ref={popupRef}
             role='listbox'
             aria-label={ariaLabel}
-            className={['tk-select-popup', variant === 'sm' && 'tk-select-popup--sm']
+            className={['pd-select-popup', variant === 'sm' && 'pd-select-popup--sm']
               .filter(Boolean)
               .join(' ')}
             style={popupStyle}
@@ -336,15 +336,15 @@ export default function TkSelect({
             {options.map((opt, i) => (
               <div
                 key={opt.value}
-                data-tks-item
+                data-pds-item
                 role='option'
                 aria-selected={opt.value === strValue}
                 aria-disabled={opt.disabled}
                 className={[
-                  'tk-select-item',
-                  i === focusedIdx && 'tk-select-item--focused',
-                  opt.value === strValue && 'tk-select-item--selected',
-                  opt.disabled && 'tk-select-item--disabled',
+                  'pd-select-item',
+                  i === focusedIdx && 'pd-select-item--focused',
+                  opt.value === strValue && 'pd-select-item--selected',
+                  opt.disabled && 'pd-select-item--disabled',
                 ]
                   .filter(Boolean)
                   .join(' ')}
@@ -354,10 +354,10 @@ export default function TkSelect({
                   if (!opt.disabled) selectValue(opt.value)
                 }}
               >
-                <span className='tk-select-item__check'>
+                <span className='pd-select-item__check'>
                   {opt.value === strValue && <Icon name='check' size={13} />}
                 </span>
-                <span className='tk-select-item__label'>{opt.label}</span>
+                <span className='pd-select-item__label'>{opt.label}</span>
               </div>
             ))}
           </div>,
@@ -379,10 +379,10 @@ export default function TkSelect({
       onClick={() => (open ? closeDropdown() : openDropdown())}
       onKeyDown={handleKeyDown}
     >
-      <span className='tk-select__value'>
-        {selectedLabel || <span className='tk-select__placeholder'>—</span>}
+      <span className='pd-select__value'>
+        {selectedLabel || <span className='pd-select__placeholder'>—</span>}
       </span>
-      <span className='tk-select__arrow' aria-hidden>
+      <span className='pd-select__arrow' aria-hidden>
         <Icon name='chevron-down' size={variant === 'sm' ? 12 : 14} />
       </span>
     </button>

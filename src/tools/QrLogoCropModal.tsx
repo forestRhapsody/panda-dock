@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import Icon from '@/ui/Icon'
-import TkSelect from '@/ui/TkSelect'
+import PdSelect from '@/ui/PdSelect'
 import Tooltip from '@/ui/Tooltip'
 
 import type { QrLogoShape } from './qrcode'
@@ -220,20 +220,20 @@ export default function QrLogoCropModal({
 
   return (
     <div
-      className='tk-modal'
+      className='pd-modal'
       role='dialog'
       aria-modal='true'
       aria-label={t('tool.qrcode.cropTitle')}
       onClick={onCancel}
     >
-      <div className='tk-modal__card tw-crop-modal' onClick={(e) => e.stopPropagation()}>
+      <div className='pd-modal__card tw-crop-modal' onClick={(e) => e.stopPropagation()}>
         {/* 弹窗头部 */}
         <div className='tw-crop-modal__header'>
-          <h3 className='tk-modal__title tw-crop-modal__title'>{t('tool.qrcode.cropTitle')}</h3>
+          <h3 className='pd-modal__title tw-crop-modal__title'>{t('tool.qrcode.cropTitle')}</h3>
           <Tooltip content={t('common.cancel')} side='bottom'>
             <button
               type='button'
-              className='tk-icon-btn'
+              className='pd-icon-btn'
               onClick={onCancel}
               aria-label={t('common.cancel')}
             >
@@ -260,7 +260,7 @@ export default function QrLogoCropModal({
                 alignItems: 'center',
                 justifyContent: 'center',
                 height: '100%',
-                color: 'var(--tk-destructive, #ef4444)',
+                color: 'var(--pd-destructive, #ef4444)',
                 fontSize: 13,
                 padding: 16,
                 textAlign: 'center',
@@ -311,7 +311,7 @@ export default function QrLogoCropModal({
             <label className='tw-crop-modal__label' htmlFor='tw-crop-shape'>
               {t('tool.qrcode.logoShape')}:
             </label>
-            <TkSelect
+            <PdSelect
               id='tw-crop-shape'
               value={shape}
               onChange={(e) => setShape(e.target.value as QrLogoShape)}
@@ -319,11 +319,11 @@ export default function QrLogoCropModal({
               <option value='rounded'>{t('tool.qrcode.logoShapeRounded')}</option>
               <option value='circle'>{t('tool.qrcode.logoShapeCircle')}</option>
               <option value='square'>{t('tool.qrcode.logoShapeSquare')}</option>
-            </TkSelect>
+            </PdSelect>
 
             <button
               type='button'
-              className='tk-btn tk-btn--sm tw-crop-modal__reset-btn'
+              className='pd-btn pd-btn--sm tw-crop-modal__reset-btn'
               onClick={handleReset}
             >
               {t('tool.qrcode.cropReset')}
@@ -349,7 +349,7 @@ export default function QrLogoCropModal({
         {exportError && (
           <p
             style={{
-              color: 'var(--tk-destructive, #ef4444)',
+              color: 'var(--pd-destructive, #ef4444)',
               fontSize: 13,
               margin: '8px 0 0',
               textAlign: 'center',
@@ -360,13 +360,13 @@ export default function QrLogoCropModal({
         )}
 
         {/* 底部操作按钮 */}
-        <div className='tk-modal__actions tw-crop-modal__actions'>
-          <button type='button' className='tk-btn' onClick={onCancel}>
+        <div className='pd-modal__actions tw-crop-modal__actions'>
+          <button type='button' className='pd-btn' onClick={onCancel}>
             {t('common.cancel')}
           </button>
           <button
             type='button'
-            className='tk-btn tk-btn--primary'
+            className='pd-btn pd-btn--primary'
             disabled={!imgLoaded || loadError}
             onClick={handleConfirm}
           >

@@ -161,21 +161,21 @@ function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: strin
 }
 
 function triggerByLabel(label: string): HTMLButtonElement {
-  const el = container.querySelector<HTMLButtonElement>(`button.tk-select[aria-label="${label}"]`)
-  if (!el) throw new Error(`未找到 TkSelect 触发器：${label}`)
+  const el = container.querySelector<HTMLButtonElement>(`button.pd-select[aria-label="${label}"]`)
+  if (!el) throw new Error(`未找到 PdSelect 触发器：${label}`)
   return el
 }
 
-/** TkSelect 当前显示的 label（.tk-select__value） */
+/** PdSelect 当前显示的 label（.pd-select__value） */
 function selectText(label: string): string {
-  return triggerByLabel(label).querySelector('.tk-select__value')?.textContent ?? ''
+  return triggerByLabel(label).querySelector('.pd-select__value')?.textContent ?? ''
 }
 
 /** 展开下拉并点选指定文案的选项（面板经 portal 渲染到 document.body） */
 function choose(label: string, optionLabel: string) {
   fire(triggerByLabel(label), 'click')
-  const item = [...document.body.querySelectorAll<HTMLElement>('.tk-select-item')].find(
-    (n) => n.querySelector('.tk-select-item__label')?.textContent === optionLabel,
+  const item = [...document.body.querySelectorAll<HTMLElement>('.pd-select-item')].find(
+    (n) => n.querySelector('.pd-select-item__label')?.textContent === optionLabel,
   )
   if (!item) throw new Error(`未找到选项：${label} → ${optionLabel}`)
   fire(item, 'pointerdown')
@@ -417,14 +417,14 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
     expect(document.documentElement.dataset.theme).toBe('dark')
   })
 
-  it('切换字体缩放：写入完整对象并应用 --tk-font-scale', async () => {
+  it('切换字体缩放：写入完整对象并应用 --pd-font-scale', async () => {
     await mount(BASE())
     choose('整体字体大小', '最大')
 
     const written = writtenSettings()
     expect(written).toEqual({ ...BASE(), fontScale: 1.25 })
     expectFullSettings(written)
-    expect(document.documentElement.style.getPropertyValue('--tk-font-scale')).toBe('1.25')
+    expect(document.documentElement.style.getPropertyValue('--pd-font-scale')).toBe('1.25')
   })
 
   it('切换语言：中英双向切换，且只保留完整设置对象', async () => {
@@ -715,26 +715,26 @@ describe('OptionsPage 破坏性操作：ConfirmDialog 二次确认', () => {
     )
     fire(dangerButton as Element, 'click')
 
-    const dialog = container.querySelector<HTMLElement>('.tk-modal')
+    const dialog = container.querySelector<HTMLElement>('.pd-modal')
     expect(dialog?.getAttribute('role')).toBe('alertdialog')
-    expect(dialog?.querySelector('.tk-modal__title')?.textContent).toBe(
+    expect(dialog?.querySelector('.pd-modal__title')?.textContent).toBe(
       i18n.t('settings.restoreDefaultsConfirmTitle'),
     )
     // 统一走 ConfirmDialog（§4 第 14 条），绝不能回落到原生 confirm
     expect(confirmSpy).not.toHaveBeenCalled()
 
     // 取消：弹窗关闭、存储没有任何写入、表单保持用户当前值
-    fire(dialog?.querySelector('button.tk-btn:not(.tk-btn--danger)') as Element, 'click')
-    expect(container.querySelector('.tk-modal')).toBeNull()
+    fire(dialog?.querySelector('button.pd-btn:not(.pd-btn--danger)') as Element, 'click')
+    expect(container.querySelector('.pd-modal')).toBeNull()
     expect(syncCalls()).toHaveLength(0)
     expect(selectText('主题')).toBe('深色')
 
     // 确认：提交 defaultSettings()，并把自定义图片一并清空（sync + local 两处）
     fire(dangerButton as Element, 'click')
-    const dangerDialog = container.querySelector<HTMLElement>('.tk-modal')
-    fire(dangerDialog?.querySelector('button.tk-btn--danger') as Element, 'click')
+    const dangerDialog = container.querySelector<HTMLElement>('.pd-modal')
+    fire(dangerDialog?.querySelector('button.pd-btn--danger') as Element, 'click')
 
-    expect(container.querySelector('.tk-modal')).toBeNull()
+    expect(container.querySelector('.pd-modal')).toBeNull()
     expect(syncCalls()).toHaveLength(1)
     expect(writtenSettings()).toEqual(defaultSettings())
     expectFullSettings(writtenSettings())
@@ -751,7 +751,7 @@ describe('OptionsPage 写入失败不静默', () => {
     choose('主题', '深色')
     await settle()
 
-    expect(container.querySelector('.tk-toast__title')?.textContent).toBe(
+    expect(container.querySelector('.pd-toast__title')?.textContent).toBe(
       i18n.t('settings.saveFailed'),
     )
     // 失败不影响本地乐观更新（下次进入仍会从存储读到旧值）
@@ -830,26 +830,26 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
 
     // 第一次点击只弹确认框：图片属于不可恢复的本地数据（§8），不能直接删
     fire(removeButton(), 'click')
-    const dialog = container.querySelector<HTMLElement>('.tk-modal')
+    const dialog = container.querySelector<HTMLElement>('.pd-modal')
     expect(dialog?.getAttribute('role')).toBe('alertdialog')
-    expect(dialog?.querySelector('.tk-modal__title')?.textContent).toBe(
+    expect(dialog?.querySelector('.pd-modal__title')?.textContent).toBe(
       i18n.t('settings.ballImageRemoveConfirmTitle'),
     )
     expect(chromeState.local.ballImage).not.toBeNull()
 
     // 取消：图片与预览都保留
-    fire(dialog?.querySelector('button.tk-btn:not(.tk-btn--danger)') as Element, 'click')
+    fire(dialog?.querySelector('button.pd-btn:not(.pd-btn--danger)') as Element, 'click')
     await settle(10)
-    expect(container.querySelector('.tk-modal')).toBeNull()
+    expect(container.querySelector('.pd-modal')).toBeNull()
     expect(chromeState.local.ballImage).not.toBeNull()
     expect(container.querySelector('img[src^="data:image/"]')).not.toBeNull()
 
     // 确认：local 置空、预览消失
     fire(removeButton(), 'click')
-    fire(container.querySelector('.tk-modal button.tk-btn--danger') as Element, 'click')
+    fire(container.querySelector('.pd-modal button.pd-btn--danger') as Element, 'click')
     await settle(10)
 
-    expect(container.querySelector('.tk-modal')).toBeNull()
+    expect(container.querySelector('.pd-modal')).toBeNull()
     expect(chromeState.local.ballImage).toBeNull()
     expect(container.querySelector('img[src^="data:image/"]')).toBeNull()
   })
@@ -860,20 +860,20 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
     await waitFor(() => expect(container.querySelector('img[src^="data:image/"]')).not.toBeNull())
 
     fire(resetButtonOf('悬浮球样式'), 'click')
-    const dialog = container.querySelector<HTMLElement>('.tk-modal')
-    expect(dialog?.querySelector('.tk-modal__title')?.textContent).toBe(
+    const dialog = container.querySelector<HTMLElement>('.pd-modal')
+    expect(dialog?.querySelector('.pd-modal__title')?.textContent).toBe(
       i18n.t('settings.ballStyleResetConfirmTitle'),
     )
 
     // 取消：样式与图片都不动
-    fire(dialog?.querySelector('button.tk-btn:not(.tk-btn--danger)') as Element, 'click')
+    fire(dialog?.querySelector('button.pd-btn:not(.pd-btn--danger)') as Element, 'click')
     await settle(10)
     expect(chromeState.local.ballImage).not.toBeNull()
     expect(container.querySelector('img[src^="data:image/"]')).not.toBeNull()
 
     // 确认：形状回默认 + 图片清空
     fire(resetButtonOf('悬浮球样式'), 'click')
-    fire(container.querySelector('.tk-modal button.tk-btn--danger') as Element, 'click')
+    fire(container.querySelector('.pd-modal button.pd-btn--danger') as Element, 'click')
     await settle(10)
 
     expect(writtenSettings().ballShape).toBe('rounded')
@@ -887,7 +887,7 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
     fire(resetButtonOf('悬浮球样式'), 'click')
     await settle(10)
 
-    expect(container.querySelector('.tk-modal')).toBeNull()
+    expect(container.querySelector('.pd-modal')).toBeNull()
     expect(writtenSettings().ballShape).toBe('rounded')
   })
 })
@@ -944,12 +944,12 @@ describe('OptionsPage 配置备份：导入 / 导出', () => {
     expect(ballToggle().getAttribute('aria-checked')).toBe('false')
     expect(container.textContent).toContain(i18n.t('settings.importSuccess'))
 
-    const dialog = container.querySelector<HTMLElement>('.tk-modal')
-    expect(dialog?.querySelector('.tk-modal__title')?.textContent).toBe(
+    const dialog = container.querySelector<HTMLElement>('.pd-modal')
+    expect(dialog?.querySelector('.pd-modal__title')?.textContent).toBe(
       i18n.t('settings.importSuccessTitle'),
     )
-    fire(dialog?.querySelector('button.tk-btn--primary') as Element, 'click')
-    expect(container.querySelector('.tk-modal')).toBeNull()
+    fire(dialog?.querySelector('button.pd-btn--primary') as Element, 'click')
+    expect(container.querySelector('.pd-modal')).toBeNull()
   })
 
   it('导入非法文件：只报对应错误，不调用 applyBackup、不弹成功框', async () => {
@@ -962,12 +962,12 @@ describe('OptionsPage 配置备份：导入 / 导出', () => {
     pickFile(importInput(), new File(['not json'], 'backup.json', { type: 'application/json' }))
 
     await waitFor(() =>
-      expect(container.querySelector('.tk-toast__title')?.textContent).toBe(
+      expect(container.querySelector('.pd-toast__title')?.textContent).toBe(
         i18n.t('settings.importInvalidJson'),
       ),
     )
     expect(vi.mocked(applyBackup)).not.toHaveBeenCalled()
-    expect(container.querySelector('.tk-modal')).toBeNull()
+    expect(container.querySelector('.pd-modal')).toBeNull()
   })
 
   it('导入时 sync 写入失败：提示 saveFailed 且不进入成功态', async () => {
@@ -982,11 +982,11 @@ describe('OptionsPage 配置备份：导入 / 导出', () => {
     pickFile(importInput(), new File(['{}'], 'backup.json', { type: 'application/json' }))
 
     await waitFor(() =>
-      expect(container.querySelector('.tk-toast__title')?.textContent).toBe(
+      expect(container.querySelector('.pd-toast__title')?.textContent).toBe(
         i18n.t('settings.saveFailed'),
       ),
     )
-    expect(container.querySelector('.tk-modal')).toBeNull()
+    expect(container.querySelector('.pd-modal')).toBeNull()
   })
 
   it('导入时图片写入失败：提示 ballImageSaveFailed', async () => {
@@ -1001,11 +1001,11 @@ describe('OptionsPage 配置备份：导入 / 导出', () => {
     pickFile(importInput(), new File(['{}'], 'backup.json', { type: 'application/json' }))
 
     await waitFor(() =>
-      expect(container.querySelector('.tk-toast__title')?.textContent).toBe(
+      expect(container.querySelector('.pd-toast__title')?.textContent).toBe(
         i18n.t('settings.ballImageSaveFailed'),
       ),
     )
-    expect(container.querySelector('.tk-modal')).toBeNull()
+    expect(container.querySelector('.pd-modal')).toBeNull()
   })
 })
 

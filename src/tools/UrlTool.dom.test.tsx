@@ -311,11 +311,11 @@ describe('UrlTool 网址编解码', () => {
     await act(async () => buttonByText('编码网址', codecPanel()).click())
     expect(codecOutput().value).toBe('a%20b%26c%3Dd')
 
-    // 打开范围下拉（TkSelect 是自定义 combobox，选项 portal 到 body），选「完整网址 (encodeURI)」
+    // 打开范围下拉（PdSelect 是自定义 combobox，选项 portal 到 body），选「完整网址 (encodeURI)」
     const trigger = codecPanel().querySelector<HTMLButtonElement>('[role="combobox"]')
     expect(trigger).not.toBeNull()
     await act(async () => trigger?.click())
-    const option = [...document.querySelectorAll<HTMLElement>('.tk-select-item')].find((el) =>
+    const option = [...document.querySelectorAll<HTMLElement>('.pd-select-item')].find((el) =>
       el.textContent?.includes('完整网址 (encodeURI)'),
     )
     expect(option).not.toBeUndefined()

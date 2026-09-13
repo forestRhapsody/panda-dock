@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFontScale } from './fontScale'
 /**
  * 字体缩放和主题共用「content script 只写 Shadow DOM 宿主」的规则：
- * 一旦写错落点，`--tk-font-scale` 会泄漏到宿主网页的 <html>，影响别人页面。
+ * 一旦写错落点，`--pd-font-scale` 会泄漏到宿主网页的 <html>，影响别人页面。
  * 另外非扩展（pnpm dev 预览）必须完全不碰 CSS 变量与存储。
  */
 
@@ -58,7 +58,7 @@ function createHost(): HTMLDivElement {
   return host
 }
 
-const scaleOn = (el: HTMLElement) => el.style.getPropertyValue('--tk-font-scale')
+const scaleOn = (el: HTMLElement) => el.style.getPropertyValue('--pd-font-scale')
 const rootScale = () => scaleOn(document.documentElement)
 
 function Probe() {

@@ -242,13 +242,13 @@ describe('Drawer 关闭', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it('抽屉内存在 .tk-modal 内层弹窗时 Escape 不关抽屉，把按键让给内层弹窗', async () => {
+  it('抽屉内存在 .pd-modal 内层弹窗时 Escape 不关抽屉，把按键让给内层弹窗', async () => {
     const onClose = vi.fn()
     await mount(onClose)
 
-    // 构造内层弹窗（ConfirmDialog / 裁剪弹窗都用 .tk-modal）
+    // 构造内层弹窗（ConfirmDialog / 裁剪弹窗都用 .pd-modal）
     const modal = document.createElement('div')
-    modal.className = 'tk-modal'
+    modal.className = 'pd-modal'
     container.appendChild(modal)
 
     pressEscape()
@@ -260,13 +260,13 @@ describe('Drawer 关闭', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('TkSelect 下拉展开时 Escape 先关下拉，不关抽屉', async () => {
+  it('PdSelect 下拉展开时 Escape 先关下拉，不关抽屉', async () => {
     const onClose = vi.fn()
     await mount(onClose)
 
-    // TkSelect 下拉是 portal 到抽屉所在 root 的 .tk-select-popup
+    // PdSelect 下拉是 portal 到抽屉所在 root 的 .pd-select-popup
     const popup = document.createElement('div')
-    popup.className = 'tk-select-popup'
+    popup.className = 'pd-select-popup'
     container.appendChild(popup)
 
     pressEscape()

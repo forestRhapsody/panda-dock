@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
-import TkSelect from '@/ui/TkSelect'
+import PdSelect from '@/ui/PdSelect'
 import { useToolDraft } from '@/utils/draft'
 import { getCurrentPageUrl } from '@/utils/pageUrl'
 
@@ -101,13 +101,13 @@ function UrlParserPanel() {
       <div className='tw-actions'>
         <button
           type='button'
-          className='tk-btn'
+          className='pd-btn'
           disabled={fetching}
           onClick={() => void fetchCurrent()}
         >
           {t('tool.url.fetchCurrent')}
         </button>
-        <button type='button' className='tk-btn' onClick={clear}>
+        <button type='button' className='pd-btn' onClick={clear}>
           {t('common.clear')}
         </button>
       </div>
@@ -257,7 +257,7 @@ function UrlCodecPanel() {
         <div className='tw-field__label'>
           <span>{t('tool.url.inputLabel')}</span>
           <div className='tw-url-codec__select'>
-            <TkSelect
+            <PdSelect
               variant='sm'
               value={scope}
               onChange={(e) => {
@@ -270,7 +270,7 @@ function UrlCodecPanel() {
             >
               <option value='component'>{t('tool.url.codec.scopeComponent')}</option>
               <option value='full'>{t('tool.url.codec.scopeFull')}</option>
-            </TkSelect>
+            </PdSelect>
           </div>
         </div>
         <AutoArea
@@ -284,21 +284,21 @@ function UrlCodecPanel() {
       </div>
 
       <div className='tw-actions'>
-        <button type='button' className='tk-btn tk-btn--primary' onClick={() => runEncode()}>
+        <button type='button' className='pd-btn pd-btn--primary' onClick={() => runEncode()}>
           {t('tool.url.codec.btnEncode')}
         </button>
-        <button type='button' className='tk-btn tk-btn--primary' onClick={() => runDecode()}>
+        <button type='button' className='pd-btn pd-btn--primary' onClick={() => runDecode()}>
           {t('tool.url.codec.btnDecode')}
         </button>
         <button
           type='button'
-          className='tk-btn'
+          className='pd-btn'
           disabled={fetching}
           onClick={() => void fetchCurrent()}
         >
           {t('tool.url.fetchCurrent')}
         </button>
-        <button type='button' className='tk-btn' onClick={clear}>
+        <button type='button' className='pd-btn' onClick={clear}>
           {t('common.clear')}
         </button>
       </div>

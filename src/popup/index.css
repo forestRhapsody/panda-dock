@@ -15,11 +15,11 @@ body {
   flex-direction: column;
   width: 380px;
   max-height: 560px;
-  border-radius: var(--tk-radius-lg);
+  border-radius: var(--pd-radius-lg);
   overflow: hidden;
-  font-family: var(--tk-font);
-  color: var(--tk-foreground);
-  background: var(--tk-card);
+  font-family: var(--pd-font);
+  color: var(--pd-foreground);
+  background: var(--pd-card);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -28,21 +28,21 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--tk-border);
-  background: var(--tk-card);
+  border-bottom: 1px solid var(--pd-border);
+  background: var(--pd-card);
 }
 
 .pop__title {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--tk-text-md);
+  font-size: var(--pd-text-md);
   font-weight: 600;
 }
 
 .pop__native {
   padding: 10px 14px;
-  border-bottom: 1px solid var(--tk-border);
+  border-bottom: 1px solid var(--pd-border);
 }
 
 .pop__actions {
@@ -51,7 +51,7 @@ body {
   gap: 8px;
 }
 
-.pop__actions .tk-btn {
+.pop__actions .pd-btn {
   font-weight: 500;
   gap: 8px;
 }
@@ -62,9 +62,9 @@ body {
   justify-content: space-between;
   margin-top: 10px;
   padding-top: 8px;
-  border-top: 1px dashed color-mix(in srgb, var(--tk-border) 70%, transparent);
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  border-top: 1px dashed color-mix(in srgb, var(--pd-border) 70%, transparent);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
 }
 
 .pop__shortcut-btn {
@@ -72,10 +72,10 @@ body {
   align-items: center;
   gap: 4px;
   padding: 2px 6px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-muted);
-  color: var(--tk-foreground);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-sm);
+  background: var(--pd-muted);
+  color: var(--pd-foreground);
   cursor: pointer;
   transition:
     border-color 0.15s,
@@ -83,20 +83,20 @@ body {
 }
 
 .pop__shortcut-btn:hover {
-  border-color: var(--tk-ring);
-  background: var(--tk-accent);
+  border-color: var(--pd-ring);
+  background: var(--pd-accent);
 }
 
 .pop__kbd {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
   font-weight: 600;
 }
 
 .pop__native-hint {
   margin: 6px 0 0;
-  font-size: var(--tk-text-xs);
-  color: var(--tk-destructive);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-destructive);
 }
 
 .pop__body {
@@ -108,9 +108,9 @@ body {
 
 .pop__settings-head {
   margin-bottom: 10px;
-  font-size: var(--tk-text-sm);
+  font-size: var(--pd-text-sm);
   font-weight: 600;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
 }
 
 .pop__settings-list {
@@ -128,9 +128,9 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--tk-border);
-  border-radius: var(--tk-radius);
-  background: var(--tk-card);
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius);
+  background: var(--pd-card);
 }
 
 .pop__setting-text {
@@ -139,16 +139,16 @@ body {
 
 .pop__setting-text strong {
   display: block;
-  font-size: var(--tk-text-base);
+  font-size: var(--pd-text-base);
   font-weight: 600;
-  color: var(--tk-foreground);
+  color: var(--pd-foreground);
 }
 
 .pop__setting-text p {
   margin: 4px 0 0;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
   line-height: 1.4;
-  color: var(--tk-secondary-foreground);
+  color: var(--pd-secondary-foreground);
 }
 
 .pop__setting--col {
@@ -172,9 +172,9 @@ body {
 
 .pop__setting-tip {
   margin: 0;
-  font-size: var(--tk-text-xs);
+  font-size: var(--pd-text-xs);
   line-height: 1.4;
-  color: var(--tk-muted-foreground);
+  color: var(--pd-muted-foreground);
 }
 
 .pop__setting-tip strong {
@@ -193,19 +193,19 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: var(--tk-text-xs);
-  color: var(--tk-muted-foreground);
+  font-size: var(--pd-text-xs);
+  color: var(--pd-muted-foreground);
 }
 
 .pop__offset-input {
   width: 52px;
   height: 28px;
   padding: 0 6px;
-  border: 1px solid var(--tk-input);
-  border-radius: var(--tk-radius-sm);
-  background: var(--tk-card);
-  color: var(--tk-foreground);
-  font-size: var(--tk-text-xs);
+  border: 1px solid var(--pd-input);
+  border-radius: var(--pd-radius-sm);
+  background: var(--pd-card);
+  color: var(--pd-foreground);
+  font-size: var(--pd-text-xs);
   outline: none;
   box-sizing: border-box;
   transition:
@@ -214,8 +214,8 @@ body {
 }
 
 .pop__offset-input:focus {
-  border-color: var(--tk-ring);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tk-ring) 25%, transparent);
+  border-color: var(--pd-ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--pd-ring) 25%, transparent);
 }
 
-/* Toggle Switch —— 改用 src/ui/ui.css 的 .tk-switch 共享组件 */
+/* Toggle Switch —— 改用 src/ui/ui.css 的 .pd-switch 共享组件 */

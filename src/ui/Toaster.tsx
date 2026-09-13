@@ -28,14 +28,14 @@ export default function Toaster({ position = 'bottom' }: ToasterProps) {
   // pointer-events: none，内部无通知时不占位、不遮挡交互，故不改变现有定位/类名契约。
   return (
     <div
-      className={`tk-toaster tk-toaster--${position}`}
+      className={`pd-toaster pd-toaster--${position}`}
       role='region'
       aria-live='polite'
       aria-label={t('common.notifications')}
     >
       {items.map((item) => (
-        <div key={item.id} className={`tk-toast tk-toast--${item.kind}`} role='status'>
-          <div className='tk-toast__icon'>
+        <div key={item.id} className={`pd-toast pd-toast--${item.kind}`} role='status'>
+          <div className='pd-toast__icon'>
             <Icon
               name={
                 item.icon ??
@@ -44,12 +44,12 @@ export default function Toaster({ position = 'bottom' }: ToasterProps) {
               size={13}
             />
           </div>
-          <div className='tk-toast__content'>
-            <span className='tk-toast__title'>{item.message}</span>
+          <div className='pd-toast__content'>
+            <span className='pd-toast__title'>{item.message}</span>
           </div>
           <button
             type='button'
-            className='tk-toast__close'
+            className='pd-toast__close'
             aria-label={t('common.close')}
             onClick={() => toast.dismiss(item.id)}
           >
