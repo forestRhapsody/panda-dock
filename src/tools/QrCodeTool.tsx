@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -8,7 +8,7 @@ import PdSelect from '@/ui/PdSelect'
 import { toast } from '@/ui/toast'
 import Tooltip from '@/ui/Tooltip'
 import { copyText } from '@/utils/clipboard'
-import { useToolDraft } from '@/utils/draft'
+import { getDraftValue, TabScopeContext, useToolDraft } from '@/utils/draft'
 import { storageGet, storageRemove, storageSet } from '@/utils/env'
 import { getCurrentPageUrl } from '@/utils/pageUrl'
 
@@ -16,11 +16,20 @@ import AutoArea from './AutoArea'
 import CopyButton from './CopyButton'
 import {
   decodeQrCodeFromBlob,
+  DEFAULT_EC_LEVEL,
+  DEFAULT_QR_COMPOSE,
   generateQrCodeBlob,
   generateQrCodeResult,
+  presetToCompose,
   QR_STYLE_PRESET_KEY,
 } from './qrcode'
-import type { QrErrorCorrectionLevel, QrLogoMargin, QrLogoShape, QrStylePreset } from './qrcode'
+import type {
+  QrComposeDraft,
+  QrErrorCorrectionLevel,
+  QrLogoMargin,
+  QrLogoShape,
+  QrStylePreset,
+} from './qrcode'
 import QrLogoCropModal from './QrLogoCropModal'
 import { StatusText } from './StatusText'
 import ToolTabs from './ToolTabs'
@@ -85,20 +94,38 @@ export default function QrCodeTool() {
 
   // —— 生成模式状态 ——
   const [inputText, setInputText, clearInputText] = useToolDraft<string>('qrcode.input', '')
-  const [ecLevel, setEcLevel] = useState<QrErrorCorrectionLevel>('M')
-  const [margin, setMargin] = useState(2)
-  const [resolution, setResolution] = useState(1200)
-  const [labelFontSize, setLabelFontSize] = useState(18)
-  const [fgColor, setFgColor] = useState('#000000')
-  const [bgColor, setBgColor] = useState('#ffffff')
-  const [logoUrl, setLogoUrl] = useState<string | null>(null)
-  const [logoShape, setLogoShape] = useState<QrLogoShape>('rounded')
-  const [logoSizeRatio, setLogoSizeRatio] = useState<number>(0.22)
-  const [logoMargin, setLogoMargin] = useState<QrLogoMargin>('standard')
+  /**
+   * 合成参数（样式 + 底部说明文字）与中心 Logo 都走会话草稿：
+   * 关抽屉 / 关侧栏再打开、刷新页面后仍是刚才那张二维码，不再只剩一个光秃秃的输入框。
+   * Logo 单独一个键（它是一张 600×600 的 data URL），避免调样式时反复重写这张大图。
+   */
+  const [composeDraft, setCompose, , composeLoaded] = useToolDraft<QrComposeDraft>(
+    'qrcode.compose',
+    DEFAULT_QR_COMPOSE,
+  )
+  const [logoUrl, setLogoUrl] = useToolDraft<string | null>('qrcode.logo', null)
+  const tabId = useContext(TabScopeContext)
+  // 草稿可能来自旧版本（缺字段）：读取时补齐出厂值，避免 undefined 直接进生成参数
+  const {
+    ecLevel,
+    ecLevelBeforeLogo,
+    margin,
+    resolution,
+    labelFontSize,
+    fgColor,
+    bgColor,
+    label,
+    logoShape,
+    logoSizeRatio,
+    logoMargin,
+  } = { ...DEFAULT_QR_COMPOSE, ...composeDraft }
   const [cropSourceUrl, setCropSourceUrl] = useState<string | null>(null)
   const [showCropModal, setShowCropModal] = useState(false)
-  const [label, setLabel] = useState('')
-  const [showCustomize, setShowCustomize] = useState(false)
+  /**
+   * 「美化与标签」面板的展开状态：用户是展开着关掉抽屉的，再打开就得还是展开的。
+   * 刻意与合成参数分开存：重置样式时不该顺手把面板收起来（那样刚重置完什么都看不见）。
+   */
+  const [showCustomize, setShowCustomize] = useToolDraft<boolean>('qrcode.customize', false)
   const [hasCustomPreset, setHasCustomPreset] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
@@ -113,42 +140,33 @@ export default function QrCodeTool() {
   const logoUrlRef = useRef<string | null>(null)
   const cropSourceUrlRef = useRef<string | null>(null)
   const imagePreviewUrlRef = useRef<string | null>(null)
-  // 记住「应用 Logo 强制纠错等级 H 之前」的用户等级，移除 Logo 时回落。
-  // 只在尚未记录时记录一次：若每次都覆盖，重新上传 Logo（等级仍被锁定为 H）会把
-  // 记录改写成 H，移除后就再也回不到用户原本的等级了。
-  const ecLevelBeforeLogoRef = useRef<QrErrorCorrectionLevel | null>(null)
 
-  // 挂载时加载用户持久化的样式偏好（若存在）
+  /** 更新合成参数：草稿必须整体替换，且写入前补齐缺失字段（旧版本草稿不带新字段） */
+  function patchCompose(patch: Partial<QrComposeDraft>) {
+    setCompose((prev) => ({ ...DEFAULT_QR_COMPOSE, ...prev, ...patch }))
+  }
+
+  // 挂载时决定合成参数的来源，优先级：本次会话草稿（最新）> 保存的默认样式 > 出厂值
   useEffect(() => {
+    // 等 useToolDraft 的会话读取落地，否则会和「套用默认样式」抢着写同一份状态
+    if (!composeLoaded) return
     let alive = true
-    storageGet<QrStylePreset>('local', QR_STYLE_PRESET_KEY).then((saved) => {
-      if (!alive || !saved) return
-      setHasCustomPreset(true)
-      if (saved.margin !== undefined) setMargin(saved.margin)
-      if (saved.resolution !== undefined) setResolution(saved.resolution)
-      if (saved.fgColor !== undefined) setFgColor(saved.fgColor)
-      if (saved.bgColor !== undefined) setBgColor(saved.bgColor)
-      if (saved.labelFontSize !== undefined) setLabelFontSize(saved.labelFontSize)
-      if (saved.logoShape !== undefined) setLogoShape(saved.logoShape)
-      if (saved.logoSizeRatio !== undefined) setLogoSizeRatio(saved.logoSizeRatio)
-      if (saved.logoMargin !== undefined) {
-        const mapped: QrLogoMargin =
-          saved.logoMargin === false
-            ? 'none'
-            : saved.logoMargin === true
-              ? 'standard'
-              : saved.logoMargin
-        setLogoMargin(mapped)
-      }
-      if (saved.ecLevel !== undefined) {
-        ecLevelBeforeLogoRef.current = saved.ecLevel
-        setEcLevel(saved.ecLevel)
-      }
-    })
+    void (async () => {
+      const [saved, draft] = await Promise.all([
+        // 只要保存过默认样式就显示「恢复默认样式」入口，与本次是否套用它无关
+        storageGet<QrStylePreset>('local', QR_STYLE_PRESET_KEY),
+        getDraftValue<QrComposeDraft>('qrcode.compose', tabId),
+      ])
+      if (!alive) return
+      if (saved) setHasCustomPreset(true)
+      // 会话里调过就用会话里的值：用户刚做的临时调整不该被长期偏好覆盖
+      if (draft || !saved) return
+      setCompose((prev) => ({ ...DEFAULT_QR_COMPOSE, ...prev, ...presetToCompose(saved) }))
+    })()
     return () => {
       alive = false
     }
-  }, [])
+  }, [composeLoaded, tabId, setCompose])
 
   // 保存当前样式为默认偏好
   async function handleSavePreset() {
@@ -161,7 +179,7 @@ export default function QrCodeTool() {
       logoShape,
       logoSizeRatio,
       logoMargin,
-      ecLevel: ecLevelBeforeLogoRef.current ?? ecLevel,
+      ecLevel: ecLevelBeforeLogo ?? ecLevel,
     }
     const ok = await storageSet('local', QR_STYLE_PRESET_KEY, preset)
     if (ok) {
@@ -176,18 +194,15 @@ export default function QrCodeTool() {
   async function executeResetPreset() {
     await storageRemove('local', QR_STYLE_PRESET_KEY)
     setHasCustomPreset(false)
-    setMargin(2)
-    setResolution(1200)
-    setFgColor('#000000')
-    setBgColor('#ffffff')
-    setLabelFontSize(18)
-    setLogoShape('rounded')
-    setLogoSizeRatio(0.22)
-    setLogoMargin('standard')
-    ecLevelBeforeLogoRef.current = 'M'
-    if (!logoUrl) {
-      setEcLevel('M')
-    }
+    // 同时把会话草稿拉回出厂值，否则关掉再打开又变回重置前的样子
+    patchCompose({
+      ...DEFAULT_QR_COMPOSE,
+      // 底部说明文字属于「内容」而不是「样式」，重置样式不该把它擦掉
+      label,
+      // 有 Logo 在场时等级仍锁定 H，只把「记住的原等级」归零
+      ecLevel: logoUrl ? 'H' : DEFAULT_EC_LEVEL,
+      ecLevelBeforeLogo: DEFAULT_EC_LEVEL,
+    })
     toast.success(t('tool.qrcode.presetReset'))
   }
 
@@ -312,9 +327,12 @@ export default function QrCodeTool() {
     if (logoUrlRef.current) URL.revokeObjectURL(logoUrlRef.current)
     logoUrlRef.current = null
     setLogoUrl(croppedDataUrl)
-    setLogoShape(selectedShape)
-    if (ecLevelBeforeLogoRef.current === null) ecLevelBeforeLogoRef.current = ecLevel
-    setEcLevel('H')
+    patchCompose({
+      logoShape: selectedShape,
+      // 只在尚未记录时记一次：重新裁剪（等级仍是 H）不能把原记录改写成 H
+      ecLevelBeforeLogo: ecLevelBeforeLogo ?? ecLevel,
+      ecLevel: 'H',
+    })
     setShowCropModal(false)
   }
 
@@ -341,11 +359,13 @@ export default function QrCodeTool() {
     }
     setCropSourceUrl(null)
     setLogoUrl(null)
-    setLogoMargin('standard')
-    // 回落到应用 Logo 前的用户等级（从未记录过则视为默认 M），并清空记录，
+    // 回落到应用 Logo 前的用户等级（从未记录过则视为默认等级 DEFAULT_EC_LEVEL），并清空记录，
     // 让下次上传 Logo 重新记住当时的等级，而不是一直沿用陈旧值。
-    setEcLevel(ecLevelBeforeLogoRef.current ?? 'M')
-    ecLevelBeforeLogoRef.current = null
+    patchCompose({
+      logoMargin: 'standard',
+      ecLevel: ecLevelBeforeLogo ?? DEFAULT_EC_LEVEL,
+      ecLevelBeforeLogo: null,
+    })
   }
 
   // 生成：下载图片
@@ -579,7 +599,7 @@ export default function QrCodeTool() {
                 <PdSelect
                   id='tw-qr-margin'
                   value={margin}
-                  onChange={(e) => setMargin(Number(e.target.value))}
+                  onChange={(e) => patchCompose({ margin: Number(e.target.value) })}
                 >
                   {MARGIN_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -598,7 +618,9 @@ export default function QrCodeTool() {
                   id='tw-qr-ec'
                   value={ecLevel}
                   disabled={Boolean(logoUrl)}
-                  onChange={(e) => setEcLevel(e.target.value as QrErrorCorrectionLevel)}
+                  onChange={(e) =>
+                    patchCompose({ ecLevel: e.target.value as QrErrorCorrectionLevel })
+                  }
                   title={logoUrl ? t('tool.qrcode.ecLockedForLogo') : undefined}
                 >
                   <option value='L'>L (7%)</option>
@@ -616,7 +638,7 @@ export default function QrCodeTool() {
                 <PdSelect
                   id='tw-qr-resolution'
                   value={resolution}
-                  onChange={(e) => setResolution(Number(e.target.value))}
+                  onChange={(e) => patchCompose({ resolution: Number(e.target.value) })}
                 >
                   {RESOLUTION_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -648,7 +670,7 @@ export default function QrCodeTool() {
                     <input
                       type='color'
                       value={fgColor}
-                      onChange={(e) => setFgColor(e.target.value)}
+                      onChange={(e) => patchCompose({ fgColor: e.target.value })}
                       className='tw-qr__color-input'
                     />
                     <div className='tw-qr__color-swatches'>
@@ -659,7 +681,7 @@ export default function QrCodeTool() {
                             className={`tw-qr__swatch${fgColor === p.color ? ' tw-qr__swatch--active' : ''}`}
                             style={{ backgroundColor: p.color }}
                             aria-label={t(p.labelKey)}
-                            onClick={() => setFgColor(p.color)}
+                            onClick={() => patchCompose({ fgColor: p.color })}
                           />
                         </Tooltip>
                       ))}
@@ -673,7 +695,7 @@ export default function QrCodeTool() {
                     <input
                       type='color'
                       value={bgColor}
-                      onChange={(e) => setBgColor(e.target.value)}
+                      onChange={(e) => patchCompose({ bgColor: e.target.value })}
                       className='tw-qr__color-input'
                     />
                     <div className='tw-qr__color-swatches'>
@@ -684,7 +706,7 @@ export default function QrCodeTool() {
                             className={`tw-qr__swatch${bgColor === p.color ? ' tw-qr__swatch--active' : ''}`}
                             style={{ backgroundColor: p.color }}
                             aria-label={t(p.labelKey)}
-                            onClick={() => setBgColor(p.color)}
+                            onClick={() => patchCompose({ bgColor: p.color })}
                           />
                         </Tooltip>
                       ))}
@@ -702,7 +724,7 @@ export default function QrCodeTool() {
                       type='text'
                       className='tw-input tw-qr__label-input'
                       value={label}
-                      onChange={(e) => setLabel(e.target.value)}
+                      onChange={(e) => patchCompose({ label: e.target.value })}
                       placeholder={t('tool.qrcode.labelPlaceholder')}
                       maxLength={32}
                     />
@@ -711,7 +733,7 @@ export default function QrCodeTool() {
                         <button
                           type='button'
                           className='pd-icon-btn'
-                          onClick={() => setLabel('')}
+                          onClick={() => patchCompose({ label: '' })}
                           aria-label={t('common.cancel')}
                         >
                           <Icon name='close' size={12} />
@@ -725,7 +747,7 @@ export default function QrCodeTool() {
                   <span className='tw-qr__custom-label'>{t('tool.qrcode.labelFontSize')}:</span>
                   <PdSelect
                     value={labelFontSize}
-                    onChange={(e) => setLabelFontSize(Number(e.target.value))}
+                    onChange={(e) => patchCompose({ labelFontSize: Number(e.target.value) })}
                   >
                     {FONT_SIZE_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>
@@ -787,7 +809,9 @@ export default function QrCodeTool() {
                             <PdSelect
                               id='tw-qr-logo-shape'
                               value={logoShape}
-                              onChange={(e) => setLogoShape(e.target.value as QrLogoShape)}
+                              onChange={(e) =>
+                                patchCompose({ logoShape: e.target.value as QrLogoShape })
+                              }
                             >
                               <option value='rounded'>{t('tool.qrcode.logoShapeRounded')}</option>
                               <option value='circle'>{t('tool.qrcode.logoShapeCircle')}</option>
@@ -802,7 +826,9 @@ export default function QrCodeTool() {
                             <PdSelect
                               id='tw-qr-logo-size'
                               value={logoSizeRatio}
-                              onChange={(e) => setLogoSizeRatio(Number(e.target.value))}
+                              onChange={(e) =>
+                                patchCompose({ logoSizeRatio: Number(e.target.value) })
+                              }
                             >
                               {LOGO_SIZE_OPTIONS.map((o) => (
                                 <option key={o.value} value={o.value}>
@@ -819,7 +845,9 @@ export default function QrCodeTool() {
                             <PdSelect
                               id='tw-qr-logo-margin'
                               value={logoMargin}
-                              onChange={(e) => setLogoMargin(e.target.value as QrLogoMargin)}
+                              onChange={(e) =>
+                                patchCompose({ logoMargin: e.target.value as QrLogoMargin })
+                              }
                             >
                               {LOGO_MARGIN_OPTIONS.map((o) => (
                                 <option key={o.value} value={o.value}>

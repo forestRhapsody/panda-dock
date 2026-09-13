@@ -2,7 +2,13 @@
 import QRCode from 'qrcode'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { decodeQrCodeFromBlob, generateQrCodeBlob, generateQrCodeResult } from './qrcode'
+import {
+  decodeQrCodeFromBlob,
+  DEFAULT_QR_COMPOSE,
+  generateQrCodeBlob,
+  generateQrCodeResult,
+  presetToCompose,
+} from './qrcode'
 
 /**
  * qrcode.ts 的输出全靠 canvas 与 Image，happy-dom 两者都是空壳：
@@ -552,5 +558,28 @@ describe('decodeQrCodeFromBlob（真实 jsQR 解码）', () => {
     await expect(decodeQrCodeFromBlob(new Blob(['x']))).rejects.toThrow(
       'Canvas 2D context not available',
     )
+  })
+})
+
+describe('presetToCompose：把「保存的默认样式」映射成合成参数', () => {
+  it('只覆盖预设声明过的字段，其余留给会话草稿 / 出厂值', () => {
+    expect(presetToCompose({})).toEqual({})
+    expect(presetToCompose({ margin: 4, resolution: 800 })).toEqual({ margin: 4, resolution: 800 })
+  })
+
+  it('ecLevel 同时写进「记住的原等级」，供移除外置 Logo 时回落', () => {
+    expect(presetToCompose({ ecLevel: 'Q' })).toEqual({ ecLevel: 'Q', ecLevelBeforeLogo: 'Q' })
+  })
+
+  it('历史 boolean 版 logoMargin 归一化为 none / standard', () => {
+    expect(presetToCompose({ logoMargin: false }).logoMargin).toBe('none')
+    expect(presetToCompose({ logoMargin: true }).logoMargin).toBe('standard')
+    expect(presetToCompose({ logoMargin: 'tight' }).logoMargin).toBe('tight')
+  })
+
+  it('映射结果不会夹带 label —— 底部说明文字属于内容，不归样式预设管', () => {
+    const mapped = presetToCompose({ margin: 1 })
+    expect(Object.keys(mapped)).not.toContain('label')
+    expect(DEFAULT_QR_COMPOSE.label).toBe('')
   })
 })

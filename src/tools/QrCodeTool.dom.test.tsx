@@ -8,12 +8,13 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 import i18n from '@/i18n'
 import {
   decodeQrCodeFromBlob,
+  DEFAULT_QR_COMPOSE,
   generateQrCodeBlob,
   generateQrCodeResult,
   QR_STYLE_PRESET_KEY,
 } from '@/tools/qrcode'
 import type { QrStylePreset } from '@/tools/qrcode'
-import { setDraftValue } from '@/utils/draft'
+import { clearDraftValue, setDraftValue } from '@/utils/draft'
 
 import QrCodeTool from './QrCodeTool'
 
@@ -264,8 +265,15 @@ function chooseOptionByCurrentLabel(currentLabel: string, optionLabel: string) {
   chooseOption(trigger, optionLabel)
 }
 
-function openCustomize() {
+/** 点一下「美化与标签」开关（展开↔收起） */
+function toggleCustomize() {
   clickButton(i18n.t('tool.qrcode.customizeToggle'))
+}
+
+/** 展开「美化与标签」面板（幂等：已经展开时不再点，避免把它又收起来） */
+function openCustomize() {
+  if (container.querySelector('.tw-qr__custom-panel')) return
+  toggleCustomize()
 }
 
 function logoFileInput() {
@@ -299,9 +307,12 @@ function expectNoRawI18nKeys() {
 beforeEach(async () => {
   await i18n.changeLanguage('zh')
   stubChrome()
-  // 草稿的 memoryCache 是模块级常驻的，显式写成空串，避免用例之间互相污染
-  await setDraftValue('qrcode.input', '')
-  await setDraftValue('qrcode.tab', 'generate')
+  // 草稿的 memoryCache 是模块级常驻的，显式清空，避免用例之间互相污染
+  await clearDraftValue('qrcode.input')
+  await clearDraftValue('qrcode.tab')
+  await clearDraftValue('qrcode.compose')
+  await clearDraftValue('qrcode.logo')
+  await clearDraftValue('qrcode.customize')
 
   mockedGenerate.mockReset()
   mockedGenerate.mockResolvedValue({ dataUrl: QR_DATA_URL, width: 1200, height: 1200 })
@@ -591,7 +602,7 @@ describe('QrCodeTool：参数控件变化后的 options', () => {
       queryByText<HTMLButtonElement>('button', i18n.t('tool.qrcode.customizeToggle')).className,
     ).toContain('pd-btn--primary')
 
-    openCustomize()
+    toggleCustomize()
     expect(container.querySelector('.tw-qr__custom-panel')).toBeNull()
   })
 })
@@ -1248,5 +1259,145 @@ describe('QrCodeTool：样式偏好持久化（默认预设）', () => {
 
     const saved = localStore[QR_STYLE_PRESET_KEY] as QrStylePreset
     expect(saved.ecLevel).toBe('M')
+  })
+})
+
+describe('QrCodeTool：合成参数会话草稿（关抽屉再打开仍在）', () => {
+  const COMPOSE_DRAFT_KEY = 'panda.draft.qrcode.compose'
+  const LOGO_DRAFT_KEY = 'panda.draft.qrcode.logo'
+
+  const marginSelectText = () => selectById('tw-qr-margin').textContent ?? ''
+  const labelInput = () => query<HTMLInputElement>('.tw-qr__label-input')
+
+  it('样式调整与底部说明文字写进会话草稿，重挂载后原样恢复', async () => {
+    await renderTool()
+    await generateFrom('hello')
+    openCustomize()
+    chooseOption(selectById('tw-qr-margin'), i18n.t('tool.qrcode.marginLoose'))
+    chooseOption(selectById('tw-qr-ec'), 'Q (25%)')
+    act(() => setNativeValue(labelInput(), '扫我'))
+    await flush(260)
+
+    // 写的是会话存储（而不是只留在内存里）
+    expect(sessionStore[COMPOSE_DRAFT_KEY]).toEqual(
+      expect.objectContaining({ margin: 4, ecLevel: 'Q', label: '扫我' }),
+    )
+
+    await remount()
+    openCustomize()
+
+    expect(marginSelectText()).toContain(i18n.t('tool.qrcode.marginLoose'))
+    expect(selectById('tw-qr-ec').textContent).toContain('Q (25%)')
+    expect(labelInput().value).toBe('扫我')
+  })
+
+  it('中心 Logo 写进会话草稿，重挂载后仍显示同一张图', async () => {
+    await renderTool()
+    await generateFrom('hello')
+    openCustomize()
+    await uploadLogoAndConfirm()
+    await flush(260)
+
+    expect(sessionStore[LOGO_DRAFT_KEY]).toBe(CROPPED_LOGO_URL)
+
+    await remount()
+    openCustomize()
+
+    expect(query<HTMLImageElement>('.tw-qr__logo-thumb').src).toBe(CROPPED_LOGO_URL)
+    // Logo 在场时纠错等级仍锁定为 H
+    expect(selectById('tw-qr-ec').disabled).toBe(true)
+  })
+
+  it('只有会话存储（内存缓存已失效，如页面刷新）时，样式 / 标签 / Logo 一并恢复', async () => {
+    sessionStore[COMPOSE_DRAFT_KEY] = { ...DEFAULT_QR_COMPOSE, margin: 4, label: '来自会话存储' }
+    sessionStore[LOGO_DRAFT_KEY] = CROPPED_LOGO_URL
+
+    await renderTool()
+    openCustomize()
+
+    expect(marginSelectText()).toContain(i18n.t('tool.qrcode.marginLoose'))
+    expect(labelInput().value).toBe('来自会话存储')
+    expect(query<HTMLImageElement>('.tw-qr__logo-thumb').src).toBe(CROPPED_LOGO_URL)
+  })
+
+  it('本地草稿缺字段（旧版本写入）时补齐出厂值，不把 undefined 打进生成参数', async () => {
+    sessionStore[COMPOSE_DRAFT_KEY] = { margin: 4 }
+
+    await renderTool()
+    await generateFrom('hello')
+
+    expect(mockedGenerate).toHaveBeenLastCalledWith('hello', {
+      ...defaultOptions(),
+      margin: 4,
+    })
+  })
+
+  it('「美化与标签」面板的展开状态同样重挂载保留（展开着关掉，再打开还是展开的）', async () => {
+    await renderTool()
+    expect(container.querySelector('.tw-qr__custom-panel')).toBeNull()
+
+    openCustomize()
+    await flush(260)
+    expect(container.querySelector('.tw-qr__custom-panel')).not.toBeNull()
+    expect(sessionStore['panda.draft.qrcode.customize']).toBe(true)
+
+    await remount()
+    expect(container.querySelector('.tw-qr__custom-panel')).not.toBeNull()
+  })
+
+  it('恢复出厂默认样式不会顺手收起面板（否则刚重置完什么都看不见）', async () => {
+    localStore[QR_STYLE_PRESET_KEY] = { margin: 4 }
+
+    await renderTool()
+    openCustomize()
+    clickButton(i18n.t('tool.qrcode.resetDefault'))
+    await flush(0)
+    act(() => query<HTMLButtonElement>('.pd-modal__actions button.pd-btn--danger').click())
+    await flush(260)
+    await flush(400)
+
+    expect(container.querySelector('.tw-qr__custom-panel')).not.toBeNull()
+  })
+
+  it('会话草稿优先于「保存的默认样式」，但保存入口仍然可见', async () => {
+    localStore[QR_STYLE_PRESET_KEY] = { margin: 1 }
+    sessionStore[COMPOSE_DRAFT_KEY] = { ...DEFAULT_QR_COMPOSE, margin: 4 }
+
+    await renderTool()
+    openCustomize()
+
+    expect(marginSelectText()).toContain(i18n.t('tool.qrcode.marginLoose'))
+    expect(
+      queryAll('button').find((b) => b.textContent?.includes(i18n.t('tool.qrcode.resetDefault'))),
+    ).toBeDefined()
+  })
+
+  it('恢复出厂默认样式会连会话草稿一起重置，关掉再打开不回弹', async () => {
+    localStore[QR_STYLE_PRESET_KEY] = { margin: 4 }
+
+    await renderTool()
+    await generateFrom('hello')
+    openCustomize()
+    chooseOption(selectById('tw-qr-margin'), i18n.t('tool.qrcode.marginLoose'))
+    act(() => setNativeValue(labelInput(), '扫我'))
+    await flush(260)
+
+    clickButton(i18n.t('tool.qrcode.resetDefault'))
+    await flush(0)
+    act(() => query<HTMLButtonElement>('.pd-modal__actions button.pd-btn--danger').click())
+    // 重置链是异步的（确认 → 删除预设 → 写草稿，防抖 200ms），分两次等它彻底落地
+    await flush(260)
+    await flush(400)
+
+    // 草稿被拉回出厂样式，但底部说明文字属于内容，不随样式重置清空
+    expect(sessionStore[COMPOSE_DRAFT_KEY]).toEqual(
+      expect.objectContaining({ margin: 2, resolution: 1200, fgColor: '#000000', label: '扫我' }),
+    )
+
+    await remount()
+    openCustomize()
+
+    expect(marginSelectText()).toContain(i18n.t('tool.qrcode.marginStandard'))
+    expect(labelInput().value).toBe('扫我')
   })
 })

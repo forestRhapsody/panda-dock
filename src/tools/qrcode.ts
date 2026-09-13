@@ -9,6 +9,16 @@ export type QrErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H'
 export type QrLogoShape = 'circle' | 'rounded' | 'square'
 export type QrLogoMargin = 'none' | 'tight' | 'standard'
 
+/**
+ * 默认纠错级别：M (15%)，是产品级默认值的唯一来源
+ * （工具初始态、恢复默认、无 Logo 时生成都引用它，避免四处硬编码后改默认漏改）。
+ *
+ * 为什么是 M：L 只有 7% 冗余，屏幕反光 / 拍照角度 / 边缘轻微污损就可能扫不出来；
+ * H 的 30% 冗余会让点阵明显变密（62 字网址 37 → 49 模块），而真正需要 H 的只有
+ * 「中心嵌入 Logo」——那种情况已在 generateQrCodeResult 内部强制升级，无需抬高全局默认。
+ */
+export const DEFAULT_EC_LEVEL: QrErrorCorrectionLevel = 'M'
+
 export interface QrStylePreset {
   margin?: number
   resolution?: number
@@ -23,8 +33,76 @@ export interface QrStylePreset {
 
 export const QR_STYLE_PRESET_KEY = 'panda.qrcode.stylePreset'
 
+/**
+ * 生成页的「合成参数」——决定这张二维码长什么样、底部写什么字的全部输入。
+ *
+ * 它走**会话草稿**（`chrome.storage.session`，标签页级工作区）：关抽屉 / 关侧栏再打开、
+ * 页面刷新都还在，关标签页或关浏览器才清空。与 `QR_STYLE_PRESET_KEY`（用户显式点
+ * 「保存为默认样式」后才写入 `chrome.storage.local` 的长期偏好）是两回事：
+ * 前者记住「我刚才调到哪儿了」，后者记住「我认可的默认长什么样」。
+ */
+export interface QrComposeDraft {
+  ecLevel: QrErrorCorrectionLevel
+  /** 因嵌入 Logo 被锁定为 H 之前的用户等级；null 表示当前没有这层锁定 */
+  ecLevelBeforeLogo: QrErrorCorrectionLevel | null
+  margin: number
+  resolution: number
+  fgColor: string
+  bgColor: string
+  labelFontSize: number
+  /** 底部说明文字（属于内容，重开抽屉必须还在） */
+  label: string
+  logoShape: QrLogoShape
+  logoSizeRatio: number
+  logoMargin: QrLogoMargin
+}
+
+export const DEFAULT_QR_COMPOSE: QrComposeDraft = {
+  ecLevel: DEFAULT_EC_LEVEL,
+  ecLevelBeforeLogo: null,
+  margin: 2,
+  resolution: 1200,
+  fgColor: '#000000',
+  bgColor: '#ffffff',
+  labelFontSize: 18,
+  label: '',
+  logoShape: 'rounded',
+  logoSizeRatio: 0.22,
+  logoMargin: 'standard',
+}
+
+/**
+ * 把「保存的默认样式」映射成合成参数（只覆盖它声明过的字段）。
+ * 仅在**没有**会话草稿时调用：草稿代表用户本次会话的最新调整，优先级更高。
+ */
+export function presetToCompose(preset: QrStylePreset): Partial<QrComposeDraft> {
+  const out: Partial<QrComposeDraft> = {}
+  if (preset.margin !== undefined) out.margin = preset.margin
+  if (preset.resolution !== undefined) out.resolution = preset.resolution
+  if (preset.fgColor !== undefined) out.fgColor = preset.fgColor
+  if (preset.bgColor !== undefined) out.bgColor = preset.bgColor
+  if (preset.labelFontSize !== undefined) out.labelFontSize = preset.labelFontSize
+  if (preset.logoShape !== undefined) out.logoShape = preset.logoShape
+  if (preset.logoSizeRatio !== undefined) out.logoSizeRatio = preset.logoSizeRatio
+  if (preset.logoMargin !== undefined) {
+    // 历史数据里 logoMargin 可能是 boolean（true=standard / false=none）
+    out.logoMargin =
+      preset.logoMargin === false
+        ? 'none'
+        : preset.logoMargin === true
+          ? 'standard'
+          : preset.logoMargin
+  }
+  if (preset.ecLevel !== undefined) {
+    out.ecLevel = preset.ecLevel
+    // 与「上传 Logo 前先记住原等级」同一语义：这里的等级就是用户原本想用的等级
+    out.ecLevelBeforeLogo = preset.ecLevel
+  }
+  return out
+}
+
 export interface GenerateQrOptions {
-  /** 纠错等级：L (7%) / M (15%) / Q (25%) / H (30%)，默认 M */
+  /** 纠错等级：L (7%) / M (15%) / Q (25%) / H (30%)，默认 DEFAULT_EC_LEVEL（M） */
   errorCorrectionLevel?: QrErrorCorrectionLevel
   /** 边距（留白格数），默认 2，支持 0 / 1 / 2 / 4 等 */
   margin?: number
@@ -101,7 +179,9 @@ async function generateQrCanvas(
   } = options
 
   // 上传 Logo 时，自动使用最高纠错级别 H (30%) 保证扫码识别率
-  const ecLevel: QrErrorCorrectionLevel = logoUrl ? 'H' : (options.errorCorrectionLevel ?? 'M')
+  const ecLevel: QrErrorCorrectionLevel = logoUrl
+    ? 'H'
+    : (options.errorCorrectionLevel ?? DEFAULT_EC_LEVEL)
 
   // 1. 生成二维码点阵元数据（BitMatrix）
   const qr = QRCode.create(text, { errorCorrectionLevel: ecLevel })
