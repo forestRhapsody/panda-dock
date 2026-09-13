@@ -470,9 +470,32 @@ describe('StorageTool 破坏性操作二次确认', () => {
 })
 
 describe('StorageTool 编辑与写入', () => {
+  it('点击新增时默认聚焦在 Key 输入框，而编辑已有项时默认聚焦在值输入框', async () => {
+    vi.mocked(listStorage).mockResolvedValue({
+      ok: true,
+      data: makeSnapshot({ entries: [makeEntry('item1', 'value1')], totalCount: 1 }),
+    })
+    await renderTool()
+
+    // 1. 点击新增：焦点默认在 Key 上
+    await act(async () => buttonWithText('新增').click())
+    expect(document.activeElement).toBe(editorKeyInput())
+
+    // 取消新增
+    await act(async () => {
+      const cancelBtn = container.querySelector<HTMLButtonElement>('.tw-store__ghost-btn')
+      cancelBtn?.click()
+    })
+
+    // 2. 点击已有项编辑：焦点默认在值上
+    await act(async () => buttonWithText('编辑', firstRow()).click())
+    expect(document.activeElement).toBe(editorValueArea())
+  })
+
   it('新增键值：合法 JSON 保存时自动压缩，写入后关闭编辑器', async () => {
     await renderTool()
     await act(async () => buttonWithText('新增').click())
+    expect(document.activeElement).toBe(editorKeyInput())
     expect(editorKeyInput().value).toBe('')
 
     await act(async () => setInput(editorKeyInput(), ' cfg '))

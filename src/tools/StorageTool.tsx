@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -89,6 +89,8 @@ interface EditorFormProps {
   useJson: boolean
   /** 表单内联校验错误（如「请填写 Key」），显示在 Key 下方 */
   formError: string | null
+  /** 是否为新增条目（新增时默认聚焦到 key 输入框，编辑已存条目时默认聚焦到值输入框） */
+  isNew?: boolean
   onKeyChange: (v: string) => void
   onValueChange: (v: string) => void
   onCancel: () => void
@@ -101,15 +103,23 @@ function EditorForm({
   draftValue,
   useJson,
   formError,
+  isNew = false,
   onKeyChange,
   onValueChange,
   onCancel,
   onSave,
 }: EditorFormProps) {
   const { t } = useTranslation()
+  const keyInputRef = useRef<HTMLInputElement>(null)
   const draftJson = parseJson(draftValue)
   // 原值是 JSON 则全程 JSON 编辑器；否则当前值一旦是 JSON 也切换到 JSON 编辑器
   const showJson = useJson || draftJson.ok
+
+  useEffect(() => {
+    if (isNew) {
+      keyInputRef.current?.focus()
+    }
+  }, [isNew])
 
   function format() {
     if (draftJson.ok) onValueChange(JSON.stringify(draftJson.value, null, 2))
@@ -134,9 +144,11 @@ function EditorForm({
       <label className='tw-field'>
         <span className='tw-field__label'>{t('tool.storage.key')}</span>
         <input
+          ref={keyInputRef}
           className='tw-input'
           value={draftKey}
           spellCheck={false}
+          autoFocus={isNew}
           onChange={(e) => onKeyChange(e.target.value)}
         />
       </label>
@@ -149,7 +161,7 @@ function EditorForm({
       {showJson ? (
         <JsonTextarea
           value={draftValue}
-          autoFocus
+          autoFocus={!isNew}
           maxHeight={300}
           onChange={(e) => onValueChange(e.target.value)}
         />
@@ -158,7 +170,7 @@ function EditorForm({
           className='tw-store__editval'
           value={draftValue}
           spellCheck={false}
-          autoFocus
+          autoFocus={!isNew}
           maxHeight={300}
           onChange={(e) => onValueChange(e.target.value)}
         />
@@ -663,7 +675,7 @@ export default function StorageTool() {
 
       {creating && area !== 'cookie' && (
         <div className='tw-store__row tw-store__row--editing tw-store__row--creating'>
-          <EditorForm {...editorProps} />
+          <EditorForm {...editorProps} isNew />
         </div>
       )}
 
