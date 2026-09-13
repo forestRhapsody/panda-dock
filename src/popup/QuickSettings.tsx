@@ -254,14 +254,21 @@ export default function QuickSettings() {
             </div>
           </li>
         )}
-        <li className='pop__setting'>
+        <li className='pop__setting pop__setting--align-top'>
           <div className='pop__setting-text'>
             <strong>{t('settings.ballAction')}</strong>
-            <p>
-              {settings.ballAction === 'drawer'
-                ? t('settings.ballActionDrawerTip')
-                : t('settings.ballActionNativeTip')}
-            </p>
+            <div className='pop__setting-tips'>
+              <p
+                className={`pop__setting-tip${settings.ballAction === 'drawer' ? ' pop__setting-tip--active' : ''}`}
+              >
+                {t('settings.ballActionDrawerTip')}
+              </p>
+              <p
+                className={`pop__setting-tip${settings.ballAction === 'native' ? ' pop__setting-tip--active' : ''}`}
+              >
+                {t('settings.ballActionNativeTip')}
+              </p>
+            </div>
           </div>
           <TkSelect
             variant='sm'

@@ -494,12 +494,18 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
 
   it('点击动作 / 形状 / 预设 / 大小：逐项写入完整对象', async () => {
     await mount(BASE())
-    expect(container.textContent).toContain('数据仅在当前标签页内有效')
+    expect(container.querySelector('.opt__item-tip--active')?.textContent).toContain(
+      '数据仅在当前标签页内有效',
+    )
+    expect(container.textContent).toContain('所有页面共用同一份数据')
 
     choose('默认唤起方式', '浏览器原生侧边栏')
     expect(writtenSettings()).toEqual({ ...BASE(), ballAction: 'native' })
     expectFullSettings(writtenSettings())
-    expect(container.textContent).toContain('所有页面共用同一份数据')
+    expect(container.querySelector('.opt__item-tip--active')?.textContent).toContain(
+      '所有页面共用同一份数据',
+    )
+    expect(container.textContent).toContain('数据仅在当前标签页内有效')
 
     choose('形状', '圆形')
     expect(writtenSettings()).toEqual({ ...BASE(), ballAction: 'native', ballShape: 'circle' })

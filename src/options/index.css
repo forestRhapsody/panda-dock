@@ -86,10 +86,38 @@ body {
   color: var(--tk-muted-foreground);
 }
 
-.opt__item-text p.opt__item-tip {
+.opt__item--align-top {
+  align-items: flex-start;
+}
+
+.opt__item-tips {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.opt__item-text .opt__item-tip {
+  margin: 0;
   font-size: var(--tk-text-xs);
-  line-height: 1.4;
-  color: var(--tk-secondary-foreground);
+  line-height: 1.5;
+  color: var(--tk-muted-foreground);
+  transition: color 0.15s ease;
+}
+
+.opt__item-text .opt__item-tip::before {
+  content: '• ';
+  margin-right: 4px;
+  color: var(--tk-muted-foreground);
+}
+
+.opt__item-text .opt__item-tip--active {
+  color: var(--tk-foreground);
+  font-weight: 500;
+}
+
+.opt__item-text .opt__item-tip--active::before {
+  color: var(--tk-primary);
 }
 
 .opt__shortcut-group {
