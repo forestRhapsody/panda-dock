@@ -116,7 +116,7 @@ export const BALL_IMAGE_MAX_BYTES = 128 * 1024
 export const BALL_IMAGE_MAX_DATA_URL_LENGTH = Math.ceil((BALL_IMAGE_MAX_BYTES * 4) / 3) + 512
 
 function normalizeBallShape(value: unknown): BallShape {
-  return value === 'circle' || value === 'square' ? value : 'rounded'
+  return value === 'rounded' || value === 'square' ? value : 'circle'
 }
 
 function normalizeBallPreset(value: unknown): BallPreset {
@@ -124,7 +124,7 @@ function normalizeBallPreset(value: unknown): BallPreset {
 }
 
 function normalizeBallSize(value: unknown): BallSize {
-  return value === 'sm' || value === 'lg' ? value : 'md'
+  return value === 'md' || value === 'lg' ? value : 'sm'
 }
 
 /** 读取自定义悬浮球图片（base64 data URL），不存在返回 null */
@@ -253,9 +253,9 @@ export function defaultSettings(): Settings {
     ballDockMode: 'edge',
     ballBottomRightRight: DEFAULT_BOTTOM_RIGHT_OFFSET_X,
     ballBottomRightBottom: DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
-    ballShape: 'rounded',
+    ballShape: 'circle',
     ballPreset: 'primary',
-    ballSize: 'md',
+    ballSize: 'sm',
     ballAction: 'drawer',
     ballDomainMode: 'blacklist',
     ballBlacklist: [],

@@ -321,14 +321,14 @@ export default function PandaDockOverlay() {
     right: DEFAULT_BOTTOM_RIGHT_OFFSET_X,
     bottom: DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
   })
-  const [ballShape, setBallShape] = useState<BallShape>('rounded')
+  const [ballShape, setBallShape] = useState<BallShape>('circle')
   const [ballPreset, setBallPreset] = useState<BallPreset>('primary')
-  const [ballSize, setBallSize] = useState<BallSize>('md')
+  const [ballSize, setBallSize] = useState<BallSize>('sm')
   const [ballImage, setBallImage] = useState<string | null>(null)
   const [ballDomainMode, setBallDomainMode] = useState<DomainMatchMode>('blacklist')
   const [ballBlacklist, setBallBlacklist] = useState<string[]>([])
   const [ballWhitelist, setBallWhitelist] = useState<string[]>([])
-  const [pos, setPos] = useState<BallPos>(() => defaultPos('edge', BALL_SIZE_PX.md))
+  const [pos, setPos] = useState<BallPos>(() => defaultPos('edge', BALL_SIZE_PX.sm))
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [selectionDetect, setSelectionDetect] = useState<{
@@ -428,7 +428,7 @@ export default function PandaDockOverlay() {
       const dockMode: BallDockMode =
         settings?.ballDockMode ?? (settings?.ballSnap === false ? 'free' : 'edge')
       setBallDockMode(dockMode)
-      setPos(resolvePos(saved, dockMode, BALL_SIZE_PX[settings?.ballSize ?? 'md'], offset))
+      setPos(resolvePos(saved, dockMode, BALL_SIZE_PX[settings?.ballSize ?? 'sm'], offset))
       setReady(true)
     })
 

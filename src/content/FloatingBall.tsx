@@ -54,7 +54,10 @@ export function snapToEdge(pos: BallPos, d: number): BallPos {
   return { x: targetX, y: clampDockTop(pos.y, d) }
 }
 
-/** 根据形状/大小/图片计算球的外观样式（几何 + 背景），无图片时按预设填充 */
+/**
+ * 根据形状/大小/图片计算球的外观样式（几何），球体本身不带底色与阴影：
+ * 有图片时由图片自身撑满球面，无图片时显示所选内置 logo（emoji 占位）。
+ */
 function buildBallStyle(shape: BallShape, d: number, image?: string | null): CSSProperties {
   const radius =
     shape === 'circle' ? '50%' : shape === 'rounded' ? `${Math.round(d * 0.28)}px` : '0px'
@@ -66,11 +69,10 @@ function buildBallStyle(shape: BallShape, d: number, image?: string | null): CSS
       backgroundSize: 'cover',
       backgroundRepeat: 'no-repeat',
       backgroundPosition: 'center',
-      backgroundColor: 'var(--pd-card)',
     }
   }
-  // 无自定义图片：球面显示所选内置 logo（现为 emoji 占位），垫一层中性底让 logo 清晰可见
-  return { ...base, background: 'var(--pd-card)', color: 'var(--pd-foreground)' }
+  // 无自定义图片：只渲染内置 logo，不垫任何容器底色
+  return { ...base, color: 'var(--pd-foreground)' }
 }
 
 interface DownState {
@@ -114,8 +116,8 @@ export default function FloatingBall({
   dockMode,
   bottomRightOffset,
   snap,
-  shape = 'rounded',
-  size = 'md',
+  shape = 'circle',
+  size = 'sm',
   preset = 'primary',
   image,
   onDrop,

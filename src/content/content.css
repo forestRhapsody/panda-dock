@@ -25,9 +25,8 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  box-shadow: var(--pd-shadow-lg);
   transition: filter 0.15s;
-  /* 尺寸 / 圆角 / 背景由组件内联 style 控制（buildBallStyle） */
+  /* 尺寸 / 圆角由组件内联 style 控制（buildBallStyle）；球体默认无底色与阴影，只显示 logo */
 }
 
 .tek__dock:hover {

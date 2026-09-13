@@ -144,7 +144,7 @@ describe('parseAndValidateBackup 的输入校验', () => {
     expect(result.settings.theme).toBe('dark')
     expect(result.settings.fontScale).toBe(1)
     expect(result.settings.locale).toBe('system')
-    expect(result.settings.ballSize).toBe('md')
+    expect(result.settings.ballSize).toBe('sm')
   })
 })
 

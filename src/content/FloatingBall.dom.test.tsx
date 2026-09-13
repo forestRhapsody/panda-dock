@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { act } from 'react'
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,6 +11,9 @@ import i18n from '@/i18n'
 import { BALL_SIZE_PX } from '@/utils/settings'
 
 import FloatingBall, { clampBallPos, snapToEdge } from './FloatingBall'
+
+/** content 样式只能内联进 Shadow DOM，这里直接读源码文本做守卫（`?raw` 在测试环境返回空串） */
+const contentCss = readFileSync(resolve(import.meta.dirname, 'content.css'), 'utf8')
 
 /**
  * 悬浮球的几何计算（夹取 / 吸边）与真实 DOM 行为：
@@ -24,8 +29,8 @@ import FloatingBall, { clampBallPos, snapToEdge } from './FloatingBall'
 const VW = 400
 /** 视口高度 */
 const VH = 300
-/** 中号球直径：BALL_SIZE_PX.md */
-const D = BALL_SIZE_PX.md
+/** 默认球直径：BALL_SIZE_PX.sm（默认大小为「小」） */
+const D = BALL_SIZE_PX.sm
 /** 源码里的纵向最小边距 */
 const EDGE_MARGIN = 8
 
@@ -245,6 +250,24 @@ describe('FloatingBall 渲染与定位', () => {
     expect(renderBall({ size: 'sm' }).style.width).toBe(`${BALL_SIZE_PX.sm}px`)
     expect(renderBall({ size: 'md' }).style.height).toBe(`${BALL_SIZE_PX.md}px`)
     expect(renderBall({ size: 'lg' }).style.width).toBe(`${BALL_SIZE_PX.lg}px`)
+  })
+
+  it('球体容器默认不带底色：有图 / 无图两条分支都不写 background', () => {
+    const withImage = renderBall({ image: 'data:image/png;base64,AAAA' })
+    expect(withImage.style.background).toBe('')
+    expect(withImage.style.backgroundColor).toBe('')
+
+    const withEmoji = renderBall({ preset: 'soft' })
+    expect(withEmoji.style.background).toBe('')
+    expect(withEmoji.style.backgroundColor).toBe('')
+  })
+
+  it('内容脚本样式不给悬浮球加底色与投影（容器默认无背景，也不需要一圈阴影）', () => {
+    // 取 .tek__dock 基础规则（:hover / --drag 修饰符不参与）
+    const dockRule = /\.tek__dock\s*\{[^}]*\}/.exec(contentCss)?.[0] ?? ''
+    expect(dockRule).not.toBe('')
+    expect(dockRule).not.toContain('box-shadow')
+    expect(dockRule).not.toMatch(/(^|[;{\s])background\s*:/)
   })
 
   it('有自定义图片时用 backgroundImage 铺满，且不再渲染 emoji logo', () => {

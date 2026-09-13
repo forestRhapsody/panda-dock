@@ -49,11 +49,11 @@ describe('defaultSettings / normalizeSettings', () => {
     expect(normalizeSettings({ ballShape: 'circle' }).ballShape).toBe('circle')
     expect(normalizeSettings({ ballShape: 'rounded' }).ballShape).toBe('rounded')
     expect(normalizeSettings({ ballShape: 'square' }).ballShape).toBe('square')
-    expect(normalizeSettings({ ballShape: '三角' as never }).ballShape).toBe('rounded')
+    expect(normalizeSettings({ ballShape: '三角' as never }).ballShape).toBe('circle')
     expect(normalizeSettings({ ballPreset: 'soft' }).ballPreset).toBe('soft')
     expect(normalizeSettings({ ballPreset: 'nope' as never }).ballPreset).toBe('primary')
     expect(normalizeSettings({ ballSize: 'lg' }).ballSize).toBe('lg')
-    expect(normalizeSettings({ ballSize: 'xl' as never }).ballSize).toBe('md')
+    expect(normalizeSettings({ ballSize: 'xl' as never }).ballSize).toBe('sm')
   })
 
   it('悬浮球停靠行为及旧 ballSnap 字段兼容', () => {
@@ -238,9 +238,9 @@ describe('defaultSettings 完整形状', () => {
       ballDockMode: 'edge',
       ballBottomRightRight: DEFAULT_BOTTOM_RIGHT_OFFSET_X,
       ballBottomRightBottom: DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
-      ballShape: 'rounded',
+      ballShape: 'circle',
       ballPreset: 'primary',
-      ballSize: 'md',
+      ballSize: 'sm',
       ballAction: 'drawer',
       ballDomainMode: 'blacklist',
       ballBlacklist: [],
@@ -300,13 +300,13 @@ describe('normalizeSettings：类型全错与部分字段', () => {
 })
 
 describe('normalizeBallShape / normalizeBallPreset / normalizeBallSize 取值全集', () => {
-  it('形状：circle / square 合法，其余（含已知的 rounded）回退 rounded', () => {
+  it('形状：circle / rounded / square 合法，其余回退 circle', () => {
     expect(normalizeSettings({ ballShape: 'circle' }).ballShape).toBe('circle')
     expect(normalizeSettings({ ballShape: 'square' }).ballShape).toBe('square')
     expect(normalizeSettings({ ballShape: 'rounded' }).ballShape).toBe('rounded')
     const bad: unknown[] = ['', 'CIRCLE', 'triangle', 0, null, undefined, {}, []]
     for (const v of bad)
-      expect(normalizeSettings({ ballShape: v as never }).ballShape).toBe('rounded')
+      expect(normalizeSettings({ ballShape: v as never }).ballShape).toBe('circle')
   })
 
   it('预设：outline / soft 合法，其余回退 primary', () => {
@@ -318,12 +318,12 @@ describe('normalizeBallShape / normalizeBallPreset / normalizeBallSize 取值全
       expect(normalizeSettings({ ballPreset: v as never }).ballPreset).toBe('primary')
   })
 
-  it('大小：sm / lg 合法，其余回退 md', () => {
+  it('大小：sm / md / lg 合法，其余回退 sm', () => {
     expect(normalizeSettings({ ballSize: 'sm' }).ballSize).toBe('sm')
     expect(normalizeSettings({ ballSize: 'lg' }).ballSize).toBe('lg')
     expect(normalizeSettings({ ballSize: 'md' }).ballSize).toBe('md')
     const bad: unknown[] = ['SM', 'xl', 44, null, undefined, {}]
-    for (const v of bad) expect(normalizeSettings({ ballSize: v as never }).ballSize).toBe('md')
+    for (const v of bad) expect(normalizeSettings({ ballSize: v as never }).ballSize).toBe('sm')
   })
 
   it('主题 / 语言 / 字号只接受白名单内的值', () => {
