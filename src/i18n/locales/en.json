@@ -45,7 +45,7 @@
     "offsetBottom": "Bottom",
     "offsetRightShort": "R",
     "offsetBottomShort": "B",
-    "ballAction": "Action when clicking the ball",
+    "ballAction": "Default launch mode",
     "ballActionDesc": "Choose which interface to open when clicking the ball or pressing the global shortcut.",
     "ballActionDrawerTip": "In-page drawer: Tab-scoped sandbox, drafts are not persisted (destroyed on tab close), completely isolated per page.",
     "ballActionNativeTip": "Browser native side panel: Global shared workspace, content stays when switching tabs, retained until the browser closes.",

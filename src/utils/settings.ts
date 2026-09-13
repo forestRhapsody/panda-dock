@@ -174,7 +174,7 @@ export interface Settings {
   ballPreset: BallPreset
   /** 悬浮球大小档位 */
   ballSize: BallSize
-  /** 点击悬浮球的动作：网页内抽屉 / 浏览器原生侧边栏 */
+  /** 默认唤起方式：网页内抽屉 / 浏览器原生侧边栏 */
   ballAction: BallAction
   /** 域名过滤模式：黑名单模式（默认）/ 白名单模式 */
   ballDomainMode: DomainMatchMode

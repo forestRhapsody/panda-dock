@@ -324,7 +324,7 @@ describe('OptionsPage 首屏读取与归一化', () => {
     expect(selectText('主题')).toBe('深色')
     expect(selectText('整体字体大小')).toBe('较大')
     expect(selectText('停靠行为')).toBe('固定右下角')
-    expect(selectText('点击悬浮球的动作')).toBe('浏览器原生侧边栏')
+    expect(selectText('默认唤起方式')).toBe('浏览器原生侧边栏')
     expect(selectText('形状')).toBe('圆形')
     expect(selectText('大小')).toBe('大')
     expect(ballToggle().getAttribute('aria-checked')).toBe('false')
@@ -372,7 +372,7 @@ describe('OptionsPage 首屏读取与归一化', () => {
     expect(selectText('整体字体大小')).toBe('标准')
     expect(selectText('形状')).toBe('圆角矩形')
     expect(selectText('大小')).toBe('中')
-    expect(selectText('点击悬浮球的动作')).toBe('网页内抽屉')
+    expect(selectText('默认唤起方式')).toBe('网页内抽屉')
     // ballDockMode 非法但 ballSnap=false → 迁移为自由停靠（向后兼容旧字段）
     expect(selectText('停靠行为')).toBe('自由停靠')
     // 非数组黑名单归一化为空
@@ -496,7 +496,7 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
     await mount(BASE())
     expect(container.textContent).toContain('单标签页专属沙箱，数据不持久化')
 
-    choose('点击悬浮球的动作', '浏览器原生侧边栏')
+    choose('默认唤起方式', '浏览器原生侧边栏')
     expect(writtenSettings()).toEqual({ ...BASE(), ballAction: 'native' })
     expectFullSettings(writtenSettings())
     expect(container.textContent).toContain('全局共享工作台，切换标签页内容常驻')

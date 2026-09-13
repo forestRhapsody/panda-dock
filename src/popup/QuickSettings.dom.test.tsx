@@ -243,7 +243,7 @@ describe('QuickSettings 首屏读取与归一化', () => {
     expect(rowSwitch(i18n.t('settings.quickOpen')).getAttribute('aria-checked')).toBe('true')
     expect(selectText('停靠行为')).toBe('固定右下角')
     expect(selectText('主题')).toBe('深色')
-    expect(selectText('点击悬浮球的动作')).toBe('浏览器原生侧边栏')
+    expect(selectText('默认唤起方式')).toBe('浏览器原生侧边栏')
 
     const offsets = [...container.querySelectorAll<HTMLInputElement>('.pop__offset-input')]
     expect(offsets.map((i) => i.value)).toEqual(['200', '20'])
@@ -270,7 +270,7 @@ describe('QuickSettings 首屏读取与归一化', () => {
 
     expect(selectText('主题')).toBe('跟随系统')
     expect(selectText('语言')).toBe('跟随系统')
-    expect(selectText('点击悬浮球的动作')).toBe('网页内抽屉')
+    expect(selectText('默认唤起方式')).toBe('网页内抽屉')
     // ballSnap=false 的旧数据迁移为「自由停靠」
     expect(selectText('停靠行为')).toBe('自由停靠')
     expect(container.querySelectorAll('.pop__offset-input')).toHaveLength(0)
@@ -479,7 +479,7 @@ describe('QuickSettings 其余快捷项', () => {
     await mount(BASE())
     expect(container.textContent).toContain('单标签页专属沙箱，数据不持久化')
 
-    choose('点击悬浮球的动作', '浏览器原生侧边栏')
+    choose('默认唤起方式', '浏览器原生侧边栏')
     expect(writtenSettings()).toEqual({ ...BASE(), ballAction: 'native' })
     expect(container.textContent).toContain('全局共享工作台，切换标签页内容常驻')
 
