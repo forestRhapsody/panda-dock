@@ -618,31 +618,33 @@ export default function OptionsPage() {
                 </div>
               </li>
             )}
-            <li className='opt__item opt__item--align-top'>
+            <li className='opt__item opt__item--col'>
               <div className='opt__item-text'>
                 <strong>{t('settings.ballAction')}</strong>
                 <p>{t('settings.ballActionDesc')}</p>
-                <div className='opt__item-tips'>
-                  <p
-                    className={`opt__item-tip${settings.ballAction === 'drawer' ? ' opt__item-tip--active' : ''}`}
-                  >
-                    {t('settings.ballActionDrawerTip')}
-                  </p>
-                  <p
-                    className={`opt__item-tip${settings.ballAction === 'native' ? ' opt__item-tip--active' : ''}`}
-                  >
-                    {t('settings.ballActionNativeTip')}
-                  </p>
-                </div>
               </div>
-              <TkSelect
-                value={settings.ballAction}
-                onChange={(e) => setBallAction(e.target.value as BallAction)}
-                aria-label={t('settings.ballAction')}
-              >
-                <option value='drawer'>{t('settings.actionDrawer')}</option>
-                <option value='native'>{t('settings.actionNative')}</option>
-              </TkSelect>
+              <div className='opt__item-control'>
+                <TkSelect
+                  value={settings.ballAction}
+                  onChange={(e) => setBallAction(e.target.value as BallAction)}
+                  aria-label={t('settings.ballAction')}
+                >
+                  <option value='drawer'>{t('settings.actionDrawer')}</option>
+                  <option value='native'>{t('settings.actionNative')}</option>
+                </TkSelect>
+              </div>
+              <div className='opt__item-tips'>
+                <p
+                  className={`opt__item-tip${settings.ballAction === 'drawer' ? ' opt__item-tip--active' : ''}`}
+                >
+                  {t('settings.ballActionDrawerTip')}
+                </p>
+                <p
+                  className={`opt__item-tip${settings.ballAction === 'native' ? ' opt__item-tip--active' : ''}`}
+                >
+                  {t('settings.ballActionNativeTip')}
+                </p>
+              </div>
             </li>
           </ul>
         </div>

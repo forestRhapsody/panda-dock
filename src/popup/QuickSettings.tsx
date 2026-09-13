@@ -254,31 +254,31 @@ export default function QuickSettings() {
             </div>
           </li>
         )}
-        <li className='pop__setting pop__setting--align-top'>
-          <div className='pop__setting-text'>
+        <li className='pop__setting pop__setting--col'>
+          <div className='pop__setting-header'>
             <strong>{t('settings.ballAction')}</strong>
-            <div className='pop__setting-tips'>
-              <p
-                className={`pop__setting-tip${settings.ballAction === 'drawer' ? ' pop__setting-tip--active' : ''}`}
-              >
-                {t('settings.ballActionDrawerTip')}
-              </p>
-              <p
-                className={`pop__setting-tip${settings.ballAction === 'native' ? ' pop__setting-tip--active' : ''}`}
-              >
-                {t('settings.ballActionNativeTip')}
-              </p>
-            </div>
+            <TkSelect
+              variant='sm'
+              value={settings.ballAction}
+              onChange={(e) => update({ ballAction: e.target.value as BallAction })}
+              aria-label={t('settings.ballAction')}
+            >
+              <option value='drawer'>{t('settings.actionDrawer')}</option>
+              <option value='native'>{t('settings.actionNative')}</option>
+            </TkSelect>
           </div>
-          <TkSelect
-            variant='sm'
-            value={settings.ballAction}
-            onChange={(e) => update({ ballAction: e.target.value as BallAction })}
-            aria-label={t('settings.ballAction')}
-          >
-            <option value='drawer'>{t('settings.actionDrawer')}</option>
-            <option value='native'>{t('settings.actionNative')}</option>
-          </TkSelect>
+          <div className='pop__setting-tips'>
+            <p
+              className={`pop__setting-tip${settings.ballAction === 'drawer' ? ' pop__setting-tip--active' : ''}`}
+            >
+              {t('settings.ballActionDrawerTip')}
+            </p>
+            <p
+              className={`pop__setting-tip${settings.ballAction === 'native' ? ' pop__setting-tip--active' : ''}`}
+            >
+              {t('settings.ballActionNativeTip')}
+            </p>
+          </div>
         </li>
         <li className='pop__setting'>
           <div className='pop__setting-text'>
