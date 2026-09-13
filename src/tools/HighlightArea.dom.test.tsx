@@ -279,6 +279,48 @@ describe('HighlightArea 的受控与透传行为', () => {
     // 这里验证的是「height 由 scrollHeight 计算而来」这条链路被走到，真实高度需浏览器实测。
     expect(ta().style.height).toBe('0px')
   })
+
+  it('空内容不写死内联高度：交还 CSS min-height（否则空输入框会停在旧值的高度上）', () => {
+    render({ value: '' })
+    expect(ta().style.height).toBe('')
+  })
+
+  it('容器宽度变化后重新测量：抽屉↔原生侧边栏 / 拖拽抽屉宽度时高度不会停在旧值', () => {
+    const callbacks: ResizeObserverCallback[] = []
+    const observed: Element[] = []
+    class FakeResizeObserver {
+      constructor(cb: ResizeObserverCallback) {
+        callbacks.push(cb)
+      }
+      observe(el: Element) {
+        observed.push(el)
+      }
+      unobserve() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+
+    render({ value: '一行会被重新折行的文本' })
+    // 观察 textarea 自身宽度即可（它 100% 跟随 wrapper 宽度）
+    expect(observed).toEqual([ta()])
+
+    // 新的宽度下折行数变了 → scrollHeight 变化 → 必须按新值重新撑开
+    let scrollHeight = 250
+    Object.defineProperty(ta(), 'scrollHeight', { get: () => scrollHeight, configurable: true })
+    act(() => {
+      callbacks[0]?.([{ contentRect: { width: 500 } } as ResizeObserverEntry], {} as ResizeObserver)
+    })
+    expect(ta().style.height).toBe('250px')
+
+    // 宽度没变则不重复测量（避免无意义的布局写入）
+    scrollHeight = 999
+    act(() => {
+      callbacks[0]?.([{ contentRect: { width: 500 } } as ResizeObserverEntry], {} as ResizeObserver)
+    })
+    expect(ta().style.height).toBe('250px')
+
+    vi.unstubAllGlobals()
+  })
 })
 
 describe('HighlightArea 的滚动同步（人造几何）', () => {

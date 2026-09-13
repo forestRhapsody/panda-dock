@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef } from 'react'
 import type { RefObject, TextareaHTMLAttributes } from 'react'
+
+import { useAutoHeight } from './useAutoHeight'
 
 interface AutoAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value'> {
   value: string
@@ -12,6 +13,8 @@ interface AutoAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>
 /**
  * 自适应高度的 textarea：高度按内容撑开（min-height 由 CSS 决定），
  * 封顶 maxHeight 后内部滚动。用于「解析结果」这类只读多行输出。
+ *
+ * 测量（含宽度变化重测、paint 前撑开避免父级测到过矮高度）统一走 useAutoHeight。
  */
 export default function AutoArea({
   value,
@@ -21,23 +24,13 @@ export default function AutoArea({
   areaRef,
   ...rest
 }: AutoAreaProps) {
-  const ref = useRef<HTMLTextAreaElement>(null)
-
-  // 用 useLayoutEffect：在 paint 前就把高度撑开，避免父级（悬浮面板）在测量面板高度时
-  // 拿到"未撑开"的过矮高度，导致贴边打开时位置/翻转判断错误。
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (areaRef) {
-      ;(areaRef as { current: HTMLTextAreaElement | null }).current = el
-    }
-    if (!el) return
-    el.style.height = 'auto'
-    // 加一点容错余量，避免因最后一行舍入/descender 出现多余滚动条
-    const h = Math.min(el.scrollHeight + 12, maxHeight)
-    el.style.height = `${h}px`
-    // 内容超出上限时内部滚动，否则隐藏滚动条
-    el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden'
-  }, [value, maxHeight, areaRef])
+  const ref = useAutoHeight<HTMLTextAreaElement>({
+    value,
+    maxHeight,
+    // 加一点容错余量，避免因最后一行舍入 / descender 出现多余滚动条
+    extra: 12,
+    externalRef: areaRef,
+  })
 
   return <textarea ref={ref} className={className} value={value} onChange={onChange} {...rest} />
 }

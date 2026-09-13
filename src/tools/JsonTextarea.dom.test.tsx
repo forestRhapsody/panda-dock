@@ -44,6 +44,32 @@ function setScrollHeight(el: HTMLTextAreaElement, value: number) {
   Object.defineProperty(el, 'scrollHeight', { configurable: true, value })
 }
 
+/** 假的 ResizeObserver：捕获回调与观察目标，用于断言「宽度变化后重测」 */
+function stubResizeObserver() {
+  const callbacks: ResizeObserverCallback[] = []
+  const observed: Element[] = []
+  class FakeResizeObserver {
+    constructor(cb: ResizeObserverCallback) {
+      callbacks.push(cb)
+    }
+    observe(el: Element) {
+      observed.push(el)
+    }
+    unobserve() {}
+    disconnect() {}
+  }
+  vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+  return {
+    observed,
+    /** 模拟容器宽度变化 */
+    resize(width: number) {
+      act(() => {
+        callbacks[0]?.([{ contentRect: { width } } as ResizeObserverEntry], {} as ResizeObserver)
+      })
+    },
+  }
+}
+
 function setTextareaValue(el: HTMLTextAreaElement, value: string) {
   const nativeSetter = Object.getOwnPropertyDescriptor(
     window.HTMLTextAreaElement.prototype,
@@ -285,5 +311,32 @@ describe('JsonTextarea 的空值与超长值', () => {
     })
     expect(textarea().value).toBe(long)
     expect(textarea().value.length).toBe(long.length)
+  })
+})
+
+describe('JsonTextarea 的宽度变化重测', () => {
+  it('宽度变化后按新折行结果重测；宽度不变则不重复测量', () => {
+    const ro = stubResizeObserver()
+
+    act(() => {
+      root.render(<JsonTextarea value='{"a":1}' onChange={() => {}} />)
+    })
+    const el = textarea()
+    expect(ro.observed).toEqual([el])
+
+    // maxHeight 默认 300 → 封顶
+    setScrollHeight(el, 400)
+    ro.resize(520)
+    expect(el.style.height).toBe('300px')
+
+    setScrollHeight(el, 100)
+    ro.resize(520)
+    expect(el.style.height).toBe('300px')
+
+    setScrollHeight(el, 100)
+    ro.resize(300)
+    expect(el.style.height).toBe('112px')
+
+    vi.unstubAllGlobals()
   })
 })

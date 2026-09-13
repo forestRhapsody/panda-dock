@@ -46,6 +46,32 @@ function setScrollHeight(el: HTMLTextAreaElement, value: number) {
   Object.defineProperty(el, 'scrollHeight', { configurable: true, value })
 }
 
+/** 假的 ResizeObserver：捕获回调与观察目标，用于断言「宽度变化后重测」 */
+function stubResizeObserver() {
+  const callbacks: ResizeObserverCallback[] = []
+  const observed: Element[] = []
+  class FakeResizeObserver {
+    constructor(cb: ResizeObserverCallback) {
+      callbacks.push(cb)
+    }
+    observe(el: Element) {
+      observed.push(el)
+    }
+    unobserve() {}
+    disconnect() {}
+  }
+  vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+  return {
+    observed,
+    /** 模拟容器宽度变化 */
+    resize(width: number) {
+      act(() => {
+        callbacks[0]?.([{ contentRect: { width } } as ResizeObserverEntry], {} as ResizeObserver)
+      })
+    },
+  }
+}
+
 /** 原生 setter 派发 input（React 的 onChange 实际监听的是 input 事件） */
 function setTextareaValue(el: HTMLTextAreaElement, value: string) {
   const nativeSetter = Object.getOwnPropertyDescriptor(
@@ -278,5 +304,34 @@ describe('AutoArea 的空值与超长值', () => {
     const el = area()
     expect(el.value).toBe(long)
     expect(el.value.split('\n')).toHaveLength(300)
+  })
+})
+
+describe('AutoArea 的宽度变化重测（抽屉↔原生侧边栏 / 拖拽抽屉宽度）', () => {
+  it('宽度变化后按新折行结果重测；宽度不变则不重复测量', () => {
+    const ro = stubResizeObserver()
+
+    act(() => {
+      root.render(<AutoArea value='一段会被重新折行的内容' onChange={() => {}} />)
+    })
+    const el = area()
+    expect(ro.observed).toEqual([el])
+
+    // 变宽 → 行数变少 → 高度随之变化
+    setScrollHeight(el, 400)
+    ro.resize(520)
+    expect(el.style.height).toBe('360px')
+
+    // 宽度没变就不该重测（避免无意义的布局写入）
+    setScrollHeight(el, 100)
+    ro.resize(520)
+    expect(el.style.height).toBe('360px')
+
+    // 再变窄 → 重新测量
+    setScrollHeight(el, 100)
+    ro.resize(300)
+    expect(el.style.height).toBe('112px')
+
+    vi.unstubAllGlobals()
   })
 })

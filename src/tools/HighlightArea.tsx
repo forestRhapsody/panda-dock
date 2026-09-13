@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { ReactNode, RefObject, TextareaHTMLAttributes } from 'react'
 
 import type { DetectSourceMatch } from './detect'
+import { useAutoHeight } from './useAutoHeight'
 
 interface HighlightAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value'> {
   value: string
@@ -37,21 +38,16 @@ export default function HighlightArea({
   scrollTrigger,
   ...rest
 }: HighlightAreaProps) {
-  const taRef = useRef<HTMLTextAreaElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const isFirstRender = useRef(true)
   const prevTriggerRef = useRef(scrollTrigger)
 
-  // 测量并撑开高度：textarea 自然跟随内容增高，推动外层 wrapper 滚动，内部绝不产生独立滚动条
-  useLayoutEffect(() => {
-    const el = taRef.current
-    if (areaRef) {
-      ;(areaRef as { current: HTMLTextAreaElement | null }).current = el
-    }
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
-  }, [value, areaRef])
+  // 高度自适应：不封顶、由外层 wrapper 当滚动宿主，空内容交还 CSS；宽度变化自动重测
+  const taRef = useAutoHeight<HTMLTextAreaElement>({
+    value,
+    mode: 'content',
+    externalRef: areaRef,
+  })
 
   // 当激活的高亮项变更或外部显式触发（如点击结果 Tab）时，自动将其平滑滚动到输入框的可视区域内
   useEffect(() => {
@@ -112,7 +108,7 @@ export default function HighlightArea({
     } else {
       isFirstRender.current = false
     }
-  }, [matches, value, scrollTrigger])
+  }, [matches, value, scrollTrigger, taRef])
 
   // 计算底层高亮节点：仅在 value 或 matches 变更时切片
   const backdropNodes = useMemo(() => {

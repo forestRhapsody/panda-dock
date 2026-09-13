@@ -3,7 +3,7 @@ import { act } from 'react'
 
 import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import i18n from '@/i18n'
 
@@ -45,6 +45,32 @@ function render(text: string, props: Record<string, unknown> = {}): HTMLPreEleme
   const pre = container.querySelector('pre')
   if (!pre) throw new Error('未渲染出 pre.tw-json-hl')
   return pre as HTMLPreElement
+}
+
+/** 假的 ResizeObserver：捕获回调与观察目标，用于断言「宽度变化后重测」 */
+function stubResizeObserver() {
+  const callbacks: ResizeObserverCallback[] = []
+  const observed: Element[] = []
+  class FakeResizeObserver {
+    constructor(cb: ResizeObserverCallback) {
+      callbacks.push(cb)
+    }
+    observe(el: Element) {
+      observed.push(el)
+    }
+    unobserve() {}
+    disconnect() {}
+  }
+  vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+  return {
+    observed,
+    /** 模拟容器宽度变化 */
+    resize(width: number) {
+      act(() => {
+        callbacks[0]?.([{ contentRect: { width } } as ResizeObserverEntry], {} as ResizeObserver)
+      })
+    },
+  }
 }
 
 /** 取出匹配选择器的所有元素文本（高亮 token 都是单层 span，textContent 即 token 原文） */
@@ -247,5 +273,26 @@ describe('JsonHighlight 的行号与外观透传', () => {
     render('{"second": 2}')
     expect(pre.scrollTop).toBe(0)
     expect(pre.scrollLeft).toBe(0)
+  })
+})
+
+describe('JsonHighlight 的宽度变化重测', () => {
+  it('宽度变化后按新折行结果重测；宽度不变则不重复测量', () => {
+    const ro = stubResizeObserver()
+    const pre = render('{\n  "a": 1\n}')
+    expect(ro.observed).toEqual([pre])
+
+    Object.defineProperty(pre, 'scrollHeight', { configurable: true, value: 400 })
+    ro.resize(520)
+    expect(pre.style.height).toBe('360px')
+
+    Object.defineProperty(pre, 'scrollHeight', { configurable: true, value: 100 })
+    ro.resize(520)
+    expect(pre.style.height).toBe('360px')
+
+    ro.resize(300)
+    expect(pre.style.height).toBe('100px')
+
+    vi.unstubAllGlobals()
   })
 })

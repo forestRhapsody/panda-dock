@@ -1,7 +1,9 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 
 import { useTranslation } from 'react-i18next'
+
+import { useAutoHeight } from './useAutoHeight'
 
 /** JSON 语法着色：把合法 JSON 文本切分成带颜色类名的 span */
 export function highlightJson(text: string): ReactNode[] {
@@ -146,7 +148,6 @@ export default function JsonHighlight({
   showLineNumbers = false,
 }: JsonHighlightProps) {
   const { t } = useTranslation()
-  const ref = useRef<HTMLPreElement>(null)
   const nodes = useMemo(() => highlightJson(text), [text])
   const emptyText = placeholder ?? t('tool.json.resultPlaceholder')
 
@@ -158,22 +159,13 @@ export default function JsonHighlight({
   const lnDigits = lines ? Math.max(2, String(lines.length).length) : 2
   const lnStyle = { width: `${lnDigits}ch` }
 
-  // 用 useLayoutEffect：paint 前撑开高度，父级（悬浮面板）测量面板高度时能拿到正确块高
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
-    el.scrollTop = 0
-    el.scrollLeft = 0
-    if (fill) {
-      el.style.height = ''
-      el.style.overflowY = 'auto'
-      return
-    }
-    el.style.height = 'auto'
-    const h = Math.min(el.scrollHeight, maxHeight)
-    el.style.height = `${h}px`
-    el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden'
-  }, [text, maxHeight, fill])
+  // 高度自适应（含宽度变化重测）：fill 模式完全交给 CSS flex，只清掉历史内联高度
+  const ref = useAutoHeight<HTMLPreElement>({
+    value: text,
+    mode: fill ? 'fill' : 'cap',
+    maxHeight,
+    resetScroll: true,
+  })
 
   return (
     <pre

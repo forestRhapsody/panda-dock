@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import type { TextareaHTMLAttributes } from 'react'
 
 import { highlightJson } from './JsonHighlight'
+import { useAutoHeight } from './useAutoHeight'
 
 interface JsonTextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value'> {
   value: string
@@ -20,19 +21,17 @@ export default function JsonTextarea({
   onChange,
   ...rest
 }: JsonTextareaProps) {
-  const taRef = useRef<HTMLTextAreaElement>(null)
+  // 高度自适应交给 useAutoHeight（含宽度变化重测）；此处不接管 overflowY，
+  // 内容超出时仍由 textarea 自身默认滚动，保持既有行为
+  const taRef = useAutoHeight<HTMLTextAreaElement>({
+    value,
+    maxHeight,
+    // 加一点容错余量，避免因最后一行舍入/descender 出现多余滚动条
+    extra: 12,
+    manageOverflow: false,
+  })
   const preRef = useRef<HTMLPreElement>(null)
   const nodes = useMemo(() => highlightJson(value), [value])
-
-  // 自适应高度：按内容撑到 maxHeight 封顶
-  useEffect(() => {
-    const ta = taRef.current
-    if (!ta) return
-    ta.style.height = 'auto'
-    // 加一点容错余量，避免因最后一行舍入/descender 出现多余滚动条
-    const h = Math.min(ta.scrollHeight + 12, maxHeight)
-    ta.style.height = `${h}px`
-  }, [value, maxHeight])
 
   // 滚动同步：textarea 滚动时同步高亮层
   function syncScroll() {
