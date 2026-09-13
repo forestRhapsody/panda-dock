@@ -575,6 +575,57 @@ describe('DetectResultView 的多结果 Tab', () => {
     expect(newFields?.scrollTop).toBe(0)
     expect(newPre?.scrollTop).toBe(0)
   })
+
+  it('键盘无障碍：当前项 tabIndex 为 0，待切换项为 -1；支持 ArrowRight/Left/Home/End 顺畅切换', () => {
+    const onSelectMatch = vi.fn()
+    const threeItems = [
+      makeItem('base64', 'a'),
+      makeItem('url', 'https://b.example'),
+      makeItem('jwt', 'eyJ.a.b'),
+    ]
+
+    render({
+      result: result({ kind: 'base64' }),
+      items: threeItems,
+      activeMatchIndex: 0,
+      onSelectMatch,
+    })
+
+    const tabBtns = qa<HTMLButtonElement>('.tw-detect__tab')
+    expect(tabBtns[0].getAttribute('tabindex')).toBe('0')
+    expect(tabBtns[1].getAttribute('tabindex')).toBe('-1')
+    expect(tabBtns[2].getAttribute('tabindex')).toBe('-1')
+
+    const tabsEl = q<HTMLDivElement>('.tw-detect__tabs')!
+    expect(tabsEl).not.toBeNull()
+
+    // 1. ArrowRight 向右切到第 2 项
+    act(() => {
+      tabsEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    })
+    expect(onSelectMatch).toHaveBeenCalledWith(1)
+
+    // 2. ArrowLeft 在第 1 项（index=0）按向左应循环回最后一项（index=2）
+    onSelectMatch.mockClear()
+    act(() => {
+      tabsEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    })
+    expect(onSelectMatch).toHaveBeenCalledWith(2)
+
+    // 3. End 切到末项
+    onSelectMatch.mockClear()
+    act(() => {
+      tabsEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
+    })
+    expect(onSelectMatch).toHaveBeenCalledWith(2)
+
+    // 4. Home 切到首项
+    onSelectMatch.mockClear()
+    act(() => {
+      tabsEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))
+    })
+    expect(onSelectMatch).toHaveBeenCalledWith(0)
+  })
 })
 
 describe('DetectResultView 的「在 XX 工具中打开」手递手', () => {

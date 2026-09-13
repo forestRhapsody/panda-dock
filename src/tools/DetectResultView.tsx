@@ -205,6 +205,40 @@ export default function DetectResultView({
     return () => tabsEl.removeEventListener('wheel', onWheel)
   }, [hasMultiple])
 
+  // 键盘左右方向键在选项卡之间快速切换（WAI-ARIA Tablist 规范）
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!hasMultiple || !items || items.length <= 1) return
+      let nextIdx: number | null = null
+      const total = items.length
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        nextIdx = (activeMatchIndex + 1) % total
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        nextIdx = (activeMatchIndex - 1 + total) % total
+      } else if (e.key === 'Home') {
+        e.preventDefault()
+        nextIdx = 0
+      } else if (e.key === 'End') {
+        e.preventDefault()
+        nextIdx = total - 1
+      }
+
+      if (nextIdx !== null) {
+        onSelectMatch!(nextIdx)
+        revealActiveTab(nextIdx)
+        const tabsEl = tabsRef.current
+        const nextBtn = tabsEl?.querySelector<HTMLButtonElement>(
+          `.tw-detect__tab[data-index="${nextIdx}"]`,
+        )
+        nextBtn?.focus()
+      }
+    },
+    [hasMultiple, items, activeMatchIndex, onSelectMatch, revealActiveTab],
+  )
+
   return (
     <div className='tw-detect'>
       <div className='tw-detect__head'>
@@ -241,7 +275,7 @@ export default function DetectResultView({
       )}
 
       {hasMultiple && (
-        <div ref={tabsRef} className='tw-detect__tabs' role='tablist'>
+        <div ref={tabsRef} className='tw-detect__tabs' role='tablist' onKeyDown={handleKeyDown}>
           {items!.map((it, idx) => {
             const isActive = idx === activeMatchIndex
             // 脏 kind 的 Tab 也要有可读标签，否则只剩编号与分隔符
@@ -253,6 +287,7 @@ export default function DetectResultView({
                 type='button'
                 role='tab'
                 data-index={idx}
+                tabIndex={isActive ? 0 : -1}
                 aria-selected={isActive}
                 aria-label={label}
                 className={`tw-detect__tab${isActive ? ' tw-detect__tab--active' : ''}`}
