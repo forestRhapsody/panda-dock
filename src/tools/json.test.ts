@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import i18n from '@/i18n'
 
+import zh from '../i18n/locales/zh.json'
 import {
   escapeJson,
   formatAndMinifyJson,
@@ -9,12 +10,14 @@ import {
   isJsonText,
   minifyJson,
   parseJsonc,
-  SAMPLE_JSON,
   sortJsonKeys,
   sortObjectKeys,
   tryUnescape,
   unescapeJson,
 } from './json'
+
+/** 用户点「填入示例」实际拿到的就是语言包里这份（见 tool.json.sample） */
+const SAMPLE_JSON = zh.tool.json.sample
 
 /**
  * json.ts 是纯逻辑模块，但错误文案走 i18n，因此本文件同时覆盖：
@@ -531,7 +534,7 @@ describe('unescapeJson / tryUnescape', () => {
   })
 })
 
-describe('SAMPLE_JSON', () => {
+describe('语言包里的示例 JSON（tool.json.sample）', () => {
   it('是合法 JSON 且包含嵌套对象 / 数组 / 布尔 / 数字（供 UI 一键填充）', () => {
     const value = parseOk(SAMPLE_JSON) as Record<string, unknown>
     expect(typeof value.repository).toBe('object')

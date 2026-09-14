@@ -445,7 +445,7 @@ export default function CookieEditModal({
                       </label>
                     ) : (
                       <div className='tw-field tw-cookie-modal__col'>
-                        <span className='tw-field__label'>SameSite</span>
+                        <span className='tw-field__label'>{t('tool.storage.cookieSameSite')}</span>
                         <PdSelect
                           value={sameSite}
                           onChange={(e) => {
@@ -458,10 +458,12 @@ export default function CookieEditModal({
                             if (v === 'no_restriction') setSecure(true)
                           }}
                         >
-                          <option value='lax'>Lax</option>
-                          <option value='strict'>Strict</option>
-                          <option value='no_restriction'>None (Secure)</option>
-                          <option value='unspecified'>Unspecified</option>
+                          <option value='lax'>{t('tool.storage.sameSiteLax')}</option>
+                          <option value='strict'>{t('tool.storage.sameSiteStrict')}</option>
+                          <option value='no_restriction'>{t('tool.storage.sameSiteNone')}</option>
+                          <option value='unspecified'>
+                            {t('tool.storage.sameSiteUnspecified')}
+                          </option>
                         </PdSelect>
                       </div>
                     )}
@@ -470,7 +472,7 @@ export default function CookieEditModal({
                   {expiresType === 'custom' && (
                     <div className='tw-cookie-modal__row'>
                       <div className='tw-field tw-cookie-modal__col'>
-                        <span className='tw-field__label'>SameSite</span>
+                        <span className='tw-field__label'>{t('tool.storage.cookieSameSite')}</span>
                         <PdSelect
                           value={sameSite}
                           onChange={(e) => {
@@ -483,10 +485,12 @@ export default function CookieEditModal({
                             if (v === 'no_restriction') setSecure(true)
                           }}
                         >
-                          <option value='lax'>Lax</option>
-                          <option value='strict'>Strict</option>
-                          <option value='no_restriction'>None (Secure)</option>
-                          <option value='unspecified'>Unspecified</option>
+                          <option value='lax'>{t('tool.storage.sameSiteLax')}</option>
+                          <option value='strict'>{t('tool.storage.sameSiteStrict')}</option>
+                          <option value='no_restriction'>{t('tool.storage.sameSiteNone')}</option>
+                          <option value='unspecified'>
+                            {t('tool.storage.sameSiteUnspecified')}
+                          </option>
                         </PdSelect>
                       </div>
                       <div className='tw-cookie-modal__col' />
@@ -500,7 +504,10 @@ export default function CookieEditModal({
                         checked={httpOnly}
                         onChange={(e) => setHttpOnly(e.target.checked)}
                       />
-                      <span>HttpOnly ({t('tool.storage.cookieHttpOnlyDesc')})</span>
+                      <span>
+                        {t('tool.storage.cookieHttpOnlyTerm')} (
+                        {t('tool.storage.cookieHttpOnlyDesc')})
+                      </span>
                     </label>
 
                     <label className='tw-cookie-modal__check-item'>
@@ -515,7 +522,9 @@ export default function CookieEditModal({
                           }
                         }}
                       />
-                      <span>Secure ({t('tool.storage.cookieSecureDesc')})</span>
+                      <span>
+                        {t('tool.storage.cookieSecureTerm')} ({t('tool.storage.cookieSecureDesc')})
+                      </span>
                     </label>
                   </div>
                 </div>
@@ -539,7 +548,7 @@ export default function CookieEditModal({
                         }
                       }}
                     >
-                      Set-Cookie
+                      {t('tool.storage.setCookieTerm')}
                     </button>
                   </Tooltip>
                   <Tooltip content={t('tool.storage.convertToJson')}>
@@ -559,7 +568,7 @@ export default function CookieEditModal({
                         }
                       }}
                     >
-                      JSON
+                      {t('tool.storage.jsonTerm')}
                     </button>
                   </Tooltip>
                 </div>

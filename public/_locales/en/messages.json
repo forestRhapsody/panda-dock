@@ -1,4 +1,8 @@
 {
+  "appTitle": {
+    "message": "Panda Dock developer toolbox",
+    "description": "Toolbar icon tooltip (manifest action.default_title)."
+  },
   "appDescription": {
     "message": "An efficient developer toolbox. Runs entirely locally, free and open source.",
     "description": "Extension summary shown in the Chrome Web Store and on the extensions page."
@@ -8,11 +12,11 @@
     "description": "Global shortcut description shown at chrome://extensions/shortcuts."
   },
   "commandToggleDetect": {
-    "message": "Open Smart Parse",
+    "message": "Open the Smart Parse panel",
     "description": "Global shortcut description shown at chrome://extensions/shortcuts."
   },
   "contextMenuDetectSelection": {
-    "message": "Smart Parse selected text",
+    "message": "Parse selected text with Smart Parse",
     "description": "Context menu item title: parse the currently selected text."
   }
 }

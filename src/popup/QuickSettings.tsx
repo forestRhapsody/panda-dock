@@ -170,8 +170,8 @@ export default function QuickSettings() {
                 {' · '}
                 <span>
                   {settings.ballDomainMode === 'blacklist'
-                    ? t('settings.domainModeBlacklist').split('（')[0]
-                    : t('settings.domainModeWhitelist').split('（')[0]}
+                    ? t('settings.domainModeBlacklistShort')
+                    : t('settings.domainModeWhitelistShort')}
                 </span>
               </p>
             </div>

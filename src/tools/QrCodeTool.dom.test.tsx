@@ -674,7 +674,7 @@ describe('QrCodeTool：Logo 上传、裁剪与移除', () => {
     expect(selectById('tw-qr-ec').disabled).toBe(false)
   })
 
-  it('Logo 边框选项切换：支持默认、紧凑与无边框切换', async () => {
+  it('Logo 留白选项切换：支持默认、紧凑与无留白切换', async () => {
     await renderTool()
     await generateFrom('hello')
     openCustomize()

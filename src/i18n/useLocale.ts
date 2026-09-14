@@ -17,8 +17,11 @@ function resolveLocale(setting: LocaleSetting): 'zh' | 'en' {
 /**
  * 读取并应用「语言」设置（chrome.storage.sync 的 settings.locale）。
  * 默认跟随系统；监听 onChanged 即时切换。各入口（Popup / Options / 侧边栏 / content）顶部调用。
+ *
+ * 传 `titleKey` 时（扩展页面）额外同步 `<html lang>` 与标签页标题：两者只能跟随浏览器界面语言，
+ * 而应用内语言是用户设置，因此必须运行时覆盖。content script 不传，避免改动宿主页属性。
  */
-export function useLocale(): void {
+export function useLocale(titleKey?: string): void {
   useEffect(() => {
     const apply = (setting?: LocaleSetting) => {
       void i18n.changeLanguage(resolveLocale(setting ?? 'system'))
@@ -36,4 +39,18 @@ export function useLocale(): void {
       if (hasChrome) chrome.storage.onChanged.removeListener(onChange)
     }
   }, [])
+
+  useEffect(() => {
+    if (!titleKey) return
+    const sync = () => {
+      document.documentElement.lang =
+        (i18n.resolvedLanguage ?? i18n.language) === 'en' ? 'en' : 'zh-CN'
+      document.title = i18n.t(titleKey)
+    }
+    sync()
+    i18n.on('languageChanged', sync)
+    return () => {
+      i18n.off('languageChanged', sync)
+    }
+  }, [titleKey])
 }

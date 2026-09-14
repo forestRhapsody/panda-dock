@@ -165,7 +165,7 @@ export default function OptionsPage() {
   }, [])
 
   // 使整体字体大小随设置即时缩放（含本设置页）
-  useLocale()
+  useLocale('settings.title')
   useFontScale()
   useTheme()
 

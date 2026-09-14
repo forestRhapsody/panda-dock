@@ -346,8 +346,8 @@ describe('CookieEditModal 表单字段与校验', () => {
     await act(async () => advancedToggle().click())
     expect(secureBox().checked).toBe(true)
 
-    await chooseOption(sameSiteCombo(), 'None (Secure)')
-    expect(sameSiteCombo().textContent).toContain('None (Secure)')
+    await chooseOption(sameSiteCombo(), i18n.t('tool.storage.sameSiteNone'))
+    expect(sameSiteCombo().textContent).toContain(i18n.t('tool.storage.sameSiteNone'))
     expect(secureBox().checked).toBe(true)
 
     // SameSite=None 必须搭配 Secure：取消 Secure 后源码把 sameSite 回退为 lax

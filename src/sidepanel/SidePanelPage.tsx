@@ -16,7 +16,7 @@ import './index.css'
  * - 挂载时建立 panda-dock-sidepanel Port 长连接，与网页抽屉保持互斥。
  */
 export default function SidePanelPage() {
-  useLocale()
+  useLocale('app.toolboxTitle')
   useFontScale()
   useTheme()
 

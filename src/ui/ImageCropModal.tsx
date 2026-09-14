@@ -22,6 +22,7 @@ export interface ImageCropModalLabels {
   cancel?: string
   loadError?: string
   exportError?: string
+  previewAlt?: string
 }
 
 export interface ImageCropModalProps {
@@ -281,6 +282,7 @@ export default function ImageCropModal({
   const textCancel = labels.cancel ?? t('common.cancel')
   const textLoadError = labels.loadError ?? t('tool.qrcode.cropLoadError')
   const textExportError = labels.exportError ?? t('tool.qrcode.cropExportError')
+  const textPreviewAlt = labels.previewAlt ?? t('common.cropPreviewAlt')
 
   return (
     <div className='pd-modal' role='dialog' aria-modal='true' aria-label={textTitle}>
@@ -322,7 +324,7 @@ export default function ImageCropModal({
               {imgLoaded && (
                 <img
                   src={imageSrc}
-                  alt='Crop preview'
+                  alt={textPreviewAlt}
                   className='pd-crop-modal__img tw-crop-modal__img opt-crop-modal__img'
                   style={{
                     width: renderW,

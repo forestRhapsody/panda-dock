@@ -12,22 +12,29 @@
 
 ### 唤起方式
 
-1. 点击网页内悬浮球或使用快捷键`Alt + Shift + D`唤起侧边栏面板，支持网页内抽屉和浏览器原生侧边栏。
+1. 点击网页内悬浮球，或按 `Alt + Shift + D`，按已配置的方式打开工具箱（网页内抽屉或浏览器原生侧边栏）。
 
-2. 选中文本后使用右键菜单或快捷键`Alt + Shift + S`唤起智能解析面板。
-
+2. 选中文本后，用右键菜单或按 `Alt + Shift + S` 唤起智能解析面板。
 
 ## 隐私
 
-承诺本扩展完全不联网、不收集数据。代码开源可审计。
+本扩展不联网、不收集数据。代码开源可审计。
 
 查看隐私政策：[隐私政策](https://forestRhapsody.github.io/panda-dock/zh-CN/privacy.html)
 
 ## 开发
 
-`pnpm dev` 预览 UI · `pnpm build` 打包到 `dist/` · `pnpm test` 单元测试 · `pnpm gate` 交付门禁（format + lint + test + build）
+开发环境：Node `^22.12.0 || ^24.0.0 || >=26.0.0`、pnpm 10.17.0（仅支持 pnpm，`npm` / `yarn` 会被拦截）。
 
-代码结构与工程约定见 [AGENTS.md](AGENTS.md)。
+```bash
+git clone https://github.com/forestRhapsody/panda-dock.git
+cd panda-dock
+pnpm install
+pnpm dev      # 浏览器预览 UI（无 chrome.*，自动降级）
+pnpm build    # 构建到 dist/
+```
+
+构建完成后，打开 `chrome://extensions`，开启右上角「开发者模式」，点「加载已解压的扩展程序」并选择 `dist/` 目录。
 
 ## 许可
 

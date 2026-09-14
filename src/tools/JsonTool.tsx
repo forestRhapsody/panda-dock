@@ -9,14 +9,7 @@ import { useToolDraft } from '@/utils/draft'
 
 import CopyButton from './CopyButton'
 import { downloadText, fmtSize } from './file'
-import {
-  escapeJson,
-  formatJson,
-  minifyJson,
-  SAMPLE_JSON,
-  unescapeJson,
-  type JsonIndent,
-} from './json'
+import { escapeJson, formatJson, minifyJson, unescapeJson, type JsonIndent } from './json'
 import JsonHighlight from './JsonHighlight'
 import { StatusText } from './StatusText'
 import type { ToolStatus } from './StatusText'
@@ -317,10 +310,12 @@ export default function JsonTool() {
   }
 
   function fillSample() {
+    // 示例文案随界面语言切换，因此从语言包取（tool.json.sample）
+    const sample = t('tool.json.sample')
     setEmptyError(false)
     setErrorLine(null)
-    setInput(SAMPLE_JSON)
-    runFormat(SAMPLE_JSON, { indent, sortKeys, minify })
+    setInput(sample)
+    runFormat(sample, { indent, sortKeys, minify })
     if (gutterRef.current) gutterRef.current.scrollTop = 0
   }
 

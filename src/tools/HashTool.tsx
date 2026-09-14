@@ -323,7 +323,7 @@ export default function HashTool() {
                 checked={showHmac}
                 onChange={(e) => onHmacChange(e.target.checked)}
               />
-              <span>HMAC</span>
+              <span>{t('tool.hash.hmacOption')}</span>
             </label>
           </div>
 

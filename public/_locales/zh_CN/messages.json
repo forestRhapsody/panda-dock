@@ -1,4 +1,8 @@
 {
+  "appTitle": {
+    "message": "Panda Dock 开发者工具箱",
+    "description": "工具栏图标悬浮提示（manifest 的 action.default_title）。"
+  },
   "appDescription": {
     "message": "一款高效的开发者工具箱，完全本地运行，免费且开源。",
     "description": "扩展简介，展示在 Chrome 应用商店与扩展管理页。"
@@ -8,7 +12,7 @@
     "description": "全局快捷键说明，展示在 chrome://extensions/shortcuts。"
   },
   "commandToggleDetect": {
-    "message": "快速唤起智能解析",
+    "message": "唤起智能解析面板",
     "description": "全局快捷键说明，展示在 chrome://extensions/shortcuts。"
   },
   "contextMenuDetectSelection": {

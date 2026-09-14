@@ -37,9 +37,9 @@ import type {
 import ToolTabs from './ToolTabs'
 
 function formatSameSite(sameSite: string): string {
-  if (sameSite === 'no_restriction') return 'None'
-  if (sameSite === 'lax') return 'Lax'
-  if (sameSite === 'strict') return 'Strict'
+  if (sameSite === 'no_restriction') return i18n.t('tool.storage.sameSiteNone')
+  if (sameSite === 'lax') return i18n.t('tool.storage.sameSiteLax')
+  if (sameSite === 'strict') return i18n.t('tool.storage.sameSiteStrict')
   return sameSite
 }
 
@@ -795,8 +795,16 @@ export default function StorageTool() {
                       <span className='tw-store__key'>{cookie.name}</span>
                     </Tooltip>
                     <div className='tw-cookie__badges'>
-                      {cookie.httpOnly && <span className='tw-cookie__badge'>HttpOnly</span>}
-                      {cookie.secure && <span className='tw-cookie__badge'>Secure</span>}
+                      {cookie.httpOnly && (
+                        <span className='tw-cookie__badge'>
+                          {t('tool.storage.cookieBadgeHttpOnly')}
+                        </span>
+                      )}
+                      {cookie.secure && (
+                        <span className='tw-cookie__badge'>
+                          {t('tool.storage.cookieBadgeSecure')}
+                        </span>
+                      )}
                       {cookie.sameSite && cookie.sameSite !== 'unspecified' && (
                         <span className='tw-cookie__badge'>{formatSameSite(cookie.sameSite)}</span>
                       )}

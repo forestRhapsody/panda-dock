@@ -15,15 +15,15 @@ import { StatusText } from './StatusText'
 
 // 值类型含 undefined：kind 在类型层是联合类型，但运行时可能拿到旧草稿 / 跨端消息里的脏值，
 // 取不到标签时必须走 tool.detect.unknown 兜底，而不是渲染成空白。
-const KIND_LABEL: Record<string, string | undefined> = {
-  json: 'JSON',
-  jwt: 'JWT',
-  url: 'URL',
-  timestamp: 'Timestamp',
-  uuid: 'UUID',
-  base64: 'Base64',
-  hex: 'Hex',
-  dataurl: 'Data URL',
+const KIND_LABEL_KEYS: Record<string, string | undefined> = {
+  json: 'tool.detect.kind.json',
+  jwt: 'tool.detect.kind.jwt',
+  url: 'tool.detect.kind.url',
+  timestamp: 'tool.detect.kind.timestamp',
+  uuid: 'tool.detect.kind.uuid',
+  base64: 'tool.detect.kind.base64',
+  hex: 'tool.detect.kind.hex',
+  dataurl: 'tool.detect.kind.dataurl',
 }
 
 /** 字段的语义 key → i18n label；claim.* 直接用声明名（如 exp / iat） */
@@ -150,6 +150,10 @@ export default function DetectResultView({
   onOpenInTool,
 }: DetectResultViewProps) {
   const { t } = useTranslation()
+  const kindLabel = (kind: string) => {
+    const key = KIND_LABEL_KEYS[kind]
+    return key ? t(key) : t('tool.detect.unknown')
+  }
   const hasMultiple = Boolean(items && items.length > 1 && onSelectMatch)
   const tabsRef = useRef<HTMLDivElement>(null)
   // 「在 XX 工具中打开」：只对目标工具确有额外能力的类型显示入口（见 handoff.ts 的评估结论）
@@ -243,9 +247,7 @@ export default function DetectResultView({
     <div className='tw-detect'>
       <div className='tw-detect__head'>
         <StatusText kind='ok'>
-          {t('tool.detect.detected', {
-            kind: KIND_LABEL[result.kind] ?? t('tool.detect.unknown'),
-          })}
+          {t('tool.detect.detected', { kind: kindLabel(result.kind) })}
         </StatusText>
 
         {hasMultiple && (
@@ -279,7 +281,7 @@ export default function DetectResultView({
           {items!.map((it, idx) => {
             const isActive = idx === activeMatchIndex
             // 脏 kind 的 Tab 也要有可读标签，否则只剩编号与分隔符
-            const kindText = KIND_LABEL[it.kind] ?? t('tool.detect.unknown')
+            const kindText = kindLabel(it.kind)
             const label = `${idx + 1} · ${kindText}`
             return (
               <button

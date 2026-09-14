@@ -110,12 +110,12 @@ function expectNoBareI18nKey() {
 }
 
 describe('DetectResultView 的类型标签与整体骨架', () => {
-  it('头部展示「解析为：<类型>」，8 种解析类型各有固定标签', () => {
+  it('头部展示「解析为：<类型>」，8 种解析类型都取语言包里的中文标签', () => {
     const cases: Array<[DetectResult['kind'], string]> = [
       ['json', 'JSON'],
       ['jwt', 'JWT'],
-      ['url', 'URL'],
-      ['timestamp', 'Timestamp'],
+      ['url', '网址'],
+      ['timestamp', '时间戳'],
       ['uuid', 'UUID'],
       ['base64', 'Base64'],
       ['hex', 'Hex'],
@@ -123,6 +123,7 @@ describe('DetectResultView 的类型标签与整体骨架', () => {
     ]
     for (const [kind, label] of cases) {
       render({ result: result({ kind }) })
+      expect(i18n.t(`tool.detect.kind.${kind}`)).toBe(label)
       expect(q('.tw-status--ok')?.textContent).toBe(i18n.t('tool.detect.detected', { kind: label }))
     }
   })
@@ -412,11 +413,13 @@ describe('DetectResultView 的多结果 Tab', () => {
     expect(q('.tw-detect__total-badge')?.textContent).toBe(
       i18n.t('tool.detect.totalMatches', { count: 2 }),
     )
-    expect(textsOf('.tw-detect__tab-kind')).toEqual(['Base64', 'URL'])
+    expect(textsOf('.tw-detect__tab-kind')).toEqual(['Base64', i18n.t('tool.detect.kind.url')])
     expect(qa('.tw-detect__tab')[1].getAttribute('aria-selected')).toBe('true')
     expect(qa('.tw-detect__tab')[0].getAttribute('aria-selected')).toBe('false')
     expect(qa('.tw-detect__tab--active')).toHaveLength(1)
-    expect(q('.tw-detect__tab--active')?.getAttribute('aria-label')).toBe('2 · URL')
+    expect(q('.tw-detect__tab--active')?.getAttribute('aria-label')).toBe(
+      `2 · ${i18n.t('tool.detect.kind.url')}`,
+    )
   })
 
   it('脏 kind 的 Tab 标签同样回退到兜底文案（tab-kind 与 aria-label）', () => {

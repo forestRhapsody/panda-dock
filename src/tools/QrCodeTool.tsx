@@ -638,10 +638,10 @@ export default function QrCodeTool() {
                   }
                   title={logoUrl ? t('tool.qrcode.ecLockedForLogo') : undefined}
                 >
-                  <option value='L'>L (7%)</option>
-                  <option value='M'>M (15%)</option>
-                  <option value='Q'>Q (25%)</option>
-                  <option value='H'>H (30%)</option>
+                  <option value='L'>{t('tool.qrcode.ecL')}</option>
+                  <option value='M'>{t('tool.qrcode.ecM')}</option>
+                  <option value='Q'>{t('tool.qrcode.ecQ')}</option>
+                  <option value='H'>{t('tool.qrcode.ecH')}</option>
                 </PdSelect>
               </div>
 
@@ -790,7 +790,7 @@ export default function QrCodeTool() {
                         <div className='tw-qr__logo-badge'>
                           <img
                             src={logoUrl}
-                            alt='Logo'
+                            alt={t('tool.qrcode.logoAlt')}
                             className={`tw-qr__logo-thumb tw-qr__logo-thumb--${logoShape}`}
                           />
                           <button
@@ -993,7 +993,11 @@ export default function QrCodeTool() {
           >
             {imagePreviewUrl ? (
               <div className='tw-qr__drop-preview'>
-                <img src={imagePreviewUrl} alt='Upload preview' className='tw-qr__thumb' />
+                <img
+                  src={imagePreviewUrl}
+                  alt={t('tool.qrcode.uploadPreviewAlt')}
+                  className='tw-qr__thumb'
+                />
                 <p className='tw-qr__reupload-hint'>{t('tool.qrcode.clickToReupload')}</p>
               </div>
             ) : (

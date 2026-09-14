@@ -417,7 +417,7 @@ export function parseStamp(input: string): StampResult {
     rows: [
       { label: i18n.t('tool.timestamp.unixSeconds'), value: String(secs) },
       { label: i18n.t('tool.timestamp.unixMilliseconds'), value: String(date.getTime()) },
-      { label: 'ISO 8601', value: iso },
+      { label: i18n.t('tool.timestamp.iso'), value: iso },
       { label: i18n.t('tool.timestamp.localTime'), value: toLocalText(date) },
       { label: i18n.t('tool.timestamp.utcTime'), value: utc },
       { label: i18n.t('tool.timestamp.relativeNow'), value: toRelative(date) },

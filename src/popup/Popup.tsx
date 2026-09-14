@@ -22,7 +22,7 @@ import './index.css'
 export default function Popup() {
   const { t } = useTranslation()
   const inExt = isExtension()
-  useLocale()
+  useLocale('app.popupTitle')
   useFontScale()
   useTheme()
   const [nativeFailed, setNativeFailed] = useState(false)

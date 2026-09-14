@@ -306,28 +306,3 @@ export function unescapeJson(
 
   return { ok: false, error: i18n.t('tool.json.unescapeNoChange') }
 }
-
-/** 一段标准示例 JSON（包含嵌套对象、数组、布尔与数字，便于一键体验各功能） */
-export const SAMPLE_JSON = JSON.stringify(
-  {
-    name: 'panda-dock',
-    version: '1.0.0',
-    description: 'Panda Dock: Developer toolbox for Chrome',
-    repository: {
-      type: 'git',
-      url: 'https://github.com/forestRhapsody/panda-dock',
-    },
-    features: ['json', 'base64', 'jwt', 'timestamp', 'storage', 'qrcode', 'hash'],
-    author: {
-      name: 'Developer',
-      email: 'dev@example.com',
-    },
-    settings: {
-      theme: 'system',
-      shortcuts: true,
-      fontScale: 1,
-    },
-  },
-  null,
-  2,
-)

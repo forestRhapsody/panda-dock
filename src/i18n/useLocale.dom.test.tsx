@@ -179,6 +179,38 @@ describe('useLocale 按设置或系统语言切换', () => {
   })
 })
 
+describe('useLocale 同步扩展页面的标题与 <html lang>', () => {
+  function TitledProbe() {
+    useLocale('app.toolboxTitle')
+    return null
+  }
+
+  it('扩展页按当前语言设置 document.title / lang，并在切换语言时同步', async () => {
+    stubChrome({ settings: { locale: 'zh' } })
+
+    await act(async () => root.render(<TitledProbe />))
+    await flush()
+    expect(document.title).toBe(i18n.t('app.toolboxTitle', { lng: 'zh' }))
+    expect(document.documentElement.lang).toBe('zh-CN')
+
+    emitChange({ locale: 'en' })
+    expect(document.title).toBe(i18n.t('app.toolboxTitle', { lng: 'en' }))
+    expect(document.documentElement.lang).toBe('en')
+  })
+
+  it('不传 titleKey（content script）时不改动宿主页的 title 与 lang', async () => {
+    stubChrome({ settings: { locale: 'zh' } })
+    document.title = 'Host page'
+    document.documentElement.lang = 'fr'
+
+    await render()
+    await flush()
+
+    expect(document.title).toBe('Host page')
+    expect(document.documentElement.lang).toBe('fr')
+  })
+})
+
 describe('useLocale 的实时切换与清理', () => {
   it('onChanged 推送新 locale 即时切换（无需重挂载）', async () => {
     stubChrome({ settings: { locale: 'zh' } })

@@ -162,7 +162,7 @@ describe('DetectTool 各类型结果视图', () => {
     await clickChip('Base64')
 
     expect(container.textContent).toContain('解析为：Base64')
-    expect(container.textContent).toContain('Hello, Panda Dock! Welcome to the toolkit.')
+    expect(container.textContent).toContain('你好，世界!')
     expect(container.textContent).toContain('解码结果')
   })
 
@@ -171,7 +171,7 @@ describe('DetectTool 各类型结果视图', () => {
     await clickChip('Hex')
 
     expect(container.textContent).toContain('解析为：Hex')
-    expect(container.textContent).toContain('Hello, Panda Dock!')
+    expect(container.textContent).toContain('Hello, World!')
     expect(container.textContent).toContain('字节数')
   })
 
@@ -188,7 +188,7 @@ describe('DetectTool 各类型结果视图', () => {
     await renderTool()
     await clickChip('时间戳')
 
-    expect(container.textContent).toContain('解析为：Timestamp')
+    expect(container.textContent).toContain('解析为：时间戳')
     expect(container.textContent).toContain('Unix 秒')
     expect(container.textContent).toContain('1710000000')
   })
@@ -213,7 +213,7 @@ describe('DetectTool 各类型结果视图', () => {
     expect(tabs).toHaveLength(3)
     expect(tabs[0].getAttribute('aria-selected')).toBe('true')
     // 输入框的高亮背板里也有原文，必须只看结果字段，才能证明展示的是「当前激活项」
-    expect(resultFieldValues()).toEqual(['https://github.com/'])
+    expect(resultFieldValues()).toEqual(['https://github.com/forestRhapsody/panda-dock'])
 
     await act(async () => tabs[1].click())
     await flush()
@@ -221,7 +221,7 @@ describe('DetectTool 各类型结果视图', () => {
     expect(container.querySelectorAll('.tw-detect__tab')[1].getAttribute('aria-selected')).toBe(
       'true',
     )
-    expect(resultFieldValues()).toEqual(['https://developer.mozilla.org/zh-CN/'])
+    expect(resultFieldValues()).toEqual(['https://example.com/docs/api'])
   })
 })
 

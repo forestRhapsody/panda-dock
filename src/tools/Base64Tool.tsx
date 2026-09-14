@@ -586,7 +586,7 @@ export default function Base64Tool() {
             )}
             <div className='tw-detect__fields'>
               <div className='tw-detect__field'>
-                <span className='tw-detect__field-label'>MIME</span>
+                <span className='tw-detect__field-label'>{t('tool.detect.row.mime')}</span>
                 <code className='tw-detect__field-value tw-detect__field-value--mono'>
                   {decInfo.mime}
                 </code>
