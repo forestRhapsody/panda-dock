@@ -311,7 +311,7 @@ export function unescapeJson(
 export const SAMPLE_JSON = JSON.stringify(
   {
     name: 'panda-dock',
-    version: '0.2.0',
+    version: '1.0.0',
     description: 'Panda Dock: Developer toolbox for Chrome',
     repository: {
       type: 'git',

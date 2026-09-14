@@ -5,7 +5,7 @@
 <h1 align="center">Panda Dock</h1>
 
 <p align="center">
-  一款高效的 Chrome 开发者工具箱：完全本地运行，免费且开源。
+  一款高效的开发者工具箱，完全本地运行，免费且开源。
 </p>
 
 ## 使用

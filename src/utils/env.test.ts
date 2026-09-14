@@ -108,7 +108,7 @@ describe('isExtension 的环境判定', () => {
  */
 describe('extVersion 的取值与降级', () => {
   it('无 chrome 时返回占位版本号', () => {
-    expect(extVersion()).toBe('0.2.0')
+    expect(extVersion()).toBe('1.0.0')
   })
 
   it('getManifest 抛错时回退占位版本号', () => {
@@ -119,12 +119,12 @@ describe('extVersion 的取值与降级', () => {
         },
       },
     }
-    expect(extVersion()).toBe('0.2.0')
+    expect(extVersion()).toBe('1.0.0')
   })
 
   it('getManifest 缺失（旧内核/测试桩）时回退占位版本号', () => {
     globalWithChrome.chrome = { runtime: {} }
-    expect(extVersion()).toBe('0.2.0')
+    expect(extVersion()).toBe('1.0.0')
   })
 
   it('getManifest 正常返回时取真实版本号', () => {
@@ -134,14 +134,14 @@ describe('extVersion 的取值与降级', () => {
 
   it('version 为 null / undefined 时回退占位版本号', () => {
     globalWithChrome.chrome = { runtime: { getManifest: () => ({ version: null }) } }
-    expect(extVersion()).toBe('0.2.0')
+    expect(extVersion()).toBe('1.0.0')
     globalWithChrome.chrome = { runtime: { getManifest: () => ({}) } }
-    expect(extVersion()).toBe('0.2.0')
+    expect(extVersion()).toBe('1.0.0')
   })
 
   it('version 为空串时同样回退占位版本号（空串视为取不到）', () => {
     globalWithChrome.chrome = { runtime: { getManifest: () => ({ version: '' }) } }
-    expect(extVersion()).toBe('0.2.0')
+    expect(extVersion()).toBe('1.0.0')
   })
 })
 

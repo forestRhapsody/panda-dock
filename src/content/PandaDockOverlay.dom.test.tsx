@@ -449,21 +449,22 @@ describe('抽屉的开合入口', () => {
     expect(drawerEl()).toBeNull()
   })
 
-  it('Alt+Shift+D 打开 / 关闭抽屉，300ms 内重复触发被节流', async () => {
+  it('页面内不再私自拦截 Alt+Shift+D，快捷键调度全权交给浏览器与后台消息', async () => {
     await renderOverlay()
     await flush()
 
     const openEvent = pressShortcut('d')
-    expect(openEvent.defaultPrevented).toBe(true)
+    expect(openEvent.defaultPrevented).toBe(false)
+    expect(drawerEl()).toBeNull()
+
+    // 抽屉开合完全通过 background 派发的 MSG_TOGGLE_DRAWER 消息驱动
+    sendContentMessage({ action: MSG_TOGGLE_DRAWER })
     await flush()
     expect(drawerEl()).not.toBeNull()
 
-    // 同一时刻再次触发：节流窗口内应被忽略，抽屉保持打开
-    pressShortcut('d')
-    expect(drawerEl()).not.toBeNull()
-
     advanceTime(400)
-    pressShortcut('d')
+    sendContentMessage({ action: MSG_TOGGLE_DRAWER })
+    await flush()
     expect(drawerEl()).toBeNull()
   })
 

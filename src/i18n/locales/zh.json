@@ -59,6 +59,7 @@
     "detectShortcutTitle": "智能解析快捷键",
     "detectShortcutDesc": "快速解析选中文本，或唤起智能解析面板。",
     "configureShortcut": "前往修改",
+    "shortcutNotSet": "未设置",
     "ballStyleSection": "悬浮球样式",
     "ballShape": "形状",
     "ballShapeDesc": "选择悬浮球的形状。",
@@ -189,8 +190,8 @@
       "json": "JSON",
       "jwt": "JWT",
       "timestamp": "时间戳",
-      "storage": "网页存储",
-      "url": "网址",
+      "storage": "存储",
+      "url": "URL",
       "qrcode": "二维码",
       "detect": "智能解析",
       "hash": "哈希"

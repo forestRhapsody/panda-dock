@@ -93,6 +93,12 @@ body {
   font-weight: 600;
 }
 
+.pop__kbd--unset {
+  font-family: inherit;
+  font-weight: 400;
+  color: var(--pd-muted-foreground);
+}
+
 .pop__native-hint {
   margin: 6px 0 0;
   font-size: var(--pd-text-xs);

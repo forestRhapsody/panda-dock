@@ -24,15 +24,17 @@ import Toaster from '@/ui/Toaster'
 import Tooltip from '@/ui/Tooltip'
 import { applyBackup, exportSettingsBackup, parseAndValidateBackup } from '@/utils/backup'
 import { parseDomainPatterns } from '@/utils/domainMatch'
-import { isExtension, storageGet } from '@/utils/env'
+import { isExtension, storageGet, storageRemove } from '@/utils/env'
 import { useFontScale } from '@/utils/fontScale'
 import type { BallAction } from '@/utils/messages'
 import {
   BALL_DOCK_MODE_OPTIONS,
+  BALL_POS_KEY,
   BALL_PRESET_OPTIONS,
   BALL_SHAPE_OPTIONS,
   BALL_SIZE_OPTIONS,
   ballAssetUrl,
+  clearAllLocalPreferences,
   defaultSettings,
   FONT_SCALE_OPTIONS,
   getBallImage,
@@ -202,19 +204,24 @@ export default function OptionsPage() {
     }
   }, [])
 
-  // 加载当前全局快捷键配置
-  const [shortcut, setShortcut] = useState('Alt+Shift+D')
-  const [detectShortcut, setDetectShortcut] = useState('Alt+Shift+S')
+  // 加载当前全局快捷键配置（页面聚焦时重新拉取，用户在扩展快捷键页修改后切回即时生效）
+  const [shortcut, setShortcut] = useState('')
+  const [detectShortcut, setDetectShortcut] = useState('')
   useEffect(() => {
     let alive = true
-    void getDockShortcut().then((sc) => {
-      if (alive) setShortcut(sc)
-    })
-    void getDetectShortcut().then((sc) => {
-      if (alive) setDetectShortcut(sc)
-    })
+    const readShortcuts = () => {
+      void getDockShortcut().then((sc) => {
+        if (alive) setShortcut(sc)
+      })
+      void getDetectShortcut().then((sc) => {
+        if (alive) setDetectShortcut(sc)
+      })
+    }
+    readShortcuts()
+    window.addEventListener('focus', readShortcuts)
     return () => {
       alive = false
+      window.removeEventListener('focus', readShortcuts)
     }
   }, [])
 
@@ -371,7 +378,7 @@ export default function OptionsPage() {
     setWhitelistText('')
   }
 
-  /** 恢复「悬浮球与唤起方式」到默认（显示、停靠行为、点击动作） */
+  /** 恢复「悬浮球与唤起方式」到默认（显示、停靠行为、点击动作、记忆位置） */
   function resetBallSection() {
     const base = defaultSettings()
     persist({
@@ -383,6 +390,7 @@ export default function OptionsPage() {
       ballBottomRightBottom: base.ballBottomRightBottom,
       ballAction: base.ballAction,
     })
+    void storageRemove('local', BALL_POS_KEY)
   }
 
   /** 恢复「悬浮球样式」到默认（形状、预设、大小、自定义图片） */
@@ -425,7 +433,7 @@ export default function OptionsPage() {
     setShowGlobalConfirm(true)
   }
 
-  /** 确认后：把全部设置恢复为默认，并同步重置本页的域名编辑状态 */
+  /** 确认后：把全部设置恢复为默认，并同步重置本页的域名编辑状态与全部本地偏好 */
   function doGlobalReset() {
     const base = defaultSettings()
     persist(base)
@@ -435,6 +443,7 @@ export default function OptionsPage() {
     setBallImageState(null)
     setBallImageError(null)
     persistBallImage(null)
+    void clearAllLocalPreferences()
     setShowGlobalConfirm(false)
   }
 
@@ -602,325 +611,335 @@ export default function OptionsPage() {
                 </button>
               </li>
             ))}
-            <li className='opt__item'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.ballDockMode')}</strong>
-                <p>{t('settings.ballDockModeDesc')}</p>
-              </div>
-              <PdSelect
-                value={settings.ballDockMode}
-                onChange={(e) => setBallDockMode(e.target.value as BallDockMode)}
-                aria-label={t('settings.ballDockMode')}
-              >
-                {BALL_DOCK_MODE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {t(o.labelKey)}
-                  </option>
-                ))}
-              </PdSelect>
-            </li>
-            {settings.ballDockMode === 'bottomRight' && (
-              <li className='opt__item'>
-                <div className='opt__item-text'>
-                  <strong>{t('settings.ballBottomRightOffset')}</strong>
-                  <p>{t('settings.ballBottomRightOffsetDesc')}</p>
-                </div>
-                <div className='opt__offset-group'>
-                  <label className='opt__offset-item'>
-                    <span>{t('settings.offsetRight')}</span>
-                    <NumberInput
-                      min={0}
-                      max={800}
-                      value={settings.ballBottomRightRight}
-                      onChange={(val) => {
-                        persist({ ...settings, ballBottomRightRight: val })
-                      }}
-                      className='opt__offset-input'
-                      aria-label={t('settings.offsetRight')}
-                    />
-                    <span className='opt__offset-unit'>px</span>
-                  </label>
-                  <label className='opt__offset-item'>
-                    <span>{t('settings.offsetBottom')}</span>
-                    <NumberInput
-                      min={0}
-                      max={800}
-                      value={settings.ballBottomRightBottom}
-                      onChange={(val) => {
-                        persist({ ...settings, ballBottomRightBottom: val })
-                      }}
-                      className='opt__offset-input'
-                      aria-label={t('settings.offsetBottom')}
-                    />
-                    <span className='opt__offset-unit'>px</span>
-                  </label>
-                </div>
-              </li>
-            )}
-            {/* 上下布局：标题行左右分布（标题在左、控件在右），描述与说明各自单独成行 */}
-            <li className='opt__item opt__item--col'>
-              <div className='opt__item-main'>
-                <div className='opt__item-text'>
-                  <strong>{t('settings.ballAction')}</strong>
-                </div>
-                <div className='opt__item-control'>
+            {settings.quickOpen && (
+              <>
+                <li className='opt__item'>
+                  <div className='opt__item-text'>
+                    <strong>{t('settings.ballDockMode')}</strong>
+                    <p>{t('settings.ballDockModeDesc')}</p>
+                  </div>
                   <PdSelect
-                    value={settings.ballAction}
-                    onChange={(e) => setBallAction(e.target.value as BallAction)}
-                    aria-label={t('settings.ballAction')}
+                    value={settings.ballDockMode}
+                    onChange={(e) => setBallDockMode(e.target.value as BallDockMode)}
+                    aria-label={t('settings.ballDockMode')}
                   >
-                    <option value='drawer'>{t('settings.actionDrawer')}</option>
-                    <option value='native'>{t('settings.actionNative')}</option>
+                    {BALL_DOCK_MODE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {t(o.labelKey)}
+                      </option>
+                    ))}
                   </PdSelect>
-                </div>
-              </div>
-              <p className='opt__item-desc'>{t('settings.ballActionDesc')}</p>
-              <div className='opt__item-tips'>
-                <p className='opt__item-tip'>
-                  <strong>{t('settings.ballActionDrawerTitle')}</strong>
-                  {t('settings.ballActionDrawerTip')}
-                </p>
-                <p className='opt__item-tip'>
-                  <strong>{t('settings.ballActionNativeTitle')}</strong>
-                  {t('settings.ballActionNativeTip')}
-                </p>
-              </div>
-            </li>
+                </li>
+                {settings.ballDockMode === 'bottomRight' && (
+                  <li className='opt__item'>
+                    <div className='opt__item-text'>
+                      <strong>{t('settings.ballBottomRightOffset')}</strong>
+                      <p>{t('settings.ballBottomRightOffsetDesc')}</p>
+                    </div>
+                    <div className='opt__offset-group'>
+                      <label className='opt__offset-item'>
+                        <span>{t('settings.offsetRight')}</span>
+                        <NumberInput
+                          min={0}
+                          max={800}
+                          value={settings.ballBottomRightRight}
+                          onChange={(val) => {
+                            persist({ ...settings, ballBottomRightRight: val })
+                          }}
+                          className='opt__offset-input'
+                          aria-label={t('settings.offsetRight')}
+                        />
+                        <span className='opt__offset-unit'>px</span>
+                      </label>
+                      <label className='opt__offset-item'>
+                        <span>{t('settings.offsetBottom')}</span>
+                        <NumberInput
+                          min={0}
+                          max={800}
+                          value={settings.ballBottomRightBottom}
+                          onChange={(val) => {
+                            persist({ ...settings, ballBottomRightBottom: val })
+                          }}
+                          className='opt__offset-input'
+                          aria-label={t('settings.offsetBottom')}
+                        />
+                        <span className='opt__offset-unit'>px</span>
+                      </label>
+                    </div>
+                  </li>
+                )}
+                {/* 上下布局：标题行左右分布（标题在左、控件在右），描述与说明各自单独成行 */}
+                <li className='opt__item opt__item--col'>
+                  <div className='opt__item-main'>
+                    <div className='opt__item-text'>
+                      <strong>{t('settings.ballAction')}</strong>
+                    </div>
+                    <div className='opt__item-control'>
+                      <PdSelect
+                        value={settings.ballAction}
+                        onChange={(e) => setBallAction(e.target.value as BallAction)}
+                        aria-label={t('settings.ballAction')}
+                      >
+                        <option value='drawer'>{t('settings.actionDrawer')}</option>
+                        <option value='native'>{t('settings.actionNative')}</option>
+                      </PdSelect>
+                    </div>
+                  </div>
+                  <p className='opt__item-desc'>{t('settings.ballActionDesc')}</p>
+                  <div className='opt__item-tips'>
+                    <p className='opt__item-tip'>
+                      <strong>{t('settings.ballActionDrawerTitle')}</strong>
+                      {t('settings.ballActionDrawerTip')}
+                    </p>
+                    <p className='opt__item-tip'>
+                      <strong>{t('settings.ballActionNativeTitle')}</strong>
+                      {t('settings.ballActionNativeTip')}
+                    </p>
+                  </div>
+                </li>
+              </>
+            )}
           </ul>
         </div>
 
-        <div className='opt__card'>
-          <div className='opt__card-head'>
-            <h2>{t('settings.ballStyleSection')}</h2>
-            <button type='button' className='opt__reset' onClick={resetBallStyle}>
-              {t('settings.resetDefault')}
-            </button>
-          </div>
-          <ul className='opt__list'>
-            <li className='opt__item'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.ballShape')}</strong>
-                <p>{t('settings.ballShapeDesc')}</p>
+        {settings.quickOpen && (
+          <>
+            <div className='opt__card'>
+              <div className='opt__card-head'>
+                <h2>{t('settings.ballStyleSection')}</h2>
+                <button type='button' className='opt__reset' onClick={resetBallStyle}>
+                  {t('settings.resetDefault')}
+                </button>
               </div>
-              <PdSelect
-                value={settings.ballShape}
-                onChange={(e) => setBallShape(e.target.value as BallShape)}
-                aria-label={t('settings.ballShape')}
-              >
-                {BALL_SHAPE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {t(o.labelKey)}
-                  </option>
-                ))}
-              </PdSelect>
-            </li>
-            <li className='opt__item'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.ballPreset')}</strong>
-                <p>{t('settings.ballPresetDesc')}</p>
-              </div>
-              <div
-                className='opt__ball-presets'
-                role='radiogroup'
-                aria-label={t('settings.ballPreset')}
-              >
-                {BALL_PRESET_OPTIONS.map((o) => (
-                  <button
-                    key={o.value}
-                    type='button'
-                    role='radio'
-                    aria-checked={settings.ballPreset === o.value}
-                    aria-label={t(o.labelKey)}
-                    className={`opt__ball-preset${settings.ballPreset === o.value ? ' opt__ball-preset--on' : ''}`}
-                    onClick={() => setBallPreset(o.value)}
+              <ul className='opt__list'>
+                <li className='opt__item'>
+                  <div className='opt__item-text'>
+                    <strong>{t('settings.ballShape')}</strong>
+                    <p>{t('settings.ballShapeDesc')}</p>
+                  </div>
+                  <PdSelect
+                    value={settings.ballShape}
+                    onChange={(e) => setBallShape(e.target.value as BallShape)}
+                    aria-label={t('settings.ballShape')}
                   >
-                    {o.image ? (
+                    {BALL_SHAPE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {t(o.labelKey)}
+                      </option>
+                    ))}
+                  </PdSelect>
+                </li>
+                <li className='opt__item'>
+                  <div className='opt__item-text'>
+                    <strong>{t('settings.ballPreset')}</strong>
+                    <p>{t('settings.ballPresetDesc')}</p>
+                  </div>
+                  <div
+                    className='opt__ball-presets'
+                    role='radiogroup'
+                    aria-label={t('settings.ballPreset')}
+                  >
+                    {BALL_PRESET_OPTIONS.map((o) => (
+                      <button
+                        key={o.value}
+                        type='button'
+                        role='radio'
+                        aria-checked={settings.ballPreset === o.value}
+                        aria-label={t(o.labelKey)}
+                        className={`opt__ball-preset${settings.ballPreset === o.value ? ' opt__ball-preset--on' : ''}`}
+                        onClick={() => setBallPreset(o.value)}
+                      >
+                        {o.image ? (
+                          <img
+                            src={ballAssetUrl(o.image)}
+                            alt=''
+                            aria-hidden='true'
+                            draggable={false}
+                            className='opt__ball-preset__img'
+                          />
+                        ) : (
+                          <span className='opt__ball-preset__logo'>{o.icon}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </li>
+                <li className='opt__item'>
+                  <div className='opt__item-text'>
+                    <strong>{t('settings.ballSize')}</strong>
+                    <p>{t('settings.ballSizeDesc')}</p>
+                  </div>
+                  <PdSelect
+                    value={settings.ballSize}
+                    onChange={(e) => setBallSize(e.target.value as BallSize)}
+                    aria-label={t('settings.ballSize')}
+                  >
+                    {BALL_SIZE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {t(o.labelKey)}
+                      </option>
+                    ))}
+                  </PdSelect>
+                </li>
+                <li className='opt__item'>
+                  <div className='opt__item-text'>
+                    <strong>{t('settings.ballImage')}</strong>
+                    <p>{t('settings.ballImageDesc')}</p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {ballImage ? (
                       <img
-                        src={ballAssetUrl(o.image)}
+                        src={ballImage}
                         alt=''
                         aria-hidden='true'
-                        draggable={false}
-                        className='opt__ball-preset__img'
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 8,
+                          objectFit: 'cover',
+                          border: '1px solid var(--pd-input)',
+                        }}
                       />
-                    ) : (
-                      <span className='opt__ball-preset__logo'>{o.icon}</span>
+                    ) : null}
+                    <button
+                      type='button'
+                      className='pd-btn pd-btn--sm'
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {t('settings.ballImageChoose')}
+                    </button>
+                    {ballImage && (
+                      <button type='button' className='pd-btn pd-btn--sm' onClick={removeBallImage}>
+                        {t('settings.ballImageRemove')}
+                      </button>
                     )}
+                    <input
+                      ref={fileInputRef}
+                      type='file'
+                      accept='image/*'
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        onPickImage(e.target.files?.[0])
+                        e.target.value = ''
+                      }}
+                    />
+                  </div>
+                </li>
+              </ul>
+              {ballImageError && <p className='opt__env opt__env--error'>{ballImageError}</p>}
+              {ballImage && (
+                <p className='opt__env opt__env--hint'>{t('settings.ballImageNote')}</p>
+              )}
+            </div>
+
+            <div className='opt__card'>
+              <div className='opt__card-head'>
+                <h2>{t('settings.domainSection')}</h2>
+                <button type='button' className='opt__reset' onClick={resetDomainRules}>
+                  {t('settings.resetDefault')}
+                </button>
+              </div>
+              <ul className='opt__list'>
+                <li className='opt__item'>
+                  <div className='opt__item-text'>
+                    <strong>{t('settings.domainMode')}</strong>
+                    <p>{t('settings.domainModeDesc')}</p>
+                  </div>
+                  <PdSelect
+                    value={settings.ballDomainMode}
+                    onChange={(e) => {
+                      const mode = e.target.value as DomainMatchMode
+                      persist({ ...settings, ballDomainMode: mode })
+                      setDomainTab(mode)
+                    }}
+                    aria-label={t('settings.domainMode')}
+                  >
+                    <option value='blacklist'>{t('settings.domainModeBlacklist')}</option>
+                    <option value='whitelist'>{t('settings.domainModeWhitelist')}</option>
+                  </PdSelect>
+                </li>
+              </ul>
+
+              <div className='opt__domain-header'>
+                <div className='opt__domain-tabs' role='tablist'>
+                  <button
+                    type='button'
+                    role='tab'
+                    aria-selected={domainTab === 'blacklist'}
+                    className={`opt__domain-tab${domainTab === 'blacklist' ? ' opt__domain-tab--active' : ''}`}
+                    onClick={() => setDomainTab('blacklist')}
+                  >
+                    <span>{t('settings.domainBlacklist')}</span>
+                    <span
+                      className={`opt__domain-tag${settings.ballDomainMode === 'blacklist' ? ' opt__domain-tag--active' : ''}`}
+                    >
+                      {settings.ballBlacklist.length}
+                    </span>
                   </button>
-                ))}
+                  <button
+                    type='button'
+                    role='tab'
+                    aria-selected={domainTab === 'whitelist'}
+                    className={`opt__domain-tab${domainTab === 'whitelist' ? ' opt__domain-tab--active' : ''}`}
+                    onClick={() => setDomainTab('whitelist')}
+                  >
+                    <span>{t('settings.domainWhitelist')}</span>
+                    <span
+                      className={`opt__domain-tag${settings.ballDomainMode === 'whitelist' ? ' opt__domain-tag--active' : ''}`}
+                    >
+                      {settings.ballWhitelist.length}
+                    </span>
+                  </button>
+                </div>
               </div>
-            </li>
-            <li className='opt__item'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.ballSize')}</strong>
-                <p>{t('settings.ballSizeDesc')}</p>
-              </div>
-              <PdSelect
-                value={settings.ballSize}
-                onChange={(e) => setBallSize(e.target.value as BallSize)}
-                aria-label={t('settings.ballSize')}
-              >
-                {BALL_SIZE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {t(o.labelKey)}
-                  </option>
-                ))}
-              </PdSelect>
-            </li>
-            <li className='opt__item'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.ballImage')}</strong>
-                <p>{t('settings.ballImageDesc')}</p>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {ballImage ? (
-                  <img
-                    src={ballImage}
-                    alt=''
-                    aria-hidden='true'
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 8,
-                      objectFit: 'cover',
-                      border: '1px solid var(--pd-input)',
+
+              <div className='opt__domain-box'>
+                <p className='opt__domain-desc'>
+                  {domainTab === 'blacklist'
+                    ? t('settings.domainBlacklistDesc')
+                    : t('settings.domainWhitelistDesc')}
+                </p>
+                {domainTab === 'blacklist' ? (
+                  <textarea
+                    className='opt__domain-textarea'
+                    rows={5}
+                    placeholder={t('settings.domainPlaceholder')}
+                    value={blacklistText}
+                    onChange={(e) => setBlacklistText(e.target.value)}
+                    onBlur={() => {
+                      const parsed = parseDomainPatterns(blacklistText)
+                      setBlacklistText(parsed.join('\n'))
+                      persist({ ...settings, ballBlacklist: parsed })
                     }}
                   />
-                ) : null}
-                <button
-                  type='button'
-                  className='pd-btn pd-btn--sm'
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {t('settings.ballImageChoose')}
-                </button>
-                {ballImage && (
-                  <button type='button' className='pd-btn pd-btn--sm' onClick={removeBallImage}>
-                    {t('settings.ballImageRemove')}
-                  </button>
+                ) : (
+                  <textarea
+                    className='opt__domain-textarea'
+                    rows={5}
+                    placeholder={t('settings.domainPlaceholder')}
+                    value={whitelistText}
+                    onChange={(e) => setWhitelistText(e.target.value)}
+                    onBlur={() => {
+                      const parsed = parseDomainPatterns(whitelistText)
+                      setWhitelistText(parsed.join('\n'))
+                      persist({ ...settings, ballWhitelist: parsed })
+                    }}
+                  />
                 )}
-                <input
-                  ref={fileInputRef}
-                  type='file'
-                  accept='image/*'
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    onPickImage(e.target.files?.[0])
-                    e.target.value = ''
-                  }}
-                />
+                <div className='opt__domain-foot'>
+                  <span>
+                    {t('settings.domainCount', {
+                      count:
+                        domainTab === 'blacklist'
+                          ? settings.ballBlacklist.length
+                          : settings.ballWhitelist.length,
+                    })}
+                  </span>
+                </div>
               </div>
-            </li>
-          </ul>
-          {ballImageError && <p className='opt__env opt__env--error'>{ballImageError}</p>}
-          {ballImage && <p className='opt__env opt__env--hint'>{t('settings.ballImageNote')}</p>}
-        </div>
-
-        <div className='opt__card'>
-          <div className='opt__card-head'>
-            <h2>{t('settings.domainSection')}</h2>
-            <button type='button' className='opt__reset' onClick={resetDomainRules}>
-              {t('settings.resetDefault')}
-            </button>
-          </div>
-          <ul className='opt__list'>
-            <li className='opt__item'>
-              <div className='opt__item-text'>
-                <strong>{t('settings.domainMode')}</strong>
-                <p>{t('settings.domainModeDesc')}</p>
-              </div>
-              <PdSelect
-                value={settings.ballDomainMode}
-                onChange={(e) => {
-                  const mode = e.target.value as DomainMatchMode
-                  persist({ ...settings, ballDomainMode: mode })
-                  setDomainTab(mode)
-                }}
-                aria-label={t('settings.domainMode')}
-              >
-                <option value='blacklist'>{t('settings.domainModeBlacklist')}</option>
-                <option value='whitelist'>{t('settings.domainModeWhitelist')}</option>
-              </PdSelect>
-            </li>
-          </ul>
-
-          <div className='opt__domain-header'>
-            <div className='opt__domain-tabs' role='tablist'>
-              <button
-                type='button'
-                role='tab'
-                aria-selected={domainTab === 'blacklist'}
-                className={`opt__domain-tab${domainTab === 'blacklist' ? ' opt__domain-tab--active' : ''}`}
-                onClick={() => setDomainTab('blacklist')}
-              >
-                <span>{t('settings.domainBlacklist')}</span>
-                <span
-                  className={`opt__domain-tag${settings.ballDomainMode === 'blacklist' ? ' opt__domain-tag--active' : ''}`}
-                >
-                  {settings.ballBlacklist.length}
-                </span>
-              </button>
-              <button
-                type='button'
-                role='tab'
-                aria-selected={domainTab === 'whitelist'}
-                className={`opt__domain-tab${domainTab === 'whitelist' ? ' opt__domain-tab--active' : ''}`}
-                onClick={() => setDomainTab('whitelist')}
-              >
-                <span>{t('settings.domainWhitelist')}</span>
-                <span
-                  className={`opt__domain-tag${settings.ballDomainMode === 'whitelist' ? ' opt__domain-tag--active' : ''}`}
-                >
-                  {settings.ballWhitelist.length}
-                </span>
-              </button>
             </div>
-          </div>
-
-          <div className='opt__domain-box'>
-            <p className='opt__domain-desc'>
-              {domainTab === 'blacklist'
-                ? t('settings.domainBlacklistDesc')
-                : t('settings.domainWhitelistDesc')}
-            </p>
-            {domainTab === 'blacklist' ? (
-              <textarea
-                className='opt__domain-textarea'
-                rows={5}
-                placeholder={t('settings.domainPlaceholder')}
-                value={blacklistText}
-                onChange={(e) => setBlacklistText(e.target.value)}
-                onBlur={() => {
-                  const parsed = parseDomainPatterns(blacklistText)
-                  setBlacklistText(parsed.join('\n'))
-                  persist({ ...settings, ballBlacklist: parsed })
-                }}
-              />
-            ) : (
-              <textarea
-                className='opt__domain-textarea'
-                rows={5}
-                placeholder={t('settings.domainPlaceholder')}
-                value={whitelistText}
-                onChange={(e) => setWhitelistText(e.target.value)}
-                onBlur={() => {
-                  const parsed = parseDomainPatterns(whitelistText)
-                  setWhitelistText(parsed.join('\n'))
-                  persist({ ...settings, ballWhitelist: parsed })
-                }}
-              />
-            )}
-            <div className='opt__domain-foot'>
-              <span>
-                {t('settings.domainCount', {
-                  count:
-                    domainTab === 'blacklist'
-                      ? settings.ballBlacklist.length
-                      : settings.ballWhitelist.length,
-                })}
-              </span>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
 
         <div className='opt__card'>
           <div className='opt__card-head'>
@@ -963,7 +982,9 @@ export default function OptionsPage() {
                 <p>{t('settings.shortcutDesc')}</p>
               </div>
               <div className='opt__shortcut-group'>
-                <kbd className='opt__kbd'>{formatShortcutForDisplay(shortcut)}</kbd>
+                <kbd className={`opt__kbd${!shortcut ? ' opt__kbd--unset' : ''}`}>
+                  {shortcut ? formatShortcutForDisplay(shortcut) : t('settings.shortcutNotSet')}
+                </kbd>
                 {inExt && (
                   <button
                     type='button'
@@ -982,7 +1003,11 @@ export default function OptionsPage() {
                 <p>{t('settings.detectShortcutDesc')}</p>
               </div>
               <div className='opt__shortcut-group'>
-                <kbd className='opt__kbd'>{formatShortcutForDisplay(detectShortcut)}</kbd>
+                <kbd className={`opt__kbd${!detectShortcut ? ' opt__kbd--unset' : ''}`}>
+                  {detectShortcut
+                    ? formatShortcutForDisplay(detectShortcut)
+                    : t('settings.shortcutNotSet')}
+                </kbd>
                 {inExt && (
                   <button
                     type='button'

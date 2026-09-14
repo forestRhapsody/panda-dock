@@ -322,7 +322,7 @@ describe('SelectionDetectPanel 关闭与钉住', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('Alt+Shift+S 快捷键收回面板', () => {
+  it('不通过 DOM 硬编码劫持快捷键（由扩展 command 驱动），仅 Escape 响应关闭', () => {
     const onClose = vi.fn()
     renderPanel({ text: '123', onClose })
 
@@ -338,7 +338,7 @@ describe('SelectionDetectPanel 关闭与钉住', () => {
       )
     })
 
-    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('点击面板外部关闭；钉住后点击外部不再关闭，且图钉 aria-pressed 同步', () => {

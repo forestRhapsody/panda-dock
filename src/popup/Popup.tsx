@@ -95,8 +95,8 @@ export default function Popup() {
                 className='pop__shortcut-btn'
                 onClick={() => void openShortcutsPage()}
               >
-                <kbd className='pop__kbd'>
-                  {formatShortcutForDisplay(shortcut || 'Alt+Shift+D')}
+                <kbd className={`pop__kbd${!shortcut ? ' pop__kbd--unset' : ''}`}>
+                  {shortcut ? formatShortcutForDisplay(shortcut) : t('settings.shortcutNotSet')}
                 </kbd>
                 <Icon name='external-link' size={12} />
               </button>

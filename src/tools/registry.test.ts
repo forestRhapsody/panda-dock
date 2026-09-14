@@ -17,17 +17,14 @@ import type { ToolId } from './registry'
 const EXPECTED_IDS: ToolId[] = [
   'detect',
   'storage',
-  'base64',
+  'qrcode',
   'json',
   'url',
-  'timestamp',
-  'qrcode',
   'jwt',
+  'base64',
+  'timestamp',
   'hash',
 ]
-
-/** 产品默认隐藏（可在 Options 开启）的工具 */
-const HIDDEN_BY_DEFAULT: ToolId[] = ['jwt', 'hash']
 
 /** 把全部工具都设为隐藏，用于验证 visibleTools 的空结果分支 */
 function allDisabled(): Record<string, boolean> {
@@ -56,11 +53,11 @@ describe('DEFAULT_TOOLS 注册表契约', () => {
 })
 
 describe('defaultToolLayout', () => {
-  it('顺序覆盖全部工具，仅 JWT / Hash 默认隐藏', () => {
+  it('顺序覆盖全部工具，默认全部启用', () => {
     const layout = defaultToolLayout()
     expect(layout.order).toEqual(EXPECTED_IDS)
     for (const id of EXPECTED_IDS) {
-      expect(layout.enabled[id]).toBe(!HIDDEN_BY_DEFAULT.includes(id))
+      expect(layout.enabled[id]).toBe(true)
     }
   })
 
@@ -106,14 +103,14 @@ describe('normalizeToolLayout：兼容缺失 / 非数组 / 未知 id', () => {
 })
 
 describe('normalizeToolLayout：enabled 存量优先与缺省回退', () => {
-  it('未存过时回退产品默认（jwt / hash 隐藏）', () => {
+  it('未存过时回退产品默认（全部启用）', () => {
     expect(normalizeToolLayout(undefined, undefined).enabled).toEqual(defaultToolLayout().enabled)
   })
 
-  it('存过的值优先：显式 false 隐藏，显式 true 可开启默认隐藏项', () => {
-    const layout = normalizeToolLayout(undefined, { base64: false, jwt: true, hash: true })
+  it('存过的值优先：显式 false 隐藏，显式 true 可开启', () => {
+    const layout = normalizeToolLayout(undefined, { base64: false, jwt: false, hash: true })
     expect(layout.enabled.base64).toBe(false)
-    expect(layout.enabled.jwt).toBe(true)
+    expect(layout.enabled.jwt).toBe(false)
     expect(layout.enabled.hash).toBe(true)
     // 未存过的可见工具仍回退产品默认 true
     expect(layout.enabled.json).toBe(true)
@@ -136,11 +133,9 @@ describe('normalizeToolLayout：enabled 存量优先与缺省回退', () => {
 })
 
 describe('visibleTools：过滤 + 保序', () => {
-  it('默认布局返回 7 个可见工具且保持注册顺序', () => {
+  it('默认布局返回全部 9 个可见工具且保持注册顺序', () => {
     const tools = visibleTools(defaultToolLayout())
-    expect(tools.map((t) => t.id)).toEqual(
-      EXPECTED_IDS.filter((id) => !HIDDEN_BY_DEFAULT.includes(id)),
-    )
+    expect(tools.map((t) => t.id)).toEqual(EXPECTED_IDS)
     expect(tools.every((t) => t.label.trim().length > 0)).toBe(true)
   })
 

@@ -293,20 +293,10 @@ export default function SelectionDetectPanel({
     onPinnedChange?.(pinned)
   }, [onPinnedChange, pinned])
 
-  // Escape 始终关闭；按下快捷键 Alt+Shift+S 也能收回
+  // Escape 始终关闭面板（快捷键唤起/收回由扩展 commands.onCommand 驱动，不在此硬编码 DOM 劫持）
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose()
-        return
-      }
-      if (
-        (e.altKey || e.metaKey) &&
-        e.shiftKey &&
-        (e.key === 'S' || e.key === 's' || e.key === 'P' || e.key === 'p')
-      ) {
-        e.preventDefault()
-        e.stopPropagation()
         onClose()
       }
     }

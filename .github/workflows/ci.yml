@@ -1,13 +1,16 @@
 name: CI
 
-# 质量门禁：类型检查 → 只读 lint → 单元测试 → 完整构建
+# 质量门禁：类型检查 → 只读 lint → 单元测试 → 完整构建 → 扩展打包与产物上传
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   verify:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,3 +42,25 @@ jobs:
 
       - name: Build extension
         run: pnpm build
+
+      # 打包带版本号的 ZIP 压缩包（例如 panda-dock-v1.0.0.zip）
+      - name: Package extension
+        id: package
+        run: pnpm package
+
+      # 上传至 GitHub Actions Artifacts（压缩包名称携带当前版本号）
+      - name: Upload extension zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.archive_name }}
+          path: ${{ steps.package.outputs.archive_path }}
+          if-no-files-found: error
+
+      # 推送版本标签（如 v1.0.0）时自动创建 GitHub Release 并挂载压缩包
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.package.outputs.archive_path }}
+          generate_release_notes: true
+

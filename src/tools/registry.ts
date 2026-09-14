@@ -21,18 +21,18 @@ export interface ToolMeta {
 
 export const DEFAULT_TOOLS: ToolMeta[] = [
   { id: 'detect', label: 'Smart Parse' },
-  { id: 'storage', label: 'Web Storage' },
-  { id: 'base64', label: 'Base64' },
+  { id: 'storage', label: 'Storage' },
+  { id: 'qrcode', label: 'QR Code' },
   { id: 'json', label: 'JSON' },
   { id: 'url', label: 'URL' },
-  { id: 'timestamp', label: 'Timestamp' },
-  { id: 'qrcode', label: 'QR Code' },
   { id: 'jwt', label: 'JWT' },
+  { id: 'base64', label: 'Base64' },
+  { id: 'timestamp', label: 'Timestamp' },
   { id: 'hash', label: 'Hash' },
 ]
 
-/** 默认隐藏（不启用）的工具：JWT 与哈希属中低频能力，默认收起以缩短首屏标签栏，需要时可在设置页一键开启 */
-const DEFAULT_HIDDEN_TOOLS: ToolId[] = ['jwt', 'hash']
+/** 默认隐藏（不启用）的工具：当前全部默认启用；需要时可在设置页自定义显隐与排序 */
+export const DEFAULT_HIDDEN_TOOLS: ToolId[] = []
 
 export function isToolId(value: unknown): value is ToolId {
   return DEFAULT_TOOLS.some((t) => t.id === value)

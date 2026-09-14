@@ -189,95 +189,99 @@ export default function QuickSettings() {
             </Tooltip>
           </li>
         )}
-        <li className='pop__setting'>
-          <div className='pop__setting-text'>
-            <strong>{t('settings.ballDockMode')}</strong>
-            <p>
-              {t(
-                BALL_DOCK_MODE_OPTIONS.find((o) => o.value === settings.ballDockMode)?.labelKey ??
-                  'settings.ballDockModeEdge',
-              )}
-            </p>
-          </div>
-          <PdSelect
-            variant='sm'
-            value={settings.ballDockMode}
-            onChange={(e) => {
-              const mode = e.target.value as BallDockMode
-              update({ ballDockMode: mode, ballSnap: mode === 'edge' })
-            }}
-            aria-label={t('settings.ballDockMode')}
-          >
-            {BALL_DOCK_MODE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {t(o.labelKey)}
-              </option>
-            ))}
-          </PdSelect>
-        </li>
-        {settings.ballDockMode === 'bottomRight' && (
-          <li className='pop__setting'>
-            <div className='pop__setting-text'>
-              <strong>{t('settings.ballBottomRightOffset')}</strong>
-              <p>
-                {t('settings.offsetRight')}: {settings.ballBottomRightRight}px ·{' '}
-                {t('settings.offsetBottom')}: {settings.ballBottomRightBottom}px
-              </p>
-            </div>
-            <div className='pop__offset-group'>
-              <label className='pop__offset-item'>
-                <span>{t('settings.offsetRightShort')}</span>
-                <NumberInput
-                  min={0}
-                  max={800}
-                  value={settings.ballBottomRightRight}
-                  onChange={(val) => {
-                    update({ ballBottomRightRight: val })
-                  }}
-                  className='pop__offset-input'
-                  aria-label={t('settings.offsetRight')}
-                />
-              </label>
-              <label className='pop__offset-item'>
-                <span>{t('settings.offsetBottomShort')}</span>
-                <NumberInput
-                  min={0}
-                  max={800}
-                  value={settings.ballBottomRightBottom}
-                  onChange={(val) => {
-                    update({ ballBottomRightBottom: val })
-                  }}
-                  className='pop__offset-input'
-                  aria-label={t('settings.offsetBottom')}
-                />
-              </label>
-            </div>
-          </li>
+        {settings.quickOpen && (
+          <>
+            <li className='pop__setting'>
+              <div className='pop__setting-text'>
+                <strong>{t('settings.ballDockMode')}</strong>
+                <p>
+                  {t(
+                    BALL_DOCK_MODE_OPTIONS.find((o) => o.value === settings.ballDockMode)
+                      ?.labelKey ?? 'settings.ballDockModeEdge',
+                  )}
+                </p>
+              </div>
+              <PdSelect
+                variant='sm'
+                value={settings.ballDockMode}
+                onChange={(e) => {
+                  const mode = e.target.value as BallDockMode
+                  update({ ballDockMode: mode, ballSnap: mode === 'edge' })
+                }}
+                aria-label={t('settings.ballDockMode')}
+              >
+                {BALL_DOCK_MODE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {t(o.labelKey)}
+                  </option>
+                ))}
+              </PdSelect>
+            </li>
+            {settings.ballDockMode === 'bottomRight' && (
+              <li className='pop__setting'>
+                <div className='pop__setting-text'>
+                  <strong>{t('settings.ballBottomRightOffset')}</strong>
+                  <p>
+                    {t('settings.offsetRight')}: {settings.ballBottomRightRight}px ·{' '}
+                    {t('settings.offsetBottom')}: {settings.ballBottomRightBottom}px
+                  </p>
+                </div>
+                <div className='pop__offset-group'>
+                  <label className='pop__offset-item'>
+                    <span>{t('settings.offsetRightShort')}</span>
+                    <NumberInput
+                      min={0}
+                      max={800}
+                      value={settings.ballBottomRightRight}
+                      onChange={(val) => {
+                        update({ ballBottomRightRight: val })
+                      }}
+                      className='pop__offset-input'
+                      aria-label={t('settings.offsetRight')}
+                    />
+                  </label>
+                  <label className='pop__offset-item'>
+                    <span>{t('settings.offsetBottomShort')}</span>
+                    <NumberInput
+                      min={0}
+                      max={800}
+                      value={settings.ballBottomRightBottom}
+                      onChange={(val) => {
+                        update({ ballBottomRightBottom: val })
+                      }}
+                      className='pop__offset-input'
+                      aria-label={t('settings.offsetBottom')}
+                    />
+                  </label>
+                </div>
+              </li>
+            )}
+            <li className='pop__setting pop__setting--col'>
+              <div className='pop__setting-header'>
+                <strong>{t('settings.ballAction')}</strong>
+                <PdSelect
+                  variant='sm'
+                  value={settings.ballAction}
+                  onChange={(e) => update({ ballAction: e.target.value as BallAction })}
+                  aria-label={t('settings.ballAction')}
+                >
+                  <option value='drawer'>{t('settings.actionDrawer')}</option>
+                  <option value='native'>{t('settings.actionNative')}</option>
+                </PdSelect>
+              </div>
+              <div className='pop__setting-tips'>
+                <p className='pop__setting-tip'>
+                  <strong>{t('settings.ballActionDrawerTitle')}</strong>
+                  {t('settings.ballActionDrawerTip')}
+                </p>
+                <p className='pop__setting-tip'>
+                  <strong>{t('settings.ballActionNativeTitle')}</strong>
+                  {t('settings.ballActionNativeTip')}
+                </p>
+              </div>
+            </li>
+          </>
         )}
-        <li className='pop__setting pop__setting--col'>
-          <div className='pop__setting-header'>
-            <strong>{t('settings.ballAction')}</strong>
-            <PdSelect
-              variant='sm'
-              value={settings.ballAction}
-              onChange={(e) => update({ ballAction: e.target.value as BallAction })}
-              aria-label={t('settings.ballAction')}
-            >
-              <option value='drawer'>{t('settings.actionDrawer')}</option>
-              <option value='native'>{t('settings.actionNative')}</option>
-            </PdSelect>
-          </div>
-          <div className='pop__setting-tips'>
-            <p className='pop__setting-tip'>
-              <strong>{t('settings.ballActionDrawerTitle')}</strong>
-              {t('settings.ballActionDrawerTip')}
-            </p>
-            <p className='pop__setting-tip'>
-              <strong>{t('settings.ballActionNativeTitle')}</strong>
-              {t('settings.ballActionNativeTip')}
-            </p>
-          </div>
-        </li>
         <li className='pop__setting'>
           <div className='pop__setting-text'>
             <strong>{t('settings.theme')}</strong>

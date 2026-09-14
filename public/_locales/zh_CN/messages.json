@@ -1,7 +1,7 @@
 {
   "appDescription": {
-    "message": "一款高效的开发者工具合集，完全本地运行，免费开源。",
-    "description": "扩展简介，展示在 Chrome 应用商店与扩展管理页；所列工具与默认开启项保持一致（见 T87）。"
+    "message": "一款高效的开发者工具箱，完全本地运行，免费且开源。",
+    "description": "扩展简介，展示在 Chrome 应用商店与扩展管理页。"
   },
   "commandToggleDock": {
     "message": "打开/收起工具箱",

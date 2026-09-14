@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { BALL_IMAGE_MAX_DATA_URL_LENGTH, defaultSettings } from '@/utils/settings'
+import {
+  BALL_IMAGE_MAX_DATA_URL_LENGTH,
+  BALL_POS_KEY,
+  defaultSettings,
+  DRAWER_WIDTH_KEY,
+  QR_STYLE_PRESET_KEY,
+} from '@/utils/settings'
 
 import { applyBackup, parseAndValidateBackup } from './backup'
 
@@ -20,6 +26,7 @@ function stubChrome(
   impl: {
     syncSet?: (obj: Record<string, unknown>) => Promise<void>
     localSet?: (obj: Record<string, unknown>) => Promise<void>
+    localRemove?: (keys: string | string[]) => Promise<void>
   } = {},
 ) {
   const sync = {
@@ -30,7 +37,7 @@ function stubChrome(
   const local = {
     get: async () => ({}),
     set: impl.localSet ?? (async () => {}),
-    remove: async () => {},
+    remove: impl.localRemove ?? (async () => {}),
   }
   globalWithChrome.chrome = {
     runtime: { id: 'test-extension' },
@@ -235,10 +242,15 @@ describe('applyBackup 的持久化与失败原因', () => {
     ).resolves.toEqual({ ok: false, reason: 'ballImage' })
   })
 
-  it('全部成功时设置落到 sync、图片落到 local', async () => {
-    const written: { sync: Record<string, unknown>[]; local: Record<string, unknown>[] } = {
+  it('全部成功时设置落到 sync、图片落到 local，并重置设备本地微调状态', async () => {
+    const written: {
+      sync: Record<string, unknown>[]
+      local: Record<string, unknown>[]
+      removed: (string | string[])[]
+    } = {
       sync: [],
       local: [],
+      removed: [],
     }
     stubChrome({
       syncSet: async (obj) => {
@@ -246,6 +258,9 @@ describe('applyBackup 的持久化与失败原因', () => {
       },
       localSet: async (obj) => {
         written.local.push(obj)
+      },
+      localRemove: async (keys) => {
+        written.removed.push(keys)
       },
     })
 
@@ -256,5 +271,8 @@ describe('applyBackup 的持久化与失败原因', () => {
     })
     expect(written.sync).toEqual([{ settings }])
     expect(written.local).toEqual([{ ballImage: VALID_BALL_IMAGE }])
+    expect(written.removed).toEqual(
+      expect.arrayContaining([BALL_POS_KEY, DRAWER_WIDTH_KEY, QR_STYLE_PRESET_KEY]),
+    )
   })
 })

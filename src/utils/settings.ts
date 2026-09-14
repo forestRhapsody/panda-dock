@@ -3,7 +3,7 @@
 
 import type { ToolId } from '@/tools/registry'
 import { defaultToolLayout, normalizeToolLayout } from '@/tools/registry'
-import { storageGet, storageSet } from '@/utils/env'
+import { storageGet, storageRemove, storageSet } from '@/utils/env'
 import type { BallAction } from '@/utils/messages'
 
 /** 主题模式：浅色 / 深色 / 跟随系统 */
@@ -107,6 +107,28 @@ export function ballAssetUrl(path: string): string {
 
 /** 自定义悬浮球图片（base64 data URL）存于 chrome.storage.local 的 key */
 export const BALL_IMAGE_KEY = 'ballImage'
+
+/** 悬浮球记忆坐标存于 chrome.storage.local 的 key */
+export const BALL_POS_KEY = 'panda.ballPos'
+
+/** 网页抽屉宽度存于 chrome.storage.local 的 key */
+export const DRAWER_WIDTH_KEY = 'panda.drawerWidth'
+
+/** 二维码默认样式预设存于 chrome.storage.local 的 key */
+export const QR_STYLE_PRESET_KEY = 'panda.qrcode.stylePreset'
+
+/**
+ * 清除保存在 chrome.storage.local 中的全部偏好与交互状态
+ * （悬浮球自定义图片、悬浮球记忆位置、网页抽屉宽度、二维码默认样式预设）。
+ */
+export async function clearAllLocalPreferences(): Promise<void> {
+  await Promise.all([
+    storageRemove('local', BALL_IMAGE_KEY),
+    storageRemove('local', BALL_POS_KEY),
+    storageRemove('local', DRAWER_WIDTH_KEY),
+    storageRemove('local', QR_STYLE_PRESET_KEY),
+  ])
+}
 
 /** 自定义悬浮球图片文件大小上限（128KB），超出拒绝 */
 export const BALL_IMAGE_MAX_BYTES = 128 * 1024

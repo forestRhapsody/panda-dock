@@ -279,13 +279,44 @@ describe('QuickSettings 首屏读取与归一化', () => {
     expect(syncCalls()).toHaveLength(0)
   })
 
-  it('关闭悬浮球总开关时不渲染本站规则行', async () => {
-    await mount({ ...BASE(), quickOpen: false })
+  it('关闭悬浮球总开关时不渲染本站规则行、停靠行为与悬浮球动作设置', async () => {
+    await mount({ ...BASE(), quickOpen: false, ballDockMode: 'bottomRight' })
 
     expect(rowSwitch(i18n.t('settings.quickOpen')).getAttribute('aria-checked')).toBe('false')
     expect(container.querySelectorAll('strong').length).toBeGreaterThan(0)
     expect(
       [...container.querySelectorAll('strong')].some((n) => n.textContent === siteHostname()),
+    ).toBe(false)
+    expect(
+      [...container.querySelectorAll('strong')].some(
+        (n) => n.textContent === i18n.t('settings.ballDockMode'),
+      ),
+    ).toBe(false)
+    expect(
+      [...container.querySelectorAll('strong')].some(
+        (n) => n.textContent === i18n.t('settings.ballAction'),
+      ),
+    ).toBe(false)
+    expect(container.querySelectorAll('.pop__offset-input')).toHaveLength(0)
+  })
+
+  it('点击关闭悬浮球开关时，停靠行为与悬浮球动作设置随之隐藏', async () => {
+    await mount({ ...BASE(), quickOpen: true })
+    expect(selectText('停靠行为')).toBe('自动吸边')
+    expect(selectText('默认唤起方式')).toBe('网页内抽屉')
+
+    fire(rowSwitch(i18n.t('settings.quickOpen')), 'click')
+    await settle()
+
+    expect(
+      [...container.querySelectorAll('strong')].some(
+        (n) => n.textContent === i18n.t('settings.ballDockMode'),
+      ),
+    ).toBe(false)
+    expect(
+      [...container.querySelectorAll('strong')].some(
+        (n) => n.textContent === i18n.t('settings.ballAction'),
+      ),
     ).toBe(false)
   })
 })
@@ -373,11 +404,20 @@ describe('QuickSettings 脏标记 + useEffect 写存储', () => {
   it('外部 onChanged 推送时 UI 即时同步，且不回写存储（无回环）', async () => {
     await mount(BASE())
 
-    emitSync({ ...BASE(), quickOpen: false, theme: 'dark', ballDockMode: 'free' })
+    emitSync({ ...BASE(), theme: 'dark', ballDockMode: 'free' })
 
-    expect(rowSwitch(i18n.t('settings.quickOpen')).getAttribute('aria-checked')).toBe('false')
     expect(selectText('主题')).toBe('深色')
     expect(selectText('停靠行为')).toBe('自由停靠')
+
+    // 外部推送关闭悬浮球：停靠行为随之隐藏
+    emitSync({ ...BASE(), quickOpen: false })
+    expect(rowSwitch(i18n.t('settings.quickOpen')).getAttribute('aria-checked')).toBe('false')
+    expect(
+      [...container.querySelectorAll('strong')].some(
+        (n) => n.textContent === i18n.t('settings.ballDockMode'),
+      ),
+    ).toBe(false)
+
     // 外部同步不算用户修改，绝不能写回
     expect(syncCalls()).toHaveLength(0)
   })

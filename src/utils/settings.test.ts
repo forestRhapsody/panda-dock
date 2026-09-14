@@ -11,14 +11,18 @@ import {
   BALL_IMAGE_KEY,
   BALL_IMAGE_MAX_BYTES,
   BALL_IMAGE_MAX_DATA_URL_LENGTH,
+  BALL_POS_KEY,
   ballAssetUrl,
+  clearAllLocalPreferences,
   DEFAULT_BOTTOM_RIGHT_OFFSET_X,
   DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
   defaultSettings,
+  DRAWER_WIDTH_KEY,
   FONT_SCALE_OPTIONS,
   getBallImage,
   LOCALE_OPTIONS,
   normalizeSettings,
+  QR_STYLE_PRESET_KEY,
   saveSettings,
   setBallImage,
   THEME_OPTIONS,
@@ -129,18 +133,18 @@ describe('defaultSettings / normalizeSettings', () => {
     expect(new Set(res.toolOrder).size).toBe(9)
     expect(res.toolOrder[0]).toBe('json')
     expect(res.toolEnabled.json).toBe(false)
-    expect(res.toolEnabled.jwt).toBe(false)
+    expect(res.toolEnabled.jwt).toBe(true)
     expect(res.toolEnabled.base64).toBe(true)
   })
 })
 
 describe('registry 兜底与可见性', () => {
-  it('defaultToolLayout 覆盖全部已注册工具，JWT 与哈希默认隐藏', () => {
+  it('defaultToolLayout 覆盖全部已注册工具，默认全部启用', () => {
     const layout = defaultToolLayout()
     expect(layout.order).toHaveLength(9)
-    expect(layout.enabled.jwt).toBe(false)
-    expect(layout.enabled.hash).toBe(false)
-    expect(Object.values(layout.enabled).filter(Boolean)).toHaveLength(7)
+    expect(layout.enabled.jwt).toBe(true)
+    expect(layout.enabled.hash).toBe(true)
+    expect(Object.values(layout.enabled).filter(Boolean)).toHaveLength(9)
   })
 
   it('normalizeToolLayout 剔除未知 id、去重并补齐缺失工具', () => {
@@ -152,10 +156,10 @@ describe('registry 兜底与可见性', () => {
   })
 
   it('存储中标记为 false 的工具保持隐藏，新增工具回退产品默认', () => {
-    const layout = normalizeToolLayout(undefined, { hash: true, base64: false })
-    expect(layout.enabled.hash).toBe(true)
+    const layout = normalizeToolLayout(undefined, { hash: false, base64: false })
+    expect(layout.enabled.hash).toBe(false)
     expect(layout.enabled.base64).toBe(false)
-    expect(layout.enabled.jwt).toBe(false)
+    expect(layout.enabled.jwt).toBe(true)
   })
 
   it('非数组顺序参数不抛错', () => {
@@ -163,11 +167,11 @@ describe('registry 兜底与可见性', () => {
     expect(normalizeToolLayout('nope', null).order).toHaveLength(9)
   })
 
-  it('visibleTools 按顺序返回可见工具（默认 7 个，首个为智能解析）', () => {
+  it('visibleTools 按顺序返回可见工具（默认 9 个，首个为智能解析）', () => {
     const tools = visibleTools(defaultToolLayout())
-    expect(tools).toHaveLength(7)
+    expect(tools).toHaveLength(9)
     expect(tools[0].id).toBe('detect')
-    expect(tools.map((t) => t.id)).not.toContain('jwt')
+    expect(tools.map((t) => t.id)).toContain('jwt')
   })
 
   it('isToolId 只认可注册表内的 id', () => {
@@ -231,7 +235,7 @@ describe('saveSettings / setBallImage 的失败信号', () => {
 describe('defaultSettings 完整形状', () => {
   it('包含全部字段，取值与产品默认一致', () => {
     const expectedEnabled: Record<string, boolean> = {}
-    for (const t of DEFAULT_TOOLS) expectedEnabled[t.id] = t.id !== 'jwt' && t.id !== 'hash'
+    for (const t of DEFAULT_TOOLS) expectedEnabled[t.id] = true
 
     expect(defaultSettings()).toEqual({
       quickOpen: true,
@@ -566,5 +570,31 @@ describe('saveSettings 透传 storageSet 结果', () => {
       },
     }
     await expect(saveSettings(defaultSettings())).resolves.toBe(false)
+  })
+})
+
+describe('clearAllLocalPreferences 清理本地偏好与状态', () => {
+  const globalWithChrome = globalThis as unknown as { chrome?: unknown }
+  const removedKeys: string[] = []
+
+  afterEach(() => {
+    delete globalWithChrome.chrome
+    removedKeys.length = 0
+  })
+
+  it('调用 storageRemove 移除所有本地附加偏好键', async () => {
+    globalWithChrome.chrome = {
+      storage: {
+        local: {
+          remove: async (key: string) => {
+            removedKeys.push(key)
+          },
+        },
+      },
+    }
+    await clearAllLocalPreferences()
+    expect(removedKeys.sort()).toEqual(
+      [BALL_IMAGE_KEY, BALL_POS_KEY, DRAWER_WIDTH_KEY, QR_STYLE_PRESET_KEY].sort(),
+    )
   })
 })

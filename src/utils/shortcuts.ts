@@ -1,12 +1,14 @@
 import { MSG_OPEN_SHORTCUTS } from '@/utils/messages'
 
-/** 读取当前扩展配置的工具箱全局唤起快捷键（若未配置或浏览器不支持则回退默认值） */
+/** 读取当前扩展配置的工具箱全局唤起快捷键（若命令存在则返回配置值，未绑定返回空串；未声明命令或环境不支持则回退默认值） */
 export async function getDockShortcut(): Promise<string> {
   try {
     if (typeof chrome !== 'undefined' && chrome.commands?.getAll) {
       const commands = await chrome.commands.getAll()
-      const found = commands.find((c) => c.name === 'toggle-dock' || c.name === 'toggle-toolkit')
-      if (found?.shortcut) return found.shortcut
+      if (Array.isArray(commands)) {
+        const found = commands.find((c) => c.name === 'toggle-dock' || c.name === 'toggle-toolkit')
+        if (found) return found.shortcut ?? ''
+      }
     }
   } catch {
     // 忽略
@@ -17,13 +19,15 @@ export async function getDockShortcut(): Promise<string> {
 /** 兼容历史命名的别名 */
 export const getToolkitShortcut = getDockShortcut
 
-/** 读取当前扩展配置的智能解析全局快捷键（若未配置或浏览器不支持则回退默认值） */
+/** 读取当前扩展配置的智能解析全局快捷键（若命令存在则返回配置值，未绑定返回空串；未声明命令或环境不支持则回退默认值） */
 export async function getDetectShortcut(): Promise<string> {
   try {
     if (typeof chrome !== 'undefined' && chrome.commands?.getAll) {
       const commands = await chrome.commands.getAll()
-      const found = commands.find((c) => c.name === 'toggle-detect')
-      if (found?.shortcut) return found.shortcut
+      if (Array.isArray(commands)) {
+        const found = commands.find((c) => c.name === 'toggle-detect')
+        if (found) return found.shortcut ?? ''
+      }
     }
   } catch {
     // 忽略

@@ -193,9 +193,9 @@ describe('ToolsApp：TOOL_COMPONENTS 映射完备性', () => {
     }
   })
 
-  it('默认配置下选项卡只含 7 个默认可见工具，jwt/hash 不出现', async () => {
+  it('默认配置下选项卡包含全部 9 个已注册工具', async () => {
     await render()
-    expect(tabIds()).toEqual(['detect', 'storage', 'base64', 'json', 'url', 'timestamp', 'qrcode'])
+    expect(tabIds()).toEqual(ALL_IDS)
   })
 })
 
@@ -247,7 +247,7 @@ describe('ToolsApp：选项卡顺序与激活项由用户配置决定', () => {
     stores.sync.settings = layout(ALL_IDS, { url: false, json: false })
     await render()
 
-    expect(tabIds()).toEqual(['detect', 'storage', 'base64', 'timestamp', 'qrcode', 'jwt', 'hash'])
+    expect(tabIds()).toEqual(['detect', 'storage', 'qrcode', 'jwt', 'base64', 'timestamp', 'hash'])
     expect(tabIds()).not.toContain('url')
     expect(tabIds()).not.toContain('json')
   })

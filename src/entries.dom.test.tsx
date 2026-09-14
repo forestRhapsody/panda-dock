@@ -151,11 +151,7 @@ describe('入口 bootstrap：挂载到 #root', () => {
     const tabIds = [...rootEl().querySelectorAll('[role="tab"]')].map((el) =>
       el.getAttribute('data-tool'),
     )
-    expect(tabIds).toEqual(
-      DEFAULT_TOOLS.filter((tool) => tool.id !== 'jwt' && tool.id !== 'hash').map(
-        (tool) => tool.id,
-      ),
-    )
+    expect(tabIds).toEqual(DEFAULT_TOOLS.map((tool) => tool.id))
   })
 
   it('重复 import 同一入口只执行一次挂载副作用', async () => {

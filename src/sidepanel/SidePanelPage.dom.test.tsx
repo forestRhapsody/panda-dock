@@ -145,11 +145,7 @@ describe('SidePanelPage：渲染共享工具箱', () => {
     const tabIds = [...container.querySelectorAll('[role="tab"]')].map((el) =>
       el.getAttribute('data-tool'),
     )
-    expect(tabIds).toEqual(
-      DEFAULT_TOOLS.filter((tool) => tool.id !== 'jwt' && tool.id !== 'hash').map(
-        (tool) => tool.id,
-      ),
-    )
+    expect(tabIds).toEqual(DEFAULT_TOOLS.map((tool) => tool.id))
     expect(container.textContent).not.toContain('tool.registry.')
   })
 

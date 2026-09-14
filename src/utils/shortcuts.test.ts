@@ -63,14 +63,17 @@ describe('getDockShortcut / getToolkitShortcut / getDetectShortcut 读取命令�
   it.each([
     ['空串', ''],
     ['undefined', undefined],
-  ])('命令存在但快捷键为 %s 时回退默认值（用户没绑键）', async (_label, shortcut) => {
-    stubCommands(async () => [
-      { name: 'toggle-toolkit', shortcut },
-      { name: 'toggle-detect', shortcut },
-    ])
-    await expect(getToolkitShortcut()).resolves.toBe('Alt+Shift+D')
-    await expect(getDetectShortcut()).resolves.toBe('Alt+Shift+S')
-  })
+  ])(
+    '命令存在但快捷键为 %s 时返回空字符串（用户在浏览器中清空了快捷键绑定）',
+    async (_label, shortcut) => {
+      stubCommands(async () => [
+        { name: 'toggle-toolkit', shortcut },
+        { name: 'toggle-detect', shortcut },
+      ])
+      await expect(getToolkitShortcut()).resolves.toBe('')
+      await expect(getDetectShortcut()).resolves.toBe('')
+    },
+  )
 
   it('没有匹配的命令名时回退默认值', async () => {
     stubCommands(async () => [{ name: 'some-other-command', shortcut: 'Ctrl+M' }])

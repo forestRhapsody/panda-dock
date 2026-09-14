@@ -9,8 +9,9 @@ import Tooltip from '@/ui/Tooltip'
 import { TabScopeContext } from '@/utils/draft'
 import { isExtension, storageGet, storageSet } from '@/utils/env'
 import { MSG_GET_TAB_ID } from '@/utils/messages'
+import { DRAWER_WIDTH_KEY } from '@/utils/settings'
 
-const WIDTH_KEY = 'panda.drawerWidth'
+const WIDTH_KEY = DRAWER_WIDTH_KEY
 const MIN_WIDTH = 280
 const DEFAULT_WIDTH = 400
 
@@ -96,9 +97,16 @@ export default function Drawer({ onClose }: DrawerProps) {
     }
   }, [inExt])
 
-  // 记忆的宽度 + 窗口变化时收敛到可视范围
+  // 记忆的宽度 + 窗口变化时收敛到可视范围 + 监听外部重置
   useEffect(() => {
     let alive = true
+    const onResize = () => {
+      const next = clampWidth(widthRef.current)
+      widthRef.current = next
+      setWidth(next)
+    }
+
+    let removeStorageListener: (() => void) | undefined
     if (inExt) {
       void storageGet<number>('local', WIDTH_KEY).then((saved) => {
         if (alive && typeof saved === 'number') {
@@ -107,15 +115,24 @@ export default function Drawer({ onClose }: DrawerProps) {
           setWidth(next)
         }
       })
+      const onChange = (
+        changes: Record<string, chrome.storage.StorageChange>,
+        areaName: string,
+      ) => {
+        if (areaName !== 'local' || !(WIDTH_KEY in changes)) return
+        const nextVal = changes[WIDTH_KEY]?.newValue
+        const next = typeof nextVal === 'number' ? clampWidth(nextVal) : DEFAULT_WIDTH
+        widthRef.current = next
+        setWidth(next)
+      }
+      chrome.storage?.onChanged?.addListener(onChange)
+      removeStorageListener = () => chrome.storage?.onChanged?.removeListener(onChange)
     }
-    const onResize = () => {
-      const next = clampWidth(widthRef.current)
-      widthRef.current = next
-      setWidth(next)
-    }
+
     window.addEventListener('resize', onResize)
     return () => {
       alive = false
+      removeStorageListener?.()
       window.removeEventListener('resize', onResize)
     }
   }, [inExt])

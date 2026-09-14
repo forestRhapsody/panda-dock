@@ -28,6 +28,7 @@ import type {
 } from '@/utils/settings'
 import {
   BALL_IMAGE_KEY,
+  BALL_POS_KEY,
   BALL_SIZE_PX,
   DEFAULT_BOTTOM_RIGHT_OFFSET_X,
   DEFAULT_BOTTOM_RIGHT_OFFSET_Y,
@@ -40,7 +41,7 @@ import FloatingBall, { clampBallPos, snapToEdge } from './FloatingBall'
 import type { BallPos } from './FloatingBall'
 import SelectionDetectPanel, { type SelectionRect } from './SelectionDetectPanel'
 
-const POS_KEY = 'panda.ballPos'
+const POS_KEY = BALL_POS_KEY
 const SETTINGS_KEY = 'settings'
 const EDGE_MARGIN = 8
 /** 默认纵向位置：视口高度 45% 处 */
@@ -528,17 +529,23 @@ export default function PandaDockOverlay() {
     }
   }, [inExt, ballDockMode, ballSize, ballBottomRightOffset])
 
-  // 自定义悬浮球图片（chrome.storage.local）变更即时同步
+  // 自定义悬浮球图片与位置变更即时同步（chrome.storage.local）
   useEffect(() => {
     if (!inExt) return
     const onLocal = (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
-      if (areaName !== 'local' || changes[BALL_IMAGE_KEY] == null) return
-      const next = changes[BALL_IMAGE_KEY].newValue as string | null | undefined
-      setBallImage(next ?? null)
+      if (areaName !== 'local') return
+      if (BALL_IMAGE_KEY in changes) {
+        const next = changes[BALL_IMAGE_KEY]?.newValue as string | null | undefined
+        setBallImage(next ?? null)
+      }
+      if (POS_KEY in changes && changes[POS_KEY]?.newValue == null) {
+        const d = BALL_SIZE_PX[ballSize]
+        setPos(defaultPos(ballDockMode, d, ballBottomRightOffset))
+      }
     }
     chrome.storage.onChanged.addListener(onLocal)
     return () => chrome.storage.onChanged.removeListener(onLocal)
-  }, [inExt])
+  }, [inExt, ballDockMode, ballSize, ballBottomRightOffset])
 
   const lastDetectTriggerRef = useRef(0)
 
@@ -600,24 +607,6 @@ export default function PandaDockOverlay() {
     if (inExt) void chrome.runtime.sendMessage({ action: MSG_CLOSE_NATIVE_SIDE_PANEL })
     setDrawerOpen(true)
   }, [ballAction, drawerOpen, inExt, showNotice, t])
-
-  // 页面内直接监听 Alt+Shift+S / Alt+Shift+D（或 Option+Shift）作为双保险，
-  // 确保在任何网页中开箱即用，即使 Chrome 快捷键注册延迟也能即时生效
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.altKey || e.metaKey) && e.shiftKey) {
-        if (e.key === 'S' || e.key === 's') {
-          e.preventDefault()
-          triggerDetect()
-        } else if (e.key === 'D' || e.key === 'd') {
-          e.preventDefault()
-          toggleDock()
-        }
-      }
-    }
-    window.addEventListener('keydown', onKeyDown, true)
-    return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [toggleDock, triggerDetect])
 
   // 监听来自其他页面或扩展后台的消息
   useEffect(() => {

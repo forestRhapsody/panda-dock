@@ -1,7 +1,7 @@
 {
   "appDescription": {
-    "message": "A collection of developer tools. Runs entirely locally, free and open source.",
-    "description": "Extension summary shown in the Chrome Web Store and on the extensions page; matches the tools enabled by default (see T87)."
+    "message": "An efficient developer toolbox. Runs entirely locally, free and open source.",
+    "description": "Extension summary shown in the Chrome Web Store and on the extensions page."
   },
   "commandToggleDock": {
     "message": "Open or close the toolbox",
@@ -12,7 +12,7 @@
     "description": "Global shortcut description shown at chrome://extensions/shortcuts."
   },
   "contextMenuDetectSelection": {
-    "message": "Smart parse selected text",
+    "message": "Smart Parse selected text",
     "description": "Context menu item title: parse the currently selected text."
   }
 }

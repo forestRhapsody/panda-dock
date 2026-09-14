@@ -168,6 +168,21 @@ export default function QrCodeTool() {
     }
   }, [composeLoaded, tabId, setCompose])
 
+  // 监听保存的默认样式被清除（例如在 Options 页面执行全局恢复默认）
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.storage?.onChanged) return
+    const onStorageChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string,
+    ) => {
+      if (areaName === 'local' && QR_STYLE_PRESET_KEY in changes) {
+        setHasCustomPreset(changes[QR_STYLE_PRESET_KEY]?.newValue != null)
+      }
+    }
+    chrome.storage.onChanged.addListener(onStorageChange)
+    return () => chrome.storage.onChanged.removeListener(onStorageChange)
+  }, [])
+
   // 保存当前样式为默认偏好
   async function handleSavePreset() {
     const preset: QrStylePreset = {

@@ -135,6 +135,14 @@ describe('Popup：基础渲染与设置入口', () => {
     expect(kbd?.textContent).toBe(formatShortcutForDisplay('Ctrl+Alt+K'))
   })
 
+  it('当快捷键未绑定（空串）时，快捷键按钮展示为「未设置」', async () => {
+    chromeStub.commands.getAll = vi.fn(async () => [{ name: 'toggle-dock', shortcut: '' }])
+    await render()
+
+    const kbd = container.querySelector('.pop__kbd')
+    expect(kbd?.textContent).toBe(i18n.t('settings.shortcutNotSet'))
+  })
+
   it('点击设置按钮经 chrome.tabs.create 打开 options.html', async () => {
     await render()
 

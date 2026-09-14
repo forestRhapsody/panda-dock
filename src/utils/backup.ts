@@ -1,10 +1,13 @@
-import { isExtension, storageGet, storageSet } from '@/utils/env'
+import { isExtension, storageGet, storageRemove, storageSet } from '@/utils/env'
 import type { Settings } from '@/utils/settings'
 import {
   BALL_IMAGE_MAX_DATA_URL_LENGTH,
+  BALL_POS_KEY,
   defaultSettings,
+  DRAWER_WIDTH_KEY,
   getBallImage,
   normalizeSettings,
+  QR_STYLE_PRESET_KEY,
   setBallImage,
 } from '@/utils/settings'
 
@@ -134,6 +137,13 @@ export async function applyBackup(backup: {
 
   const imageSaved = await setBallImage(backup.ballImage)
   if (!imageSaved.ok) return { ok: false, reason: 'ballImage' }
+
+  // 清理当前设备残留的本地微调状态（悬浮球位置、抽屉宽度、二维码样式偏好），避免旧设备微调影响新配置
+  await Promise.all([
+    storageRemove('local', BALL_POS_KEY),
+    storageRemove('local', DRAWER_WIDTH_KEY),
+    storageRemove('local', QR_STYLE_PRESET_KEY),
+  ])
 
   return { ok: true }
 }

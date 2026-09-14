@@ -16,15 +16,15 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 | --- | --- |
 | `detect` | ✓ |
 | `storage` | ✓ |
-| `base64` | ✓ |
+| `qrcode` | ✓ |
 | `json` | ✓ |
 | `url` | ✓ |
+| `jwt` | ✓ |
+| `base64` | ✓ |
 | `timestamp` | ✓ |
-| `qrcode` | ✓ |
-| `jwt` | ✗ |
-| `hash` | ✗ |
+| `hash` | ✓ |
 
-表格顺序 = 注册表顺序 = 默认选项卡顺序。后两个默认隐藏（`DEFAULT_HIDDEN_TOOLS`），用户可在 Options 开启；**顺序与显隐是用户配置，不要写死假设**。
+表格顺序 = 注册表顺序 = 默认选项卡顺序。9 个工具默认全部开启，用户可在 Options 自行调整顺序与显隐；**顺序与显隐是用户配置，不要写死假设**。
 
 ## 2 命令
 
@@ -44,6 +44,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 | `pnpm test:watch` | 交互式监听；**人类专用，代理禁用** |
 | `pnpm format` | Prettier 只覆盖 `src/`（根配置文件需手动格式化） |
 | `pnpm icons` | 生成 `public/icons/*.png` |
+| `pnpm package` | 打包带版本号的扩展压缩包 `release/panda-dock-v<version>.zip` |
 
 装载扩展：`pnpm build` 后在 `chrome://extensions` 开启开发者模式 → 加载 `dist/`。
 

@@ -93,6 +93,12 @@ function stubChrome(initial: { settings?: unknown; ballImage?: string | null } =
 
   globalWithChrome.chrome = {
     runtime: { id: 'test-extension-id' },
+    commands: {
+      getAll: async () => [
+        { name: 'toggle-dock', shortcut: 'Alt+Shift+D' },
+        { name: 'toggle-detect', shortcut: 'Alt+Shift+S' },
+      ],
+    },
     storage: {
       sync: makeArea(sync, 'sync'),
       local: makeArea(local, 'local'),
@@ -364,7 +370,7 @@ describe('OptionsPage 首屏读取与归一化', () => {
     const stored: Settings = {
       ...BASE(),
       theme: 'dark',
-      quickOpen: false,
+      quickOpen: true,
       ballDockMode: 'bottomRight',
       ballSnap: false,
       ballBottomRightRight: 200,
@@ -386,7 +392,7 @@ describe('OptionsPage 首屏读取与归一化', () => {
     expect(selectText('默认唤起方式')).toBe('浏览器原生侧边栏')
     expect(selectText('形状')).toBe('圆形')
     expect(selectText('大小')).toBe('大')
-    expect(ballToggle().getAttribute('aria-checked')).toBe('false')
+    expect(ballToggle().getAttribute('aria-checked')).toBe('true')
     // 固定右下角模式才出现边距输入，值来自存储
     const offsets = [...container.querySelectorAll<HTMLInputElement>('.opt__offset-input')]
     expect(offsets.map((i) => i.value)).toEqual(['200', '60'])
@@ -451,8 +457,8 @@ describe('OptionsPage 首屏读取与归一化', () => {
     expect(selectText('主题')).toBe('跟随系统')
     const rows = toolRows()
     expect(rows).toHaveLength(DEFAULT_TOOLS.length)
-    expect(rows.find((r) => r.name === 'JWT')?.on).toBe(false)
-    expect(rows.find((r) => r.name === '哈希')?.on).toBe(false)
+    expect(rows.find((r) => r.name === 'JWT')?.on).toBe(true)
+    expect(rows.find((r) => r.name === '哈希')?.on).toBe(true)
     expect(syncCalls()).toHaveLength(0)
   })
 
@@ -539,6 +545,45 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
     fire(ballToggle(), 'click')
     expect(writtenSettings()).toEqual(BASE())
     expect(ballToggle().getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('悬浮球总开关关闭时：停靠行为、点击动作、悬浮球样式与显示范围卡片联动隐藏', async () => {
+    await mount(BASE())
+    const hasCard = (title: string) =>
+      [...container.querySelectorAll('h2')].some((h) => h.textContent === title)
+
+    expect(
+      container.querySelector(`button.pd-select[aria-label="${i18n.t('settings.ballDockMode')}"]`),
+    ).not.toBeNull()
+    expect(
+      container.querySelector(`button.pd-select[aria-label="${i18n.t('settings.ballAction')}"]`),
+    ).not.toBeNull()
+    expect(hasCard(i18n.t('settings.ballStyleSection'))).toBe(true)
+    expect(hasCard(i18n.t('settings.domainSection'))).toBe(true)
+
+    fire(ballToggle(), 'click')
+    await settle()
+
+    expect(
+      container.querySelector(`button.pd-select[aria-label="${i18n.t('settings.ballDockMode')}"]`),
+    ).toBeNull()
+    expect(
+      container.querySelector(`button.pd-select[aria-label="${i18n.t('settings.ballAction')}"]`),
+    ).toBeNull()
+    expect(hasCard(i18n.t('settings.ballStyleSection'))).toBe(false)
+    expect(hasCard(i18n.t('settings.domainSection'))).toBe(false)
+
+    fire(ballToggle(), 'click')
+    await settle()
+
+    expect(
+      container.querySelector(`button.pd-select[aria-label="${i18n.t('settings.ballDockMode')}"]`),
+    ).not.toBeNull()
+    expect(
+      container.querySelector(`button.pd-select[aria-label="${i18n.t('settings.ballAction')}"]`),
+    ).not.toBeNull()
+    expect(hasCard(i18n.t('settings.ballStyleSection'))).toBe(true)
+    expect(hasCard(i18n.t('settings.domainSection'))).toBe(true)
   })
 
   it('停靠模式：切换为固定右下角时 ballSnap 同步为 false，编辑边距保留其余字段', async () => {
@@ -675,7 +720,7 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
       ballBlacklist: ['keep.com'],
       ballWhitelist: ['only.com'],
       ballDomainMode: 'whitelist',
-      quickOpen: false,
+      quickOpen: true,
       ballAction: 'native',
     })
 
@@ -691,7 +736,7 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
       ballBlacklist: ['keep.com'],
       ballWhitelist: ['only.com'],
       ballDomainMode: 'whitelist',
-      quickOpen: false,
+      quickOpen: true,
       ballAction: 'native',
     })
 
@@ -725,21 +770,21 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
 
 describe('OptionsPage 工具列表：显隐与顺序配置', () => {
   it('normalizeToolLayout 语义：残缺顺序补齐全部工具、新工具出现在列表、隐藏项可开启', async () => {
-    await mount({ ...BASE(), toolOrder: ['json', 'detect'], toolEnabled: { jwt: true } })
+    await mount({ ...BASE(), toolOrder: ['json', 'detect'], toolEnabled: { hash: false } })
 
     const rows = toolRows()
     expect(rows.map((r) => r.name)).toEqual([
       'JSON',
       '智能解析',
-      '网页存储',
-      'Base64',
-      '网址',
-      '时间戳',
+      '存储',
       '二维码',
+      'URL',
       'JWT',
+      'Base64',
+      '时间戳',
       '哈希',
     ])
-    // 存储里显式开启的 JWT 必须开着，未被存储的按产品默认（hash 隐藏）
+    // 存储里显式关闭的哈希为 false，未被存储的按产品默认（jwt 为 true）
     expect(rows.find((r) => r.name === 'JWT')?.on).toBe(true)
     expect(rows.find((r) => r.name === '哈希')?.on).toBe(false)
 
@@ -759,11 +804,11 @@ describe('OptionsPage 工具列表：显隐与顺序配置', () => {
       'jwt',
       'detect',
       'storage',
-      'base64',
+      'qrcode',
       'json',
       'url',
+      'base64',
       'timestamp',
-      'qrcode',
     ]
 
     fire(toolSwitch('Base64'), 'click')
@@ -810,7 +855,11 @@ describe('OptionsPage 破坏性操作：ConfirmDialog 二次确认', () => {
     expect(syncCalls()).toHaveLength(0)
     expect(selectText('主题')).toBe('深色')
 
-    // 确认：提交 defaultSettings()，并把自定义图片一并清空（sync + local 两处）
+    // 确认：提交 defaultSettings()，并把自定义图片及本地偏好（抽屉宽度、悬浮球位置、二维码预设）一并清空
+    chromeState.local['panda.drawerWidth'] = 600
+    chromeState.local['panda.ballPos'] = { x: 100, y: 100 }
+    chromeState.local['panda.qrcode.stylePreset'] = { margin: 4 }
+
     fire(dangerButton as Element, 'click')
     const dangerDialog = container.querySelector<HTMLElement>('.pd-modal')
     fire(dangerDialog?.querySelector('button.pd-btn--danger') as Element, 'click')
@@ -819,7 +868,10 @@ describe('OptionsPage 破坏性操作：ConfirmDialog 二次确认', () => {
     expect(syncCalls()).toHaveLength(1)
     expect(writtenSettings()).toEqual(defaultSettings())
     expectFullSettings(writtenSettings())
-    expect(chromeState.local.ballImage).toBeNull()
+    expect(chromeState.local.ballImage).toBeFalsy()
+    expect(chromeState.local['panda.drawerWidth']).toBeUndefined()
+    expect(chromeState.local['panda.ballPos']).toBeUndefined()
+    expect(chromeState.local['panda.qrcode.stylePreset']).toBeUndefined()
     expect(selectText('主题')).toBe('跟随系统')
   })
 })
@@ -1121,5 +1173,39 @@ describe('OptionsPage 非扩展环境（pnpm dev 预览）', () => {
     fire(ballToggle(), 'click')
     expect(ballToggle().getAttribute('aria-checked')).toBe('false')
     expectNoRawKeys()
+  })
+})
+
+describe('OptionsPage 快捷键卡片', () => {
+  it('当快捷键未绑定时展示「未设置」，并在窗口聚焦时刷新最新配置', async () => {
+    await mount(BASE())
+    const getAllMock = vi.fn(async () => [
+      { name: 'toggle-dock', shortcut: '' },
+      { name: 'toggle-detect', shortcut: '' },
+    ])
+    ;(globalWithChrome.chrome as { commands: { getAll: unknown } }).commands.getAll = getAllMock
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'))
+    })
+    await settle()
+
+    const kbds = [...container.querySelectorAll('.opt__kbd')]
+    expect(kbds[0]?.textContent).toBe(i18n.t('settings.shortcutNotSet'))
+    expect(kbds[1]?.textContent).toBe(i18n.t('settings.shortcutNotSet'))
+
+    // 模拟用户在扩展快捷键页配置了快捷键并切回设置页（触发 window focus）
+    getAllMock.mockImplementation(async () => [
+      { name: 'toggle-dock', shortcut: 'Ctrl+Shift+K' },
+      { name: 'toggle-detect', shortcut: 'Ctrl+Shift+L' },
+    ])
+    act(() => {
+      window.dispatchEvent(new Event('focus'))
+    })
+    await settle()
+
+    const updatedKbds = [...container.querySelectorAll('.opt__kbd')]
+    expect(updatedKbds[0]?.textContent).toBe('Ctrl + Shift + K')
+    expect(updatedKbds[1]?.textContent).toBe('Ctrl + Shift + L')
   })
 })

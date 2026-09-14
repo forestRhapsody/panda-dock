@@ -158,6 +158,12 @@ body {
   box-shadow: var(--pd-shadow-xs);
 }
 
+.opt__kbd--unset {
+  color: var(--pd-muted-foreground);
+  font-family: inherit;
+  font-weight: 400;
+}
+
 /* 悬浮球预设样式：2 个 logo 选项 */
 .opt__ball-presets {
   display: flex;

@@ -1,8 +1,8 @@
 {
   "name": "panda-dock",
   "private": true,
-  "version": "0.2.0",
-  "description": "Panda Dock：现代、高效的 Chrome 开发者日常工具箱，内置智能解析、网页存储、Base64、JSON、网址、时间戳与二维码等常用工具。",
+  "version": "1.0.0",
+  "description": "Panda Dock：现代、高效的 Chrome 开发者日常工具箱，内置智能解析、存储、Base64、JSON、URL、时间戳与二维码等常用工具。",
   "license": "MIT",
   "author": "forest rhapsody",
   "repository": {
@@ -36,6 +36,7 @@
     "dev": "vite",
     "icons": "node scripts/generate-icons.mjs",
     "build": "tsc -b && vite build --config vite.content.config.ts --logLevel warn && vite build --config vite.background.config.ts --logLevel warn && vite build --logLevel warn",
+    "package": "node scripts/package.mjs",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",
     "preview": "vite preview",
