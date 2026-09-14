@@ -223,8 +223,14 @@
   gap: 6px;
 }
 
+/* 结果区是全卡的高度变量：必须自带上限并自行滚动。
+   否则一次 JWT 解析（Header / Payload / Signature 三块 × blockMaxHeight）能把卡片撑到远超视口，
+   拖动标题后结果就落到屏幕之外。用 min(视口比例, 固定值) 双约束：既在矮视口里跟着缩，
+   又不会在大屏上高得离谱；内层 fields 滚动条保留，长字段列表仍优先在列表内滚动。 */
 .tek-detect__result {
   flex: none;
+  max-height: min(46vh, 380px);
+  overflow-y: auto;
 }
 
 /* 字段列表较多时（如很多 URL Query 参数），在字段列表内部滚动，不出现外层重复滚动条 */

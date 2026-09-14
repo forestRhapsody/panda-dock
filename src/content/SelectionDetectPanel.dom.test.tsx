@@ -159,6 +159,38 @@ function patchPanelSize(el: HTMLElement, width: number, height: number) {
   Object.defineProperty(el, 'offsetHeight', { configurable: true, get: () => height })
 }
 
+/**
+ * happy-dom 既不排版也不触发 ResizeObserver，而「卡片长高后夹回视口」是拖动过之后的回归点：
+ * 必须能在测试里手动触发一次尺寸观察回调。这里把全局 ResizeObserver 换成受控桩，
+ * observe 到的元素与回调都记下来，由测试显式 fire。
+ */
+function stubResizeObserver() {
+  const observed = new Map<Element, ResizeObserverCallback>()
+  class ResizeObserverStub {
+    private readonly cb: ResizeObserverCallback
+    constructor(cb: ResizeObserverCallback) {
+      this.cb = cb
+    }
+    observe(el: Element) {
+      observed.set(el, this.cb)
+    }
+    unobserve(el: Element) {
+      observed.delete(el)
+    }
+    disconnect() {
+      /* 每个面板各持一个实例，卸载断言不依赖它 */
+    }
+  }
+  vi.stubGlobal('ResizeObserver', ResizeObserverStub)
+  return {
+    fire(el: Element) {
+      const cb = observed.get(el)
+      if (!cb) throw new Error('该元素未被 ResizeObserver 观察')
+      act(() => cb([], {} as ResizeObserver))
+    },
+  }
+}
+
 beforeEach(() => {
   originalWidth = window.innerWidth
   originalHeight = window.innerHeight
@@ -172,6 +204,7 @@ afterEach(() => {
   act(() => root.unmount())
   container.remove()
   setViewport(originalWidth, originalHeight)
+  vi.unstubAllGlobals()
   vi.clearAllMocks()
 })
 
@@ -246,8 +279,8 @@ describe('SelectionDetectPanel 结果渲染', () => {
   it('结果区挂在独立容器里（回归：外层不再出现第三条滚动条）', () => {
     renderPanel({ text: '{"a":1}', onClose: () => {} })
     const result = container.querySelector('.tek-detect__result')
-    // 这个容器是「结果区不参与压缩、空间不足时由输入框让步」这一布局契约的挂点；
-    // 去掉它就等于把面板外层那条滚动条放回来（happy-dom 无排版，只能断言挂点存在）
+    // 这个容器是结果区的挂点：宽度与滚动条都由它自己负责（content.css 里 `flex:none` + 独立
+    // max-height/overflow），输入框不再为结果让高，面板外层也不该再出现滚动条。
     expect(result).not.toBeNull()
     expect(result?.querySelector('.tw-detect')).not.toBeNull()
   })
@@ -449,29 +482,60 @@ describe('SelectionDetectPanel 定位', () => {
     expect(panel.style.left).toBe(`${800 - FALLBACK_W - 24}px`)
   })
 
-  it('拖动过之后 resize 只把面板夹回视口内，不覆盖用户摆放的位置（回归）', async () => {
+  it('拖动后位置完全归用户所有：resize 既不按锚点重算也不夹回视口（回归）', async () => {
     const targetRect = { left: 400, top: 100, right: 500, bottom: 120, width: 100, height: 20 }
     const panel = renderPanel({ text: 'hello world', targetRect, onClose: () => {} })
     // 初始按锚点定位：选区中心 450 - 480/2
     expect(panel.style.left).toBe('210px')
 
-    // happy-dom 不排版，offsetWidth/Height 恒为 0；补上受控几何，让 clampPos 用 480x300
+    // happy-dom 不排版，offsetWidth/Height 恒为 0；补上受控几何，让初始定位用 480x300
     patchPanelSize(panel, FALLBACK_W, FALLBACK_H)
     dragPanel(300, 200, 700, 400)
-    // 拖到 (700,400)：扣掉按下偏移 (90,72) 后为 610/328，再夹到 left = 1024-480-10
-    expect(panel.style.left).toBe('534px')
+    // 拖到 (700,400)：扣掉按下偏移 (90,72) 后精确落在 610/328，不做任何夹取
+    expect(panel.style.left).toBe('610px')
     expect(panel.style.top).toBe('328px')
 
-    // 视口不变时 resize：若按锚点重算会跳回 210/128，但用户拖动过，只做夹取（位置不变）
+    // 视口不变时 resize：若按锚点重算会跳回 210/128，但用户拖动过，位置不动
     await fireResize()
-    expect(panel.style.left).toBe('534px')
+    expect(panel.style.left).toBe('610px')
     expect(panel.style.top).toBe('328px')
 
-    // 视口缩小到 900 宽后原位置出界：夹取到 900-480-10 = 410，而不是回到锚点的 210
+    // 视口缩小到 900 宽后原位置已出界：允许留在屏幕外，不再夹取到 410
     setViewport(900, 768)
     await fireResize()
-    expect(panel.style.left).toBe('410px')
+    expect(panel.style.left).toBe('610px')
     expect(panel.style.top).toBe('328px')
+  })
+
+  it('拖动可以把面板摆到视口之外（只有初始定位才夹在屏幕内）', () => {
+    const panel = renderPanel({ text: 'hello', onClose: () => {} })
+    // 初始定位必然在视口内（无选区时为 10/18）
+    expect(panel.style.left).toBe(`${PAD}px`)
+
+    patchPanelSize(panel, FALLBACK_W, FALLBACK_H)
+    // 朝右下拖出视口：1024x768 的视口里落到 1300/1000
+    dragPanel(300, 200, 1590, 1182)
+    expect(panel.style.left).toBe('1300px')
+    expect(panel.style.top).toBe('1000px')
+  })
+
+  it('拖动过之后卡片长高（解析出结果）只夹回垂直方向，结果不再溢出屏幕（回归）', () => {
+    const observed = stubResizeObserver()
+    const panel = renderPanel({ text: 'hello world', onClose: () => {} })
+
+    // 卡片原本较矮：无选区兜底定位在 10/18，拖到 (700,700) 后为 410/518
+    patchPanelSize(panel, FALLBACK_W, FALLBACK_H)
+    dragPanel(300, 200, 700, 700)
+    expect(panel.style.left).toBe('410px')
+    expect(panel.style.top).toBe('518px')
+
+    // 输入一段 JWT 后结果区展开，卡片真实高度涨到 700：底部 518+700 已远超视口 768
+    patchPanelSize(panel, FALLBACK_W, 700)
+    observed.fire(panel)
+
+    // 只按新高度夹 top 到 768-700-10 = 58；水平位置保持用户摆放的 410，不被拉回视口内
+    expect(panel.style.top).toBe('58px')
+    expect(panel.style.left).toBe('410px')
   })
 })
 

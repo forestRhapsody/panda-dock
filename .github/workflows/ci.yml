@@ -8,6 +8,9 @@ on:
 
 jobs:
   verify:
+    # GitHub 原生不认提交信息里的 [skip ci]，这里显式实现：头部提交带标记就整轮跳过。
+    # 需要绕过本地门禁的文档 / 低风险提交时，在提交信息末尾加 [skip ci] 即可。
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

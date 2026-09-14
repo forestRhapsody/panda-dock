@@ -217,15 +217,12 @@ export default function SelectionDetectPanel({
 
   // 窗口 resize / 页面滚动后浮层可能被挤出视口：用 requestAnimationFrame 节流地重定位。
   // - 用户没拖动过：按当前锚点重算完整位置（复用上面的 anchorPos）；
-  // - 用户拖动过：只用 clampPos 夹回视口，绝不覆盖手动摆放的位置。
+  // - 用户拖动过：位置完全归用户所有 —— 不按锚点重算，也不夹回视口（允许被刻意摆到屏幕外）。
   useEffect(() => {
     let frame = 0
     const reposition = () => {
       frame = 0
-      if (draggedRef.current) {
-        setPos((p) => clampPos(p.left, p.top))
-        return
-      }
+      if (draggedRef.current) return
       setPos(anchorPos())
     }
     const schedule = () => {
@@ -246,7 +243,26 @@ export default function SelectionDetectPanel({
       window.removeEventListener('resize', schedule)
       window.removeEventListener('scroll', onScroll, true)
     }
-  }, [anchorPos, clampPos])
+  }, [anchorPos])
+
+  // 拖动过程中输入变化会让卡片长高（如选中 JWT 后结果区展开）：
+  // 被用户手动摆放过的卡片不会按锚点重算，但高度变化后必须只夹回**垂直**方向，
+  // 否则底部结果会随高度增长溢出到视口之外（只能用 offsetHeight 测真实高度）；
+  // 水平位置不参与夹取，尊重用户「把卡片摆到屏幕外」的意图。
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    let lastHeight = el.offsetHeight
+    const ro = new ResizeObserver(() => {
+      const height = el.offsetHeight
+      if (height === lastHeight) return
+      lastHeight = height
+      if (!draggedRef.current) return
+      setPos((p) => ({ left: p.left, top: clampPos(p.left, p.top).top }))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [clampPos])
 
   // 拖动：按住 header（非按钮部分）移动整卡
   const startDrag = useCallback(
@@ -259,16 +275,14 @@ export default function SelectionDetectPanel({
     },
     [pos.left, pos.top],
   )
-  const moveDrag = useCallback(
-    (e: ReactPointerEvent<HTMLDivElement>) => {
-      const d = dragRef.current
-      if (!d) return
-      // 一旦真正移动过，后续 resize/scroll 就不能再按锚点覆盖这个位置
-      draggedRef.current = true
-      setPos(clampPos(e.clientX - d.dx, e.clientY - d.dy))
-    },
-    [clampPos],
-  )
+  const moveDrag = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current
+    if (!d) return
+    // 一旦真正移动过，后续 resize/scroll 就不能再按锚点覆盖这个位置
+    draggedRef.current = true
+    // 拖动不做任何视口夹取：用户可以把卡片摆到屏幕任意位置（含屏幕外）
+    setPos({ left: e.clientX - d.dx, top: e.clientY - d.dy })
+  }, [])
   const endDrag = useCallback(() => {
     dragRef.current = null
   }, [])
