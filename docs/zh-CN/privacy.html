@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>隐私政策 · Panda Dock</title>
+    <link rel="icon" href="../assets/icon128.png" />
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 48px 20px 72px;
+        background: Canvas;
+        color: CanvasText;
+        font:
+          16px/1.7 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          'Noto Sans SC',
+          'PingFang SC',
+          'Microsoft YaHei',
+          sans-serif;
+      }
+      .logo {
+        display: block;
+        width: 96px;
+        height: 96px;
+      }
+      h1 {
+        margin: 20px 0 10px;
+        font-size: 30px;
+        line-height: 1.25;
+      }
+      h2 {
+        margin: 40px 0 12px;
+        padding-bottom: 6px;
+        font-size: 20px;
+        border-bottom: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
+      }
+      .lead {
+        color: color-mix(in srgb, CanvasText 78%, transparent);
+      }
+      ul {
+        padding-left: 22px;
+      }
+      li {
+        margin: 8px 0;
+      }
+      code {
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: color-mix(in srgb, CanvasText 8%, transparent);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.9em;
+      }
+      table {
+        width: 100%;
+        margin: 16px 0;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: color-mix(in srgb, CanvasText 6%, transparent);
+        font-weight: 600;
+      }
+      a {
+        color: LinkText;
+      }
+    </style>
+  </head>
+  <body>
+    <img class="logo" src="../assets/icon128.png" alt="Panda Dock" width="96" height="96" />
+    <h1>隐私政策</h1>
+    <p class="lead">Panda Dock 是一个提供离线开发者工具的 Chrome 扩展。最后更新：2026-09-14。</p>
+
+    <h2>1. 摘要</h2>
+    <p>
+      你输入、粘贴、划选或修改的内容，全部留在浏览器内部。扩展不发起任何网络请求，没有账号、没有服务端，也没有数据统计。我们看不到你的数据，也不出售、不共享。
+    </p>
+
+    <h2>2. 扩展会访问什么</h2>
+    <p>只在你主动使用工具时访问，不在后台运行：</p>
+    <ul>
+      <li>
+        <strong>页面存储</strong> — 打开「网页存储」工具时，会读取当前页面的 Cookie 与
+        <code>localStorage</code> / <code>sessionStorage</code>，数据就地查看和修改，扩展不留副本。
+      </li>
+      <li><strong>文本与文件</strong> — 你粘贴或划选的文本、你选择打开的文件，均在浏览器本地解析。</li>
+      <li>
+        <strong>你的设置</strong> — 存入 <code>chrome.storage.sync</code>；可选的悬浮球图片存入本机的
+        <code>chrome.storage.local</code>。
+      </li>
+      <li>
+        <strong>会话输入</strong> — 会话期间的工具输入存入
+        <code>chrome.storage.session</code>，浏览器关闭即清空。
+      </li>
+      <li><strong>剪贴板</strong> — 点击复制时写入；在工具中粘贴时读取。</li>
+    </ul>
+    <p>以上所有内容随时可在选项页清除，卸载扩展也会一并删除。</p>
+
+    <h2>3. 权限</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>权限</th>
+          <th>用途</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>storage</code></td>
+          <td>在本机保存设置、会话草稿和可选的悬浮球图片。</td>
+        </tr>
+        <tr>
+          <td><code>sidePanel</code></td>
+          <td>在 Chrome 侧边栏显示工具箱。</td>
+        </tr>
+        <tr>
+          <td><code>contextMenus</code></td>
+          <td>提供右键菜单快捷入口。</td>
+        </tr>
+        <tr>
+          <td><code>cookies</code></td>
+          <td>在「网页存储」工具中读写 Cookie。</td>
+        </tr>
+        <tr>
+          <td><code>http://*/*</code>、<code>https://*/*</code></td>
+          <td>向页面注入悬浮球；读取你划选的文本；打开「网页存储」工具时访问当前页面的存储。</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>没有申请其他权限。</p>
+
+    <h2>4. Chrome 应用商店 Limited Use 声明</h2>
+    <p>
+      通过 Chrome API 获取的信息，仅用于实现扩展的单一用途：本地的开发者工具箱。不出售、不转移给第三方，不用于广告、用户画像或信用评估，也没有任何人会读取这些数据。
+    </p>
+
+    <h2>5. 联系方式</h2>
+    <p>
+      <a href="https://github.com/forestRhapsody/panda-dock/issues"
+        >https://github.com/forestRhapsody/panda-dock/issues</a
+      >
+    </p>
+  </body>
+</html>

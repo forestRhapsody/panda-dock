@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy · Panda Dock</title>
+    <link rel="icon" href="../assets/icon128.png" />
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 48px 20px 72px;
+        background: Canvas;
+        color: CanvasText;
+        font:
+          16px/1.7 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          'Noto Sans SC',
+          'PingFang SC',
+          'Microsoft YaHei',
+          sans-serif;
+      }
+      .logo {
+        display: block;
+        width: 96px;
+        height: 96px;
+      }
+      h1 {
+        margin: 20px 0 10px;
+        font-size: 30px;
+        line-height: 1.25;
+      }
+      h2 {
+        margin: 40px 0 12px;
+        padding-bottom: 6px;
+        font-size: 20px;
+        border-bottom: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
+      }
+      .lead {
+        color: color-mix(in srgb, CanvasText 78%, transparent);
+      }
+      ul {
+        padding-left: 22px;
+      }
+      li {
+        margin: 8px 0;
+      }
+      code {
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: color-mix(in srgb, CanvasText 8%, transparent);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.9em;
+      }
+      table {
+        width: 100%;
+        margin: 16px 0;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: color-mix(in srgb, CanvasText 6%, transparent);
+        font-weight: 600;
+      }
+      a {
+        color: LinkText;
+      }
+    </style>
+  </head>
+  <body>
+    <img class="logo" src="../assets/icon128.png" alt="Panda Dock" width="96" height="96" />
+    <h1>Privacy Policy</h1>
+    <p class="lead">
+      Panda Dock is a Chrome extension providing a set of offline developer tools. Last updated:
+      2026-09-14.
+    </p>
+
+    <h2>1. Summary</h2>
+    <p>
+      Everything you type, paste, select, or edit stays entirely within your browser. The extension
+      makes no network requests and has no accounts, servers, or analytics. We cannot see your data
+      and we do not sell or share it.
+    </p>
+
+    <h2>2. What the Extension Accesses</h2>
+    <p>Only while you actively use a tool — never in the background:</p>
+    <ul>
+      <li>
+        <strong>Page storage</strong> — Cookies and <code>localStorage</code> /
+        <code>sessionStorage</code> of the current page, accessed when you open the Storage tool.
+        Data is displayed and edited in place; the extension retains no copy.
+      </li>
+      <li>
+        <strong>Text and files</strong> — Text you paste or select, and files you choose to open.
+        All parsing happens locally in your browser.
+      </li>
+      <li>
+        <strong>Your settings</strong> — Saved to <code>chrome.storage.sync</code>; the optional
+        floating-ball image is saved to <code>chrome.storage.local</code> on your device.
+      </li>
+      <li>
+        <strong>Session input</strong> — Tool input during a session, saved to
+        <code>chrome.storage.session</code> and cleared when the browser closes.
+      </li>
+      <li><strong>Clipboard</strong> — Written when you click Copy; read when you paste into a tool.</li>
+    </ul>
+    <p>All of the above can be cleared at any time from the Options page. Uninstalling the extension removes it as well.</p>
+
+    <h2>3. Permissions</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Permission</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>storage</code></td>
+          <td>Save settings, session drafts, and the optional floating-ball image locally.</td>
+        </tr>
+        <tr>
+          <td><code>sidePanel</code></td>
+          <td>Show the toolbox in Chrome's side panel.</td>
+        </tr>
+        <tr>
+          <td><code>contextMenus</code></td>
+          <td>Provide right-click shortcut entries.</td>
+        </tr>
+        <tr>
+          <td><code>cookies</code></td>
+          <td>Read and write cookies in the Storage tool.</td>
+        </tr>
+        <tr>
+          <td><code>http://*/*</code>, <code>https://*/*</code></td>
+          <td>
+            Inject the floating ball into pages, read selected text, and access the current page's
+            storage when you open the Storage tool.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p>No other permissions are requested.</p>
+
+    <h2>4. Chrome Web Store Limited Use Policy</h2>
+    <p>
+      Information accessed through Chrome APIs is used solely to provide the extension's single
+      purpose: a local developer toolbox. It is not sold or transferred to third parties, not used
+      for advertising, profiling, or creditworthiness assessments, and is never read by anyone.
+    </p>
+
+    <h2>5. Contact</h2>
+    <p>
+      <a href="https://github.com/forestRhapsody/panda-dock/issues"
+        >https://github.com/forestRhapsody/panda-dock/issues</a
+      >
+    </p>
+  </body>
+</html>
