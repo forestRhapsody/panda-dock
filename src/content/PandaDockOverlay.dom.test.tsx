@@ -823,30 +823,26 @@ describe('划选面板「在工具中打开」按唤起方式选择宿主', () =
     expect(query('.tek-detect-panel')).toBeNull()
   })
 
-  it('头部「在侧边栏中打开」是显式例外：drawer 模式下依然请求原生侧边栏', async () => {
+  it('头部「在工具箱中打开」遵循设置：drawer 模式下开网页抽屉，不请求原生侧边栏（回归）', async () => {
     stubChrome({ settings: { ballAction: 'drawer' } })
-    sendMessageMock.mockImplementation(async (message: unknown) =>
-      (message as { action?: string }).action === MSG_OPEN_NATIVE_SIDE_PANEL ? true : undefined,
-    )
     await renderOverlay()
     await flush()
 
     sendContentMessage({ action: MSG_DETECT_SELECTION, text: '{"name":"panda"}' })
     const sideBtn = query<HTMLButtonElement>(
-      `button[aria-label="${i18n.t('tool.detect.openInSidePanel')}"]`,
+      `button[aria-label="${i18n.t('tool.detect.openToolbox')}"]`,
     )
-    if (!sideBtn) throw new Error('未找到「在侧边栏中打开」入口')
+    if (!sideBtn) throw new Error('未找到「在工具箱中打开」入口')
     act(() => {
       sideBtn.click()
     })
     await flush()
     await flush()
 
-    expect(sendMessageMock).toHaveBeenCalledWith({
-      action: MSG_OPEN_NATIVE_SIDE_PANEL,
-      forceOpen: true,
-    })
-    expect(drawerEl()).toBeNull()
+    // 回归：这个入口曾经硬编码 forceOpen 原生侧边栏，无视用户的「默认唤起方式」设置
+    expect(drawerEl()).not.toBeNull()
+    expect(sentActions()).toContain(MSG_CLOSE_NATIVE_SIDE_PANEL)
+    expect(sentActions()).not.toContain(MSG_OPEN_NATIVE_SIDE_PANEL)
   })
 })
 

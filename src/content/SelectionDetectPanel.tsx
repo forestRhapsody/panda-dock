@@ -40,8 +40,8 @@ export interface SelectionDetectPanelProps {
   /** 定位策略：未选中文字时固定在右上角；选中文字时居中跟随选区 */
   position?: 'selection' | 'top-right'
   onClose: () => void
-  /** 一键将当前文本带入原生侧边栏并打开智能解析 */
-  onOpenInSidePanel?: (text: string) => void
+  /** 一键把当前文本带入工具箱（宿主按用户设置选择原生侧边栏或网页抽屉） */
+  onOpenToolbox?: (text: string) => void
   /** 「在 XX 工具中打开」：交由宿主准备草稿并唤起（T134） */
   onOpenInTool?: (tool: ToolId, text: string) => void
   /** 图钉状态变化：宿主据此决定「在工具中打开」后是否收起面板（钉住则常驻） */
@@ -69,7 +69,7 @@ export default function SelectionDetectPanel({
   targetRect,
   position = 'selection',
   onClose,
-  onOpenInSidePanel,
+  onOpenToolbox,
   onOpenInTool,
   onPinnedChange,
 }: SelectionDetectPanelProps) {
@@ -325,9 +325,9 @@ export default function SelectionDetectPanel({
     }
   }, [text])
 
-  const handleOpenInSidePanel = useCallback(() => {
-    onOpenInSidePanel?.(input)
-  }, [input, onOpenInSidePanel])
+  const handleOpenToolbox = useCallback(() => {
+    onOpenToolbox?.(input)
+  }, [input, onOpenToolbox])
 
   return (
     <div
@@ -348,13 +348,13 @@ export default function SelectionDetectPanel({
           <Icon name='grip' size={14} />
         </span>
         <strong className='tek-detect-panel__title'>{t('tool.detect.title')}</strong>
-        {onOpenInSidePanel && (
-          <Tooltip content={t('tool.detect.openInSidePanel')} side='bottom'>
+        {onOpenToolbox && (
+          <Tooltip content={t('tool.detect.openToolbox')} side='bottom'>
             <button
               type='button'
               className='pd-icon-btn'
-              aria-label={t('tool.detect.openInSidePanel')}
-              onClick={handleOpenInSidePanel}
+              aria-label={t('tool.detect.openToolbox')}
+              onClick={handleOpenToolbox}
             >
               <Icon name='panel-right' size={14} />
             </button>

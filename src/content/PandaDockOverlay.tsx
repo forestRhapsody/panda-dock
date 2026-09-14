@@ -684,9 +684,9 @@ export default function PandaDockOverlay() {
   /**
    * 把文本交给目标工具并在扩展宿主里打开：
    * 1) 先让目标工具就位（写会话草稿、激活 Tab、必要时启用——见 handoff.ts）；
-   * 2) 打开哪个宿主按设置里的唤起方式（ballAction）走：native 用 forceOpen 强开，避免误收起
+   * 2) 打开哪个宿主一律按设置里的唤起方式（ballAction）走：native 用 forceOpen 强开，避免误收起
    *    已开的侧边栏，受限时回退网页内抽屉；drawer 先收起原生侧边栏（互斥）再开抽屉。
-   *    面板头部「在侧边栏中打开」是显式例外，始终走 native（按钮文案就是这么承诺的）；
+   *    选区面板头部的入口同样遵循该设置，不做「强制原生」的例外；
    * 3) 关闭网页内的选区悬浮面板。
    * 工具没能就位（如启用写入失败）时直接返回：不能打开一个会显示错工具的宿主。
    */
@@ -779,7 +779,7 @@ export default function PandaDockOverlay() {
           targetRect={selectionDetect.targetRect}
           position={selectionDetect.position}
           onClose={() => setSelectionDetect(null)}
-          onOpenInSidePanel={(text) => void openToolInHost('detect', text, 'native')}
+          onOpenToolbox={(text) => void openToolInHost('detect', text)}
           onOpenInTool={(tool, text) => void openToolInHost(tool, text)}
           onPinnedChange={handleSelectionPinnedChange}
         />

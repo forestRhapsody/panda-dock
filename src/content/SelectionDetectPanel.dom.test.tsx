@@ -562,14 +562,14 @@ describe('SelectionDetectPanel 与宿主的手递手', () => {
     expect(onOpenInTool).toHaveBeenLastCalledWith('url', 'https://b.com/')
   })
 
-  it('点击「在侧边栏中打开」把当前（可编辑后的）输入交给 onOpenInSidePanel', () => {
-    const onOpenInSidePanel = vi.fn()
-    renderPanel({ text: 'hello world', onOpenInSidePanel, onClose: () => {} })
+  it('点击「在工具箱中打开」把当前（可编辑后的）输入交给 onOpenToolbox', () => {
+    const onOpenToolbox = vi.fn()
+    renderPanel({ text: 'hello world', onOpenToolbox, onClose: () => {} })
 
-    const btn = buttonByLabel(i18n.t('tool.detect.openInSidePanel'))
+    const btn = buttonByLabel(i18n.t('tool.detect.openToolbox'))
     act(() => btn.click())
 
-    expect(onOpenInSidePanel).toHaveBeenCalledWith('hello world')
+    expect(onOpenToolbox).toHaveBeenCalledWith('hello world')
   })
 })
 

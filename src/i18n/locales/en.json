@@ -227,7 +227,7 @@
         "uuid": "c9bf022d-f519-4b5f-ae50-6b16b7a27e5f",
         "hex": "48 65 6c 6c 6f 2c 20 57 6f 72 6c 64 21"
       },
-      "openInSidePanel": "Open in Side Panel",
+      "openToolbox": "Open in Toolbox",
       "openInTool": "Open in the {{tool}} tool",
       "openInToolFailed": "Could not enable the {{tool}} tool. Turn it on from the settings page.",
       "pin": "Pin panel",
