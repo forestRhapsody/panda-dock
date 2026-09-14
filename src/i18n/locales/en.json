@@ -124,6 +124,7 @@
     "resetDefault": "Reset to default",
     "restoreDefaults": "Restore all defaults",
     "restoreDefaultsDesc": "Restore all configurations to their default values.",
+    "privacyPromise": "Your data stays on this device. The extension makes no network requests and uploads nothing.",
     "restoreDefaultsConfirmTitle": "Restore all defaults",
     "restoreDefaultsConfirmMsg": "Are you sure you want to restore all settings to default? This action cannot be undone.",
     "toolboxDesc": "Choose which tools appear in the toolbox and their order.",

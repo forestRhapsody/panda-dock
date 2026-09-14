@@ -1086,6 +1086,29 @@ describe('OptionsPage 配置备份：导入 / 导出', () => {
   })
 })
 
+describe('OptionsPage 隐私承诺', () => {
+  it('标题下方的副标题写明「只存本地、不联网」，并跟随语言切换', async () => {
+    await mount(BASE())
+
+    // 副标题就是头部那行 .opt__env（卡片内的 --hint / --error 都在它之后）
+    const subtitle = container.querySelector('.opt__header .opt__env')
+    expect(subtitle?.textContent).toBe(i18n.t('settings.privacyPromise'))
+    expectNoRawKeys()
+
+    await act(async () => {
+      await i18n.changeLanguage('en')
+    })
+    expect(container.querySelector('.opt__header .opt__env')?.textContent).toMatch(
+      /stays on this device/i,
+    )
+
+    await act(async () => {
+      await i18n.changeLanguage('zh')
+    })
+    expect(container.querySelector('.opt__header .opt__env')?.textContent).toContain('本地')
+  })
+})
+
 describe('OptionsPage 非扩展环境（pnpm dev 预览）', () => {
   it('无 chrome 时展示预览模式，交互不写存储也不崩', async () => {
     delete globalWithChrome.chrome

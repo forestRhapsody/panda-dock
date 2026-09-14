@@ -124,6 +124,7 @@
     "resetDefault": "恢复默认",
     "restoreDefaults": "恢复默认设置",
     "restoreDefaultsDesc": "将所有配置恢复为初始默认值。",
+    "privacyPromise": "数据只保存在本地，扩展不会联网，也不会上传任何内容",
     "restoreDefaultsConfirmTitle": "恢复默认设置",
     "restoreDefaultsConfirmMsg": "确定要将所有设置恢复为默认值吗？此操作无法撤销。",
     "toolboxDesc": "选择在工具箱中显示哪些工具，以及它们的顺序。",

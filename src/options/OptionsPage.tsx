@@ -497,7 +497,8 @@ export default function OptionsPage() {
           <AppLogo size={20} />
           {t('settings.title')}
         </h1>
-        <p className='opt__env'>{inExt ? t('settings.saved') : t('settings.previewMode')}</p>
+        <p className='opt__env'>{t('settings.privacyPromise')}</p>
+        {!inExt && <p className='opt__env opt__env--hint'>{t('settings.previewMode')}</p>}
       </header>
 
       <main className='opt__main'>

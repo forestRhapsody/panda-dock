@@ -129,7 +129,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 
 - **`pnpm dev` 与扩展环境不等价**：dev 下没有 `chrome`，走 `env.ts` 降级。涉及 `chrome.*` 的改动要 `pnpm build` 后在浏览器里验证。
 
-- **`settings` 存储配额**：`chrome.storage.sync` 单条 8KB 上限，新增字段前估算 JSON 体积；大体积 / 敏感数据（图片 base64 等）强制走 `chrome.storage.local`（参考 `BALL_IMAGE_KEY`，上限 128KB）。
+- **`settings` 存储配额**：`chrome.storage.sync` 单条 8KB 上限，新增字段前估算 JSON 体积；大体积 / 敏感数据（图片 base64 等）强制走 `chrome.storage.local`（参考 `BALL_IMAGE_KEY`，**存储**上限 128KB；悬浮球图片由 `cropAndCompressBallImage()` 逐级降采样压到上限内，**不要按原始文件体积拒绝用户**）。
 
 ## 6 三个常见流程
 
