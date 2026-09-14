@@ -257,7 +257,7 @@ describe('FloatingBall 渲染与定位', () => {
     expect(withImage.style.background).toBe('')
     expect(withImage.style.backgroundColor).toBe('')
 
-    const withEmoji = renderBall({ preset: 'soft' })
+    const withEmoji = renderBall({ preset: 'unknown' as never })
     expect(withEmoji.style.background).toBe('')
     expect(withEmoji.style.backgroundColor).toBe('')
   })
@@ -284,11 +284,11 @@ describe('FloatingBall 渲染与定位', () => {
     expect(el.querySelector('.tek__dock-logo')).toBeNull()
   })
 
-  it('无自定义图片且预设没有图片资源时渲染 emoji logo', () => {
-    const el = renderBall({ preset: 'soft' })
+  it('无自定义图片且预设无对应图片资源时回退渲染默认 emoji logo', () => {
+    const el = renderBall({ preset: 'unknown' as never })
     expect(el.style.backgroundImage).toBe('')
     const logo = el.querySelector('.tek__dock-logo')
-    expect(logo?.textContent).toBe('🌸')
+    expect(logo?.textContent).toBe('🔵')
     // logo 字号跟随球直径的一半，保证各档位下比例一致
     expect((logo as HTMLElement | null)?.style.fontSize).toBe(`${Math.round(D * 0.5)}px`)
   })

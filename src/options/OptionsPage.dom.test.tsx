@@ -136,8 +136,11 @@ async function waitFor(assert: () => void, timeoutMs = 2000) {
 }
 
 /** 挂载 OptionsPage 并等待首屏的异步读取（设置 / 图片 / 快捷键）落定 */
-async function mount(stored?: unknown) {
-  stubChrome(stored === undefined ? {} : { settings: stored })
+async function mount(stored?: unknown, ballImage?: string | null) {
+  stubChrome({
+    ...(stored === undefined ? {} : { settings: stored }),
+    ...(ballImage === undefined ? {} : { ballImage }),
+  })
   await act(async () => {
     root.render(<OptionsPage />)
   })
@@ -243,6 +246,22 @@ function pickFile(input: HTMLInputElement, file: File) {
   })
 }
 
+async function pickAndCropImage(file: File) {
+  pickFile(imageInput(), file)
+  await waitFor(() => {
+    const btn = [...document.body.querySelectorAll<HTMLButtonElement>('button')].find(
+      (b) => b.textContent === i18n.t('settings.ballCropConfirm'),
+    )
+    expect(btn).not.toBeUndefined()
+    expect(btn?.disabled).toBe(false)
+  })
+  const confirmCrop = () =>
+    [...document.body.querySelectorAll<HTMLButtonElement>('button')].find(
+      (b) => b.textContent === i18n.t('settings.ballCropConfirm'),
+    ) as HTMLButtonElement
+  fire(confirmCrop(), 'click')
+}
+
 // —— 存储断言工具 ——
 
 const syncCalls = () => chromeState.calls.filter((c) => c.area === 'sync')
@@ -267,6 +286,26 @@ function expectNoRawKeys() {
   expect(text).not.toMatch(/common\.[a-zA-Z]/)
 }
 
+class FakeImage {
+  onload: (() => void) | null = null
+  onerror: (() => void) | null = null
+  crossOrigin: string | null = null
+  naturalWidth = 200
+  naturalHeight = 200
+  width = 200
+  height = 200
+  private srcValue = ''
+
+  get src(): string {
+    return this.srcValue
+  }
+
+  set src(value: string) {
+    this.srcValue = value
+    this.onload?.()
+  }
+}
+
 beforeEach(() => {
   // toast.ts 是模块级单例，清空避免上一条用例的提示串进来
   toast.dismiss()
@@ -275,6 +314,26 @@ beforeEach(() => {
   root = createRoot(container)
   // 语言解析默认走 navigator.language（'system'）；固定为中文让「回退默认」用例可预期
   vi.stubGlobal('navigator', { language: 'zh-CN' })
+  vi.stubGlobal('Image', FakeImage)
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation((() => ({
+    imageSmoothingEnabled: false,
+    imageSmoothingQuality: 'low',
+    drawImage: vi.fn(),
+  })) as unknown as HTMLCanvasElement['getContext'])
+  vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue(
+    'data:image/png;base64,AAAA_MOCK_CROPPED',
+  )
+  if (typeof URL.createObjectURL !== 'function') {
+    URL.createObjectURL = vi.fn(
+      (obj: Blob | MediaSource) => `blob:mock-${'size' in obj ? obj.size : 0}`,
+    )
+    URL.revokeObjectURL = vi.fn()
+  } else {
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(
+      (obj: Blob | MediaSource) => `blob:mock-${'size' in obj ? obj.size : 0}`,
+    )
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+  }
   vi.mocked(exportSettingsBackup).mockReset().mockResolvedValue(undefined)
   vi.mocked(parseAndValidateBackup).mockReset()
   vi.mocked(applyBackup).mockReset().mockResolvedValue({ ok: true })
@@ -312,7 +371,7 @@ describe('OptionsPage 首屏读取与归一化', () => {
       ballBottomRightBottom: 60,
       fontScale: 1.1,
       ballShape: 'circle',
-      ballPreset: 'soft',
+      ballPreset: 'outline',
       ballSize: 'lg',
       ballAction: 'native',
       ballBlacklist: ['keep.com'],
@@ -333,7 +392,7 @@ describe('OptionsPage 首屏读取与归一化', () => {
     expect(offsets.map((i) => i.value)).toEqual(['200', '60'])
     expect(
       container
-        .querySelector('button[role="radio"][aria-label="柔和"]')
+        .querySelector('button[role="radio"][aria-label="描边"]')
         ?.getAttribute('aria-checked'),
     ).toBe('true')
     expect(textarea().value).toBe('keep.com')
@@ -611,7 +670,7 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
       theme: 'dark',
       fontScale: 1.25,
       ballShape: 'circle',
-      ballPreset: 'soft',
+      ballPreset: 'outline',
       ballSize: 'lg',
       ballBlacklist: ['keep.com'],
       ballWhitelist: ['only.com'],
@@ -627,7 +686,7 @@ describe('OptionsPage 设置项交互：每次都写入完整 Settings', () => {
       locale: 'system',
       fontScale: 1,
       ballShape: 'circle',
-      ballPreset: 'soft',
+      ballPreset: 'outline',
       ballSize: 'lg',
       ballBlacklist: ['keep.com'],
       ballWhitelist: ['only.com'],
@@ -782,9 +841,9 @@ describe('OptionsPage 写入失败不静默', () => {
 })
 
 describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () => {
-  it('选择合法图片：写 local、不写 sync，并显示预览与移除按钮', async () => {
+  it('选择合法图片：打开裁剪弹窗，确认后写 local、不写 sync，并显示预览与操作按钮', async () => {
     await mount(BASE())
-    pickFile(imageInput(), new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
+    await pickAndCropImage(new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
 
     await waitFor(() => {
       expect(String(chromeState.local.ballImage)).toMatch(/^data:image\/png;base64,/)
@@ -800,18 +859,14 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
     expect(container.querySelector('.opt__env--error')).toBeNull()
   })
 
-  it('超过 128KB 的图片被本地拒绝并提示，不写任何存储', async () => {
+  it('不限制上传图片大小：大图片正常打开裁剪弹窗，确认后压缩写入 local 存储', async () => {
     await mount(BASE())
-    pickFile(
-      imageInput(),
-      new File([new Uint8Array(BALL_IMAGE_MAX_BYTES + 1)], 'big.png', { type: 'image/png' }),
+    await pickAndCropImage(
+      new File([new Uint8Array(BALL_IMAGE_MAX_BYTES * 5)], 'huge.png', { type: 'image/png' }),
     )
-    await waitFor(() =>
-      expect(container.querySelector('.opt__env--error')?.textContent).toBe(
-        i18n.t('settings.ballImageTooLarge'),
-      ),
-    )
-    expect(chromeState.local.ballImage).toBeUndefined()
+    await waitFor(() => {
+      expect(String(chromeState.local.ballImage)).toMatch(/^data:image\/png;base64,/)
+    })
     expect(syncCalls()).toHaveLength(0)
   })
 
@@ -830,7 +885,7 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
   it('local 写入失败时提示 ballImageSaveFailed，而不是静默', async () => {
     await mount(BASE())
     chromeState.failLocalSet = true
-    pickFile(imageInput(), new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
+    await pickAndCropImage(new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
 
     await waitFor(() =>
       expect(container.querySelector('.opt__env--error')?.textContent).toBe(
@@ -842,7 +897,7 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
 
   it('移除图片需先确认：取消不删、确认才把 local 置空并撤掉预览', async () => {
     await mount(BASE())
-    pickFile(imageInput(), new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
+    await pickAndCropImage(new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
     await waitFor(() => expect(container.querySelector('img[src^="data:image/"]')).not.toBeNull())
 
     const removeButton = () =>
@@ -878,7 +933,7 @@ describe('OptionsPage 自定义悬浮球图片（chrome.storage.local）', () =>
 
   it('有自定义图片时恢复悬浮球样式需确认；确认后形状回默认并清空图片', async () => {
     await mount({ ...BASE(), ballShape: 'circle' })
-    pickFile(imageInput(), new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
+    await pickAndCropImage(new File(['fake-image-bytes'], 'logo.png', { type: 'image/png' }))
     await waitFor(() => expect(container.querySelector('img[src^="data:image/"]')).not.toBeNull())
 
     fire(resetButtonOf('悬浮球样式'), 'click')

@@ -50,7 +50,8 @@ describe('defaultSettings / normalizeSettings', () => {
     expect(normalizeSettings({ ballShape: 'rounded' }).ballShape).toBe('rounded')
     expect(normalizeSettings({ ballShape: 'square' }).ballShape).toBe('square')
     expect(normalizeSettings({ ballShape: '三角' as never }).ballShape).toBe('circle')
-    expect(normalizeSettings({ ballPreset: 'soft' }).ballPreset).toBe('soft')
+    expect(normalizeSettings({ ballPreset: 'outline' }).ballPreset).toBe('outline')
+    expect(normalizeSettings({ ballPreset: 'soft' as never }).ballPreset).toBe('primary')
     expect(normalizeSettings({ ballPreset: 'nope' as never }).ballPreset).toBe('primary')
     expect(normalizeSettings({ ballSize: 'lg' }).ballSize).toBe('lg')
     expect(normalizeSettings({ ballSize: 'xl' as never }).ballSize).toBe('sm')
@@ -309,11 +310,10 @@ describe('normalizeBallShape / normalizeBallPreset / normalizeBallSize 取值全
       expect(normalizeSettings({ ballShape: v as never }).ballShape).toBe('circle')
   })
 
-  it('预设：outline / soft 合法，其余回退 primary', () => {
+  it('预设：outline 合法，其余（含旧值 soft）回退 primary', () => {
     expect(normalizeSettings({ ballPreset: 'outline' }).ballPreset).toBe('outline')
-    expect(normalizeSettings({ ballPreset: 'soft' }).ballPreset).toBe('soft')
     expect(normalizeSettings({ ballPreset: 'primary' }).ballPreset).toBe('primary')
-    const bad: unknown[] = ['PRIMARY', 'ghost', 1, null, undefined, {}]
+    const bad: unknown[] = ['soft', 'PRIMARY', 'ghost', 1, null, undefined, {}]
     for (const v of bad)
       expect(normalizeSettings({ ballPreset: v as never }).ballPreset).toBe('primary')
   })

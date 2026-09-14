@@ -51,8 +51,8 @@ export const DEFAULT_BOTTOM_RIGHT_OFFSET_Y = 80
 /** 悬浮球形状：圆形 / 圆角矩形 / 矩形 */
 export type BallShape = 'circle' | 'rounded' | 'square'
 
-/** 悬浮球预设样式（无自定义图片时的外观）：主题色实心 / 描边 / 柔和 */
-export type BallPreset = 'primary' | 'outline' | 'soft'
+/** 悬浮球预设样式（无自定义图片时的外观）：主题色实心 / 描边 */
+export type BallPreset = 'primary' | 'outline'
 
 /** 悬浮球大小档位：小 / 中 / 大 */
 export type BallSize = 'sm' | 'md' | 'lg'
@@ -82,7 +82,6 @@ export const BALL_PRESET_OPTIONS: {
     icon: '⚪',
     image: 'ball-preset-outline.png',
   },
-  { labelKey: 'settings.ballPresetSoft', value: 'soft', icon: '🌸' },
 ]
 
 export const BALL_SIZE_OPTIONS: { labelKey: string; value: BallSize }[] = [
@@ -120,7 +119,7 @@ function normalizeBallShape(value: unknown): BallShape {
 }
 
 function normalizeBallPreset(value: unknown): BallPreset {
-  return value === 'outline' || value === 'soft' ? value : 'primary'
+  return value === 'outline' ? value : 'primary'
 }
 
 function normalizeBallSize(value: unknown): BallSize {

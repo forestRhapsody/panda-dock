@@ -341,6 +341,57 @@ describe('QrLogoCropModal：拖拽与缩放', () => {
     expect(imagePosition()).toEqual({ x: CROP_OFFSET + CROP_SIZE - 400, y: CROP_OFFSET })
   })
 
+  it('支持通过方向键（上下左右）微调裁剪区域，Shift 加速移动', async () => {
+    imageBehavior = { width: 800, height: 400, auto: true }
+    await renderModal()
+
+    const initialPos = imagePosition()!
+    expect(initialPos).not.toBeNull()
+
+    // 按向右方向键移动裁剪区域（图片向左平移 5px）
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    })
+    expect(imagePosition()!.x).toBe(initialPos.x - 5)
+
+    // 按向左方向键移动裁剪区域（图片向右平移 5px）
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    })
+    expect(imagePosition()!.x).toBe(initialPos.x)
+
+    // Shift + 方向键快速移动 20px
+    act(() => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true }),
+      )
+    })
+    expect(imagePosition()!.x).toBe(initialPos.x - 20)
+
+    // 缩放后垂直方向微调
+    await act(async () => wheel(-100))
+    const afterZoomPos = imagePosition()!
+    act(() => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true, bubbles: true }),
+      )
+    })
+    expect(imagePosition()!.y).not.toBe(afterZoomPos.y)
+  })
+
+  it('焦点在 range 滑块上时，左右方向键不触发图片平移', async () => {
+    imageBehavior = { width: 800, height: 400, auto: true }
+    await renderModal()
+    const slider = query<HTMLInputElement>('.tw-crop-modal__slider')
+    slider.focus()
+
+    const initialPos = imagePosition()!
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    })
+    expect(imagePosition()!.x).toBe(initialPos.x)
+  })
+
   it('滚轮向上放大、向下缩小，缩放区间被限制在 100%~300%', async () => {
     await renderModal()
 
@@ -530,15 +581,23 @@ describe('QrLogoCropModal：取消路径', () => {
     expect(onConfirm).not.toHaveBeenCalled()
   })
 
-  it('点击遮罩触发取消，点击卡片内部不触发（stopPropagation）', async () => {
+  it('点击背景遮罩不会触发取消，防止误触导致裁剪进度丢失', async () => {
     await renderModal()
 
-    act(() =>
-      query('.tw-crop-modal__hint').dispatchEvent(new MouseEvent('click', { bubbles: true })),
-    )
-    expect(onCancel).not.toHaveBeenCalled()
-
     act(() => query('.pd-modal').dispatchEvent(new MouseEvent('click', { bubbles: true })))
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+
+  it('点击右上角关闭按钮触发取消', async () => {
+    await renderModal()
+
+    const closeBtn = queryAll<HTMLButtonElement>('button').find(
+      (btn) =>
+        btn.getAttribute('aria-label') === i18n.t('common.cancel') &&
+        btn.classList.contains('pd-icon-btn'),
+    )
+    expect(closeBtn).toBeDefined()
+    act(() => closeBtn?.click())
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 

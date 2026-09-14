@@ -29,7 +29,6 @@ import { useFontScale } from '@/utils/fontScale'
 import type { BallAction } from '@/utils/messages'
 import {
   BALL_DOCK_MODE_OPTIONS,
-  BALL_IMAGE_MAX_BYTES,
   BALL_PRESET_OPTIONS,
   BALL_SHAPE_OPTIONS,
   BALL_SIZE_OPTIONS,
@@ -60,6 +59,8 @@ import {
   openShortcutsPage,
 } from '@/utils/shortcuts'
 import { useTheme } from '@/utils/theme'
+
+import BallCropModal from './BallCropModal'
 
 import './index.css'
 
@@ -142,10 +143,24 @@ export default function OptionsPage() {
   const [showImportSuccessDialog, setShowImportSuccessDialog] = useState(false)
   const [ballImage, setBallImageState] = useState<string | null>(null)
   const [ballImageError, setBallImageError] = useState<string | null>(null)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const cropObjectUrlRef = useRef<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const importInputRef = useRef<HTMLInputElement>(null)
   const [exporting, setExporting] = useState(false)
   const inExt = isExtension()
+
+  useEffect(() => {
+    return () => {
+      if (cropObjectUrlRef.current) {
+        try {
+          URL.revokeObjectURL(cropObjectUrlRef.current)
+        } catch {
+          // 忽略
+        }
+      }
+    }
+  }, [])
 
   // 使整体字体大小随设置即时缩放（含本设置页）
   useLocale()
@@ -248,7 +263,6 @@ export default function OptionsPage() {
     persist({ ...settings, ballSize })
   }
 
-  /** 选择自定义图片：校验上传文件体积（≤128KB），读为 base64 data URL 后存 local */
   /** 写入自定义悬浮球图片并就地反馈失败（体积超限 / 存储写入失败） */
   function persistBallImage(dataUrl: string | null) {
     if (!inExt) return
@@ -264,6 +278,18 @@ export default function OptionsPage() {
     })
   }
 
+  function closeCropModal() {
+    if (cropObjectUrlRef.current) {
+      try {
+        URL.revokeObjectURL(cropObjectUrlRef.current)
+      } catch {
+        // 忽略
+      }
+      cropObjectUrlRef.current = null
+    }
+    setCropSrc(null)
+  }
+
   function onPickImage(file: File | undefined) {
     setBallImageError(null)
     if (!file) return
@@ -271,18 +297,29 @@ export default function OptionsPage() {
       setBallImageError(t('settings.ballImageTypeError'))
       return
     }
-    if (file.size > BALL_IMAGE_MAX_BYTES) {
-      setBallImageError(t('settings.ballImageTooLarge'))
-      return
+    closeCropModal()
+    if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+      try {
+        const objUrl = URL.createObjectURL(file)
+        cropObjectUrlRef.current = objUrl
+        setCropSrc(objUrl)
+        return
+      } catch {
+        // 回退 FileReader
+      }
     }
     const reader = new FileReader()
     reader.onload = () => {
-      const dataUrl = String(reader.result ?? '')
-      setBallImageState(dataUrl)
-      persistBallImage(dataUrl)
+      setCropSrc(String(reader.result ?? ''))
     }
     reader.onerror = () => setBallImageError(t('settings.ballImageReadError'))
     reader.readAsDataURL(file)
+  }
+
+  function onConfirmCrop(croppedDataUrl: string) {
+    closeCropModal()
+    setBallImageState(croppedDataUrl)
+    persistBallImage(croppedDataUrl)
   }
 
   /** 移除自定义图片：属于破坏性写操作（local 存储不可恢复），必须经 ConfirmDialog 二次确认 */
@@ -687,28 +724,27 @@ export default function OptionsPage() {
                 aria-label={t('settings.ballPreset')}
               >
                 {BALL_PRESET_OPTIONS.map((o) => (
-                  <Tooltip key={o.value} content={t(o.labelKey)}>
-                    <button
-                      type='button'
-                      role='radio'
-                      aria-checked={settings.ballPreset === o.value}
-                      aria-label={t(o.labelKey)}
-                      className={`opt__ball-preset${settings.ballPreset === o.value ? ' opt__ball-preset--on' : ''}`}
-                      onClick={() => setBallPreset(o.value)}
-                    >
-                      {o.image ? (
-                        <img
-                          src={ballAssetUrl(o.image)}
-                          alt=''
-                          aria-hidden='true'
-                          draggable={false}
-                          className='opt__ball-preset__img'
-                        />
-                      ) : (
-                        <span className='opt__ball-preset__logo'>{o.icon}</span>
-                      )}
-                    </button>
-                  </Tooltip>
+                  <button
+                    key={o.value}
+                    type='button'
+                    role='radio'
+                    aria-checked={settings.ballPreset === o.value}
+                    aria-label={t(o.labelKey)}
+                    className={`opt__ball-preset${settings.ballPreset === o.value ? ' opt__ball-preset--on' : ''}`}
+                    onClick={() => setBallPreset(o.value)}
+                  >
+                    {o.image ? (
+                      <img
+                        src={ballAssetUrl(o.image)}
+                        alt=''
+                        aria-hidden='true'
+                        draggable={false}
+                        className='opt__ball-preset__img'
+                      />
+                    ) : (
+                      <span className='opt__ball-preset__logo'>{o.icon}</span>
+                    )}
+                  </button>
                 ))}
               </div>
             </li>
@@ -775,7 +811,6 @@ export default function OptionsPage() {
             </li>
           </ul>
           {ballImageError && <p className='opt__env opt__env--error'>{ballImageError}</p>}
-          <p className='opt__env opt__env--hint'>{t('settings.ballImageLimit')}</p>
           {ballImage && <p className='opt__env opt__env--hint'>{t('settings.ballImageNote')}</p>}
         </div>
 
@@ -1063,6 +1098,15 @@ export default function OptionsPage() {
           hideCancel
           closeOnBackdrop
           onConfirm={() => setShowImportSuccessDialog(false)}
+        />
+      )}
+
+      {cropSrc && (
+        <BallCropModal
+          imageSrc={cropSrc}
+          shape={settings.ballShape}
+          onConfirm={onConfirmCrop}
+          onCancel={closeCropModal}
         />
       )}
 
