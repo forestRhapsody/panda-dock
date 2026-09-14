@@ -214,6 +214,8 @@ describe('DetectTool 各类型结果视图', () => {
     expect(tabs[0].getAttribute('aria-selected')).toBe('true')
     // 输入框的高亮背板里也有原文，必须只看结果字段，才能证明展示的是「当前激活项」
     expect(resultFieldValues()).toEqual(['https://github.com/forestRhapsody/panda-dock'])
+    // 切换结果 Tab 只换展示焦点，绝不能改动用户输入的原文（否则高亮涂层会与输入错位）
+    const originalInput = detectInput().value
 
     await act(async () => tabs[1].click())
     await flush()
@@ -222,6 +224,7 @@ describe('DetectTool 各类型结果视图', () => {
       'true',
     )
     expect(resultFieldValues()).toEqual(['https://example.com/docs/api'])
+    expect(detectInput().value).toBe(originalInput)
   })
 })
 
