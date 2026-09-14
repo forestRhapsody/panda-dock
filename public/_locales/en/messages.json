@@ -1,6 +1,6 @@
 {
   "appDescription": {
-    "message": "Panda Dock: an everyday toolbox for Chrome developers, with smart parsing, web storage, Base64, JSON, URL, timestamp and QR code tools built in.",
+    "message": "A collection of developer tools. Runs entirely locally, free and open source.",
     "description": "Extension summary shown in the Chrome Web Store and on the extensions page; matches the tools enabled by default (see T87)."
   },
   "commandToggleDock": {
