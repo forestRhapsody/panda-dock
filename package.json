@@ -7,11 +7,11 @@
   "author": "forest rhapsody",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/forestRhapsody/dev-box.git"
+    "url": "git+https://github.com/forestRhapsody/panda-dock.git"
   },
-  "homepage": "https://github.com/forestRhapsody/dev-box#readme",
+  "homepage": "https://github.com/forestRhapsody/panda-dock#readme",
   "bugs": {
-    "url": "https://github.com/forestRhapsody/dev-box/issues"
+    "url": "https://github.com/forestRhapsody/panda-dock/issues"
   },
   "keywords": [
     "chrome-extension",

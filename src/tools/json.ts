@@ -315,7 +315,7 @@ export const SAMPLE_JSON = JSON.stringify(
     description: 'Panda Dock: Developer toolbox for Chrome',
     repository: {
       type: 'git',
-      url: 'https://github.com/forestRhapsody/dev-box',
+      url: 'https://github.com/forestRhapsody/panda-dock',
     },
     features: ['json', 'base64', 'jwt', 'timestamp', 'storage', 'qrcode', 'hash'],
     author: {
