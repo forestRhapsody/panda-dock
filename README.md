@@ -8,9 +8,15 @@
   一款高效的开发者工具箱，完全本地运行，免费且开源。
 </p>
 
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/panda-dock/lgihhgadmbnedffjadpbnecdebllcjlk">
+    <img src="https://img.shields.io/badge/Chrome_Web_Store-Panda_Dock-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome Web Store" />
+  </a>
+</p>
+
 ## 使用教程
 
-1. 从谷歌商店安装拓展。
+1. 前往 [Chrome 应用商店](https://chromewebstore.google.com/detail/panda-dock/lgihhgadmbnedffjadpbnecdebllcjlk) 安装扩展（也可参考[离线安装](#离线安装)）。
 
 2. 点击网页内悬浮球，或按 `Alt + Shift + D`，按已配置的方式打开工具箱（网页内抽屉或浏览器原生侧边栏）。
 
