@@ -12,6 +12,7 @@ import type { JwtDecoded, JwtVerifyResult } from './jwt'
 import { StatusText } from './StatusText'
 import type { ToolStatus } from './StatusText'
 import { useEmptyError } from './useEmptyError'
+import { useTabIndent } from './useTabIndent'
 
 /** JWT 解码与验签工具：解码 header / payload，展示签名与标准声明，支持 HMAC 验签 */
 export default function JwtTool() {
@@ -41,6 +42,14 @@ export default function JwtTool() {
       cancelled = true
     }
   }, [token, secret, decoded])
+
+  // Ctrl/Cmd+Enter 执行 + Tab 缩进（hook 里先跑自身回调，再决定要不要接管 Tab）
+  const handleTokenKeyDown = useTabIndent((e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      run()
+    }
+  })
 
   function run(text = token) {
     const raw = text
@@ -100,12 +109,7 @@ export default function JwtTool() {
             if (emptyErr) clearEmpty()
             if (status) setStatus(null)
           }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault()
-              run()
-            }
-          }}
+          onKeyDown={handleTokenKeyDown}
           spellCheck={false}
         />
       </label>

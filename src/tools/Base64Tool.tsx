@@ -15,6 +15,7 @@ import { StatusText } from './StatusText'
 import type { ToolStatus } from './StatusText'
 import ToolTabs from './ToolTabs'
 import { useEmptyError } from './useEmptyError'
+import { useTabIndent } from './useTabIndent'
 
 export type Base64Mode = 'decode' | 'encode' | 'file-encode' | 'file-decode'
 
@@ -50,6 +51,8 @@ function firstFile(list: FileList | null): File | null {
  * 各 Tab 拥有完全独立的输入框、输出框与状态，切换互不污染、各自持久化保留。
  */
 export default function Base64Tool() {
+  // 解码 / 编码两个输入框共用：Tab 缩进（只读结果区不接）
+  const handleAreaKeyDown = useTabIndent()
   const { t } = useTranslation()
   const [draft, setDraft] = useToolDraft<Base64Draft>('base64', DEFAULT_DRAFT)
 
@@ -354,6 +357,7 @@ export default function Base64Tool() {
           <textarea
             ref={decodeInputRef}
             className={`tw-area${decodeEmptyErr ? ' tw-area--empty-err' : ''}`}
+            onKeyDown={handleAreaKeyDown}
             value={decodeInput}
             placeholder={t('tool.base64.inputPlaceholderDecode')}
             onChange={(e) => {
@@ -406,6 +410,7 @@ export default function Base64Tool() {
           <textarea
             ref={encodeInputRef}
             className={`tw-area${encodeEmptyErr ? ' tw-area--empty-err' : ''}`}
+            onKeyDown={handleAreaKeyDown}
             value={encodeInput}
             placeholder={t('tool.base64.inputPlaceholderEncode')}
             onChange={(e) => {

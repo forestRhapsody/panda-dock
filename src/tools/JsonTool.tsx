@@ -13,6 +13,7 @@ import { escapeJson, formatJson, minifyJson, unescapeJson, type JsonIndent } fro
 import JsonHighlight from './JsonHighlight'
 import { StatusText } from './StatusText'
 import type { ToolStatus } from './StatusText'
+import { useTabIndent } from './useTabIndent'
 
 type JsonAction = 'format' | 'minify' | 'escape' | 'unescape'
 
@@ -143,6 +144,9 @@ export default function JsonTool() {
     setSplitRatio(50)
     setDraft((prev) => ({ ...prev, splitRatio: 50 }))
   }
+
+  // 行号栏编辑器里的裸 textarea：Tab 缩进（只读结果区不接）
+  const handleInputKeyDown = useTabIndent()
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'ArrowUp') {
@@ -375,6 +379,7 @@ export default function JsonTool() {
               value={input}
               placeholder={t('tool.json.inputPlaceholder')}
               onScroll={handleInputScroll}
+              onKeyDown={handleInputKeyDown}
               onChange={(e) => {
                 setInput(e.target.value)
                 if (emptyError) setEmptyError(false)

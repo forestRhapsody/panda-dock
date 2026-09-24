@@ -323,3 +323,32 @@ describe('JwtTool 签名验证 (HMAC)', () => {
     expect(container.querySelector('.tw-jwt__verify')).toBeNull()
   })
 })
+
+describe('JwtTool 的 Tab 缩进', () => {
+  it('Tab 缩进不吞掉 Ctrl+Enter 执行', async () => {
+    await renderTool()
+    await act(async () => setTextareaValue(tokenInput(), SAMPLE_JWT))
+
+    const el = tokenInput()
+    act(() => el.setSelectionRange(0, 0))
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    act(() => {
+      el.dispatchEvent(tab)
+    })
+    expect(tab.defaultPrevented).toBe(true)
+    expect(el.value.startsWith('  ')).toBe(true)
+
+    // 合并后的处理器仍要把 Ctrl+Enter 交给调用方（解码出结果）
+    act(() => {
+      el.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    expect(container.textContent).toContain('签名校验 (HMAC)')
+  })
+})

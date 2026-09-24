@@ -332,3 +332,21 @@ describe('JsonTool 复制 / 下载 / 草稿', () => {
     expect(viewerText()).toBe('{\n  "b": 1,\n  "a": 2\n}')
   })
 })
+
+describe('JsonTool 的 Tab 缩进', () => {
+  it('行号栏编辑器：Tab 缩进并同步到受控输入', async () => {
+    await renderTool()
+    await act(async () => setTextareaValue(textarea(), '{}'))
+
+    const el = textarea()
+    act(() => el.setSelectionRange(0, 0))
+    const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    act(() => {
+      el.dispatchEvent(event)
+    })
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(el.value).toBe('  {}')
+    expect(el.selectionStart).toBe(2)
+  })
+})
