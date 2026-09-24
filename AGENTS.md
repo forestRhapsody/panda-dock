@@ -105,6 +105,7 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
     - `Tooltip`（禁用原生 `title`）
     - `Icon`（禁用 emoji；新图标在 `ui/Icon.tsx` 注册 SVG path，用 `size` prop 控制大小）
     - `CopyButton` / `DownloadButton` / `StatusText` / `Toaster` / `ToolErrorBoundary`
+    - 多行框 `AutoArea` / `JsonTextarea` / `HighlightArea`（Tab 缩进由 `useTabIndent` 统一提供，**不要另写 textarea**）
 15. **统一交互流**：`输入源 ➔ 操作栏 ➔ 状态/错误反馈 ➔ 结果与视图配置`；状态与报错紧贴操作按钮下方，无状态时不保留空白占位；**空输入检测用 `useEmptyError` hook**（`src/tools/useEmptyError.ts`）：`triggerEmpty()` 触发红框+聚焦，`clearEmpty()` 清除，不手动维护 `emptyErr` state + `inputRef`。
 16. **结果区只读**：解析 / 解码结果只做展示与复制（只有 JSON 工作台与 Cookie 编辑弹窗是编辑态）。
 

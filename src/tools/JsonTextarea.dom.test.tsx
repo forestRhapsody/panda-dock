@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act } from 'react'
+import { act, useState } from 'react'
 
 import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
@@ -338,5 +338,29 @@ describe('JsonTextarea 的宽度变化重测', () => {
     expect(el.style.height).toBe('112px')
 
     vi.unstubAllGlobals()
+  })
+})
+
+describe('JsonTextarea 的 Tab 缩进', () => {
+  it('Tab 与 AutoArea 走同一套缩进：受控值更新，高亮层同源', () => {
+    function Harness() {
+      const [value, setValue] = useState('{\n"a": 1\n}')
+      return <JsonTextarea value={value} onChange={(e) => setValue(e.target.value)} />
+    }
+    act(() => {
+      root.render(<Harness />)
+    })
+
+    const el = textarea()
+    act(() => el.setSelectionRange(0, 0))
+    const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    act(() => {
+      el.dispatchEvent(event)
+    })
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(el.value).toBe('  {\n"a": 1\n}')
+    // 高亮层与输入层同源：两层文本必须一起更新，否则会出现错位重影
+    expect(pre().textContent).toContain('  {')
   })
 })

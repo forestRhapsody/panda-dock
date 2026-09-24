@@ -3,6 +3,7 @@ import type { TextareaHTMLAttributes } from 'react'
 
 import { highlightJson } from './JsonHighlight'
 import { useAutoHeight } from './useAutoHeight'
+import { useTabIndent } from './useTabIndent'
 
 interface JsonTextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value'> {
   value: string
@@ -19,6 +20,7 @@ export default function JsonTextarea({
   value,
   maxHeight = 300,
   onChange,
+  onKeyDown,
   ...rest
 }: JsonTextareaProps) {
   // 高度自适应交给 useAutoHeight（含宽度变化重测）；此处不接管 overflowY，
@@ -32,6 +34,7 @@ export default function JsonTextarea({
   })
   const preRef = useRef<HTMLPreElement>(null)
   const nodes = useMemo(() => highlightJson(value), [value])
+  const handleKeyDown = useTabIndent(onKeyDown)
 
   // 滚动同步：textarea 滚动时同步高亮层
   function syncScroll() {
@@ -55,6 +58,7 @@ export default function JsonTextarea({
         className='json-editor__input'
         value={value}
         onChange={onChange}
+        onKeyDown={handleKeyDown}
         onScroll={syncScroll}
         onInput={syncScroll}
         spellCheck={false}

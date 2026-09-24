@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act } from 'react'
+import { act, useState } from 'react'
 import type { ChangeEvent, RefObject } from 'react'
 
 import { createRoot } from 'react-dom/client'
@@ -499,5 +499,29 @@ describe('HighlightArea 的滚动同步（人造几何）', () => {
 
     // 此时应当把该激活项重新滚回居中（relativeTop=30，居中 targetScrollTop = max(0, 30 - 40) = 0）
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+  })
+})
+
+describe('HighlightArea 的 Tab 缩进', () => {
+  it('Tab 缩进：受控值更新，涂层与输入层保持同源', () => {
+    function Harness() {
+      const [value, setValue] = useState('{\n"a": 1\n}')
+      return <HighlightArea value={value} onChange={(e) => setValue(e.target.value)} />
+    }
+    act(() => {
+      root.render(<Harness />)
+    })
+
+    const el = ta()
+    act(() => el.setSelectionRange(0, 0))
+    const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    act(() => {
+      el.dispatchEvent(event)
+    })
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(el.value).toBe('  {\n"a": 1\n}')
+    // 两层文本必须逐字一致，否则会出现错位重影
+    expect(backdropText()).toContain('  {')
   })
 })

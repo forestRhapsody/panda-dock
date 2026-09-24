@@ -1,6 +1,7 @@
 import type { RefObject, TextareaHTMLAttributes } from 'react'
 
 import { useAutoHeight } from './useAutoHeight'
+import { useTabIndent } from './useTabIndent'
 
 interface AutoAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value'> {
   value: string
@@ -15,6 +16,7 @@ interface AutoAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>
  * 封顶 maxHeight 后内部滚动。用于「解析结果」这类只读多行输出。
  *
  * 测量（含宽度变化重测、paint 前撑开避免父级测到过矮高度）统一走 useAutoHeight。
+ * 可编辑时 Tab / Shift+Tab 用于缩进与反缩进（见 useTabIndent），只读时保持原生焦点导航。
  */
 export default function AutoArea({
   value,
@@ -22,6 +24,7 @@ export default function AutoArea({
   className,
   onChange,
   areaRef,
+  onKeyDown,
   ...rest
 }: AutoAreaProps) {
   const ref = useAutoHeight<HTMLTextAreaElement>({
@@ -31,6 +34,16 @@ export default function AutoArea({
     extra: 12,
     externalRef: areaRef,
   })
+  const handleKeyDown = useTabIndent(onKeyDown)
 
-  return <textarea ref={ref} className={className} value={value} onChange={onChange} {...rest} />
+  return (
+    <textarea
+      ref={ref}
+      className={className}
+      value={value}
+      onChange={onChange}
+      onKeyDown={handleKeyDown}
+      {...rest}
+    />
+  )
 }

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createRef } from 'react'
+import { act, createRef, useState } from 'react'
 
 import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
@@ -304,6 +304,92 @@ describe('AutoArea 的空值与超长值', () => {
     const el = area()
     expect(el.value).toBe(long)
     expect(el.value.split('\n')).toHaveLength(300)
+  })
+})
+
+describe('AutoArea 的 Tab 缩进', () => {
+  /** 受控宿主：Tab 缩进必须经由 input 事件同步回 state，而不是只改 DOM */
+  function renderEditable(initial: string) {
+    function Harness() {
+      const [value, setValue] = useState(initial)
+      return <AutoArea value={value} onChange={(e) => setValue(e.target.value)} />
+    }
+    act(() => {
+      root.render(<Harness />)
+    })
+  }
+
+  function press(key: string, init: KeyboardEventInit = {}) {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init })
+    act(() => {
+      area().dispatchEvent(event)
+    })
+    return event
+  }
+
+  it('Tab 在光标处插入缩进并同步受控值，不交出焦点', () => {
+    renderEditable('a=1')
+    act(() => area().setSelectionRange(3, 3))
+
+    const event = press('Tab')
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(area().value).toBe('a=1  ')
+    expect(area().selectionStart).toBe(5)
+  })
+
+  it('Shift+Tab 反缩进当前行并同步受控值', () => {
+    renderEditable('  a=1')
+    act(() => area().setSelectionRange(4, 4))
+
+    expect(press('Tab', { shiftKey: true }).defaultPrevented).toBe(true)
+
+    expect(area().value).toBe('a=1')
+    expect(area().selectionStart).toBe(2)
+  })
+
+  it('Escape 之后的 Tab 放行给焦点导航（一次性兜底）', () => {
+    renderEditable('a=1')
+    press('Escape')
+
+    const event = press('Tab')
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(area().value).toBe('a=1')
+  })
+
+  it('只读框不拦截 Tab（读结果时仍是原生焦点导航）', () => {
+    act(() => {
+      root.render(<AutoArea value='结果' readOnly onChange={() => {}} />)
+    })
+
+    const event = press('Tab')
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(area().value).toBe('结果')
+  })
+
+  it('调用方自己的 onKeyDown 先执行；它 preventDefault 后不再缩进', () => {
+    const external = vi.fn((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Tab') e.preventDefault()
+    })
+    act(() => {
+      root.render(<AutoArea value='a=1' onChange={() => {}} onKeyDown={external} />)
+    })
+
+    const event = press('Tab')
+
+    expect(external).toHaveBeenCalledTimes(1)
+    expect(event.defaultPrevented).toBe(true)
+    expect(area().value).toBe('a=1')
+  })
+
+  it('其他按键（含 Ctrl+Tab）不受影响，值不变', () => {
+    renderEditable('a=1')
+
+    expect(press('Enter').defaultPrevented).toBe(false)
+    expect(press('Tab', { ctrlKey: true }).defaultPrevented).toBe(false)
+    expect(area().value).toBe('a=1')
   })
 })
 
