@@ -24,6 +24,13 @@ interface CookieEditModalProps {
   onSaved: (count: number) => void
 }
 
+/** 域名框按「含子域」勾选补 / 去前导点（空值不加，避免出现孤零零的 "."） */
+function withLeadingDot(domain: string, includeSubdomains: boolean): string {
+  const bare = domain.replace(/^\.+/, '')
+  if (!bare) return bare
+  return includeSubdomains ? `.${bare}` : bare
+}
+
 function computeDefaultDomain(url: string): string {
   try {
     return new URL(url).hostname
@@ -78,8 +85,8 @@ export default function CookieEditModal({
     if (cookie) {
       setName(cookie.name)
       setValue(cookie.value)
-      setDomain(bareCookieDomain(cookie.domain))
-      // host-only 是「仅当前主机」；只有原本就覆盖子域的 Cookie 才保持非 host-only
+      // domain 原样带前导点（与 Chrome API / DevTools 一致）；作用域判据是 hostOnly
+      setDomain(cookie.domain)
       setHostOnly(cookie.hostOnly !== false)
       setPath(cookie.path || '/')
       setSecure(Boolean(cookie.secure))
@@ -108,7 +115,7 @@ export default function CookieEditModal({
           {
             name: cookie.name,
             value: cookie.value,
-            domain: bareCookieDomain(cookie.domain),
+            domain: cookie.domain,
             hostOnly: cookie.hostOnly !== false,
             path: cookie.path,
             secure: cookie.secure,
@@ -407,13 +414,10 @@ export default function CookieEditModal({
                         spellCheck={false}
                         onChange={(e) => {
                           const next = e.target.value
-                          // 前导点是 RFC 6265 的「覆盖子域」写法，语义交给复选框，输入框只留裸域名
-                          if (next.startsWith('.')) {
-                            setHostOnly(false)
-                            setDomain(next.replace(/^\.+/, ''))
-                          } else {
-                            setDomain(next)
-                          }
+                          // 前导点原样保留（与 DevTools 一致）：它是「覆盖子域」的展示写法，
+                          // 看到点就顺手勾上复选框；作用域判据始终是 hostOnly，不是这个点
+                          if (next.startsWith('.')) setHostOnly(false)
+                          setDomain(next)
                         }}
                         placeholder='example.com'
                       />
@@ -520,7 +524,12 @@ export default function CookieEditModal({
                       <input
                         type='checkbox'
                         checked={!hostOnly}
-                        onChange={(e) => setHostOnly(!e.target.checked)}
+                        onChange={(e) => {
+                          const includeSubdomains = e.target.checked
+                          setHostOnly(!includeSubdomains)
+                          // 勾选状态是判据，域名框的前导点只是它的显示：两者一起变，避免显示打架
+                          setDomain((prev) => withLeadingDot(prev, includeSubdomains))
+                        }}
                       />
                       <span>
                         {t('tool.storage.cookieSubdomains')} (

@@ -717,9 +717,8 @@ describe('StorageTool Cookies 区域', () => {
     expect(text).toContain('Secure')
     expect(text).toContain('Strict')
     expect(text).toContain('含子域')
-    // 展示层去掉 RFC 6265 的遗留前导点，domain 语义由「含子域」徽章承载
-    expect(text).toContain('example.com')
-    expect(text).not.toContain('.example.com')
+    // domain 原样显示（带前导点，与 chrome.cookies / DevTools 一致），作用域另由「含子域」徽章表达
+    expect(text).toContain('.example.com')
     expect(text).toContain('/app')
 
     await act(async () => buttonWithText('删除', firstRow()).click())

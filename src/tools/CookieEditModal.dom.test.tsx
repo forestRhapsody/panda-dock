@@ -289,7 +289,8 @@ describe('CookieEditModal 渲染与初始化', () => {
     expect(valueArea().value).toBe('abc')
     // httpOnly / 非默认 path / 非 session 属于「高级非默认属性」，编辑时自动展开
     expect(container.querySelector('.tw-cookie-modal__adv-panel')).not.toBeNull()
-    expect(domainInput().value).toBe('example.com')
+    // domain 原样带前导点（不再剥点）
+    expect(domainInput().value).toBe('.example.com')
     expect(pathInput().value).toBe('/app')
     expect(httpOnlyBox().checked).toBe(true)
     expect(secureBox().checked).toBe(true)
@@ -414,25 +415,37 @@ describe('CookieEditModal 保存', () => {
     expect(subdomainsBox().checked).toBe(false)
   })
 
-  it('编辑覆盖子域的 Cookie：保存后仍覆盖子域', async () => {
+  it('编辑覆盖子域的 Cookie：保存后仍覆盖子域（domain 原样带前导点）', async () => {
     const cookie = makeCookie({ domain: '.example.com', hostOnly: false, secure: true })
     renderModal({ cookie, pageUrl: 'https://example.com/' })
     await act(async () => setInput(valueArea(), 'new'))
     await clickSave()
 
-    expect(lastDetails()).toMatchObject({ domain: 'example.com', hostOnly: false })
+    expect(lastDetails()).toMatchObject({ domain: '.example.com', hostOnly: false })
   })
 
-  it('域名输入框接受前导点写法：自动勾选「含子域」并只保留裸域名', async () => {
+  it('域名输入框：前导点原样保留，并顺手勾上「含子域」', async () => {
     renderModal({ pageUrl: 'https://example.com/' })
     await act(async () => setInput(nameInput(), 'tok'))
     await act(async () => advancedToggle().click())
     await act(async () => setInput(domainInput(), '.example.com'))
 
-    expect(domainInput().value).toBe('example.com')
+    expect(domainInput().value).toBe('.example.com')
     expect(subdomainsBox().checked).toBe(true)
     await clickSave()
-    expect(lastDetails()).toMatchObject({ domain: 'example.com', hostOnly: false })
+    expect(lastDetails()).toMatchObject({ domain: '.example.com', hostOnly: false })
+  })
+
+  it('「含子域」勾选与域名框前导点同步（勾上加点、取消去点）', async () => {
+    renderModal({ pageUrl: 'https://example.com/' })
+    await act(async () => advancedToggle().click())
+    expect(domainInput().value).toBe('example.com')
+
+    await act(async () => subdomainsBox().click())
+    expect(domainInput().value).toBe('.example.com')
+
+    await act(async () => subdomainsBox().click())
+    expect(domainInput().value).toBe('example.com')
   })
 
   it('编辑模式保存时把原 Cookie 作为 oldCookie 传给 saveCookies', async () => {
@@ -612,7 +625,7 @@ describe('CookieEditModal Raw 模式', () => {
     expect(subdomainsBox().checked).toBe(false)
     await act(async () => subdomainsBox().click())
     await act(async () => tabWithText('Raw 格式').click())
-    expect(rawArea().value).toContain('Domain=example.com')
+    expect(rawArea().value).toContain('Domain=.example.com')
   })
 
   it('编辑模式 Raw 预填完整属性；Raw→表单解析回填字段', async () => {
@@ -630,9 +643,8 @@ describe('CookieEditModal Raw 模式', () => {
     renderModal({ cookie })
     await act(async () => tabWithText('Raw 格式').click())
     expect(rawArea().value).toContain('sid=abc')
-    // 切到 Raw 时按表单 state 重新序列化：domain 已由 bareCookieDomain 去掉遗留前导点
-    expect(rawArea().value).toContain('Domain=example.com')
-    expect(rawArea().value).not.toContain('Domain=.example.com')
+    // 切到 Raw 时按表单 state 重新序列化：domain 原样带前导点
+    expect(rawArea().value).toContain('Domain=.example.com')
     expect(rawArea().value).toContain('Path=/app')
     expect(rawArea().value).toContain('SameSite=Strict')
     expect(rawArea().value).toContain('Secure')

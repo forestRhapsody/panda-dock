@@ -16,7 +16,6 @@ import JsonTextarea from './JsonTextarea'
 import { StatusText } from './StatusText'
 import type { ToolStatus } from './StatusText'
 import {
-  bareCookieDomain,
   clearAllCookies,
   clearStorageArea,
   isPageContext,
@@ -837,9 +836,7 @@ export default function StorageTool() {
                     <span className='tw-cookie__detail-label'>
                       {t('tool.storage.cookieDomain')}
                     </span>
-                    <span className='tw-cookie__detail-value'>
-                      {bareCookieDomain(cookie.domain)}
-                    </span>
+                    <span className='tw-cookie__detail-value'>{cookie.domain}</span>
                   </div>
                   <div className='tw-cookie__detail-row'>
                     <span className='tw-cookie__detail-label'>{t('tool.storage.cookiePath')}</span>

@@ -220,8 +220,12 @@ export async function clearStorageArea(area: WebStorageArea): Promise<SimpleResu
   }
 }
 
-/** 去除 Cookie domain 的 RFC 6265 遗留前导点（".example.com" → "example.com"）；
- *  该点的语义是「Cookie 覆盖其子域」，由 `hostOnly` 字段承载，展示层不再展示这个点 */
+/**
+ * 去掉 Cookie domain 的前导点（".example.com" → "example.com"）。
+ * 只用于拼 URL、比较页面主机名这类**逻辑**；前导点只是「覆盖子域」的展示写法
+ * （Chrome 的 cookies API 与 DevTools 都会带上它），展示层一律原样显示 domain。
+ * ⚠️ 判据永远是 `hostOnly` 字段：任何地方都不要拿「有没有点」判断作用域。
+ */
 export function bareCookieDomain(domain: string): string {
   return domain.startsWith('.') ? domain.slice(1) : domain
 }
