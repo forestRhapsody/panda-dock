@@ -587,6 +587,7 @@
       "cookieSession": "Session",
       "cookieShowAdvanced": "Show Advanced (Domain, Path, Expires…)",
       "cookieSubdomains": "Subdomains",
+      "cookieSubdomainsDesc": "Domain also covers subdomains; unchecked keeps it host-only",
       "cookieValue": "Value",
       "cookieSameSite": "SameSite",
       "sameSiteLax": "Lax",

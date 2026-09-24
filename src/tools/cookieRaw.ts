@@ -6,6 +6,12 @@ export interface CookieSetDetails {
   value: string
   domain?: string
   path?: string
+  /**
+   * 是否仅当前主机生效（host-only，对应 Set-Cookie 不写 Domain 属性）。
+   * `true` 时序列化不输出 Domain，background 也不向 `chrome.cookies.set` 传 domain——
+   * 一旦显式传 domain，浏览器就会把 Cookie 提升为覆盖子域的 Domain Cookie（`.example.com`）。
+   */
+  hostOnly?: boolean
   secure?: boolean
   httpOnly?: boolean
   sameSite?: 'no_restriction' | 'lax' | 'strict' | 'unspecified'
@@ -59,7 +65,9 @@ export function serializeCookieToRaw(
   }
 
   const parts = [`${name}=${val}`]
-  if (cookie.domain) parts.push(`Domain=${cookie.domain}`)
+  // host-only（仅当前主机）不写 Domain：Set-Cookie 缺省 Domain 即 host-only，
+  // 补一个 `Domain=` 会把作用域悄悄扩大到子域
+  if (cookie.domain && cookie.hostOnly !== true) parts.push(`Domain=${cookie.domain}`)
   if (cookie.path) parts.push(`Path=${cookie.path}`)
   // 0 是合法时间戳（1970-01-01），不能用真值判断，否则会被静默当成会话 Cookie 丢掉；
   // 只把非法值（NaN）挡在外面。
@@ -128,6 +136,8 @@ function parseSetCookieLine(
     value,
     domain: defaultDomain,
     path: defaultPath,
+    // Set-Cookie 不写 Domain 属性就是 host-only；写了 Domain（含前导点）才覆盖子域
+    hostOnly: true,
     secure: false,
     httpOnly: false,
     sameSite: 'lax',
@@ -141,6 +151,8 @@ function parseSetCookieLine(
 
     if (k === 'domain' && v) {
       cookie.domain = v
+      // 显式声明 Domain = 覆盖子域（RFC 6265 忽略前导点，二者语义相同）
+      cookie.hostOnly = false
     } else if (k === 'path' && v) {
       cookie.path = v
     } else if (k === 'expires' && v) {
@@ -202,6 +214,9 @@ export function parseRawCookie(
         }
         const value = String(obj.value ?? obj.Value ?? '')
         const domain = obj.domain != null ? String(obj.domain).trim() : defaultDomain
+        // hostOnly 显式给出时以它为准（自家 JSON 导出带该字段）；否则「写了 domain 就覆盖子域」
+        const hasDomain = obj.domain != null && String(obj.domain).trim() !== ''
+        const hostOnly = typeof obj.hostOnly === 'boolean' ? obj.hostOnly : !hasDomain
         const path = obj.path != null ? String(obj.path).trim() : defaultPath
         const secure = Boolean(obj.secure)
         const httpOnly = Boolean(obj.httpOnly ?? obj.httponly)
@@ -222,6 +237,7 @@ export function parseRawCookie(
           value,
           domain,
           path,
+          hostOnly,
           secure: sameSite === 'no_restriction' ? true : secure,
           httpOnly,
           sameSite,
@@ -283,6 +299,8 @@ export function parseRawCookie(
               value,
               domain: defaultDomain,
               path: defaultPath,
+              // 纯键值串没有 Domain 属性 → host-only
+              hostOnly: true,
               secure: false,
               httpOnly: false,
               sameSite: 'lax',

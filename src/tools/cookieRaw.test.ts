@@ -280,6 +280,15 @@ describe('serializeCookieToRaw：属性组合与格式边界', () => {
     expect(serializeCookieToRaw({ name: 't', value: '1', httpOnly: true })).toBe('t=1; HttpOnly')
   })
 
+  it('hostOnly=true 不输出 Domain（缺省 Domain 即仅当前主机），false 才输出', () => {
+    expect(serializeCookieToRaw({ name: 't', value: '1', domain: 'd.test', hostOnly: true })).toBe(
+      't=1',
+    )
+    expect(serializeCookieToRaw({ name: 't', value: '1', domain: 'd.test', hostOnly: false })).toBe(
+      't=1; Domain=d.test',
+    )
+  })
+
   it('name 两侧空白被裁剪，value 原样保留（含 = 与引号）', () => {
     expect(serializeCookieToRaw({ name: '  t  ', value: ' 1 ' })).toBe('t= 1 ')
     expect(serializeCookieToRaw({ name: 'sid', value: 'a=b"c' })).toBe('sid=a=b"c')
@@ -520,6 +529,17 @@ describe('parseRawCookie：文本模式边界', () => {
     })
     // 不传 defaultDomain 时 domain 为 undefined（表示交给 background 推断）
     expect(cookiesOf('a=1')[0].domain).toBeUndefined()
+  })
+
+  it('hostOnly：无 Domain 属性为 host-only，显式 Domain（含前导点）才是覆盖子域', () => {
+    expect(cookiesOf('a=1', 'd.test')[0].hostOnly).toBe(true)
+    expect(cookiesOf('a=1; Domain=d.test')[0].hostOnly).toBe(false)
+    // RFC 6265 忽略前导点，两种写法都是覆盖子域
+    expect(cookiesOf('a=1; Domain=.d.test')[0].hostOnly).toBe(false)
+    // JSON：显式 hostOnly 优先；否则写了 domain 即覆盖子域，没写即 host-only
+    expect(cookiesOf('[{"name":"a","hostOnly":true,"domain":".d.test"}]')[0].hostOnly).toBe(true)
+    expect(cookiesOf('[{"name":"a","domain":"d.test"}]')[0].hostOnly).toBe(false)
+    expect(cookiesOf('[{"name":"a"}]')[0].hostOnly).toBe(true)
   })
 })
 

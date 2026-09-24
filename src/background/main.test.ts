@@ -677,6 +677,32 @@ describe('MSG_COOKIE_SET', () => {
     expect(details).not.toHaveProperty('domain')
   })
 
+  // 显式传 domain = 覆盖子域的 Domain Cookie（Chrome 会显示成 ".example.com"），
+  // host-only Cookie 必须省掉 domain，否则「编辑一次」就会把作用域改宽
+  it('hostOnly=true 时不传 domain，domain 仍用于定位写入的 url', async () => {
+    await boot()
+    await dispatch({
+      action: MSG_COOKIE_SET,
+      url: 'https://example.com/',
+      cookie: { name: 'h', value: '1', domain: 'example.com', hostOnly: true },
+    })
+    const details = firstSetDetails()
+    expect(details.url).toBe('https://example.com/')
+    expect(details).not.toHaveProperty('domain')
+  })
+
+  it('hostOnly=false 时照常透传 domain（覆盖子域）', async () => {
+    await boot()
+    await dispatch({
+      action: MSG_COOKIE_SET,
+      url: 'https://sub.example.com/',
+      cookie: { name: 'i', value: '1', domain: 'example.com', hostOnly: false },
+    })
+    const details = firstSetDetails()
+    expect(details.domain).toBe('example.com')
+    expect(details.url).toBe('https://example.com/')
+  })
+
   it('path 不以 / 开头时补全，且 SetDetails.path 保留原值', async () => {
     await boot()
     await dispatch({

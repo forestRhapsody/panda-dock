@@ -340,6 +340,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             name: string
             value: string
             domain?: string
+            hostOnly?: boolean
             path?: string
             secure?: boolean
             httpOnly?: boolean
@@ -351,6 +352,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             name: string
             value: string
             domain?: string
+            hostOnly?: boolean
             path?: string
             secure?: boolean
             httpOnly?: boolean
@@ -414,7 +416,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             storeId: item.storeId,
           }
 
-          if (item.domain) {
+          // host-only Cookie 绝不能传 domain：显式 domain 会被浏览器提升为覆盖子域的
+          // Domain Cookie（".example.com"），把「编辑一次」变成「作用域被悄悄扩大」
+          if (item.domain && item.hostOnly !== true) {
             setDetails.domain = item.domain
           }
           if (item.expirationDate != null && !Number.isNaN(item.expirationDate)) {

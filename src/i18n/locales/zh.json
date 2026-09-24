@@ -587,6 +587,7 @@
       "cookieSession": "会话",
       "cookieShowAdvanced": "展开高级选项 (Domain / Path / Expires 等)",
       "cookieSubdomains": "含子域",
+      "cookieSubdomainsDesc": "Domain 覆盖其子域；不勾选则仅当前主机生效",
       "cookieValue": "值",
       "cookieSameSite": "SameSite",
       "sameSiteLax": "Lax",

@@ -177,12 +177,16 @@ function checkboxes(): HTMLInputElement[] {
   )
 }
 
-function httpOnlyBox(): HTMLInputElement {
+function subdomainsBox(): HTMLInputElement {
   return checkboxes()[0]
 }
 
-function secureBox(): HTMLInputElement {
+function httpOnlyBox(): HTMLInputElement {
   return checkboxes()[1]
+}
+
+function secureBox(): HTMLInputElement {
+  return checkboxes()[2]
 }
 
 function combos(): HTMLButtonElement[] {
@@ -297,7 +301,12 @@ describe('CookieEditModal 渲染与初始化', () => {
   })
 
   it('编辑会话 Cookie：过期类型为「会话」且不显示时间戳输入', async () => {
-    const cookie = makeCookie({ session: true, expirationDate: undefined, domain: 'example.com' })
+    const cookie = makeCookie({
+      session: true,
+      expirationDate: undefined,
+      domain: 'example.com',
+      hostOnly: true,
+    })
     renderModal({ cookie })
     // 全部字段均为默认值（domain 与页面一致、path=/、非 httpOnly、session）→ 面板保持折叠
     expect(container.querySelector('.tw-cookie-modal__adv-panel')).toBeNull()
@@ -373,6 +382,7 @@ describe('CookieEditModal 保存', () => {
       name: 'token',
       value: 'v1',
       domain: 'example.com',
+      hostOnly: true,
       path: '/p',
       secure: true,
       httpOnly: true,
@@ -384,6 +394,45 @@ describe('CookieEditModal 保存', () => {
     expect(old).toBeUndefined()
     expect(onSaved).toHaveBeenCalledWith(1)
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('编辑 host-only Cookie：不改域名就仍是 host-only（不会被提升为 .example.com）', async () => {
+    const cookie = makeCookie({
+      name: 'sid',
+      value: 'old',
+      domain: 'example.com',
+      hostOnly: true,
+      secure: true,
+    })
+    renderModal({ cookie, pageUrl: 'https://example.com/' })
+    await act(async () => setInput(valueArea(), 'new'))
+    await clickSave()
+
+    expect(lastDetails()).toMatchObject({ domain: 'example.com', hostOnly: true })
+    await act(async () => advancedToggle().click())
+    expect(domainInput().value).toBe('example.com')
+    expect(subdomainsBox().checked).toBe(false)
+  })
+
+  it('编辑覆盖子域的 Cookie：保存后仍覆盖子域', async () => {
+    const cookie = makeCookie({ domain: '.example.com', hostOnly: false, secure: true })
+    renderModal({ cookie, pageUrl: 'https://example.com/' })
+    await act(async () => setInput(valueArea(), 'new'))
+    await clickSave()
+
+    expect(lastDetails()).toMatchObject({ domain: 'example.com', hostOnly: false })
+  })
+
+  it('域名输入框接受前导点写法：自动勾选「含子域」并只保留裸域名', async () => {
+    renderModal({ pageUrl: 'https://example.com/' })
+    await act(async () => setInput(nameInput(), 'tok'))
+    await act(async () => advancedToggle().click())
+    await act(async () => setInput(domainInput(), '.example.com'))
+
+    expect(domainInput().value).toBe('example.com')
+    expect(subdomainsBox().checked).toBe(true)
+    await clickSave()
+    expect(lastDetails()).toMatchObject({ domain: 'example.com', hostOnly: false })
   })
 
   it('编辑模式保存时把原 Cookie 作为 oldCookie 传给 saveCookies', async () => {
@@ -512,6 +561,7 @@ describe('CookieEditModal Raw 模式', () => {
         value: '1',
         domain: 'example.com',
         path: '/',
+        hostOnly: true,
         secure: false,
         httpOnly: false,
         sameSite: 'lax',
@@ -521,6 +571,7 @@ describe('CookieEditModal Raw 模式', () => {
         value: '2',
         domain: 'example.com',
         path: '/',
+        hostOnly: true,
         secure: false,
         httpOnly: false,
         sameSite: 'lax',
@@ -549,11 +600,19 @@ describe('CookieEditModal Raw 模式', () => {
     await act(async () => setInput(valueArea(), 'v1'))
     await act(async () => tabWithText('Raw 格式').click())
 
+    // 新增默认 host-only：不写 Domain，避免把作用域悄悄扩大到子域
     expect(rawArea().value).toContain('tok=v1')
-    expect(rawArea().value).toContain('Domain=example.com')
+    expect(rawArea().value).not.toContain('Domain=')
     expect(rawArea().value).toContain('Path=/')
     expect(rawArea().value).toContain('SameSite=Lax')
     expect(rawArea().value).toContain('Secure')
+
+    await act(async () => tabWithText('表单编辑').click())
+    await act(async () => advancedToggle().click())
+    expect(subdomainsBox().checked).toBe(false)
+    await act(async () => subdomainsBox().click())
+    await act(async () => tabWithText('Raw 格式').click())
+    expect(rawArea().value).toContain('Domain=example.com')
   })
 
   it('编辑模式 Raw 预填完整属性；Raw→表单解析回填字段', async () => {
@@ -589,6 +648,8 @@ describe('CookieEditModal Raw 模式', () => {
     expect(pathInput().value).toBe('/q')
     expect(secureBox().checked).toBe(false)
     expect(httpOnlyBox().checked).toBe(false)
+    // Raw 里显式声明了 Domain → 覆盖子域
+    expect(subdomainsBox().checked).toBe(true)
   })
 
   it('Raw 工具栏可在键值串与 JSON / 规范 Set-Cookie 之间转换', async () => {
@@ -601,11 +662,13 @@ describe('CookieEditModal Raw 模式', () => {
       name: 'a',
       value: '1',
       domain: 'example.com',
+      hostOnly: true,
       path: '/',
     })
 
     await act(async () => buttonWithText('Set-Cookie').click())
-    expect(rawArea().value).toBe('a=1; Domain=example.com; Path=/; SameSite=Lax')
+    // host-only 不写 Domain 属性
+    expect(rawArea().value).toBe('a=1; Path=/; SameSite=Lax')
   })
 })
 

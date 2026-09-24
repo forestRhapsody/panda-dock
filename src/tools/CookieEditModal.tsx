@@ -50,6 +50,7 @@ export default function CookieEditModal({
   const [name, setName] = useState('')
   const [value, setValue] = useState('')
   const [domain, setDomain] = useState('')
+  const [hostOnly, setHostOnly] = useState(true)
   const [path, setPath] = useState('/')
   const [expiresType, setExpiresType] = useState<ExpiresType>('session')
   const [customExpires, setCustomExpires] = useState('')
@@ -78,6 +79,8 @@ export default function CookieEditModal({
       setName(cookie.name)
       setValue(cookie.value)
       setDomain(bareCookieDomain(cookie.domain))
+      // host-only 是「仅当前主机」；只有原本就覆盖子域的 Cookie 才保持非 host-only
+      setHostOnly(cookie.hostOnly !== false)
       setPath(cookie.path || '/')
       setSecure(Boolean(cookie.secure))
       setHttpOnly(Boolean(cookie.httpOnly))
@@ -91,9 +94,10 @@ export default function CookieEditModal({
         setCustomExpires(String(cookie.expirationDate))
       }
 
-      // 编辑时如果有高级非默认属性，自动展开高级项
+      // 编辑时如果有高级非默认属性，自动展开高级项（含子域属于非默认属性，必须让用户看见）
       const isAdv =
         Boolean(cookie.httpOnly) ||
+        cookie.hostOnly === false ||
         bareCookieDomain(cookie.domain) !== defaultDomain ||
         (cookie.path && cookie.path !== '/') ||
         !cookie.session
@@ -104,7 +108,8 @@ export default function CookieEditModal({
           {
             name: cookie.name,
             value: cookie.value,
-            domain: cookie.domain,
+            domain: bareCookieDomain(cookie.domain),
+            hostOnly: cookie.hostOnly !== false,
             path: cookie.path,
             secure: cookie.secure,
             httpOnly: cookie.httpOnly,
@@ -118,6 +123,7 @@ export default function CookieEditModal({
       setName('')
       setValue('')
       setDomain(defaultDomain)
+      setHostOnly(true)
       setPath('/')
       setExpiresType('session')
       setCustomExpires('')
@@ -173,6 +179,7 @@ export default function CookieEditModal({
           name: name.trim(),
           value,
           domain: domain || defaultDomain,
+          hostOnly,
           path: path || '/',
           secure,
           httpOnly,
@@ -193,6 +200,7 @@ export default function CookieEditModal({
           setName(first.name)
           setValue(first.value)
           setDomain(first.domain || defaultDomain)
+          setHostOnly(first.hostOnly !== false)
           setPath(first.path || '/')
           setSecure(Boolean(first.secure))
           setHttpOnly(Boolean(first.httpOnly))
@@ -239,6 +247,7 @@ export default function CookieEditModal({
           name: trimmedName,
           value,
           domain: domain.trim() || undefined,
+          hostOnly,
           path: path.trim() || '/',
           secure,
           httpOnly,
@@ -396,7 +405,16 @@ export default function CookieEditModal({
                         className='tw-input'
                         value={domain}
                         spellCheck={false}
-                        onChange={(e) => setDomain(e.target.value)}
+                        onChange={(e) => {
+                          const next = e.target.value
+                          // 前导点是 RFC 6265 的「覆盖子域」写法，语义交给复选框，输入框只留裸域名
+                          if (next.startsWith('.')) {
+                            setHostOnly(false)
+                            setDomain(next.replace(/^\.+/, ''))
+                          } else {
+                            setDomain(next)
+                          }
+                        }}
                         placeholder='example.com'
                       />
                     </label>
@@ -498,6 +516,18 @@ export default function CookieEditModal({
                   )}
 
                   <div className='tw-cookie-modal__checkboxes'>
+                    <label className='tw-cookie-modal__check-item'>
+                      <input
+                        type='checkbox'
+                        checked={!hostOnly}
+                        onChange={(e) => setHostOnly(!e.target.checked)}
+                      />
+                      <span>
+                        {t('tool.storage.cookieSubdomains')} (
+                        {t('tool.storage.cookieSubdomainsDesc')})
+                      </span>
+                    </label>
+
                     <label className='tw-cookie-modal__check-item'>
                       <input
                         type='checkbox'
