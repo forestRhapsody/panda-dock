@@ -59,16 +59,21 @@ jobs:
           path: ${{ steps.package.outputs.archive_path }}
           if-no-files-found: error
 
-      # 推送版本标签（如 v1.1.0）时自动创建 GitHub Release 并挂载压缩包。
+      # 推送版本标签（如 v1.1.0）时创建/更新 GitHub Release 并挂载压缩包。
       # 正文取 annotated tag 的注释（发版的 changelog 写在 `git tag -a` 的注释里），
       # 不能用 generate_release_notes：那会把正文覆盖成自动生成的 compare 链接。
-      # 注意：发版一律用 `git tag -a`，轻量 tag 没有注释 → 正文会是空的。
       - name: Read tag notes
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          # checkout 默认浅克隆，先补齐 tag 对象才能读到注释
-          git fetch --tags --force --quiet
-          git tag -l --format='%(contents)' "$GITHUB_REF_NAME" > "$RUNNER_TEMP/release-notes.md"
+          # 显式取该 tag（checkout 是浅克隆且默认不取 tag），再用 for-each-ref 读注释
+          git fetch --force --quiet origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          git for-each-ref --format='%(contents)' "refs/tags/${GITHUB_REF_NAME}" > "$RUNNER_TEMP/release-notes.md"
+          # 轻量 tag 没有注释：空正文会被下游当成「没给正文」而静默跳过更新，这里直接失败
+          if [ ! -s "$RUNNER_TEMP/release-notes.md" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} 没有注释，发版必须用 git tag -a"
+            exit 1
+          fi
+          echo "release notes: $(wc -c < "$RUNNER_TEMP/release-notes.md") bytes"
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -76,3 +81,10 @@ jobs:
         with:
           files: ${{ steps.package.outputs.archive_path }}
           body_path: ${{ runner.temp }}/release-notes.md
+
+      # 兜底：action 对「已存在」的 Release 不一定重写正文，这里显式覆盖一次
+      - name: Force release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"
