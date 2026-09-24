@@ -118,6 +118,8 @@ Panda Dock：Chrome 扩展（Manifest V3）开发者工具箱。
 
 - **存储桥接**：扩展页（侧边栏 / Options）无法直接读网页 `localStorage`，由 content 的 `installStorageBridge()` 代读代写。侧边栏的网页存储依赖当前标签页已注入 content script——特权页或未注入的页面取不到数据是正常现象。
 
+- **Cookie 分存储**：普通环境与无痕环境是两个隔离的 Cookie 存储（`storeId` `"0"` / `"1"`）。`chrome.cookies.*` 不传 `storeId` 时只用**后台自身所在的存储**（spanning 模式下恒为普通环境），所以无痕窗口会读到普通环境的 Cookie。所有 cookie 读写一律经 `resolveCookieTarget()` 按目标标签页反查 `storeId`（`getAllCookieStores()` 的 `tabIds`；扩展页没有 `sender.tab`，取 `lastFocusedWindow` 的活动标签页）。
+
 - **抽屉与原生侧边栏互斥**：靠 `MSG_*` + 侧边栏 Port 长连接实现，开一个要关另一个。`chrome.sidePanel.open` 必须在用户手势首帧同步调用，任何前置 `await` 都会让手势令牌失效。
 
 - **不要在 `setState` 更新器里写存储**：updater 是纯函数（StrictMode 下调用两次）。两种合法写法：

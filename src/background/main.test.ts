@@ -87,6 +87,7 @@ interface BackgroundHarness {
   tabsQuery: Fn
   tabsSendMessage: Fn
   cookiesGetAll: Fn
+  cookiesGetAllCookieStores: Fn
   cookiesRemove: Fn
   cookiesSet: Fn
   contextMenusCreate: Fn
@@ -121,6 +122,7 @@ function createHarness(options: StubOptions): BackgroundHarness {
   const tabsQuery = vi.fn(async (): Promise<unknown> => [])
   const tabsSendMessage = vi.fn(async (): Promise<unknown> => undefined)
   const cookiesGetAll = vi.fn(async (): Promise<unknown> => [])
+  const cookiesGetAllCookieStores = vi.fn(async (): Promise<unknown> => [])
   const cookiesRemove = vi.fn(async (): Promise<unknown> => ({}))
   const cookiesSet = vi.fn(async (): Promise<unknown> => ({}))
   const contextMenusCreate = vi.fn()
@@ -224,6 +226,7 @@ function createHarness(options: StubOptions): BackgroundHarness {
     },
     cookies: {
       getAll: cookiesGetAll,
+      getAllCookieStores: cookiesGetAllCookieStores,
       remove: cookiesRemove,
       set: cookiesSet,
     },
@@ -254,6 +257,7 @@ function createHarness(options: StubOptions): BackgroundHarness {
     tabsQuery,
     tabsSendMessage,
     cookiesGetAll,
+    cookiesGetAllCookieStores,
     cookiesRemove,
     cookiesSet,
     contextMenusCreate,
@@ -433,7 +437,7 @@ describe('打开扩展页面（MSG_OPEN_OPTIONS / MSG_OPEN_SHORTCUTS）', () => 
 })
 
 describe('MSG_COOKIE_GET_ALL', () => {
-  it('显式 http(s) url 直接使用（不查活动标签页），并逐字段映射 cookie', async () => {
+  it('显式 http(s) url 直接使用（来源标签页存在时不查活动标签页），并逐字段映射 cookie', async () => {
     const h = await boot()
     h.cookiesGetAll.mockResolvedValueOnce([
       {
@@ -451,10 +455,13 @@ describe('MSG_COOKIE_GET_ALL', () => {
       },
     ])
 
-    const response = await dispatch({
-      action: MSG_COOKIE_GET_ALL,
-      url: 'https://example.com/path?q=1',
-    })
+    const response = await dispatch(
+      {
+        action: MSG_COOKIE_GET_ALL,
+        url: 'https://example.com/path?q=1',
+      },
+      { tab: { id: 3, incognito: false, url: 'https://example.com/path?q=1' } },
+    )
 
     expect(response).toEqual({
       ok: true,
@@ -481,6 +488,52 @@ describe('MSG_COOKIE_GET_ALL', () => {
     })
     expect(h.tabsQuery).not.toHaveBeenCalled()
     expect(h.cookiesGetAll).toHaveBeenCalledWith({ url: 'https://example.com/path?q=1' })
+  })
+
+  // 普通环境与无痕环境是两个互相隔离的 Cookie 存储；不传 storeId 时 API 只用后台自身所在的
+  // 存储（spanning 模式下就是普通环境），于是无痕窗口里会读到普通环境的 Cookie
+  it('无痕标签页按 sender.tab 反查无痕存储并传给 getAll', async () => {
+    const h = await boot()
+    h.cookiesGetAllCookieStores.mockResolvedValueOnce([
+      { id: '0', tabIds: [1, 2] },
+      { id: '1', tabIds: [7] },
+    ])
+    await dispatch(
+      { action: MSG_COOKIE_GET_ALL, url: 'https://example.com/' },
+      { tab: { id: 7, incognito: true, url: 'https://example.com/' } },
+    )
+    expect(h.cookiesGetAll).toHaveBeenCalledWith({ url: 'https://example.com/', storeId: '1' })
+  })
+
+  it('无痕标签页尚未出现在任何 store 的 tabIds 时回落到无痕存储', async () => {
+    const h = await boot()
+    h.cookiesGetAllCookieStores.mockResolvedValueOnce([{ id: '0', tabIds: [1] }])
+    await dispatch(
+      { action: MSG_COOKIE_GET_ALL, url: 'https://example.com/' },
+      { tab: { id: 9, incognito: true, url: 'https://example.com/' } },
+    )
+    expect(h.cookiesGetAll).toHaveBeenCalledWith({ url: 'https://example.com/', storeId: '1' })
+  })
+
+  it('扩展页消息没有 sender.tab：用最近聚焦窗口的活动标签页解析 url 与存储', async () => {
+    const h = await boot()
+    h.tabsQuery.mockResolvedValue([{ id: 7, incognito: true, url: 'https://inc.test/x' }])
+    h.cookiesGetAllCookieStores.mockResolvedValueOnce([{ id: '1', tabIds: [7] }])
+
+    await dispatch({ action: MSG_COOKIE_GET_ALL })
+
+    expect(h.tabsQuery).toHaveBeenCalledWith({ active: true, lastFocusedWindow: true })
+    expect(h.cookiesGetAll).toHaveBeenCalledWith({ url: 'https://inc.test/x', storeId: '1' })
+  })
+
+  it('getAllCookieStores 抛错时不带 storeId 继续（退回默认存储）', async () => {
+    const h = await boot()
+    h.cookiesGetAllCookieStores.mockRejectedValueOnce(new Error('stores boom'))
+    await dispatch(
+      { action: MSG_COOKIE_GET_ALL, url: 'https://example.com/' },
+      { tab: { id: 7, incognito: true, url: 'https://example.com/' } },
+    )
+    expect(h.cookiesGetAll).toHaveBeenCalledWith({ url: 'https://example.com/' })
   })
 
   it('无 url 且无活动标签页时回 ERR_COOKIE_NO_PAGE_URL（精确错误码，无文案）', async () => {
@@ -557,6 +610,27 @@ describe('MSG_COOKIE_REMOVE', () => {
     expect(response).toEqual({ ok: true })
     expect(h.cookiesRemove).toHaveBeenCalledWith({
       url: 'https://example.com/app',
+      name: 'sid',
+      storeId: '1',
+    })
+  })
+
+  it('未带 storeId 时按目标标签页补上（无痕不误删普通环境的 Cookie）', async () => {
+    const h = await boot()
+    h.cookiesGetAllCookieStores.mockResolvedValueOnce([
+      { id: '0', tabIds: [1] },
+      { id: '1', tabIds: [7] },
+    ])
+    h.cookiesRemove.mockResolvedValueOnce({ name: 'sid' })
+
+    const response = await dispatch(
+      { action: MSG_COOKIE_REMOVE, url: 'https://example.com/', name: 'sid' },
+      { tab: { id: 7, incognito: true, url: 'https://example.com/' } },
+    )
+
+    expect(response).toEqual({ ok: true })
+    expect(h.cookiesRemove).toHaveBeenCalledWith({
+      url: 'https://example.com/',
       name: 'sid',
       storeId: '1',
     })
@@ -701,6 +775,19 @@ describe('MSG_COOKIE_SET', () => {
     const details = firstSetDetails()
     expect(details.domain).toBe('example.com')
     expect(details.url).toBe('https://example.com/')
+  })
+
+  it('新增 Cookie 写入目标标签页的存储（无痕不落到普通环境）', async () => {
+    const h = await boot()
+    h.cookiesGetAllCookieStores.mockResolvedValueOnce([
+      { id: '0', tabIds: [1] },
+      { id: '1', tabIds: [7] },
+    ])
+    await dispatch(
+      { action: MSG_COOKIE_SET, url: 'https://example.com/', cookie: { name: 'j', value: '1' } },
+      { tab: { id: 7, incognito: true, url: 'https://example.com/' } },
+    )
+    expect(firstSetDetails().storeId).toBe('1')
   })
 
   it('path 不以 / 开头时补全，且 SetDetails.path 保留原值', async () => {
@@ -852,6 +939,30 @@ describe('MSG_COOKIE_CLEAR_ALL', () => {
       url: 'https://example.com/',
     })
     expectErrorResponse(response, 'ERR_UNEXPECTED', 'clear boom')
+  })
+
+  it('无痕标签页只清空无痕存储：getAll 带 storeId 并逐个按该存储删除', async () => {
+    const h = await boot()
+    h.cookiesGetAllCookieStores.mockResolvedValueOnce([
+      { id: '0', tabIds: [1] },
+      { id: '1', tabIds: [7] },
+    ])
+    h.cookiesGetAll.mockResolvedValueOnce([
+      { name: 'a', value: '1', domain: 'example.com', path: '/', secure: false, storeId: '1' },
+    ])
+
+    const response = await dispatch(
+      { action: MSG_COOKIE_CLEAR_ALL, url: 'https://example.com/' },
+      { tab: { id: 7, incognito: true, url: 'https://example.com/' } },
+    )
+
+    expect(response).toEqual({ ok: true })
+    expect(h.cookiesGetAll).toHaveBeenCalledWith({ url: 'https://example.com/', storeId: '1' })
+    expect(h.cookiesRemove).toHaveBeenCalledWith({
+      url: 'https://example.com/',
+      name: 'a',
+      storeId: '1',
+    })
   })
 })
 

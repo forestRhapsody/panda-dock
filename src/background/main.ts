@@ -35,15 +35,67 @@ function getCookieUrl(
   return `${protocol}//${domain}${path}`
 }
 
-async function resolveTargetUrl(explicitUrl?: string): Promise<string | null> {
-  if (explicitUrl && /^https?:/.test(explicitUrl)) return explicitUrl
+/**
+ * 目标标签页所属的 Cookie 存储 id。
+ * 普通环境与无痕环境是两个互相隔离的存储（"0" / "1"），而 cookies.* 不传 storeId 时
+ * 只用「调用方所在的存储」——spanning 模式下后台常驻普通环境，于是无痕窗口里会读到
+ * 普通环境的 Cookie。这里按目标标签页反查它自己的存储（getAllCookieStores 的 tabIds）。
+ */
+async function resolveCookieStoreId(
+  tabId?: number,
+  incognito?: boolean,
+): Promise<string | undefined> {
+  if (tabId == null) return undefined
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    if (tab?.url && /^https?:/.test(tab.url)) return tab.url
+    const stores = await chrome.cookies.getAllCookieStores()
+    const byTab = stores.find((s) => s.tabIds?.includes(tabId))
+    if (byTab) return byTab.id
+    // 无痕标签页还没写过任何 Cookie 时可能不出现在 tabIds 里；无痕存储 id 恒为 "1"
+    if (incognito) return stores.find((s) => s.id !== '0')?.id ?? '1'
   } catch {
-    // 忽略
+    // 拿不到存储列表时退回默认（后台自身所在的存储）
   }
-  return null
+  return undefined
+}
+
+/**
+ * 最近聚焦窗口中的活动标签页。扩展页（弹窗 / 侧边栏）的消息没有 `sender.tab`，只能这样近似。
+ * 先试 `lastFocusedWindow`：它按 include_incognito 跨普通/无痕两个 profile 取最近活动的窗口，
+ * 而后台常驻普通环境，`currentWindow` 会指回普通窗口（无痕窗口里就会答错）。
+ */
+async function queryActiveTab(): Promise<chrome.tabs.Tab | undefined> {
+  const queries: chrome.tabs.QueryInfo[] = [
+    { active: true, lastFocusedWindow: true },
+    { active: true, currentWindow: true },
+  ]
+  for (const queryInfo of queries) {
+    try {
+      const [tab] = await chrome.tabs.query(queryInfo)
+      if (tab) return tab
+    } catch {
+      // 换下一种查询方式
+    }
+  }
+  return undefined
+}
+
+/**
+ * 解析 Cookie 操作的目标：页面 URL + 该标签页所属的 Cookie 存储。
+ * URL 与存储必须来自同一个标签页，否则会拿普通环境的 Cookie 去匹配无痕页面。
+ */
+async function resolveCookieTarget(
+  explicitUrl?: string,
+  senderTab?: { id?: number; incognito?: boolean; url?: string },
+): Promise<{ url: string; storeId?: string } | null> {
+  const tab = senderTab?.id != null ? senderTab : await queryActiveTab()
+  const url =
+    explicitUrl && /^https?:/.test(explicitUrl)
+      ? explicitUrl
+      : tab?.url && /^https?:/.test(tab.url)
+        ? tab.url
+        : null
+  if (!url) return null
+  return { url, storeId: await resolveCookieStoreId(tab?.id, tab?.incognito) }
 }
 
 const DETECT_MENU_ID = 'panda-detect-selection'
@@ -275,12 +327,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (action === MSG_COOKIE_GET_ALL) {
     void (async () => {
       try {
-        const url = await resolveTargetUrl((message as { url?: string }).url)
-        if (!url) {
+        const target = await resolveCookieTarget((message as { url?: string }).url, sender?.tab)
+        if (!target) {
           sendResponse(errorResponse('ERR_COOKIE_NO_PAGE_URL'))
           return
         }
-        const cookies = await chrome.cookies.getAll({ url })
+        const { url } = target
+        // 无痕与普通环境是两个存储，必须按目标标签页指定，否则无痕里会读到普通环境的 Cookie
+        const filter: chrome.cookies.GetAllDetails = { url }
+        if (target.storeId) filter.storeId = target.storeId
+        const cookies = await chrome.cookies.getAll(filter)
         const origin = new URL(url).origin
         sendResponse({
           ok: true,
@@ -318,7 +374,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse(errorResponse('ERR_COOKIE_MISSING_PARAM'))
           return
         }
-        const removed = await chrome.cookies.remove({ url, name, storeId })
+        // 列表项都自带 storeId；万一带了空值（手工构造的调用）就按目标标签页补上，
+        // 否则无痕窗口会删到普通环境里同名同路径的 Cookie
+        const targetStoreId = storeId ?? (await resolveCookieTarget(url, sender?.tab))?.storeId
+        const details: chrome.cookies.CookieDetails = { url, name }
+        if (targetStoreId) details.storeId = targetStoreId
+        const removed = await chrome.cookies.remove(details)
         if (removed) {
           sendResponse({ ok: true })
         } else {
@@ -369,11 +430,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
         }
 
-        const targetUrl = await resolveTargetUrl(payload.url)
-        if (!targetUrl) {
+        const target = await resolveCookieTarget(payload.url, sender?.tab)
+        if (!target) {
           sendResponse(errorResponse('ERR_NO_TARGET_URL'))
           return
         }
+        const targetUrl = target.url
 
         // 若是编辑且提供了 oldCookie，先移除旧 Cookie 以实现替换
         if (payload.oldCookie) {
@@ -413,7 +475,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             path: item.path || '/',
             secure: Boolean(item.secure),
             httpOnly: Boolean(item.httpOnly),
-            storeId: item.storeId,
+            // 新增（列表之外）的 Cookie 没有自带 storeId：用目标标签页的存储，
+            // 缺省会让无痕窗口的写入落到普通环境；编辑场景再兜底用旧 Cookie 的存储
+            storeId: item.storeId ?? target.storeId ?? payload.oldCookie?.storeId,
           }
 
           // host-only Cookie 绝不能传 domain：显式 domain 会被浏览器提升为覆盖子域的
@@ -450,12 +514,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (action === MSG_COOKIE_CLEAR_ALL) {
     void (async () => {
       try {
-        const url = await resolveTargetUrl((message as { url?: string }).url)
-        if (!url) {
+        const target = await resolveCookieTarget((message as { url?: string }).url, sender?.tab)
+        if (!target) {
           sendResponse(errorResponse('ERR_NO_TARGET_URL'))
           return
         }
-        const cookies = await chrome.cookies.getAll({ url })
+        const { url } = target
+        const filter: chrome.cookies.GetAllDetails = { url }
+        if (target.storeId) filter.storeId = target.storeId
+        const cookies = await chrome.cookies.getAll(filter)
         await Promise.all(
           cookies.map((c) =>
             chrome.cookies.remove({
