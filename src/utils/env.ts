@@ -13,12 +13,12 @@ export function isExtension(): boolean {
 
 /** 扩展版本号，浏览器预览时返回占位值 */
 export function extVersion(): string {
-  if (typeof chrome === 'undefined') return '1.0.0'
+  if (typeof chrome === 'undefined') return '1.1.0'
   try {
     // 用 || 而非 ??：旧内核可能返回空串 version，空串同样视为「取不到」，回退占位值
-    return chrome.runtime.getManifest().version || '1.0.0'
+    return chrome.runtime.getManifest().version || '1.1.0'
   } catch {
-    return '1.0.0'
+    return '1.1.0'
   }
 }
 

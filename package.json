@@ -1,7 +1,7 @@
 {
   "name": "panda-dock",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Panda Dock：现代、高效的 Chrome 开发者工具箱，内置智能解析与网页存储，以及 JSON、JWT、Base64、URL、时间戳、哈希、二维码等常用工具。",
   "license": "MIT",
   "author": "forest rhapsody",
