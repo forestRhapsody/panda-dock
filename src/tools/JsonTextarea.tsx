@@ -15,6 +15,9 @@ interface JsonTextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElem
  * 可编辑的 JSON 高亮输入框。
  * 实现：底层 `<pre>` 渲染彩色 JSON，上层 `<textarea>` 文字设为透明（保留光标与编辑），
  * 滚动同步；观感上是彩色 JSON 且可直接编辑。
+ *
+ * 它是「手写整段结构」的编辑器（存储工具的 JSON 值编辑），所以接 Tab 缩进；
+ * 纯文本值 / 数据输入框（AutoArea / HighlightArea）保持原生 Tab 焦点切换。
  */
 export default function JsonTextarea({
   value,
@@ -34,7 +37,7 @@ export default function JsonTextarea({
   })
   const preRef = useRef<HTMLPreElement>(null)
   const nodes = useMemo(() => highlightJson(value), [value])
-  const handleKeyDown = useTabIndent(onKeyDown)
+  const handleKeyDown = useTabIndent({ onKeyDown })
 
   // 滚动同步：textarea 滚动时同步高亮层
   function syncScroll() {

@@ -341,10 +341,10 @@ describe('JsonTextarea 的宽度变化重测', () => {
   })
 })
 
-describe('JsonTextarea 的 Tab 缩进', () => {
-  it('Tab 与 AutoArea 走同一套缩进：受控值更新，高亮层同源', () => {
+describe('JsonTextarea 的 Tab 缩进（存储工具的 JSON 值编辑）', () => {
+  it('Tab 在光标处缩进并同步受控值；高亮层与输入层同源', () => {
     function Harness() {
-      const [value, setValue] = useState('{\n"a": 1\n}')
+      const [value, setValue] = useState('{\n  "account": "admin",\n\n}')
       return <JsonTextarea value={value} onChange={(e) => setValue(e.target.value)} />
     }
     act(() => {
@@ -352,15 +352,43 @@ describe('JsonTextarea 的 Tab 缩进', () => {
     })
 
     const el = textarea()
-    act(() => el.setSelectionRange(0, 0))
+    // 光标停在第 3 行（空行）行首：正是「新起一行按 Tab 再打引号」的位置
+    const lineStart = el.value.indexOf('\n\n') + 1
+    act(() => el.setSelectionRange(lineStart, lineStart))
     const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
     act(() => {
       el.dispatchEvent(event)
     })
 
     expect(event.defaultPrevented).toBe(true)
-    expect(el.value).toBe('  {\n"a": 1\n}')
-    // 高亮层与输入层同源：两层文本必须一起更新，否则会出现错位重影
-    expect(pre().textContent).toContain('  {')
+    expect(el.value).toBe('{\n  "account": "admin",\n  \n}')
+    expect(el.selectionStart).toBe(lineStart + 2)
+    // 两层文本必须一起更新，否则高亮会错位
+    expect(pre().textContent).toContain('\n  \n')
+  })
+
+  it('Ctrl+M 之后的 Tab 放行给焦点导航（一次性）', () => {
+    function Harness() {
+      const [value, setValue] = useState('{}')
+      return <JsonTextarea value={value} onChange={(e) => setValue(e.target.value)} />
+    }
+    act(() => {
+      root.render(<Harness />)
+    })
+
+    const el = textarea()
+    act(() => el.setSelectionRange(1, 1))
+    act(() => {
+      el.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'm', ctrlKey: true, bubbles: true, cancelable: true }),
+      )
+    })
+    const released = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    act(() => {
+      el.dispatchEvent(released)
+    })
+
+    expect(released.defaultPrevented).toBe(false)
+    expect(el.value).toBe('{}')
   })
 })

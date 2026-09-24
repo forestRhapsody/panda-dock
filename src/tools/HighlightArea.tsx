@@ -3,7 +3,6 @@ import type { ReactNode, RefObject, TextareaHTMLAttributes } from 'react'
 
 import type { DetectSourceMatch } from './detect'
 import { useAutoHeight } from './useAutoHeight'
-import { useTabIndent } from './useTabIndent'
 
 interface HighlightAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value'> {
   value: string
@@ -37,11 +36,9 @@ export default function HighlightArea({
   onChange,
   areaRef,
   scrollTrigger,
-  onKeyDown,
   ...rest
 }: HighlightAreaProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const handleKeyDown = useTabIndent(onKeyDown)
   const isFirstRender = useRef(true)
   const prevTriggerRef = useRef(scrollTrigger)
 
@@ -172,7 +169,6 @@ export default function HighlightArea({
         className='tw-area-input'
         value={value}
         onChange={onChange}
-        onKeyDown={handleKeyDown}
         spellCheck={false}
         {...rest}
       />

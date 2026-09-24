@@ -324,8 +324,8 @@ describe('JwtTool 签名验证 (HMAC)', () => {
   })
 })
 
-describe('JwtTool 的 Tab 缩进', () => {
-  it('Tab 缩进不吞掉 Ctrl+Enter 执行', async () => {
+describe('JwtTool 的键盘行为', () => {
+  it('数据输入框保持原生 Tab 焦点切换（不缩进、不改动 token）', async () => {
     await renderTool()
     await act(async () => setTextareaValue(tokenInput(), SAMPLE_JWT))
 
@@ -335,12 +335,18 @@ describe('JwtTool 的 Tab 缩进', () => {
     act(() => {
       el.dispatchEvent(tab)
     })
-    expect(tab.defaultPrevented).toBe(true)
-    expect(el.value.startsWith('  ')).toBe(true)
 
-    // 合并后的处理器仍要把 Ctrl+Enter 交给调用方（解码出结果）
+    // token 是会被原样解码的数据：Tab 绝不能往里插空格
+    expect(tab.defaultPrevented).toBe(false)
+    expect(el.value).toBe(SAMPLE_JWT)
+  })
+
+  it('Ctrl+Enter 仍能执行解码', async () => {
+    await renderTool()
+    await act(async () => setTextareaValue(tokenInput(), SAMPLE_JWT))
+
     act(() => {
-      el.dispatchEvent(
+      tokenInput().dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'Enter',
           ctrlKey: true,
@@ -349,6 +355,7 @@ describe('JwtTool 的 Tab 缩进', () => {
         }),
       )
     })
+
     expect(container.textContent).toContain('签名校验 (HMAC)')
   })
 })

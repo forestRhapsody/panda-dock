@@ -9,7 +9,6 @@ import { StatusText } from './StatusText'
 import { parseStamp } from './timestamp'
 import type { StampResult, StampSource } from './timestamp'
 import { useEmptyError } from './useEmptyError'
-import { useTabIndent } from './useTabIndent'
 
 const SOURCE_KEY: Record<StampSource, string> = {
   secs: 'tool.timestamp.sourceSeconds',
@@ -41,14 +40,6 @@ export default function TimestampTool() {
       setError(null)
     }
   }, [inputLoaded, input])
-
-  // Ctrl/Cmd+Enter 转换 + Tab 缩进（hook 先跑自身回调，再决定要不要接管 Tab）
-  const handleInputKeyDown = useTabIndent((e) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault()
-      run()
-    }
-  })
 
   function run(text = input) {
     const raw = text.trim()
@@ -97,7 +88,12 @@ export default function TimestampTool() {
             if (emptyErr) clearEmpty()
             if (error) setError(null)
           }}
-          onKeyDown={handleInputKeyDown}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault()
+              run()
+            }
+          }}
           spellCheck={false}
         />
         <span className='tw-field__hint'>{t('tool.timestamp.hint')}</span>

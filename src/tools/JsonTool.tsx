@@ -145,8 +145,10 @@ export default function JsonTool() {
     setDraft((prev) => ({ ...prev, splitRatio: 50 }))
   }
 
-  // 行号栏编辑器里的裸 textarea：Tab 缩进（只读结果区不接）
-  const handleInputKeyDown = useTabIndent()
+  // 输入区（唯一的「手写整段结构」编辑器）：Tab 缩进，缩进单元跟随上面的缩进设置
+  const handleInputKeyDown = useTabIndent({
+    indent: indent === 'tab' ? '\t' : ' '.repeat(indent),
+  })
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'ArrowUp') {

@@ -334,19 +334,72 @@ describe('JsonTool 复制 / 下载 / 草稿', () => {
 })
 
 describe('JsonTool 的 Tab 缩进', () => {
-  it('行号栏编辑器：Tab 缩进并同步到受控输入', async () => {
+  /** PdSelect 的下拉是 portal 到 body 的 */
+  async function chooseIndent(label: string) {
+    const combo = container.querySelector<HTMLButtonElement>('[role="combobox"]')
+    if (!combo) throw new Error('未找到缩进选择器')
+    await act(async () => combo.click())
+    const option = [...document.body.querySelectorAll<HTMLElement>('[data-pds-item]')].find((el) =>
+      el.textContent?.includes(label),
+    )
+    if (!option) throw new Error(`未找到缩进选项：${label}`)
+    await act(async () => {
+      option.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    })
+  }
+
+  function pressTab(init: KeyboardEventInit = {}) {
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+      ...init,
+    })
+    act(() => {
+      textarea().dispatchEvent(event)
+    })
+    return event
+  }
+
+  it('行号栏编辑器：Tab 在光标处缩进并同步到受控输入', async () => {
     await renderTool()
     await act(async () => setTextareaValue(textarea(), '{}'))
 
     const el = textarea()
     act(() => el.setSelectionRange(0, 0))
-    const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
-    act(() => {
-      el.dispatchEvent(event)
-    })
+    const event = pressTab()
 
     expect(event.defaultPrevented).toBe(true)
     expect(el.value).toBe('  {}')
     expect(el.selectionStart).toBe(2)
+  })
+
+  it('缩进单元跟随「缩进」设置（选 Tab 则插入制表符）', async () => {
+    await renderTool()
+    await act(async () => setTextareaValue(textarea(), '{}'))
+    await chooseIndent('Tab')
+
+    const el = textarea()
+    act(() => el.setSelectionRange(0, 0))
+    pressTab()
+
+    expect(el.value).toBe('\t{}')
+  })
+
+  it('Ctrl+M 之后的 Tab 放行给焦点导航（抽屉里 Esc 被「关闭」占用时的等价出口）', async () => {
+    await renderTool()
+    await act(async () => setTextareaValue(textarea(), '{}'))
+
+    act(() => {
+      textarea().dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'm', ctrlKey: true, bubbles: true, cancelable: true }),
+      )
+    })
+    const event = pressTab()
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(textarea().value).toBe('{}')
+    // 放行是一次性的：下一个 Tab 继续缩进
+    expect(pressTab().defaultPrevented).toBe(true)
   })
 })
